@@ -344,16 +344,44 @@ def preview():
             result['webpage_url'] = info['webpage_url']
         # Always scan all formats to find the highest available resolution
         max_h = 0
+        best_filesize = None
         if info.get('formats'):
+            # First pass: find max height among video formats
             for fmt in info['formats']:
+                if fmt.get('vcodec', 'none') == 'none':
+                    continue
                 h = fmt.get('height') or 0
                 if h > max_h:
                     max_h = h
+            # Second pass: among video formats at max_h, pick largest filesize
+            for fmt in info['formats']:
+                if fmt.get('vcodec', 'none') == 'none':
+                    continue
+                h = fmt.get('height') or 0
+                if h == max_h and max_h > 0:
+                    fs = fmt.get('filesize') or fmt.get('filesize_approx')
+                    if fs and (best_filesize is None or fs > best_filesize):
+                        best_filesize = fs
         # Fallback to top-level height if no formats found
         if max_h == 0 and info.get('height'):
             max_h = int(info['height'])
         if max_h > 0:
             result['height'] = max_h
+            result['best_height'] = max_h
+            if max_h >= 2160:
+                result['best_label'] = 'BEST 4K'
+            elif max_h >= 1440:
+                result['best_label'] = 'BEST 2K'
+            elif max_h >= 1080:
+                result['best_label'] = 'BEST 1080P'
+            elif max_h >= 720:
+                result['best_label'] = 'BEST 720P'
+            else:
+                result['best_label'] = 'BEST'
+            if best_filesize:
+                result['best_filesize_mb'] = round(best_filesize / 1048576)
+            else:
+                result['best_filesize_mb'] = None
 
         # Cek apakah foto/slideshow
         if info.get('_type') == 'playlist':
