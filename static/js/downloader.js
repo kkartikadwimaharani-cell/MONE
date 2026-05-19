@@ -61,12 +61,21 @@ async function fetchPreview(url) {
 
 /* ── BEST LABEL HELPER ────────────────────────── */
 function getBestLabel(data) {
-  var height = data.height || data.resolution_height || 0;
-  if (height >= 2160) return 'BEST 4K';
-  if (height >= 1440) return 'BEST 2K';
-  if (height >= 1080) return 'BEST 1080P';
-  if (height >= 720) return 'BEST 720P';
-  return 'BEST';
+  var label;
+  if (data.best_label) {
+    label = data.best_label;
+  } else {
+    var height = data.best_height || data.height || data.resolution_height || 0;
+    if (height >= 2160) label = 'BEST 4K';
+    else if (height >= 1440) label = 'BEST 2K';
+    else if (height >= 1080) label = 'BEST 1080P';
+    else if (height >= 720) label = 'BEST 720P';
+    else label = 'BEST';
+  }
+  if (data.best_filesize_mb && data.best_filesize_mb > 0) {
+    label += ' \u2022 ' + data.best_filesize_mb + ' MB';
+  }
+  return label;
 }
 
 /* ── AUDIO DOWNLOAD (MP3 button only) ─────────── */
