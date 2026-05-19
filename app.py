@@ -467,26 +467,64 @@ def download():
                 '-movflags', '+faststart',
                 output_path,
             ]
-        else:  # best - remux to MP4 with faststart, re-encode only if needed
-            ffmpeg_cmd = [
-                ffmpeg_bin, '-y', '-i', raw_file,
-                '-c:v', 'copy', '-c:a', 'copy',
-                '-movflags', '+faststart',
-                output_path,
-            ]
+        else:
+            # best - probe first, then decide copy vs re-encode
+            ffprobe_bin = shutil.which('ffprobe') or 'ffprobe'
+            source_is_compatible = False
+            try:
+                # Probe video stream
+                vprobe = subprocess.run(
+                    [ffprobe_bin, '-v', 'error', '-select_streams', 'v:0',
+                     '-show_entries', 'stream=codec_name,pix_fmt', '-of', 'json', raw_file],
+                    capture_output=True, text=True, timeout=15
+                )
+                # Probe audio stream
+                aprobe = subprocess.run(
+                    [ffprobe_bin, '-v', 'error', '-select_streams', 'a:0',
+                     '-show_entries', 'stream=codec_name', '-of', 'json', raw_file],
+                    capture_output=True, text=True, timeout=15
+                )
+                # Probe container format
+                fprobe = subprocess.run(
+                    [ffprobe_bin, '-v', 'error', '-show_entries', 'format=format_name',
+                     '-of', 'json', raw_file],
+                    capture_output=True, text=True, timeout=15
+                )
+                if vprobe.returncode == 0 and aprobe.returncode == 0 and fprobe.returncode == 0:
+                    vinfo = json.loads(vprobe.stdout)
+                    ainfo = json.loads(aprobe.stdout)
+                    finfo = json.loads(fprobe.stdout)
+                    v_streams = vinfo.get('streams', [])
+                    a_streams = ainfo.get('streams', [])
+                    format_name = finfo.get('format', {}).get('format_name', '')
+                    if v_streams and a_streams:
+                        v_codec = v_streams[0].get('codec_name', '')
+                        v_pix_fmt = v_streams[0].get('pix_fmt', '')
+                        a_codec = a_streams[0].get('codec_name', '')
+                        is_mp4_container = 'mp4' in format_name or 'mov' in format_name
+                        if v_codec == 'h264' and a_codec == 'aac' and v_pix_fmt == 'yuv420p' and is_mp4_container:
+                            source_is_compatible = True
+            except Exception:
+                pass  # If probe fails, fall through to re-encode
+
+            if source_is_compatible:
+                ffmpeg_cmd = [
+                    ffmpeg_bin, '-y', '-i', raw_file,
+                    '-c:v', 'copy', '-c:a', 'copy',
+                    '-movflags', '+faststart',
+                    output_path,
+                ]
+            else:
+                ffmpeg_cmd = [
+                    ffmpeg_bin, '-y', '-i', raw_file,
+                    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+                    '-pix_fmt', 'yuv420p',
+                    '-c:a', 'aac', '-b:a', '192k',
+                    '-movflags', '+faststart',
+                    output_path,
+                ]
 
         result = subprocess.run(ffmpeg_cmd, capture_output=True)
-        if result.returncode != 0 and quality == 'best':
-            # Fallback: if copy failed (incompatible codec), re-encode for compatibility
-            ffmpeg_cmd = [
-                ffmpeg_bin, '-y', '-i', raw_file,
-                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
-                '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', '-b:a', '192k',
-                '-movflags', '+faststart',
-                output_path,
-            ]
-            result = subprocess.run(ffmpeg_cmd, capture_output=True)
         if result.returncode != 0:
             # Clean up raw file before returning error
             try:
@@ -494,6 +532,23 @@ def download():
             except Exception:
                 pass
             return jsonify({'error': 'Konversi video gagal. Coba lagi.'}), 500
+
+        # File size check for 'best' quality (100MB limit for free server)
+        if quality == 'best':
+            try:
+                file_size = os.path.getsize(output_path)
+                if file_size > 100 * 1024 * 1024:
+                    try:
+                        os.remove(output_path)
+                    except Exception:
+                        pass
+                    try:
+                        os.remove(raw_file)
+                    except Exception:
+                        pass
+                    return jsonify({'error': 'Video terlalu besar untuk server gratis. Coba 1080P.'}), 500
+            except Exception:
+                pass
 
         @after_this_request
         def cleanup_video(response):

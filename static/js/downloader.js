@@ -249,6 +249,11 @@ async function confirmDownload() {
 
     // Trigger file download
     const blob = await response.blob();
+    if (!blob || blob.size <= 0) {
+      setStatus('Download gagal, file kosong.', 'err');
+      hideProgress();
+      return;
+    }
     const contentDisposition = response.headers.get('Content-Disposition') || '';
     let filename = 'miitok_video.mp4';
     const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
