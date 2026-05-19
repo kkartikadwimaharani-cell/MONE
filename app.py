@@ -484,16 +484,24 @@ def download():
                      '-show_entries', 'stream=codec_name', '-of', 'json', raw_file],
                     capture_output=True, text=True, timeout=15
                 )
-                if vprobe.returncode == 0 and aprobe.returncode == 0:
+                # Probe container format
+                fprobe = subprocess.run(
+                    [ffprobe_bin, '-v', 'error', '-show_entries', 'format=format_name',
+                     '-of', 'json', raw_file],
+                    capture_output=True, text=True, timeout=15
+                )
+                if vprobe.returncode == 0 and aprobe.returncode == 0 and fprobe.returncode == 0:
                     vinfo = json.loads(vprobe.stdout)
                     ainfo = json.loads(aprobe.stdout)
+                    finfo = json.loads(fprobe.stdout)
                     v_streams = vinfo.get('streams', [])
                     a_streams = ainfo.get('streams', [])
+                    format_name = finfo.get('format', {}).get('format_name', '')
                     if v_streams and a_streams:
                         v_codec = v_streams[0].get('codec_name', '')
                         v_pix_fmt = v_streams[0].get('pix_fmt', '')
                         a_codec = a_streams[0].get('codec_name', '')
-                        is_mp4_container = raw_file.lower().endswith('.mp4')
+                        is_mp4_container = 'mp4' in format_name or 'mov' in format_name
                         if v_codec == 'h264' and a_codec == 'aac' and v_pix_fmt == 'yuv420p' and is_mp4_container:
                             source_is_compatible = True
             except Exception:
