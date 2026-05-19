@@ -65,7 +65,7 @@ function hidePreview() {
   var drawerDl = document.getElementById('drawerDownloads');
   if (statDl && drawerDl) {
     var observer = new MutationObserver(function() {
-      drawerDl.textContent = 'Downloads: ' + (statDl.textContent || '0');
+      drawerDl.textContent = 'DOWNLOADS: ' + (statDl.textContent || '0');
     });
     observer.observe(statDl, { childList: true, characterData: true, subtree: true });
   }
@@ -78,15 +78,14 @@ function hidePreview() {
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
-    'mp3': { type: 'coming-soon', title: 'MP3 DOWNLOADER', badge: 'COMING SOON', description: 'Audio downloader is under development.' },
-    'photo': { type: 'coming-soon', title: 'PHOTO DOWNLOADER', badge: 'BETA', description: 'TikTok photo slideshow support is under development.' },
-    'hd-converter': { type: 'coming-soon', title: 'HD CONVERTER', badge: 'COMING SOON', description: 'Video converter is under development.' },
-    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
+    'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'WA STATUS CONVERTER IS UNDER DEVELOPMENT.' },
+    'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'STATUS SPLITTER IS UNDER DEVELOPMENT.' },
+    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'CAPTION COPY TOOL IS UNDER DEVELOPMENT.' },
     'store': { type: 'store' },
     'control': { type: 'control' },
-    'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'Server monitoring dashboard is under development.' },
-    'howto': { type: 'coming-soon', title: 'HOW TO USE', badge: 'COMING SOON', description: 'Usage guide is under development.' },
-    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'Bug reporting system is under development.' }
+    'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'SERVER MONITORING DASHBOARD IS UNDER DEVELOPMENT.' },
+    'howto': { type: 'coming-soon', title: 'HOW TO USE', badge: 'COMING SOON', description: 'USAGE GUIDE IS UNDER DEVELOPMENT.' },
+    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'BUG REPORTING SYSTEM IS UNDER DEVELOPMENT.' }
   };
 
   function navigateTo(view, skipPush) {
@@ -166,28 +165,28 @@ function hidePreview() {
     container.innerHTML = '<div class="store-page">' +
       '<div class="store-header">' +
         '<h2 class="store-title">PREMIUM APPS STORE</h2>' +
-        '<p class="store-subtitle">MII NETWORK digital products</p>' +
+        '<p class="store-subtitle">MII NETWORK DIGITAL PRODUCTS</p>' +
       '</div>' +
       '<div class="store-grid">' +
         '<a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></div>' +
-          '<div class="store-card-title">Instagram</div>' +
-          '<div class="store-card-desc">Follow for updates</div>' +
+          '<div class="store-card-title">INSTAGRAM</div>' +
+          '<div class="store-card-desc">FOLLOW FOR UPDATES</div>' +
         '</a>' +
         '<a href="https://t.me/asami_am0" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>' +
-          '<div class="store-card-title">Telegram</div>' +
-          '<div class="store-card-desc">Join our channel</div>' +
+          '<div class="store-card-title">TELEGRAM</div>' +
+          '<div class="store-card-desc">JOIN OUR CHANNEL</div>' +
         '</a>' +
         '<a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>' +
-          '<div class="store-card-title">WhatsApp</div>' +
-          '<div class="store-card-desc">Chat with us</div>' +
+          '<div class="store-card-title">WHATSAPP</div>' +
+          '<div class="store-card-desc">CHAT WITH US</div>' +
         '</a>' +
         '<a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>' +
-          '<div class="store-card-title">Lynk.id Store</div>' +
-          '<div class="store-card-desc">Browse all products</div>' +
+          '<div class="store-card-title">LYNK.ID STORE</div>' +
+          '<div class="store-card-desc">BROWSE ALL PRODUCTS</div>' +
         '</a>' +
       '</div>' +
       '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
@@ -211,10 +210,10 @@ function hidePreview() {
         '<p class="control-subtitle">MII NETWORK SYSTEM</p>' +
       '</div>' +
       '<div class="control-grid">' +
-        '<div class="control-status-card"><span class="control-dot green"></span><span>Server Online</span></div>' +
-        '<div class="control-status-card"><span class="control-dot green"></span><span>Video Ready</span></div>' +
-        '<div class="control-status-card"><span class="control-dot yellow"></span><span>Photo Beta</span></div>' +
-        '<div class="control-status-card"><span class="control-dot gray"></span><span>MP3 Soon</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>SERVER ONLINE</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>VIDEO READY</span></div>' +
+        '<div class="control-status-card"><span class="control-dot yellow"></span><span>STATUS TOOLS SOON</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>DOWNLOADS ACTIVE</span></div>' +
       '</div>' +
       '<div class="control-stats">' +
         '<div class="control-stat-box"><div class="control-stat-value" id="ctrlViews">0</div><div class="control-stat-label">VIEWS</div></div>' +
