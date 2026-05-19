@@ -389,6 +389,8 @@ def download():
     elif quality not in valid_qualities:
         return jsonify({'error': 'Kualitas tidak valid'}), 400
 
+    print(f"[download] selected quality: {quality}", flush=True)
+
     # Lightweight probe: reject slideshow/playlist before attempting video download
     try:
         _probe_opts = {'quiet': True, 'skip_download': True, 'noplaylist': False}
@@ -400,26 +402,26 @@ def download():
         pass  # If probe fails, let the download attempt proceed and surface its own error
 
     # Rate limiting
-    # NOTE: X-Forwarded-For is trusted unconditionally here.
-    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
-    # with x_for=1 to restrict header trust to one hop.
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     if not _check_rate_limit(client_ip, _rate_store_download):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     tmp_id = str(uuid.uuid4())
+    raw_file = None
+    output_path = f"/tmp/{tmp_id}_out.mp4"
 
     try:
         # Check ffmpeg availability
         ffmpeg_bin = shutil.which('ffmpeg')
         if not ffmpeg_bin:
+            print("[download] ERROR: ffmpeg not found in PATH", flush=True)
             return jsonify({'error': 'Server belum support FFmpeg. Periksa nixpacks.toml dan redeploy.'}), 500
 
         # Step 1: Download raw video with yt-dlp
         raw_outtmpl = f"/tmp/{tmp_id}_raw.%(ext)s"
+        print(f"[download] tmp_id={tmp_id} raw_outtmpl={raw_outtmpl}", flush=True)
 
         if quality == 'best':
-            # BEST = highest/original available format (no resolution cap)
             fmt = 'bestvideo+bestaudio/best'
         elif quality == '1080':
             fmt = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]'
@@ -441,12 +443,19 @@ def download():
         # Step 2: Find the downloaded raw file
         raw_candidates = glob.glob(f"/tmp/{tmp_id}_raw.*")
         if not raw_candidates:
+            print("[download] ERROR: no raw file found after yt-dlp download", flush=True)
             return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
         raw_file = raw_candidates[0]
 
-        # Step 3: Remux/convert to compatible MP4 (h264/aac, faststart, yuv420p)
-        output_path = f"/tmp/{tmp_id}_out.mp4"
+        raw_exists = os.path.isfile(raw_file)
+        raw_size = os.path.getsize(raw_file) if raw_exists else 0
+        print(f"[download] raw_file={raw_file} exists={raw_exists} size={raw_size}", flush=True)
 
+        if not raw_exists or raw_size == 0:
+            print("[download] ERROR: raw file missing or empty after download", flush=True)
+            return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
+
+        # Step 3: Remux/convert to compatible MP4 (h264/aac, faststart, yuv420p)
         if quality == '720':
             ffmpeg_cmd = [
                 ffmpeg_bin, '-y', '-i', raw_file,
@@ -472,19 +481,16 @@ def download():
             ffprobe_bin = shutil.which('ffprobe') or 'ffprobe'
             source_is_compatible = False
             try:
-                # Probe video stream
                 vprobe = subprocess.run(
                     [ffprobe_bin, '-v', 'error', '-select_streams', 'v:0',
                      '-show_entries', 'stream=codec_name,pix_fmt', '-of', 'json', raw_file],
                     capture_output=True, text=True, timeout=15
                 )
-                # Probe audio stream
                 aprobe = subprocess.run(
                     [ffprobe_bin, '-v', 'error', '-select_streams', 'a:0',
                      '-show_entries', 'stream=codec_name', '-of', 'json', raw_file],
                     capture_output=True, text=True, timeout=15
                 )
-                # Probe container format
                 fprobe = subprocess.run(
                     [ffprobe_bin, '-v', 'error', '-show_entries', 'format=format_name',
                      '-of', 'json', raw_file],
@@ -504,8 +510,12 @@ def download():
                         is_mp4_container = 'mp4' in format_name or 'mov' in format_name
                         if v_codec == 'h264' and a_codec == 'aac' and v_pix_fmt == 'yuv420p' and is_mp4_container:
                             source_is_compatible = True
-            except Exception:
-                pass  # If probe fails, fall through to re-encode
+                    print(f"[download] probe: v_codec={v_streams[0].get('codec_name', '') if v_streams else 'N/A'} "
+                          f"pix_fmt={v_streams[0].get('pix_fmt', '') if v_streams else 'N/A'} "
+                          f"a_codec={a_streams[0].get('codec_name', '') if a_streams else 'N/A'} "
+                          f"format={format_name} compatible={source_is_compatible}", flush=True)
+            except Exception as probe_err:
+                print(f"[download] probe failed: {probe_err}", flush=True)
 
             if source_is_compatible:
                 ffmpeg_cmd = [
@@ -524,31 +534,53 @@ def download():
                     output_path,
                 ]
 
-        result = subprocess.run(ffmpeg_cmd, capture_output=True)
+        print(f"[download] ffmpeg cmd: {' '.join(ffmpeg_cmd)}", flush=True)
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, timeout=300)
+        print(f"[download] ffmpeg returncode={result.returncode}", flush=True)
+
         if result.returncode != 0:
-            # Clean up raw file before returning error
-            try:
-                os.remove(raw_file)
-            except Exception:
-                pass
-            return jsonify({'error': 'Konversi video gagal. Coba lagi.'}), 500
+            stderr_output = (result.stderr or b'').decode(errors='replace')[-2000:]
+            print(f"[download] ffmpeg FAILED stderr: {stderr_output}", flush=True)
+
+            # Fallback: try remux with stream copy
+            print("[download] attempting remux fallback (copy streams)", flush=True)
+            remux_cmd = [
+                ffmpeg_bin, '-y', '-i', raw_file,
+                '-c', 'copy',
+                '-movflags', '+faststart',
+                output_path,
+            ]
+            remux_result = subprocess.run(remux_cmd, capture_output=True, timeout=120)
+            print(f"[download] remux returncode={remux_result.returncode}", flush=True)
+
+            if remux_result.returncode != 0:
+                remux_stderr = (remux_result.stderr or b'').decode(errors='replace')[-1000:]
+                print(f"[download] remux FAILED stderr: {remux_stderr}", flush=True)
+                _cleanup_files(raw_file, output_path)
+                return jsonify({'error': 'Konversi video gagal. Coba kualitas lebih rendah.'}), 500
+
+        # Step 4: Validate output file
+        if not os.path.isfile(output_path):
+            print(f"[download] ERROR: output file not found at {output_path}", flush=True)
+            _cleanup_files(raw_file, None)
+            return jsonify({'error': 'File hasil tidak ditemukan.'}), 500
+
+        final_size = os.path.getsize(output_path)
+        print(f"[download] output_path={output_path} exists=True size={final_size}", flush=True)
+
+        if final_size == 0:
+            print("[download] ERROR: output file is empty (0 bytes)", flush=True)
+            _cleanup_files(raw_file, output_path)
+            return jsonify({'error': 'File hasil kosong.'}), 500
 
         # File size check for 'best' quality (100MB limit for free server)
-        if quality == 'best':
-            try:
-                file_size = os.path.getsize(output_path)
-                if file_size > 100 * 1024 * 1024:
-                    try:
-                        os.remove(output_path)
-                    except Exception:
-                        pass
-                    try:
-                        os.remove(raw_file)
-                    except Exception:
-                        pass
-                    return jsonify({'error': 'Video terlalu besar untuk server gratis. Coba 1080P.'}), 500
-            except Exception:
-                pass
+        if quality == 'best' and final_size > 100 * 1024 * 1024:
+            print(f"[download] ERROR: file too large ({final_size} bytes) for free server", flush=True)
+            _cleanup_files(raw_file, output_path)
+            return jsonify({'error': 'Video terlalu besar untuk server gratis. Coba 1080P.'}), 500
+
+        # Step 5: Send file, cleanup AFTER response is sent
+        print(f"[download] sending file: {output_path} size={final_size}", flush=True)
 
         @after_this_request
         def cleanup_video(response):
@@ -566,13 +598,31 @@ def download():
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
+        print(f"[download] yt-dlp DownloadError: {msg}", flush=True)
+        _cleanup_files(raw_file, output_path)
         if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
             return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
         if 'Sign in' in msg or 'login' in msg.lower():
             return jsonify({'error': 'Video ini memerlukan login TikTok'}), 500
         return jsonify({'error': 'Download gagal. Pastikan link valid dan coba lagi.'}), 500
+    except subprocess.TimeoutExpired:
+        print("[download] ERROR: ffmpeg timed out", flush=True)
+        _cleanup_files(raw_file, output_path)
+        return jsonify({'error': 'Konversi video gagal. Coba kualitas lebih rendah.'}), 500
     except Exception as e:
+        print(f"[download] unexpected error: {type(e).__name__}: {e}", flush=True)
+        _cleanup_files(raw_file, output_path)
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
+
+
+def _cleanup_files(*paths):
+    """Safely remove temp files, ignoring errors."""
+    for p in paths:
+        if p:
+            try:
+                os.remove(p)
+            except Exception:
+                pass
 
 
 @app.route('/download-audio', methods=['POST'])
