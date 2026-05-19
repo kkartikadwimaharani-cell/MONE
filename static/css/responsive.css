@@ -95,17 +95,7 @@
 
 /* ── MOBILE RESPONSIVE ─── */
 @media (max-width: 640px) {
-  .view-container {
-    width: 92%;
-    max-width: 100%;
-  }
   .card {
-    width: 92%;
-    max-width: 560px;
-  }
-  .features-section,
-  .stats-section,
-  .social-section {
     width: 92%;
     max-width: 560px;
   }
