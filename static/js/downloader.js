@@ -50,8 +50,23 @@ async function fetchPreview(url) {
       thumb.alt = 'MII';
       thumb.src = '';
     }
+    // Update BEST quality badge based on resolution metadata
+    var qualityBadge = document.getElementById('qualityBadge');
+    if (qualityBadge && selectedQuality === 'best') {
+      qualityBadge.textContent = getBestLabel(data);
+    }
     document.getElementById('previewCard').classList.add('show');
   } catch(e) {}
+}
+
+/* ── BEST LABEL HELPER ────────────────────────── */
+function getBestLabel(data) {
+  var height = data.height || data.resolution_height || 0;
+  if (height >= 2160) return 'BEST 4K';
+  if (height >= 1440) return 'BEST 2K';
+  if (height >= 1080) return 'BEST 1080P';
+  if (height >= 720) return 'BEST 720P';
+  return 'BEST';
 }
 
 /* ── AUDIO DOWNLOAD (MP3 button only) ─────────── */

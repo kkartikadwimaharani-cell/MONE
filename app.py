@@ -342,6 +342,8 @@ def preview():
             result['uploader'] = info['uploader']
         if info.get('webpage_url'):
             result['webpage_url'] = info['webpage_url']
+        if info.get('height'):
+            result['height'] = int(info['height'])
 
         # Cek apakah foto/slideshow
         if info.get('_type') == 'playlist':

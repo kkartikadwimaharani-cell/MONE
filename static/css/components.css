@@ -116,6 +116,9 @@
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
   caret-color: var(--red);
   box-sizing: border-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .url-input::placeholder {
@@ -189,7 +192,8 @@
 }
 
 .preview-thumb {
-  width: 72px;
+  width: 86px;
+  height: 86px;
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -201,6 +205,7 @@
   flex-direction: column;
   justify-content: center;
   min-width: 0;
+  flex: 1;
 }
 
 .preview-title {
@@ -208,6 +213,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--white);
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -219,6 +225,8 @@
   color: var(--white-dim);
   display: flex;
   gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .preview-meta span {
@@ -233,6 +241,9 @@
   align-items: center;
   gap: 8px;
   margin-top: 6px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .quality-badge {
