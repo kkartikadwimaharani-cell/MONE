@@ -232,9 +232,12 @@ html, body {
 
   .preview-title {
     max-width: 100% !important;
-    white-space: nowrap !important;
+    white-space: normal !important;
+    word-break: break-word !important;
     overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
   }
 
   .preview-meta {
