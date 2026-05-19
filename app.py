@@ -342,17 +342,18 @@ def preview():
             result['uploader'] = info['uploader']
         if info.get('webpage_url'):
             result['webpage_url'] = info['webpage_url']
-        if info.get('height'):
-            result['height'] = int(info['height'])
-        elif info.get('formats'):
-            # Try to find the highest resolution from available formats
-            max_h = 0
+        # Always scan all formats to find the highest available resolution
+        max_h = 0
+        if info.get('formats'):
             for fmt in info['formats']:
                 h = fmt.get('height') or 0
                 if h > max_h:
                     max_h = h
-            if max_h > 0:
-                result['height'] = max_h
+        # Fallback to top-level height if no formats found
+        if max_h == 0 and info.get('height'):
+            max_h = int(info['height'])
+        if max_h > 0:
+            result['height'] = max_h
 
         # Cek apakah foto/slideshow
         if info.get('_type') == 'playlist':
