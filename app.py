@@ -346,11 +346,22 @@ def preview():
         max_h = 0
         best_filesize = None
         if info.get('formats'):
+            # First pass: find max height among video formats
             for fmt in info['formats']:
+                if fmt.get('vcodec', 'none') == 'none':
+                    continue
                 h = fmt.get('height') or 0
                 if h > max_h:
                     max_h = h
-                    best_filesize = fmt.get('filesize') or fmt.get('filesize_approx')
+            # Second pass: among video formats at max_h, pick largest filesize
+            for fmt in info['formats']:
+                if fmt.get('vcodec', 'none') == 'none':
+                    continue
+                h = fmt.get('height') or 0
+                if h == max_h and max_h > 0:
+                    fs = fmt.get('filesize') or fmt.get('filesize_approx')
+                    if fs and (best_filesize is None or fs > best_filesize):
+                        best_filesize = fs
         # Fallback to top-level height if no formats found
         if max_h == 0 and info.get('height'):
             max_h = int(info['height'])
