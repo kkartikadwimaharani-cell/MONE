@@ -107,7 +107,7 @@
   .stats-section,
   .social-section {
     width: 92%;
-    max-width: 100%;
+    max-width: 560px;
   }
 }
 
@@ -126,7 +126,7 @@
   .mp3-btn { font-size: 0.58rem; }
   .quality-badge { font-size: 0.55rem; }
   .hero-title::after { display: none; }
-  .page { padding-bottom: 100px; }
+  .page { padding-bottom: 120px; }
 }
 
 /* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
@@ -163,6 +163,12 @@ html, body {
 .progress-bar-wrap,
 .progress-bar-track,
 .quality-row {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* ── Global child constraint ─── */
+.page > * {
   max-width: 100%;
   min-width: 0;
 }
@@ -255,5 +261,45 @@ html, body {
     flex-wrap: wrap !important;
     max-width: 100% !important;
     overflow: hidden !important;
+  }
+
+  .features-section,
+  .stats-section,
+  .social-section {
+    width: 92% !important;
+    max-width: 560px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .view-container {
+    width: 92% !important;
+    max-width: 560px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .control-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .feature-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 80px !important;
   }
 }
