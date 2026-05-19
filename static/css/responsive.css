@@ -174,19 +174,23 @@ html, body {
 /* ── MOBILE MASTER OVERRIDE (max-width: 768px) ─── */
 @media (max-width: 768px) {
 
-  /* 1. All main sections same width and centered */
-  .header,
-  .card,
-  .features-section,
-  .stats-section,
-  .social-section,
-  .footer-wrap,
-  .view-container {
-    width: min(92vw, 560px) !important;
-    max-width: 560px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
+/* 1. All main sections same width and centered */
+.header,
+.card,
+.features-section,
+.features-grid,
+.stats-section,
+.control-panel,
+.control-grid,
+.social-section,
+.connect-section,
+.footer-wrap,
+.view-container {
+  width: min(92vw, 560px) !important;
+  max-width: 560px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
 
   /* 2. Downloader card: compact, not too tall */
   .card {
