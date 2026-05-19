@@ -344,6 +344,15 @@ def preview():
             result['webpage_url'] = info['webpage_url']
         if info.get('height'):
             result['height'] = int(info['height'])
+        elif info.get('formats'):
+            # Try to find the highest resolution from available formats
+            max_h = 0
+            for fmt in info['formats']:
+                h = fmt.get('height') or 0
+                if h > max_h:
+                    max_h = h
+            if max_h > 0:
+                result['height'] = max_h
 
         # Cek apakah foto/slideshow
         if info.get('_type') == 'playlist':
@@ -408,9 +417,21 @@ def download():
 
         # Step 1: Download raw video with yt-dlp
         raw_outtmpl = f"/tmp/{tmp_id}_raw.%(ext)s"
+
+        if quality == 'best':
+            # BEST = highest/original available format (no resolution cap)
+            fmt = 'bestvideo+bestaudio/best'
+        elif quality == '1080':
+            fmt = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]'
+        elif quality == '720':
+            fmt = 'bestvideo[height<=720]+bestaudio/best[height<=720]'
+        else:
+            fmt = 'bestvideo+bestaudio/best'
+
         ydl_opts = {
             'outtmpl': raw_outtmpl,
-            'format': 'best[ext=mp4]/best',
+            'format': fmt,
+            'merge_output_format': 'mp4',
             'quiet': True,
         }
 
@@ -423,7 +444,7 @@ def download():
             return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
         raw_file = raw_candidates[0]
 
-        # Step 3: Run ffmpeg to convert to a WhatsApp/Android-compatible MP4
+        # Step 3: Remux/convert to compatible MP4 (h264/aac, faststart, yuv420p)
         output_path = f"/tmp/{tmp_id}_out.mp4"
 
         if quality == '720':
@@ -446,17 +467,26 @@ def download():
                 '-movflags', '+faststart',
                 output_path,
             ]
-        else:  # best
+        else:  # best - remux to MP4 with faststart, re-encode only if needed
             ffmpeg_cmd = [
                 ffmpeg_bin, '-y', '-i', raw_file,
-                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
-                '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', '-b:a', '128k',
+                '-c:v', 'copy', '-c:a', 'copy',
                 '-movflags', '+faststart',
                 output_path,
             ]
 
         result = subprocess.run(ffmpeg_cmd, capture_output=True)
+        if result.returncode != 0 and quality == 'best':
+            # Fallback: if copy failed (incompatible codec), re-encode for compatibility
+            ffmpeg_cmd = [
+                ffmpeg_bin, '-y', '-i', raw_file,
+                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '192k',
+                '-movflags', '+faststart',
+                output_path,
+            ]
+            result = subprocess.run(ffmpeg_cmd, capture_output=True)
         if result.returncode != 0:
             # Clean up raw file before returning error
             try:
