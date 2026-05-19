@@ -145,6 +145,15 @@ html, body {
   min-width: 0;
 }
 
+/* Ensure no transform/skew on card and features globally */
+.card,
+.download-card,
+.downloader-card,
+.features-grid,
+.feature-card {
+  transform: none;
+}
+
 /* Ensure all inner elements use border-box */
 .card,
 .card *,
@@ -192,7 +201,7 @@ html, body {
   margin-right: auto !important;
 }
 
-  /* 2. Downloader card: compact, not too tall */
+  /* 2. Downloader card: straight, no skew, symmetric */
   .card {
     padding: 22px 16px !important;
     height: auto !important;
@@ -201,6 +210,16 @@ html, body {
     display: flex !important;
     flex-direction: column !important;
     gap: 16px !important;
+    transform: none !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,0,40,0.22) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+  }
+
+  /* Disable corner decorations that cause skew illusion */
+  .card::before,
+  .card::after {
+    display: none !important;
   }
 
   /* Remove double spacing from children since gap handles it */
@@ -302,10 +321,11 @@ html, body {
     padding: 0 !important;
   }
 
-  /* 7. Features grid: 2 columns, equal height, center content */
+  /* 7. Features grid: 2 columns, equal height, center content, no skew */
   .features-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
+    transform: none !important;
   }
 
   .feature-card {
@@ -316,6 +336,12 @@ html, body {
     text-align: center !important;
     min-height: 80px !important;
     padding: 12px 6px !important;
+    transform: none !important;
+  }
+
+  .feature-card::before,
+  .feature-card::after {
+    display: none !important;
   }
 
   .feature-card .feature-title {

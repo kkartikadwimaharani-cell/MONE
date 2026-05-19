@@ -5,13 +5,14 @@
   margin-left: auto;
   margin-right: auto;
   background: var(--glass);
-  border: 1px solid rgba(204,0,0,0.6);
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,0,40,0.22);
+  border-radius: 10px;
   padding: 22px 18px 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(204,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
+  transform: none;
 }
 
 .card > * {
@@ -20,21 +21,7 @@
 }
 
 .card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.6;
-  background:
-    linear-gradient(var(--red), var(--red)) top left / 2px 12px no-repeat,
-    linear-gradient(var(--red), var(--red)) top left / 12px 2px no-repeat,
-    linear-gradient(var(--red), var(--red)) top right / 2px 12px no-repeat,
-    linear-gradient(var(--red), var(--red)) top right / 12px 2px no-repeat,
-    linear-gradient(var(--red), var(--red)) bottom left / 2px 12px no-repeat,
-    linear-gradient(var(--red), var(--red)) bottom left / 12px 2px no-repeat,
-    linear-gradient(var(--red), var(--red)) bottom right / 2px 12px no-repeat,
-    linear-gradient(var(--red), var(--red)) bottom right / 12px 2px no-repeat;
-  border-radius: var(--radius-lg);
+  display: none !important;
 }
 
 .card::after {
@@ -830,6 +817,8 @@ img.preview-thumb-fallback {
 .features-section {
   width: 92%;
   max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
   margin-top: 24px;
 }
 
@@ -837,6 +826,7 @@ img.preview-thumb-fallback {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  width: 100%;
 }
 
 .feature-card {
@@ -850,6 +840,7 @@ img.preview-thumb-fallback {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  transform: none;
 }
 
 .feature-card.cyber-badge:hover {
