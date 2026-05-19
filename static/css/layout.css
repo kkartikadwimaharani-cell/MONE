@@ -18,7 +18,7 @@
 /* ── HEADER ───────────────────────────────────── */
 .header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   width: 100%;
   max-width: 600px;
 }
@@ -137,7 +137,7 @@
 /* ── SECTION DIVIDER ──────────────────────────── */
 .section-divider-line {
   width: 92%;
-  max-width: 520px;
+  max-width: 560px;
   height: 1px;
   margin: 16px auto;
   background: linear-gradient(90deg, transparent, var(--red), transparent);
@@ -223,7 +223,7 @@
   margin-top: 20px;
   text-align: center;
   width: 92%;
-  max-width: 520px;
+  max-width: 560px;
 }
 
 .footer-warning {

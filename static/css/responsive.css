@@ -3,7 +3,7 @@
 /* Small phones override */
 @media (max-width: 380px) {
   .hero-title { font-size: 2.2rem; }
-  .card { padding: 18px 12px 22px; }
+  .card { padding: 18px 12px 20px; }
   .q-btn { padding: 7px 0; font-size: 0.72rem; letter-spacing: 0.08em; }
   .quality-row { gap: 4px; }
   .nav-brand { font-size: 1.2rem; }
@@ -96,7 +96,7 @@
 /* ── MOBILE RESPONSIVE ─── */
 @media (max-width: 640px) {
   .card {
-    width: 92%;
+    width: min(92vw, 560px);
     max-width: 560px;
   }
 }
@@ -104,12 +104,12 @@
 /* ── Mobile compact ─── */
 @media (max-width: 480px) {
   .hero-title { font-size: clamp(2.4rem, 10vw, 3.2rem); }
-  .card { padding: 20px 14px 24px; }
+  .card { padding: 22px 16px 22px; }
   .q-btn { padding: 8px 0; font-size: 0.78rem; }
   .quality-row { gap: 5px; }
   .social-grid { grid-template-columns: 1fr; }
   .features-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .feature-card { padding: 8px 6px; }
+  .feature-card { padding: 10px 6px; }
   .social-btn { padding: 10px 14px; font-size: 0.82rem; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .stats-title-main { font-size: 1.3rem; }
@@ -119,11 +119,19 @@
   .page { padding-bottom: 120px; }
 }
 
-/* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
+/* ══════════════════════════════════════════════════════
+   GLOBAL ANTI-OVERFLOW + MOBILE LAYOUT FIX
+   (must stay at very bottom to override everything)
+   ══════════════════════════════════════════════════════ */
+
 html, body {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 .page {
@@ -131,7 +139,13 @@ html, body {
   max-width: 100%;
 }
 
-/* Ensure all elements use border-box and no element exceeds viewport */
+/* Global child constraint */
+.page > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Ensure all inner elements use border-box */
 .card,
 .card *,
 .input-wrap,
@@ -157,38 +171,57 @@ html, body {
   min-width: 0;
 }
 
-/* ── Global child constraint ─── */
-.page > * {
-  max-width: 100%;
-  min-width: 0;
-}
-
-/* ── MOBILE LAYOUT FIX OVERRIDE (must stay at very bottom) ─── */
-html, body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden !important;
-}
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
+/* ── MOBILE MASTER OVERRIDE (max-width: 768px) ─── */
 @media (max-width: 768px) {
-  .card {
-    width: 92% !important;
+
+  /* 1. All main sections same width and centered */
+  .header,
+  .card,
+  .features-section,
+  .stats-section,
+  .social-section,
+  .footer-wrap,
+  .view-container {
+    width: min(92vw, 560px) !important;
     max-width: 560px !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    overflow: hidden !important;
   }
 
+  /* 2. Downloader card: compact, not too tall */
+  .card {
+    padding: 22px 16px !important;
+    height: auto !important;
+    min-height: unset !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  /* Remove double spacing from children since gap handles it */
+  .card > .quality-row {
+    margin-bottom: 0 !important;
+  }
+  .card > .dl-wrap {
+    margin-top: 0 !important;
+  }
+  .card > .preview-card {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .card > .input-wrap {
+    margin-bottom: 0 !important;
+  }
+
+  /* 3. Quality buttons: 4 columns, fit in card, no overflow */
   .quality-row {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 6px !important;
+    gap: 10px !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
   }
 
   .quality-row button,
@@ -196,11 +229,14 @@ html, body {
     width: 100% !important;
     min-width: 0 !important;
     overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
+  /* 4. Input, preview, download button: full width aligned */
   .input-wrap,
   .url-input,
   .preview-card,
+  .dl-wrap,
   .dl-btn,
   .progress-bar-wrap,
   .progress-bar-track {
@@ -209,13 +245,14 @@ html, body {
     min-width: 0 !important;
   }
 
+  /* 5. Preview card: compact thumbnail, no overflow */
   .preview-card {
     overflow: hidden !important;
   }
 
   .preview-thumb {
-    width: 86px !important;
-    height: 86px !important;
+    width: 96px !important;
+    height: 96px !important;
     flex-shrink: 0 !important;
     object-fit: cover !important;
   }
@@ -253,32 +290,15 @@ html, body {
     overflow: hidden !important;
   }
 
-  .features-section,
-  .stats-section,
-  .social-section {
-    width: 92% !important;
-    max-width: 560px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+  /* 6. Status message: compact, no extra height */
+  .status {
+    margin-top: 4px !important;
+    font-size: 14px !important;
+    min-height: unset !important;
+    padding: 0 !important;
   }
 
-  .view-container {
-    width: 92% !important;
-    max-width: 560px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  .control-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-
+  /* 7. Features grid: 2 columns, equal height, center content */
   .features-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
@@ -291,5 +311,40 @@ html, body {
     justify-content: center !important;
     text-align: center !important;
     min-height: 80px !important;
+    padding: 12px 6px !important;
+  }
+
+  .feature-card .feature-title {
+    white-space: nowrap !important;
+  }
+
+  /* Hide description on mobile if any */
+  .feature-card .feature-desc {
+    display: none !important;
+  }
+
+  /* 8. Control panel / Stats section: same width, spacing */
+  .stats-section {
+    margin-top: 28px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .control-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* 9. Hero spacing: reduce gap between hero and downloader */
+  .header {
+    margin-bottom: 18px !important;
+  }
+
+  /* Page bottom padding for browser bottom bar */
+  .page {
+    padding-bottom: 120px !important;
   }
 }
