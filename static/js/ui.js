@@ -78,9 +78,9 @@ function hidePreview() {
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
-    'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'WA STATUS CONVERTER IS UNDER DEVELOPMENT.' },
-    'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'STATUS SPLITTER IS UNDER DEVELOPMENT.' },
-    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'CAPTION COPY TOOL IS UNDER DEVELOPMENT.' },
+    'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
+    'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
+    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
     'store': { type: 'store' },
     'control': { type: 'control' },
     'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'SERVER MONITORING DASHBOARD IS UNDER DEVELOPMENT.' },
