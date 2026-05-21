@@ -281,15 +281,54 @@ function hidePreview() {
     }
   });
 
-  // Wire up drawer items with data-view
-  document.addEventListener('DOMContentLoaded', function() {
-    var items = document.querySelectorAll('.side-drawer .drawer-item[data-view]');
-    items.forEach(function(item) {
-      item.addEventListener('click', function(e) {
+  // Feature mapping for Coming Soon items
+  var featureMap = {
+    'wa-status': { title: 'WA STATUS CONVERTER', description: 'Convert video to WhatsApp Status ready format.' },
+    'status-splitter': { title: 'STATUS SPLITTER', description: 'Split long videos into WhatsApp Status parts.' },
+    'caption-copier': { title: 'CAPTION COPIER', description: 'Caption copy tool is under development.' }
+  };
+
+  // Wire up drawer items using event delegation on the drawer (robust on mobile)
+  var sideDrawer = document.getElementById('sideDrawer');
+  if (sideDrawer) {
+    sideDrawer.addEventListener('click', function(e) {
+      var item = e.target.closest('.drawer-item[data-view]');
+      if (!item) return;
+
+      var feature = item.getAttribute('data-feature');
+      var view = item.getAttribute('data-view');
+
+      // If item has data-feature, use featureMap for Coming Soon
+      if (feature && featureMap[feature]) {
         e.preventDefault();
-        var view = item.getAttribute('data-view');
+        if (window._closeDrawer) window._closeDrawer();
+
+        var viewDownloader = document.getElementById('viewDownloader');
+        var viewComingSoon = document.getElementById('viewComingSoon');
+        var viewStore = document.getElementById('viewStore');
+        var viewControl = document.getElementById('viewControl');
+
+        if (viewDownloader) viewDownloader.style.display = 'none';
+        if (viewComingSoon) viewComingSoon.style.display = 'none';
+        if (viewStore) viewStore.style.display = 'none';
+        if (viewControl) viewControl.style.display = 'none';
+
+        var fm = featureMap[feature];
+        renderComingSoon(fm.title, 'COMING SOON', fm.description);
+        if (viewComingSoon) viewComingSoon.style.display = '';
+
+        currentView = view;
+        updateDrawerActive(view);
+        history.pushState({ view: view }, '', '');
+        window.scrollTo(0, 0);
+        return;
+      }
+
+      // Default: use navigateTo for non-feature items
+      if (view) {
+        e.preventDefault();
         navigateTo(view);
-      });
+      }
     });
-  });
+  }
 })();
