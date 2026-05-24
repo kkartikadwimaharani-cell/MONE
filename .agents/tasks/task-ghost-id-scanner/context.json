@@ -1,0 +1,24 @@
+{
+  "project_type": "Python Flask web app (TikTok downloader) with Jinja2 templates",
+  "language": "Python (backend), HTML/CSS/JS (frontend)",
+  "build_system": "pip + Docker (gunicorn). Deployed on Railway.",
+  "test_framework": "No formal test framework. Manual verification via Docker build and runtime testing.",
+  "build_command": "docker build -t miitokk:test .",
+  "test_command": "python -c \"import app\" (basic import check - no pytest suite)",
+  "verification_instructions": "1. docker build -t miitokk:test . 2. docker run --rm -p 8080:8080 miitokk:test (manual check) 3. Verify app.py imports cleanly 4. Verify index.html renders without errors",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET - full network access. Python 3.11 available via pyenv. Docker available.",
+  "contribution_requirements": "No CONTRIBUTING.md. Key constraints from user: do not break TikTok Downloader, do not change download routes, keep navbar/stats/footer, ensure Railway deploy compatibility, ensure Cloudflare proxy compatibility.",
+  "key_patterns": "Flask app in app.py with routes. Single page app in templates/index.html. CSS split across static/css/ (variables, base, layout, components, animations, drawer, responsive). JS split across static/js/ (config, ui, downloader, photo, effects, main, analytics). Dark theme with red glow cyber aesthetic. Uses CSS variables from variables.css. Components follow .card pattern with glass background and red borders.",
+  "relevant_files": [
+    "app.py",
+    "templates/index.html",
+    "static/css/components.css",
+    "static/css/responsive.css",
+    "static/css/variables.css",
+    "static/js/main.js",
+    "requirements.txt"
+  ],
+  "directory_structure": "Root: app.py (Flask), analytics.py (analytics module), templates/ (Jinja2 HTML), static/css/ (7 CSS files), static/js/ (7 JS files), static/img/ (owner.png), static/icons/ (.gitkeep). Deployment: Dockerfile, Procfile, nixpacks.toml, requirements.txt."
+}

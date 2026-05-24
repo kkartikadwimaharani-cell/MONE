@@ -702,8 +702,17 @@ img.preview-thumb-fallback {
   box-shadow: 0 0 16px rgba(204,0,0,0.4);
 }
 
-/* ── SOCIAL SECTION ───────────────────────────── */
-.social-section {
+/* ── SHARED UTILITY ────────────────────────────── */
+.cyber-line-short {
+  display: inline-block;
+  width: 28px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  opacity: 0.6;
+}
+
+/* ── GHOST SCANNER SECTION ─────────────────────── */
+.ghost-scanner-section {
   width: 92%;
   max-width: 560px;
   margin-top: 28px;
@@ -713,9 +722,10 @@ img.preview-thumb-fallback {
   background: rgba(6,2,2,0.5);
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-md);
+  animation: ghostScanPulse 3s ease-in-out infinite;
 }
 
-.social-section::before {
+.ghost-scanner-section::before {
   content: '';
   position: absolute;
   top: 0;
@@ -725,7 +735,7 @@ img.preview-thumb-fallback {
   background: linear-gradient(90deg, transparent, rgba(204,0,0,0.5), transparent);
 }
 
-.social-title {
+.ghost-scanner-title {
   font-family: var(--font-logo);
   font-size: 1.1rem;
   letter-spacing: 0.3em;
@@ -738,79 +748,101 @@ img.preview-thumb-fallback {
   margin-bottom: 14px;
 }
 
-.cyber-line-short {
-  display: inline-block;
-  width: 28px;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent, var(--red), transparent);
-  opacity: 0.6;
+.ghost-scanner-card {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(204,0,0,0.25);
+  border-radius: var(--radius-sm);
+  padding: 16px 14px;
+  text-align: left;
 }
 
-.social-grid {
+.ghost-scanner-loading {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.ghost-loading-text {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--red);
+  text-shadow: 0 0 6px rgba(204,0,0,0.4);
+}
+
+.ghost-blink-dots {
+  animation: ghostBlink 1s steps(2, start) infinite;
+}
+
+.ghost-scanner-results {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.social-btn {
+.ghost-scan-line {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  font-family: var(--font-body);
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
   font-weight: 600;
-  font-size: 0.84rem;
+  letter-spacing: 0.08em;
   color: var(--silver);
-  background: rgba(0,0,0,0.4);
-  border: 1px solid var(--hud-border);
-  transition: all var(--duration-normal) var(--ease-out);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(204,0,0,0.08);
 }
 
-.social-btn:hover {
-  border-color: rgba(204,0,0,0.7);
-  transform: translateY(-2px);
-  color: var(--white);
+.ghost-scan-line:last-child {
+  border-bottom: none;
 }
 
-.social-btn svg {
-  width: 22px;
-  height: 22px;
+.ghost-label {
+  min-width: 100px;
+  color: var(--silver-dim);
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  text-align: left;
   flex-shrink: 0;
 }
 
-/* Platform-specific hover glow */
-.social-btn.instagram:hover {
-  box-shadow: 0 4px 16px rgba(225,48,108,0.25);
+.ghost-separator {
+  color: rgba(204,0,0,0.5);
+  margin: 0 4px;
 }
 
-.social-btn.instagram svg {
-  color: #e1306c;
+.ghost-value {
+  color: var(--white);
+  word-break: break-all;
 }
 
-.social-btn.telegram:hover {
-  box-shadow: 0 4px 16px rgba(0,136,204,0.25);
+.ghost-risk-high {
+  color: #ff4444 !important;
+  text-shadow: 0 0 6px rgba(255,0,0,0.4);
 }
 
-.social-btn.telegram svg {
-  color: #0088cc;
+.ghost-risk-low {
+  color: #44ff88 !important;
+  text-shadow: 0 0 6px rgba(0,255,100,0.4);
 }
 
-.social-btn.whatsapp:hover {
-  box-shadow: 0 4px 16px rgba(37,211,102,0.25);
+.ghost-scanner-note {
+  margin-top: 12px;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  color: var(--silver-dim);
+  text-align: center;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
 }
 
-.social-btn.whatsapp svg {
-  color: #25d366;
+@keyframes ghostBlink {
+  to { visibility: hidden; }
 }
 
-.social-btn.store:hover {
-  box-shadow: 0 4px 16px rgba(204,0,0,0.25);
-}
-
-.social-btn.store svg {
-  color: #cc0000;
+@keyframes ghostScanPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(204,0,0,0.1); }
+  50% { box-shadow: 0 0 12px rgba(204,0,0,0.25), 0 0 4px rgba(204,0,0,0.1); }
 }
 
 /* ── FEATURES SECTION ─────────────────────────── */

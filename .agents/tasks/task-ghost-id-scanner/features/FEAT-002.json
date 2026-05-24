@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Address semantic review issues: rate limiting, vpnapi.io caching, privacy note accuracy, error logging, dead CSS cleanup",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Add rate limiting to /api/ghost-scan using _check_rate_limit infrastructure with a new _rate_store_ghost dict and 2-second limit",
+    "Step 2 - Add in-memory cache for vpnapi.io responses keyed on IP with 60-second TTL",
+    "Step 3 - Update privacy note in templates/index.html to disclose third-party VPN detection service",
+    "Step 4 - Replace bare except Exception in ghost_scan with app.logger.warning for operational visibility",
+    "Step 5 - Remove dead .social-section, .social-grid, .social-btn rules from static/css/responsive.css"
+  ],
+  "acceptance_criteria": [
+    "/api/ghost-scan returns 429 when called faster than 2 seconds per IP",
+    "Repeated requests from the same IP within 60s do not call vpnapi.io again",
+    "Privacy note mentions third-party service for VPN detection",
+    "vpnapi.io failures are logged via app.logger.warning",
+    "No .social-section, .social-grid, or .social-btn rules remain in responsive.css"
+  ],
+  "verification": [
+    "Run: python -c \"import app; print('OK')\" to verify no import errors",
+    "Run: grep -n 'rate_store_ghost' app.py to confirm rate limiting added",
+    "Run: grep -n '_ghost_vpn_cache' app.py to confirm caching added",
+    "Run: grep -n 'app.logger.warning' app.py to confirm logging in ghost_scan",
+    "Run: grep -n 'pihak ketiga' templates/index.html to confirm privacy note updated",
+    "Run: grep -c 'social-section\\|social-grid\\|social-btn' static/css/responsive.css to confirm dead rules removed (should be 0)"
+  ],
+  "blocked_reason": null,
+  "findings": "All 5 review issues addressed. Docker build passes. App imports cleanly. Rate limiting uses existing _check_rate_limit with 2s cooldown. Cache uses in-memory dict with 60s TTL. Error logging uses app.logger.warning. Privacy note updated to Indonesian disclosing third-party VPN service. Dead social-section/social-grid/social-btn CSS removed from responsive.css."
+}

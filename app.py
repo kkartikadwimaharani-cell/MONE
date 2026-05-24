@@ -32,9 +32,17 @@ _rate_store_download = {}  # {ip: last_request_timestamp} for /download
 _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
 _rate_store_track = {}     # {ip: last_request_timestamp} for /track
+_rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
+RATE_LIMIT_GHOST_SECONDS = 2  # Allow 1 request per 2 seconds per IP for ghost-scan
+
+# ---------------------------------------------------------------------------
+# vpnapi.io response cache
+# ---------------------------------------------------------------------------
+_ghost_vpn_cache = {}  # {ip: (timestamp, result_dict)}
+GHOST_CACHE_TTL = 60  # seconds
 
 
 def _check_rate_limit(ip, store, limit_seconds=None):
@@ -193,6 +201,110 @@ def track():
 @app.route('/stats')
 def stats():
     return jsonify(analytics.get_stats())
+
+
+@app.route('/api/ghost-scan')
+def ghost_scan():
+    # Read visitor IP: CF-Connecting-IP > X-Forwarded-For > remote_addr
+    ip = request.headers.get('CF-Connecting-IP')
+    if not ip:
+        forwarded = request.headers.get('X-Forwarded-For', '')
+        ip = forwarded.split(',')[0].strip() if forwarded else ''
+    if not ip:
+        ip = request.remote_addr or 'Unknown'
+
+    # Rate limiting
+    if not _check_rate_limit(ip, _rate_store_ghost, RATE_LIMIT_GHOST_SECONDS):
+        return jsonify({'error': 'Too many requests'}), 429
+
+    # Read country from Cloudflare header
+    country = request.headers.get('CF-IPCountry', 'Unknown')
+
+    # Parse User-Agent to short browser/platform format
+    ua = request.headers.get('User-Agent', '')
+    browser = 'Unknown'
+    if ua:
+        # Detect browser
+        br = 'Unknown'
+        if 'Edg/' in ua or 'Edge/' in ua:
+            br = 'Edge'
+        elif 'OPR/' in ua or 'Opera' in ua:
+            br = 'Opera'
+        elif 'Chrome/' in ua and 'Safari/' in ua:
+            br = 'Chrome'
+        elif 'Firefox/' in ua:
+            br = 'Firefox'
+        elif 'Safari/' in ua:
+            br = 'Safari'
+        # Detect platform
+        plat = 'Unknown'
+        if 'Android' in ua:
+            plat = 'Android'
+        elif 'iPhone' in ua or 'iPad' in ua:
+            plat = 'iOS'
+        elif 'Windows' in ua:
+            plat = 'Windows'
+        elif 'Mac OS' in ua or 'Macintosh' in ua:
+            plat = 'macOS'
+        elif 'Linux' in ua:
+            plat = 'Linux'
+        browser = f'{br} / {plat}'
+
+    # Read primary language from Accept-Language
+    accept_lang = request.headers.get('Accept-Language', '')
+    language = 'Unknown'
+    if accept_lang:
+        # Extract first language tag (before any comma or semicolon)
+        lang_part = accept_lang.split(',')[0].split(';')[0].strip()
+        if lang_part:
+            language = lang_part
+
+    # VPN detection via vpnapi.io (with in-memory cache)
+    vpn_status = 'Basic Scan Only'
+    risk_level = 'UNKNOWN'
+    vpnapi_key = os.environ.get('VPNAPI_KEY')
+    if vpnapi_key:
+        # Check cache first
+        now = time.time()
+        cached = _ghost_vpn_cache.get(ip)
+        if cached and (now - cached[0]) < GHOST_CACHE_TTL:
+            vpn_status = cached[1]['vpn_status']
+            risk_level = cached[1]['risk_level']
+        else:
+            try:
+                vpn_resp = requests_lib.get(
+                    f'https://vpnapi.io/api/{ip}?key={vpnapi_key}',
+                    timeout=5
+                )
+                vpn_data = vpn_resp.json()
+                security = vpn_data.get('security', {})
+                is_vpn = security.get('vpn', False)
+                is_proxy = security.get('proxy', False)
+                is_tor = security.get('tor', False)
+                if is_vpn or is_proxy or is_tor:
+                    vpn_status = 'VPN / Proxy Detected'
+                    risk_level = 'HIGH'
+                else:
+                    vpn_status = 'No VPN Detected'
+                    risk_level = 'LOW'
+                # Store in cache (cap at 1000 entries to bound memory)
+                if len(_ghost_vpn_cache) >= 1000:
+                    _ghost_vpn_cache.clear()
+                _ghost_vpn_cache[ip] = (now, {'vpn_status': vpn_status, 'risk_level': risk_level})
+            except Exception as e:
+                app.logger.warning('vpnapi.io request failed for ip=%s: %s', ip, e)
+                vpn_status = 'Scan Failed'
+                risk_level = 'UNKNOWN'
+
+    return jsonify({
+        'ip': ip,
+        'country': country,
+        'browser': browser,
+        'language': language,
+        'vpn_status': vpn_status,
+        'risk_level': risk_level,
+        'scan_mode': 'MI NETWORK OBSERVATION'
+    })
 
 
 @app.route('/admin-stats')

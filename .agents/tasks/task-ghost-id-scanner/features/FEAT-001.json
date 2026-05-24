@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add Ghost ID Scanner backend endpoint and replace CONNECT section in frontend with Ghost ID Scanner card",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Backend: Add a new Flask route GET /api/ghost-scan in app.py. This endpoint must: (a) Read visitor IP using CF-Connecting-IP header first, then X-Forwarded-For, then request.remote_addr. (b) Read CF-IPCountry header for country. (c) Read User-Agent header and shorten to browser/platform format (e.g. 'Chrome / Android'). (d) Read Accept-Language header and extract primary language tag. (e) Check os.environ for VPNAPI_KEY. If present, call https://vpnapi.io/api/{ip}?key={VPNAPI_KEY} and parse security.vpn, security.proxy, security.tor from response. If any is true: vpn_status='VPN / Proxy Detected', risk_level='HIGH'. If all false: vpn_status='No VPN Detected', risk_level='LOW'. If API errors: vpn_status='Scan Failed', risk_level='UNKNOWN'. If VPNAPI_KEY env var not set: vpn_status='Basic Scan Only', risk_level='UNKNOWN'. (f) Return JSON with keys: ip, country, browser, language, vpn_status, risk_level, scan_mode ('MI NETWORK OBSERVATION'). Place this route after the /stats route and before the /admin-stats route in app.py.",
+    "Step 2 - Frontend HTML: In templates/index.html, remove the entire <section class='social-section'>...</section> block (the CONNECT section with Instagram, Telegram, WhatsApp, Lynk.id Store links). Replace it with a new section for the Ghost ID Scanner card. The new section should use class 'ghost-scanner-section' with similar width/margin pattern as social-section (width:92%, max-width:560px, margin-top:28px). Inside, create a card with terminal/cyber dashboard style showing: title 'GHOST ID SCANNER', a loading state area, scan result lines (IP ADDRESS, COUNTRY, BROWSER, LANGUAGE, VPN STATUS, RISK LEVEL, SCAN MODE), and a small privacy note at the bottom.",
+    "Step 3 - Frontend CSS: Add styles for the ghost-scanner section in static/css/components.css. Follow the existing dark theme: use var(--glass) background, var(--hud-border) borders, var(--red) accents, monospace/Rajdhani fonts for terminal feel. Add a subtle scan animation (pulsing border or scanline). Style the loading state with blinking dots. Add responsive rules in static/css/responsive.css for the ghost-scanner card (same width constraints as social-section).",
+    "Step 4 - Frontend JS: Add a new file static/js/ghost-scanner.js that: (a) On DOMContentLoaded, shows loading messages in sequence ('Scanning identity...', 'Checking VPN tunnel...', 'Analyzing fingerprint...' with ~800ms delay between each). (b) Fetches GET /api/ghost-scan. (c) On success, populates the scan result fields with response data. (d) On error, shows 'Scan Failed' message. Include this script in templates/index.html before the closing </body> tag, after analytics.js.",
+    "Step 5 - CSP Update: Update the Content-Security-Policy header in app.py's set_security_headers function to allow connect-src 'self' (it already does, so verify the /api/ghost-scan fetch will work under current CSP).",
+    "Step 6 - Requirements: Verify requests is already in requirements.txt (it is - confirmed). No changes needed."
+  ],
+  "acceptance_criteria": [
+    "The CONNECT section (social-section with Instagram, Telegram, WhatsApp, Lynk.id Store) is completely removed from index.html",
+    "A new GHOST ID SCANNER section appears in its place, styled with the dark/red cyber theme",
+    "GET /api/ghost-scan endpoint returns JSON with ip, country, browser, language, vpn_status, risk_level, scan_mode",
+    "The endpoint correctly reads CF-Connecting-IP, X-Forwarded-For, or remote_addr for IP",
+    "The endpoint handles VPNAPI_KEY presence/absence and API errors gracefully",
+    "The frontend auto-fetches /api/ghost-scan on page load and displays results",
+    "Loading animation shows sequential messages before data arrives",
+    "A privacy note is displayed below the scan results",
+    "The footer remains visible below the scanner section",
+    "The TikTok Downloader functionality is not affected",
+    "The navbar, stats section, and features section are not affected",
+    "The card is responsive on mobile (follows same width pattern as other sections)",
+    "docker build -t miitokk:test . succeeds"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/miitokk && python -c \"import app; print('OK')\" to verify no import errors",
+    "Run: docker build -t miitokk:test . to verify Docker build succeeds",
+    "Run: grep -n 'ghost-scan' app.py to confirm endpoint exists",
+    "Run: grep -n 'social-section' templates/index.html to confirm CONNECT section is removed (should return nothing)",
+    "Run: grep -n 'ghost-scanner' templates/index.html to confirm scanner section exists"
+  ],
+  "blocked_reason": null,
+  "findings": "All verification passed. Docker build succeeds. App imports cleanly. social-section fully removed from index.html. ghost-scanner section confirmed in place. ffmpeg missing on host is expected (only in Docker container)."
+}
