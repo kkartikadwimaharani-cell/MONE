@@ -100,3 +100,34 @@
     }
   }, { passive: true });
 })();
+
+/* ── ANIME SILHOUETTE AWAKE INTERACTION ───────── */
+(function() {
+  'use strict';
+
+  var silhouette = document.querySelector('.anime-body-silhouette');
+  if (!silhouette) return;
+
+  var awakeTimer = null;
+
+  function awakeSilhouette() {
+    if (awakeTimer) {
+      clearTimeout(awakeTimer);
+    }
+    silhouette.classList.add('is-awake');
+    awakeTimer = setTimeout(function() {
+      silhouette.classList.remove('is-awake');
+      awakeTimer = null;
+    }, 700);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, input, .modal, .side-drawer, .drawer-overlay')) return;
+    awakeSilhouette();
+  });
+
+  document.addEventListener('touchstart', function(e) {
+    if (e.target.closest('button, a, input, .modal, .side-drawer, .drawer-overlay')) return;
+    awakeSilhouette();
+  }, { passive: true });
+})();
