@@ -1,0 +1,14 @@
+{
+  "task_id": "task-ghost-id-scanner",
+  "task_description": "Replace the CONNECT section (Instagram, Telegram, WhatsApp, Lynk.id Store links) on the MI NETWORK homepage with a new GHOST ID SCANNER feature that displays visitor identity information (IP, country, browser, language, VPN status, risk level) fetched from a new Flask API endpoint.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "pass",
+    "summary": "Python import check passes, Docker build succeeds. All acceptance criteria met: CONNECT section removed, Ghost ID Scanner section added with proper styling, backend endpoint /api/ghost-scan implemented with IP/country/browser/language/VPN detection, frontend JS fetches and displays results with loading animation."
+  }
+}

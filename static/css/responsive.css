@@ -40,11 +40,7 @@
   .feature-icon svg { width: 24px; height: 24px; }
   .stats-section { max-width: 680px; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .social-section { max-width: 680px; }
   .ghost-scanner-section { max-width: 680px; }
-  .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .social-btn { padding: 12px 16px; font-size: 0.86rem; }
-  .social-btn svg { width: 24px; height: 24px; }
   .footer-wrap { max-width: 680px; }
   .section-divider-line { max-width: 680px; }
   .modal-backdrop.show { align-items: center; }
@@ -69,11 +65,7 @@
   .features-grid { gap: 14px; }
   .feature-card { padding: 16px 14px; }
   .stats-section { max-width: 800px; }
-  .social-section { max-width: 800px; }
   .ghost-scanner-section { max-width: 800px; }
-  .social-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .social-btn { padding: 14px 12px; flex-direction: column; text-align: center; gap: 8px; font-size: 0.78rem; }
-  .social-btn svg { width: 26px; height: 26px; }
   .footer-wrap { max-width: 800px; }
   .section-divider-line { max-width: 800px; }
   .view-container { max-width: 800px; }
@@ -89,7 +81,6 @@
   .card { max-width: 560px; padding: 44px 56px 52px; }
   .features-section { max-width: 1000px; }
   .stats-section { max-width: 1000px; }
-  .social-section { max-width: 1000px; }
   .ghost-scanner-section { max-width: 1000px; }
   .footer-wrap { max-width: 1000px; }
   .section-divider-line { max-width: 1000px; }
@@ -110,10 +101,8 @@
   .card { padding: 22px 16px 22px; }
   .q-btn { padding: 8px 0; font-size: 0.78rem; }
   .quality-row { gap: 5px; }
-  .social-grid { grid-template-columns: 1fr; }
   .features-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .feature-card { padding: 10px 6px; }
-  .social-btn { padding: 10px 14px; font-size: 0.82rem; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .stats-title-main { font-size: 1.3rem; }
   .mp3-btn { font-size: 0.58rem; }
@@ -194,7 +183,6 @@ html, body {
 .stats-section,
 .control-panel,
 .control-grid,
-.social-section,
 .ghost-scanner-section,
 .connect-section,
 .footer-wrap,

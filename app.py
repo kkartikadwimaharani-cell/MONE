@@ -32,9 +32,17 @@ _rate_store_download = {}  # {ip: last_request_timestamp} for /download
 _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
 _rate_store_track = {}     # {ip: last_request_timestamp} for /track
+_rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
+RATE_LIMIT_GHOST_SECONDS = 2  # Allow 1 request per 2 seconds per IP for ghost-scan
+
+# ---------------------------------------------------------------------------
+# vpnapi.io response cache
+# ---------------------------------------------------------------------------
+_ghost_vpn_cache = {}  # {ip: (timestamp, result_dict)}
+GHOST_CACHE_TTL = 60  # seconds
 
 
 def _check_rate_limit(ip, store, limit_seconds=None):
@@ -205,6 +213,10 @@ def ghost_scan():
     if not ip:
         ip = request.remote_addr or 'Unknown'
 
+    # Rate limiting
+    if not _check_rate_limit(ip, _rate_store_ghost, RATE_LIMIT_GHOST_SECONDS):
+        return jsonify({'error': 'Too many requests'}), 429
+
     # Read country from Cloudflare header
     country = request.headers.get('CF-IPCountry', 'Unknown')
 
@@ -247,30 +259,40 @@ def ghost_scan():
         if lang_part:
             language = lang_part
 
-    # VPN detection via vpnapi.io
+    # VPN detection via vpnapi.io (with in-memory cache)
     vpn_status = 'Basic Scan Only'
     risk_level = 'UNKNOWN'
     vpnapi_key = os.environ.get('VPNAPI_KEY')
     if vpnapi_key:
-        try:
-            vpn_resp = requests_lib.get(
-                f'https://vpnapi.io/api/{ip}?key={vpnapi_key}',
-                timeout=5
-            )
-            vpn_data = vpn_resp.json()
-            security = vpn_data.get('security', {})
-            is_vpn = security.get('vpn', False)
-            is_proxy = security.get('proxy', False)
-            is_tor = security.get('tor', False)
-            if is_vpn or is_proxy or is_tor:
-                vpn_status = 'VPN / Proxy Detected'
-                risk_level = 'HIGH'
-            else:
-                vpn_status = 'No VPN Detected'
-                risk_level = 'LOW'
-        except Exception:
-            vpn_status = 'Scan Failed'
-            risk_level = 'UNKNOWN'
+        # Check cache first
+        now = time.time()
+        cached = _ghost_vpn_cache.get(ip)
+        if cached and (now - cached[0]) < GHOST_CACHE_TTL:
+            vpn_status = cached[1]['vpn_status']
+            risk_level = cached[1]['risk_level']
+        else:
+            try:
+                vpn_resp = requests_lib.get(
+                    f'https://vpnapi.io/api/{ip}?key={vpnapi_key}',
+                    timeout=5
+                )
+                vpn_data = vpn_resp.json()
+                security = vpn_data.get('security', {})
+                is_vpn = security.get('vpn', False)
+                is_proxy = security.get('proxy', False)
+                is_tor = security.get('tor', False)
+                if is_vpn or is_proxy or is_tor:
+                    vpn_status = 'VPN / Proxy Detected'
+                    risk_level = 'HIGH'
+                else:
+                    vpn_status = 'No VPN Detected'
+                    risk_level = 'LOW'
+                # Store in cache
+                _ghost_vpn_cache[ip] = (now, {'vpn_status': vpn_status, 'risk_level': risk_level})
+            except Exception as e:
+                app.logger.warning('vpnapi.io request failed for ip=%s: %s', ip, e)
+                vpn_status = 'Scan Failed'
+                risk_level = 'UNKNOWN'
 
     return jsonify({
         'ip': ip,
