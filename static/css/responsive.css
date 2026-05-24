@@ -113,29 +113,23 @@
 
 /* ── ANIME SILHOUETTE RESPONSIVE ─── */
 
-/* Mobile default: smaller silhouette, center-right */
-.anime-body-silhouette {
-  width: 220px;
-  height: 400px;
-  right: -5%;
-  opacity: 0.12;
-}
-
-@media (min-width: 480px) {
+/* Mobile: clearly visible */
+@media (max-width: 768px) {
   .anime-body-silhouette {
-    width: 260px;
-    height: 450px;
-    right: 2%;
-    opacity: 0.14;
+    right: -35px !important;
+    top: 170px !important;
+    width: 280px !important;
+    height: 460px !important;
+    opacity: 0.42 !important;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   .anime-body-silhouette {
     width: 320px;
     height: 540px;
-    right: 5%;
-    opacity: 0.16;
+    right: 0;
+    opacity: 0.38;
   }
 }
 
@@ -143,8 +137,8 @@
   .anime-body-silhouette {
     width: 400px;
     height: 660px;
-    right: 8%;
-    opacity: 0.18;
+    right: 5%;
+    opacity: 0.36;
   }
 }
 
@@ -152,8 +146,8 @@
   .anime-body-silhouette {
     width: 460px;
     height: 740px;
-    right: 12%;
-    opacity: 0.2;
+    right: 10%;
+    opacity: 0.34;
   }
 }
 
