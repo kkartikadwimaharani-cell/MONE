@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Address semantic review issues: rate limiting, vpnapi.io caching, privacy note accuracy, error logging, dead CSS cleanup",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Add rate limiting to /api/ghost-scan using _check_rate_limit infrastructure with a new _rate_store_ghost dict and 2-second limit",
     "Step 2 - Add in-memory cache for vpnapi.io responses keyed on IP with 60-second TTL",
@@ -26,5 +26,5 @@
     "Run: grep -c 'social-section\\|social-grid\\|social-btn' static/css/responsive.css to confirm dead rules removed (should be 0)"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 5 review issues addressed. Docker build passes. App imports cleanly. Rate limiting uses existing _check_rate_limit with 2s cooldown. Cache uses in-memory dict with 60s TTL. Error logging uses app.logger.warning. Privacy note updated to Indonesian disclosing third-party VPN service. Dead social-section/social-grid/social-btn CSS removed from responsive.css."
 }
