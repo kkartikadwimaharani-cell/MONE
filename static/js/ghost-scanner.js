@@ -28,7 +28,10 @@
 
     function fetchGhostScan() {
       fetch('/api/ghost-scan')
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+          if (!res.ok) throw new Error('Request failed');
+          return res.json();
+        })
         .then(function(data) {
           document.getElementById('ghostIp').textContent = data.ip || '-';
           document.getElementById('ghostCountry').textContent = data.country || '-';

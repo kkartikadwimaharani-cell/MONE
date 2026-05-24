@@ -287,7 +287,9 @@ def ghost_scan():
                 else:
                     vpn_status = 'No VPN Detected'
                     risk_level = 'LOW'
-                # Store in cache
+                # Store in cache (cap at 1000 entries to bound memory)
+                if len(_ghost_vpn_cache) >= 1000:
+                    _ghost_vpn_cache.clear()
                 _ghost_vpn_cache[ip] = (now, {'vpn_status': vpn_status, 'risk_level': risk_level})
             except Exception as e:
                 app.logger.warning('vpnapi.io request failed for ip=%s: %s', ip, e)
