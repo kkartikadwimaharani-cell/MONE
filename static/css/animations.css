@@ -84,15 +84,19 @@
 
 /* ── ANIME BODY SILHOUETTE ────────────────────── */
 
-@keyframes bodyFloat {
-  0% { transform: translate3d(0, -4px, 0) scale(1); }
-  50% { transform: translate3d(8px, 8px, 0) scale(1.02); }
-  100% { transform: translate3d(-6px, -2px, 0) scale(1); }
+@keyframes silhouetteFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 
-@keyframes eyeGlow {
-  0%, 100% { opacity: .45; box-shadow: 0 0 8px rgba(255,0,40,.5); }
-  50% { opacity: 1; box-shadow: 0 0 18px rgba(255,0,40,.9); }
+@keyframes silhouetteSway {
+  0%, 100% { margin-right: 0; }
+  50% { margin-right: 8px; }
+}
+
+@keyframes eyePulse {
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 8px #ff0033, 0 0 16px rgba(255,0,51,.4); }
+  50% { opacity: 1; box-shadow: 0 0 18px #ff0033, 0 0 36px rgba(255,0,51,.7); }
 }
 
 @keyframes auraPulse {
@@ -102,15 +106,16 @@
 
 .anime-body-silhouette {
   position: fixed;
-  top: 50%;
-  right: 5%;
-  transform: translateY(-50%);
+  right: -20px;
+  top: 210px;
   width: 260px;
-  height: 480px;
-  z-index: 0;
+  height: 420px;
+  z-index: 1;
   pointer-events: none;
-  opacity: 0.15;
-  animation: bodyFloat 8s ease-in-out infinite;
+  opacity: 0.38;
+  display: block !important;
+  visibility: visible !important;
+  animation: silhouetteFloat 8s ease-in-out infinite, silhouetteSway 12s ease-in-out infinite;
 }
 
 .anime-body-silhouette .body-aura {
@@ -120,7 +125,9 @@
   width: 80%;
   height: 85%;
   border-radius: 50% 50% 40% 40%;
-  background: radial-gradient(ellipse at center, rgba(180,0,20,0.25) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(255,0,40,.45) 0%, transparent 70%);
+  border: 2px solid rgba(255,0,40,.45);
+  box-shadow: 0 0 30px rgba(255,0,40,.25), inset 0 0 20px rgba(255,0,40,.15);
   animation: auraPulse 6s ease-in-out infinite;
 }
 
@@ -132,7 +139,9 @@
   width: 72px;
   height: 88px;
   border-radius: 50% 50% 46% 46%;
-  background: rgba(10,0,0,0.85);
+  background: rgba(20,0,5,.75);
+  box-shadow: 0 0 15px rgba(255,0,40,.3), 0 0 5px rgba(255,0,40,.2);
+  border: 1px solid rgba(255,0,40,.25);
 }
 
 .anime-body-silhouette .body-hair {
@@ -140,7 +149,7 @@
   top: 4%;
   width: 40px;
   height: 160px;
-  background: rgba(10,0,0,0.75);
+  background: rgba(20,0,5,.75);
 }
 
 .anime-body-silhouette .body-hair.hair-left {
@@ -162,7 +171,7 @@
   transform: translateX(-50%);
   width: 28px;
   height: 30px;
-  background: rgba(10,0,0,0.7);
+  background: rgba(20,0,5,.75);
   border-radius: 4px;
 }
 
@@ -173,8 +182,10 @@
   transform: translateX(-50%);
   width: 160px;
   height: 50px;
-  background: rgba(10,0,0,0.75);
+  background: rgba(20,0,5,.75);
   border-radius: 50% 50% 10% 10%;
+  box-shadow: 0 0 10px rgba(255,0,40,.2);
+  border: 1px solid rgba(255,0,40,.15);
 }
 
 .anime-body-silhouette .body-torso {
@@ -184,18 +195,21 @@
   transform: translateX(-50%);
   width: 120px;
   height: 240px;
-  background: rgba(10,0,0,0.8);
+  background: rgba(20,0,5,.75);
   border-radius: 10% 10% 30% 30%;
+  box-shadow: 0 0 10px rgba(255,0,40,.2);
+  border: 1px solid rgba(255,0,40,.15);
 }
 
 .anime-body-silhouette .body-eye {
   position: absolute;
   top: 14%;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(255,0,40,0.7);
-  animation: eyeGlow 3s ease-in-out infinite;
+  background: #ff0033;
+  box-shadow: 0 0 12px #ff0033, 0 0 24px rgba(255,0,51,.6);
+  animation: eyePulse 3s ease-in-out infinite;
 }
 
 .anime-body-silhouette .body-eye.eye-left {
@@ -218,15 +232,27 @@
 }
 
 /* Ensure content stays above silhouette */
+.site-header,
+.hero,
 .header,
 .card,
+.downloader-card,
+.control-panel,
 .drawer,
 .features-section,
 .stats-section,
 .ghost-scanner-section,
-.footer-wrap {
+.footer-wrap,
+.footer {
   position: relative;
-  z-index: 2;
+  z-index: 3;
+}
+
+/* Background layers below silhouette */
+body::before,
+body::after,
+.background-layer {
+  z-index: 0;
 }
 
 /* ── REDUCED MOTION ───────────────────────────── */
@@ -252,6 +278,6 @@
   .anime-body-silhouette,
   .anime-body-silhouette .body-eye,
   .anime-body-silhouette .body-aura {
-    animation: none;
+    animation: none !important;
   }
 }
