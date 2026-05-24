@@ -111,6 +111,52 @@
   .page { padding-bottom: 120px; }
 }
 
+/* ── ANIME SILHOUETTE RESPONSIVE ─── */
+
+/* Mobile default: smaller silhouette, center-right */
+.anime-body-silhouette {
+  width: 220px;
+  height: 400px;
+  right: -5%;
+  opacity: 0.12;
+}
+
+@media (min-width: 480px) {
+  .anime-body-silhouette {
+    width: 260px;
+    height: 450px;
+    right: 2%;
+    opacity: 0.14;
+  }
+}
+
+@media (min-width: 768px) {
+  .anime-body-silhouette {
+    width: 320px;
+    height: 540px;
+    right: 5%;
+    opacity: 0.16;
+  }
+}
+
+@media (min-width: 1024px) {
+  .anime-body-silhouette {
+    width: 400px;
+    height: 660px;
+    right: 8%;
+    opacity: 0.18;
+  }
+}
+
+@media (min-width: 1440px) {
+  .anime-body-silhouette {
+    width: 460px;
+    height: 740px;
+    right: 12%;
+    opacity: 0.2;
+  }
+}
+
 /* ══════════════════════════════════════════════════════
    GLOBAL ANTI-OVERFLOW + MOBILE LAYOUT FIX
    (must stay at very bottom to override everything)

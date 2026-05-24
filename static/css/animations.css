@@ -82,6 +82,153 @@
   100% { transform: translateX(100%); }
 }
 
+/* ── ANIME BODY SILHOUETTE ────────────────────── */
+
+@keyframes bodyFloat {
+  0% { transform: translate3d(0, -4px, 0) scale(1); }
+  50% { transform: translate3d(8px, 8px, 0) scale(1.02); }
+  100% { transform: translate3d(-6px, -2px, 0) scale(1); }
+}
+
+@keyframes eyeGlow {
+  0%, 100% { opacity: .45; box-shadow: 0 0 8px rgba(255,0,40,.5); }
+  50% { opacity: 1; box-shadow: 0 0 18px rgba(255,0,40,.9); }
+}
+
+@keyframes auraPulse {
+  0%, 100% { opacity: .08; transform: scale(1); }
+  50% { opacity: .18; transform: scale(1.04); }
+}
+
+.anime-body-silhouette {
+  position: fixed;
+  top: 50%;
+  right: 5%;
+  transform: translateY(-50%);
+  width: 260px;
+  height: 480px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.15;
+  animation: bodyFloat 8s ease-in-out infinite;
+}
+
+.anime-body-silhouette .body-aura {
+  position: absolute;
+  top: 5%;
+  left: 10%;
+  width: 80%;
+  height: 85%;
+  border-radius: 50% 50% 40% 40%;
+  background: radial-gradient(ellipse at center, rgba(180,0,20,0.25) 0%, transparent 70%);
+  animation: auraPulse 6s ease-in-out infinite;
+}
+
+.anime-body-silhouette .body-head {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 88px;
+  border-radius: 50% 50% 46% 46%;
+  background: rgba(10,0,0,0.85);
+}
+
+.anime-body-silhouette .body-hair {
+  position: absolute;
+  top: 4%;
+  width: 40px;
+  height: 160px;
+  background: rgba(10,0,0,0.75);
+}
+
+.anime-body-silhouette .body-hair.hair-left {
+  left: 22%;
+  border-radius: 60% 0 40% 60%;
+  transform: rotate(-4deg);
+}
+
+.anime-body-silhouette .body-hair.hair-right {
+  right: 22%;
+  border-radius: 0 60% 60% 40%;
+  transform: rotate(4deg);
+}
+
+.anime-body-silhouette .body-neck {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 30px;
+  background: rgba(10,0,0,0.7);
+  border-radius: 4px;
+}
+
+.anime-body-silhouette .body-shoulder {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 50px;
+  background: rgba(10,0,0,0.75);
+  border-radius: 50% 50% 10% 10%;
+}
+
+.anime-body-silhouette .body-torso {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 240px;
+  background: rgba(10,0,0,0.8);
+  border-radius: 10% 10% 30% 30%;
+}
+
+.anime-body-silhouette .body-eye {
+  position: absolute;
+  top: 14%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,0,40,0.7);
+  animation: eyeGlow 3s ease-in-out infinite;
+}
+
+.anime-body-silhouette .body-eye.eye-left {
+  left: 42%;
+}
+
+.anime-body-silhouette .body-eye.eye-right {
+  right: 42%;
+  animation-delay: 0.3s;
+}
+
+/* Awake state - triggered by tap/click */
+.anime-body-silhouette.is-awake .body-eye {
+  opacity: 1;
+  box-shadow: 0 0 22px rgba(255,0,40,1);
+}
+
+.anime-body-silhouette.is-awake .body-aura {
+  opacity: .3;
+}
+
+/* Ensure content stays above silhouette */
+.header,
+.card,
+.drawer,
+.features-section,
+.stats-section,
+.ghost-scanner-section,
+.footer-wrap {
+  position: relative;
+  z-index: 2;
+}
+
 /* ── REDUCED MOTION ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .control-badge-dot,
@@ -99,6 +246,12 @@
   }
 
   .hero-title::after {
+    animation: none;
+  }
+
+  .anime-body-silhouette,
+  .anime-body-silhouette .body-eye,
+  .anime-body-silhouette .body-aura {
     animation: none;
   }
 }
