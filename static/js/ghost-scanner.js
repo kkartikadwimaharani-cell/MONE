@@ -47,6 +47,8 @@
             riskEl.classList.add('ghost-risk-high');
           } else if (data.risk_level === 'LOW') {
             riskEl.classList.add('ghost-risk-low');
+          } else if (data.risk_level === 'UNKNOWN') {
+            riskEl.classList.add('ghost-risk-unknown');
           }
 
           loadingEl.style.display = 'none';
