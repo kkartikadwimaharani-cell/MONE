@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Redesign Ghost ID Scanner section with cyber card styling, fix footer, add subtitle, fix spacing, add badge styling for risk levels",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Update ghost-scanner-section HTML: add subtitle REAL-TIME PRIVACY OBSERVATION, change note text, ensure spacing after colon in scan lines",
+    "Step 2 - Update footer: remove footer-warning div, change year to 2026 and MII NETWORK to MI NETWORK",
+    "Step 3 - Update CSS in components.css: restyle ghost-scanner-section as dark transparent card with thin red border, red glow, rounded corners, proper padding. Style scan lines as flex with label/value layout. Add badge classes for risk levels.",
+    "Step 4 - Update responsive.css if needed for mobile ghost scanner"
+  ],
+  "acceptance_criteria": [
+    "Ghost scanner section has dark card styling with thin red border and red glow",
+    "Subtitle REAL-TIME PRIVACY OBSERVATION appears below title",
+    "Scan lines have proper spacing after colon (label left, value right)",
+    "Risk level badges: red for HIGH, green for LOW, yellow/gray for UNKNOWN",
+    "Footer shows MI NETWORK (c) 2026 - Free & No Watermark",
+    "Footer warning text Gunakan dengan bijak is removed",
+    "Note text is: Data scan hanya ditampilkan secara real-time di halaman ini.",
+    "Mobile responsive layout preserved"
+  ],
+  "verification": [
+    "Run: python -c \"import app; print('OK')\" to verify no import errors",
+    "Run: docker build -t miitokk:test . to verify Docker build succeeds",
+    "Run: grep -n '2026' templates/index.html to confirm year updated",
+    "Run: grep -c 'Gunakan dengan bijak' templates/index.html to confirm warning removed (should be 0)",
+    "Run: grep -n 'REAL-TIME PRIVACY OBSERVATION' templates/index.html to confirm subtitle added"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}
