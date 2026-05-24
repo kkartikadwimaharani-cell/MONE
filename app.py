@@ -195,6 +195,94 @@ def stats():
     return jsonify(analytics.get_stats())
 
 
+@app.route('/api/ghost-scan')
+def ghost_scan():
+    # Read visitor IP: CF-Connecting-IP > X-Forwarded-For > remote_addr
+    ip = request.headers.get('CF-Connecting-IP')
+    if not ip:
+        forwarded = request.headers.get('X-Forwarded-For', '')
+        ip = forwarded.split(',')[0].strip() if forwarded else ''
+    if not ip:
+        ip = request.remote_addr or 'Unknown'
+
+    # Read country from Cloudflare header
+    country = request.headers.get('CF-IPCountry', 'Unknown')
+
+    # Parse User-Agent to short browser/platform format
+    ua = request.headers.get('User-Agent', '')
+    browser = 'Unknown'
+    if ua:
+        # Detect browser
+        br = 'Unknown'
+        if 'Edg/' in ua or 'Edge/' in ua:
+            br = 'Edge'
+        elif 'OPR/' in ua or 'Opera' in ua:
+            br = 'Opera'
+        elif 'Chrome/' in ua and 'Safari/' in ua:
+            br = 'Chrome'
+        elif 'Firefox/' in ua:
+            br = 'Firefox'
+        elif 'Safari/' in ua:
+            br = 'Safari'
+        # Detect platform
+        plat = 'Unknown'
+        if 'Android' in ua:
+            plat = 'Android'
+        elif 'iPhone' in ua or 'iPad' in ua:
+            plat = 'iOS'
+        elif 'Windows' in ua:
+            plat = 'Windows'
+        elif 'Mac OS' in ua or 'Macintosh' in ua:
+            plat = 'macOS'
+        elif 'Linux' in ua:
+            plat = 'Linux'
+        browser = f'{br} / {plat}'
+
+    # Read primary language from Accept-Language
+    accept_lang = request.headers.get('Accept-Language', '')
+    language = 'Unknown'
+    if accept_lang:
+        # Extract first language tag (before any comma or semicolon)
+        lang_part = accept_lang.split(',')[0].split(';')[0].strip()
+        if lang_part:
+            language = lang_part
+
+    # VPN detection via vpnapi.io
+    vpn_status = 'Basic Scan Only'
+    risk_level = 'UNKNOWN'
+    vpnapi_key = os.environ.get('VPNAPI_KEY')
+    if vpnapi_key:
+        try:
+            vpn_resp = requests_lib.get(
+                f'https://vpnapi.io/api/{ip}?key={vpnapi_key}',
+                timeout=5
+            )
+            vpn_data = vpn_resp.json()
+            security = vpn_data.get('security', {})
+            is_vpn = security.get('vpn', False)
+            is_proxy = security.get('proxy', False)
+            is_tor = security.get('tor', False)
+            if is_vpn or is_proxy or is_tor:
+                vpn_status = 'VPN / Proxy Detected'
+                risk_level = 'HIGH'
+            else:
+                vpn_status = 'No VPN Detected'
+                risk_level = 'LOW'
+        except Exception:
+            vpn_status = 'Scan Failed'
+            risk_level = 'UNKNOWN'
+
+    return jsonify({
+        'ip': ip,
+        'country': country,
+        'browser': browser,
+        'language': language,
+        'vpn_status': vpn_status,
+        'risk_level': risk_level,
+        'scan_mode': 'MI NETWORK OBSERVATION'
+    })
+
+
 @app.route('/admin-stats')
 def admin_stats():
     # Token-based authentication

@@ -41,6 +41,7 @@
   .stats-section { max-width: 680px; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .social-section { max-width: 680px; }
+  .ghost-scanner-section { max-width: 680px; }
   .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .social-btn { padding: 12px 16px; font-size: 0.86rem; }
   .social-btn svg { width: 24px; height: 24px; }
@@ -69,6 +70,7 @@
   .feature-card { padding: 16px 14px; }
   .stats-section { max-width: 800px; }
   .social-section { max-width: 800px; }
+  .ghost-scanner-section { max-width: 800px; }
   .social-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .social-btn { padding: 14px 12px; flex-direction: column; text-align: center; gap: 8px; font-size: 0.78rem; }
   .social-btn svg { width: 26px; height: 26px; }
@@ -88,6 +90,7 @@
   .features-section { max-width: 1000px; }
   .stats-section { max-width: 1000px; }
   .social-section { max-width: 1000px; }
+  .ghost-scanner-section { max-width: 1000px; }
   .footer-wrap { max-width: 1000px; }
   .section-divider-line { max-width: 1000px; }
   .view-container { max-width: 1000px; }
@@ -192,6 +195,7 @@ html, body {
 .control-panel,
 .control-grid,
 .social-section,
+.ghost-scanner-section,
 .connect-section,
 .footer-wrap,
 .view-container {
