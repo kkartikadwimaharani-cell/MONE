@@ -439,7 +439,7 @@
   {% if initial_view %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      if (window.navigateTo) navigateTo('{{ initial_view }}', true);
+      if (window.navigateTo) navigateTo({{ initial_view | tojson }}, true);
     });
   </script>
   {% endif %}
