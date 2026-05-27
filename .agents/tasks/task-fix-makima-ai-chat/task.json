@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-makima-ai-chat",
+  "task_description": "Fix MAKIMA AI to respond properly via Gemini with history/memory context, add localStorage persistence, speaker TTS button, and clear memory button. Do NOT touch TikTok downloader code.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

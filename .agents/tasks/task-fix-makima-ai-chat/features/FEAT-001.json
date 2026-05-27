@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix MAKIMA AI backend to accept history context, return proper error JSON, and apply MAKIMA persona with conversation history to Gemini calls. Then fix the frontend to persist chat history in localStorage, send history to backend, add CLEAR MEMORY button, add speaker (TTS) button on AI bubbles, and prepare voice setting options for future Gemini TTS.",
+  "status": "in_progress",
+  "steps": [
+    "BACKEND - Fix /api/ai-chat endpoint in app.py (starting around line 1335):\n  1. Accept 'history' field from request JSON body (array of {role, text} objects)\n  2. Build Gemini conversation context: take last 10-20 messages from history, map role 'user' to 'user' and role 'assistant' to 'model' for Gemini content format\n  3. Use _gemini_model.generate_content() with the full contents array (history + current message) instead of just the single message string\n  4. On Gemini error, return {'error': 'descriptive message'} with appropriate HTTP status (500) instead of {'reply': 'error text'}. Log the full error with app.logger.error but never log or expose the API key.\n  5. If _gemini_model is None (no API key configured), return {'error': 'MAKIMA AI is not configured'} with 503 status.\n  6. Keep the existing rate limiting, message length validation, and empty message check (400).\n  7. The persona/system_instruction is already in the model config at module level - keep it as is but update the system_instruction text to match the user's specified persona exactly:\n     'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. Tetap sopan dan membantu. Jangan mengaku manusia. Jangan membahas API key atau sistem internal. Ingat informasi penting yang user berikan selama percakapan.'",
+
+    "FRONTEND - Rewrite static/js/makima-ai.js:\n  1. On page load / renderMakimaAI(): load history from localStorage key 'makima_ai_chat_history' (JSON array of {role, text} objects). Assign to _makimaChatHistory.\n  2. After every user message + AI reply, save _makimaChatHistory to localStorage.\n  3. In sendMakimaMessage(): send POST /api/ai-chat with body { message: '...', history: last20Messages } where last20Messages is the last 20 entries from _makimaChatHistory (before adding the current message).\n  4. Change role from 'ai' to 'assistant' in _makimaChatHistory entries for AI replies.\n  5. Handle backend response: if response has 'reply' field, show it. If response has 'error' field (no 'reply'), show the error in the error element, do NOT add a fake AI bubble.\n  6. Add a 'CLEAR MEMORY' button in the header area (after the online badge). When clicked, clear localStorage 'makima_ai_chat_history', reset _makimaChatHistory to [], and clear the messages container.\n  7. Add a small speaker button inside each AI bubble. When clicked, use Web Speech API (speechSynthesis) to read the bubble text aloud with lang='id-ID', rate=0.95, pitch=0.9. If already speaking, stop first.\n  8. Add a small stop button that appears while speaking, to cancel speechSynthesis.\n  9. Add a voice settings section (hidden/collapsed) in the header with options: Kore, Charon, Aoede, Sulafat, Achernar. Default: Kore. These are placeholders for future Gemini TTS - for now they are just stored in localStorage key 'makima_ai_voice_setting' but not used functionally.",
+
+    "CSS - Add styles to static/css/makima-ai.css:\n  1. Style for .makima-clear-memory-btn (small button, subtle, positioned in header area)\n  2. Style for .makima-speaker-btn (small icon button inside AI bubble, bottom-right corner)\n  3. Style for .makima-speaker-btn.speaking (active/pulsing state when TTS is playing)\n  4. Style for .makima-voice-settings (collapsed section with voice option buttons)\n  5. Keep all existing styles intact, only add new ones at the bottom of the file."
+  ],
+  "acceptance_criteria": [
+    "Running 'python -c \"import app\"' succeeds without errors",
+    "The /api/ai-chat endpoint accepts {message, history} and passes history context to Gemini",
+    "The /api/ai-chat endpoint returns {error: '...'} with proper HTTP status codes on failure, never exposing API key",
+    "The frontend persists chat history to localStorage under key 'makima_ai_chat_history'",
+    "The frontend sends last 20 history messages to backend in each request",
+    "A CLEAR MEMORY button exists that clears localStorage and chat display",
+    "Each AI response bubble has a small speaker button that reads text aloud via Web Speech API",
+    "Voice settings are stored in localStorage under 'makima_ai_voice_setting' with options listed",
+    "No TikTok downloader code is modified",
+    "No API key is hardcoded anywhere"
+  ],
+  "verification": [
+    "Run: pip install -r requirements.txt (in /projects/sandbox/miitokk/)",
+    "Run: python -c \"import app\" (in /projects/sandbox/miitokk/) to verify no syntax errors",
+    "Grep for GEMINI_API_KEY to confirm it is only read from os.environ, never hardcoded",
+    "Grep for 'history' in app.py to confirm the endpoint accepts and processes history",
+    "Grep for 'localStorage' in makima-ai.js to confirm persistence is implemented",
+    "Grep for 'speechSynthesis' in makima-ai.js to confirm TTS is implemented"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
