@@ -85,8 +85,7 @@ function hidePreview() {
     'control': { type: 'control' },
     'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'SERVER MONITORING DASHBOARD IS UNDER DEVELOPMENT.' },
     'howto': { type: 'coming-soon', title: 'HOW TO USE', badge: 'COMING SOON', description: 'USAGE GUIDE IS UNDER DEVELOPMENT.' },
-    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'BUG REPORTING SYSTEM IS UNDER DEVELOPMENT.' },
-    'makima-ai': { type: 'makima-ai' }
+    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'BUG REPORTING SYSTEM IS UNDER DEVELOPMENT.' }
   };
 
   function navigateTo(view, skipPush) {
@@ -99,13 +98,11 @@ function hidePreview() {
     var viewComingSoon = document.getElementById('viewComingSoon');
     var viewStore = document.getElementById('viewStore');
     var viewControl = document.getElementById('viewControl');
-    var viewMakimaAI = document.getElementById('viewMakimaAI');
 
     if (viewDownloader) viewDownloader.style.display = 'none';
     if (viewComingSoon) viewComingSoon.style.display = 'none';
     if (viewStore) viewStore.style.display = 'none';
     if (viewControl) viewControl.style.display = 'none';
-    if (viewMakimaAI) viewMakimaAI.style.display = 'none';
 
     // Disconnect control panel observer when leaving control view
     if (previousView === 'control' && view !== 'control') {
@@ -125,27 +122,11 @@ function hidePreview() {
     } else if (config.type === 'control') {
       renderControl();
       if (viewControl) viewControl.style.display = '';
-    } else if (config.type === 'makima-ai') {
-      renderMakimaAI();
-      if (viewMakimaAI) viewMakimaAI.style.display = '';
     }
 
-    // Hide/show hero header and anime silhouette based on view
-    var heroHeader = document.querySelector('.page > .header');
-    var animeSilhouette = document.querySelector('.anime-body-silhouette');
-    if (view === 'makima-ai') {
-      if (heroHeader) heroHeader.style.display = 'none';
-      if (animeSilhouette) animeSilhouette.style.display = 'none';
-    } else {
-      if (heroHeader) heroHeader.style.display = '';
-      if (animeSilhouette) animeSilhouette.style.display = '';
-    }
-
-    // Push history state with proper URL paths
+    // Push history state
     if (!skipPush) {
-      if (view === 'makima-ai') {
-        history.pushState({ view: view }, '', '/ai');
-      } else if (view === 'downloader') {
+      if (view === 'downloader') {
         history.pushState({ view: view }, '', '/');
       } else {
         history.pushState({ view: view }, '', '/');
@@ -301,7 +282,7 @@ function hidePreview() {
   window.addEventListener('popstate', function(e) {
     var path = window.location.pathname;
     if (path === '/ai' || path === '/ai/') {
-      navigateTo('makima-ai', true);
+      window.location.href = '/ai';
     } else {
       navigateTo('downloader', true);
     }
@@ -333,13 +314,11 @@ function hidePreview() {
         var viewComingSoon = document.getElementById('viewComingSoon');
         var viewStore = document.getElementById('viewStore');
         var viewControl = document.getElementById('viewControl');
-        var viewMakimaAI = document.getElementById('viewMakimaAI');
 
         if (viewDownloader) viewDownloader.style.display = 'none';
         if (viewComingSoon) viewComingSoon.style.display = 'none';
         if (viewStore) viewStore.style.display = 'none';
         if (viewControl) viewControl.style.display = 'none';
-        if (viewMakimaAI) viewMakimaAI.style.display = 'none';
 
         var fm = featureMap[feature];
         renderComingSoon(fm.title, 'COMING SOON', fm.description);
@@ -349,13 +328,6 @@ function hidePreview() {
         updateDrawerActive(view);
         history.pushState({ view: view }, '', '');
         window.scrollTo(0, 0);
-        return;
-      }
-
-      // MAKIMA AI: use client-side navigation with pushState
-      if (view === 'makima-ai') {
-        e.preventDefault();
-        navigateTo('makima-ai');
         return;
       }
 

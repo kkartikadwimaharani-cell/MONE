@@ -35,5 +35,5 @@
     "Run 'grep -c \"route.*ai\" app.py' to confirm the /ai route was added"
   ],
   "blocked_reason": null,
-  "findings": "All verification passed. The /ai route returns 200, import succeeds. ffmpeg is not installed in this sandbox but that does not affect this feature (it is for the video download endpoint). The google.generativeai deprecation warning is pre-existing and unrelated. Additional fix: sidebar MAKIMA AI click now does window.location.href='/ai' instead of in-page navigateTo, and the empty viewMakimaAI div was removed from the homepage template branch."
+  "findings": "All verification passed. Routes properly separated: / renders index.html (downloader only), /ai renders ai.html (standalone MAKIMA AI page), catch-all redirects unknown paths to /. The makima-ai.js and viewMakimaAI div removed from homepage. Sidebar link changed to regular href. ui.js cleaned of all makima-ai view logic. ffmpeg not installed in sandbox but unrelated to this feature. google.generativeai deprecation warning is pre-existing."
 }
