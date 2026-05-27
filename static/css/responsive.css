@@ -409,4 +409,11 @@ html, body {
   .page {
     padding-bottom: 120px !important;
   }
+
+  /* MAKIMA AI page override - full width on mobile */
+  .makima-ai-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 16px !important;
+  }
 }

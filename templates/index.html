@@ -436,5 +436,12 @@
   <script src="/static/js/analytics.js"></script>
   <script src="/static/js/ghost-scanner.js"></script>
   <script src="/static/js/makima-ai.js"></script>
+  {% if initial_view %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.navigateTo) navigateTo('{{ initial_view }}', true);
+    });
+  </script>
+  {% endif %}
 </body>
 </html>

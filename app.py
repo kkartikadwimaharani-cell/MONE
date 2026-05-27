@@ -185,6 +185,11 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/ai')
+def ai_view():
+    return render_template('index.html', initial_view='makima-ai')
+
+
 # ---------------------------------------------------------------------------
 # Analytics routes
 # ---------------------------------------------------------------------------
