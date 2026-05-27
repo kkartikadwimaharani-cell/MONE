@@ -18,7 +18,28 @@ function loadChats() {
 function saveChats(chats) {
   try {
     localStorage.setItem('makima_ai_chats', JSON.stringify(chats));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('MAKIMA AI: localStorage penuh atau tidak tersedia.');
+  }
+}
+
+/* ── STORAGE CAPS ────────────────────────────────── */
+
+var _MAKIMA_MAX_CHATS = 50;
+var _MAKIMA_MAX_MESSAGES_PER_CHAT = 200;
+
+function _enforceStorageCaps(chats) {
+  // Prune oldest chats if over cap
+  if (chats.length > _MAKIMA_MAX_CHATS) {
+    chats.splice(_MAKIMA_MAX_CHATS);
+  }
+  // Prune oldest messages per chat if over cap
+  for (var i = 0; i < chats.length; i++) {
+    if (chats[i].messages.length > _MAKIMA_MAX_MESSAGES_PER_CHAT) {
+      chats[i].messages = chats[i].messages.slice(-_MAKIMA_MAX_MESSAGES_PER_CHAT);
+    }
+  }
+  return chats;
 }
 
 function getActiveChatId() {
@@ -54,6 +75,7 @@ function createNewChat() {
   };
   var chats = loadChats();
   chats.unshift(chat);
+  chats = _enforceStorageCaps(chats);
   saveChats(chats);
   setActiveChatId(chat.id);
   return chat;
@@ -117,11 +139,42 @@ function _setVoiceSetting(voice) {
   } catch (e) {}
 }
 
+/* ── LEGACY MIGRATION ─────────────────────────────── */
+
+function _migrateLegacyChat() {
+  try {
+    var legacy = localStorage.getItem('makima_ai_chat_history');
+    if (!legacy) return;
+    var msgs = JSON.parse(legacy);
+    if (msgs && msgs.length > 0) {
+      var migratedChat = {
+        id: 'chat_' + Date.now() + '_migrated',
+        title: (msgs[0].text || 'Chat lama').substring(0, 30),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: msgs
+      };
+      var chats = loadChats();
+      chats.unshift(migratedChat);
+      chats = _enforceStorageCaps(chats);
+      saveChats(chats);
+      setActiveChatId(migratedChat.id);
+    }
+    localStorage.removeItem('makima_ai_chat_history');
+  } catch (e) {
+    // If migration fails, just remove the old key to prevent repeated attempts
+    try { localStorage.removeItem('makima_ai_chat_history'); } catch (e2) {}
+  }
+}
+
 /* ── MAIN RENDER ─────────────────────────────────── */
 
 function renderMakimaAI() {
   var container = document.getElementById('viewMakimaAI');
   if (!container) return;
+
+  // Migrate legacy single-chat localStorage if present
+  _migrateLegacyChat();
 
   // Ensure at least one chat exists
   var chats = loadChats();
@@ -230,6 +283,16 @@ function _bindMakimaEvents() {
       }
     }
   });
+
+  // Preload speech synthesis voices (some browsers load them async)
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = function() {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }
 }
 
 /* ── SIDEBAR TOGGLE ──────────────────────────────── */
@@ -267,7 +330,7 @@ function _renderVoiceDropdown() {
   for (var i = 0; i < voices.length; i++) {
     var v = voices[i];
     var activeClass = (v === current) ? ' active' : '';
-    html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + v + '">' + v + '</button>';
+    html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + _escapeHtml(v) + '">' + _escapeHtml(v) + '</button>';
   }
   dropdown.innerHTML = html;
 
@@ -300,12 +363,12 @@ function _renderSidebarList() {
       dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
     } catch (e) { dateStr = ''; }
     html +=
-      '<div class="makima-sidebar-item' + isActive + '" data-chatid="' + chat.id + '">' +
+      '<div class="makima-sidebar-item' + isActive + '" data-chatid="' + _escapeHtml(chat.id) + '">' +
         '<div class="makima-sidebar-item-info">' +
           '<span class="makima-sidebar-item-title">' + _escapeHtml(chat.title) + '</span>' +
-          '<span class="makima-sidebar-item-date">' + dateStr + '</span>' +
+          '<span class="makima-sidebar-item-date">' + _escapeHtml(dateStr) + '</span>' +
         '</div>' +
-        '<button class="makima-sidebar-item-delete" data-deleteid="' + chat.id + '" title="Hapus chat">&#10005;</button>' +
+        '<button class="makima-sidebar-item-delete" data-deleteid="' + _escapeHtml(chat.id) + '" title="Hapus chat">&#10005;</button>' +
       '</div>';
   }
   listEl.innerHTML = html;
@@ -419,6 +482,16 @@ function _speakMakimaText(text, btn) {
   utterance.rate = 0.95;
   utterance.pitch = 0.9;
 
+  // Apply voice setting from stored preference
+  var voiceName = _getVoiceSetting();
+  var availableVoices = window.speechSynthesis.getVoices();
+  for (var v = 0; v < availableVoices.length; v++) {
+    if (availableVoices[v].name.indexOf(voiceName) !== -1) {
+      utterance.voice = availableVoices[v];
+      break;
+    }
+  }
+
   btn.classList.add('speaking');
   btn.innerHTML = '&#9632;';
   _makimaIsSpeaking = true;
@@ -521,6 +594,7 @@ function sendMakimaMessage() {
       break;
     }
   }
+  chats = _enforceStorageCaps(chats);
   saveChats(chats);
 
   input.value = '';
@@ -531,6 +605,8 @@ function sendMakimaMessage() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   // Send to API
+  var targetChatId = chat.id;
+
   fetch('/api/ai-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -547,18 +623,20 @@ function sendMakimaMessage() {
     if (result.data.reply) {
       _appendAIBubble(messagesEl, result.data.reply);
 
-      // Save assistant reply
-      var currentChat = getActiveChat();
-      if (currentChat) {
-        currentChat.messages.push({ role: 'assistant', text: result.data.reply });
-        currentChat.updatedAt = new Date().toISOString();
-        var allChats = loadChats();
-        for (var j = 0; j < allChats.length; j++) {
-          if (allChats[j].id === currentChat.id) {
-            allChats[j] = currentChat;
-            break;
-          }
+      // Save assistant reply - use pinned targetChatId, not current active chat
+      var allChats = loadChats();
+      var targetChat = null;
+      for (var j = 0; j < allChats.length; j++) {
+        if (allChats[j].id === targetChatId) {
+          targetChat = allChats[j];
+          break;
         }
+      }
+      // Guard: only write if chat still exists (not cleared/deleted)
+      if (targetChat) {
+        targetChat.messages.push({ role: 'assistant', text: result.data.reply });
+        targetChat.updatedAt = new Date().toISOString();
+        allChats = _enforceStorageCaps(allChats);
         saveChats(allChats);
       }
 
