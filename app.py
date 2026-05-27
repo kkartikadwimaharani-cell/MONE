@@ -1313,6 +1313,13 @@ def download_photo():
         return jsonify({'error': 'Gagal mengunduh foto'}), 502
 
 
+@app.route('/api/test-gemini', methods=['GET'])
+def test_gemini():
+    if _GEMINI_API_KEY:
+        return jsonify({'configured': True})
+    return jsonify({'configured': False, 'error': 'GEMINI_API_KEY missing'})
+
+
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
     data = request.get_json(silent=True) or {}
@@ -1370,7 +1377,10 @@ def ai_chat():
             return jsonify({'error': 'MAKIMA AI tidak dapat menghasilkan respons'}), 500
         return jsonify({'reply': reply_text})
     except Exception as e:
-        app.logger.error('Gemini API error: %s', e)
+        err_msg = str(e)
+        if _GEMINI_API_KEY:
+            err_msg = err_msg.replace(_GEMINI_API_KEY, '[REDACTED]')
+        app.logger.error('Gemini API error: %s', err_msg)
         return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
 
