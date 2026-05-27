@@ -100,6 +100,7 @@ function hidePreview() {
     var viewStore = document.getElementById('viewStore');
     var viewControl = document.getElementById('viewControl');
     var viewMakimaAI = document.getElementById('viewMakimaAI');
+    var headerEl = document.querySelector('.page > .header');
 
     if (viewDownloader) viewDownloader.style.display = 'none';
     if (viewComingSoon) viewComingSoon.style.display = 'none';
@@ -121,30 +122,29 @@ function hidePreview() {
 
     if (config.type === 'main') {
       if (viewDownloader) viewDownloader.style.display = '';
+      if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'coming-soon') {
       renderComingSoon(config.title, config.badge, config.description);
       if (viewComingSoon) viewComingSoon.style.display = '';
+      if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'store') {
       renderStore();
       if (viewStore) viewStore.style.display = '';
+      if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'control') {
       renderControl();
       if (viewControl) viewControl.style.display = '';
+      if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'makima-ai') {
       if (viewMakimaAI) viewMakimaAI.style.display = '';
+      if (headerEl) headerEl.style.display = 'none';
       document.body.classList.add('makima-ai-body');
       renderMakimaAI();
     }
 
-    // Push history state
+    // Push history state (stay on same URL, no /ai route)
     if (!skipPush) {
-      if (view === 'downloader') {
-        history.pushState({ view: view }, '', '/');
-      } else if (view === 'makima-ai') {
-        history.pushState({ view: view }, '', '/ai');
-      } else {
-        history.pushState({ view: view }, '', '/');
-      }
+      history.pushState({ view: view }, '', '/');
     }
 
     // Update active state in drawer
@@ -294,9 +294,8 @@ function hidePreview() {
 
   // Handle browser back/forward button
   window.addEventListener('popstate', function(e) {
-    var path = window.location.pathname;
-    if (path === '/ai' || path === '/ai/') {
-      navigateTo('makima-ai', true);
+    if (e.state && e.state.view && viewConfig[e.state.view]) {
+      navigateTo(e.state.view, true);
     } else {
       navigateTo('downloader', true);
     }
@@ -337,6 +336,10 @@ function hidePreview() {
         if (viewMakimaAI) viewMakimaAI.style.display = 'none';
         document.body.classList.remove('makima-ai-body');
 
+        // Show header again when leaving AI view
+        var headerEl = document.querySelector('.page > .header');
+        if (headerEl) headerEl.style.display = '';
+
         var fm = featureMap[feature];
         renderComingSoon(fm.title, 'COMING SOON', fm.description);
         if (viewComingSoon) viewComingSoon.style.display = '';
@@ -356,9 +359,4 @@ function hidePreview() {
     });
   }
 
-  // Initial route detection for direct /ai access
-  var initialPath = window.location.pathname;
-  if (initialPath === '/ai' || initialPath === '/ai/') {
-    navigateTo('makima-ai', true);
-  }
 })();
