@@ -1,42 +1,118 @@
-/* ── MAKIMA AI CHAT ─────────────────────────────── */
+/* ── MAKIMA AI CHAT (ChatGPT-style) ──────────────── */
 
 var _makimaChatHistory = [];
+var _makimaAvatarSrc = '/static/img/makima-ai-profile.png';
 
 function renderMakimaAI() {
   var container = document.getElementById('viewMakimaAI');
   if (!container) return;
 
-  container.innerHTML = '<div class="makima-ai-page">' +
-    '<div class="makima-ai-header">' +
-      '<h2 class="makima-ai-title">MAKIMA AI</h2>' +
-      '<p class="makima-ai-subtitle">AI CHARACTER ASSISTANT</p>' +
-    '</div>' +
-    '<div class="makima-ai-chat-container">' +
+  container.innerHTML =
+    '<div class="makima-ai-page">' +
+      '<div class="makima-ai-header">' +
+        '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA AI" class="makima-ai-header-avatar" />' +
+        '<h2 class="makima-ai-title">MAKIMA AI</h2>' +
+        '<p class="makima-ai-subtitle">MII NETWORK CHARACTER ASSISTANT</p>' +
+      '</div>' +
       '<div class="makima-ai-messages" id="makimaMessages"></div>' +
       '<div class="makima-ai-input-area">' +
         '<div class="makima-ai-input-wrap">' +
-          '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan..." autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key===\'Enter\')sendMakimaMessage()" />' +
-          '<button class="makima-ai-send-btn" onclick="sendMakimaMessage()">SEND</button>' +
+          '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
+          '<button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>' +
         '</div>' +
         '<div class="makima-ai-error" id="makimaError"></div>' +
       '</div>' +
-    '</div>' +
-    '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
-  '</div>';
+    '</div>';
+
+  // Bind events
+  var inputEl = document.getElementById('makimaInput');
+  var sendBtn = document.getElementById('makimaSendBtn');
+
+  if (inputEl) {
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendMakimaMessage();
+    });
+  }
+  if (sendBtn) {
+    sendBtn.addEventListener('click', sendMakimaMessage);
+  }
 
   // Restore chat history
-  if (_makimaChatHistory.length > 0) {
-    var messagesEl = document.getElementById('makimaMessages');
-    if (messagesEl) {
-      for (var i = 0; i < _makimaChatHistory.length; i++) {
-        var entry = _makimaChatHistory[i];
-        var bubble = document.createElement('div');
-        bubble.className = 'makima-msg ' + (entry.role === 'user' ? 'makima-msg-user' : 'makima-msg-ai');
-        bubble.textContent = entry.text;
-        messagesEl.appendChild(bubble);
-      }
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+  _restoreMakimaHistory();
+}
+
+function _restoreMakimaHistory() {
+  if (_makimaChatHistory.length === 0) return;
+  var messagesEl = document.getElementById('makimaMessages');
+  if (!messagesEl) return;
+
+  for (var i = 0; i < _makimaChatHistory.length; i++) {
+    var entry = _makimaChatHistory[i];
+    if (entry.role === 'user') {
+      _appendUserBubble(messagesEl, entry.text);
+    } else {
+      _appendAIBubble(messagesEl, entry.text);
     }
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function _appendUserBubble(container, text) {
+  var row = document.createElement('div');
+  row.className = 'makima-msg-row makima-msg-row-user';
+
+  var bubble = document.createElement('div');
+  bubble.className = 'makima-msg makima-msg-user';
+  bubble.textContent = text;
+
+  row.appendChild(bubble);
+  container.appendChild(row);
+}
+
+function _appendAIBubble(container, text) {
+  var row = document.createElement('div');
+  row.className = 'makima-msg-row makima-msg-row-ai';
+
+  var avatar = document.createElement('img');
+  avatar.className = 'makima-msg-avatar';
+  avatar.src = _makimaAvatarSrc;
+  avatar.alt = 'MAKIMA AI';
+
+  var bubble = document.createElement('div');
+  bubble.className = 'makima-msg makima-msg-ai';
+  bubble.textContent = text;
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  container.appendChild(row);
+}
+
+function _showLoadingBubble(container) {
+  var row = document.createElement('div');
+  row.className = 'makima-msg-row makima-msg-row-ai';
+  row.id = 'makimaLoadingRow';
+
+  var avatar = document.createElement('img');
+  avatar.className = 'makima-msg-avatar';
+  avatar.src = _makimaAvatarSrc;
+  avatar.alt = 'MAKIMA AI';
+
+  var bubble = document.createElement('div');
+  bubble.className = 'makima-msg-loading';
+  bubble.innerHTML =
+    '<span class="makima-msg-loading-text">MAKIMA AI sedang berpikir</span>' +
+    '<span class="makima-loading-dots"><span></span><span></span><span></span></span>';
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  container.appendChild(row);
+  return row;
+}
+
+function _removeLoadingBubble() {
+  var loadingRow = document.getElementById('makimaLoadingRow');
+  if (loadingRow && loadingRow.parentNode) {
+    loadingRow.parentNode.removeChild(loadingRow);
   }
 }
 
@@ -56,20 +132,14 @@ function sendMakimaMessage() {
   }
 
   // Display user message
-  var userBubble = document.createElement('div');
-  userBubble.className = 'makima-msg makima-msg-user';
-  userBubble.textContent = message;
-  messagesEl.appendChild(userBubble);
+  _appendUserBubble(messagesEl, message);
   _makimaChatHistory.push({ role: 'user', text: message });
 
   input.value = '';
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   // Show loading
-  var loadingBubble = document.createElement('div');
-  loadingBubble.className = 'makima-msg makima-msg-ai makima-msg-loading';
-  loadingBubble.textContent = 'Makima sedang mengetik...';
-  messagesEl.appendChild(loadingBubble);
+  _showLoadingBubble(messagesEl);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   // Send to API
@@ -84,10 +154,7 @@ function sendMakimaMessage() {
     });
   })
   .then(function(result) {
-    // Remove loading bubble
-    if (loadingBubble.parentNode) {
-      loadingBubble.parentNode.removeChild(loadingBubble);
-    }
+    _removeLoadingBubble();
 
     if (result.status === 429) {
       errorEl.textContent = result.data.error || 'Terlalu cepat, coba lagi.';
@@ -95,21 +162,17 @@ function sendMakimaMessage() {
     }
 
     if (result.data.reply) {
-      var aiBubble = document.createElement('div');
-      aiBubble.className = 'makima-msg makima-msg-ai';
-      aiBubble.textContent = result.data.reply;
-      messagesEl.appendChild(aiBubble);
+      _appendAIBubble(messagesEl, result.data.reply);
       _makimaChatHistory.push({ role: 'ai', text: result.data.reply });
       messagesEl.scrollTop = messagesEl.scrollHeight;
     } else if (result.data.error) {
-      errorEl.textContent = result.data.error;
+      _appendAIBubble(messagesEl, 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
   })
   .catch(function() {
-    // Remove loading bubble
-    if (loadingBubble.parentNode) {
-      loadingBubble.parentNode.removeChild(loadingBubble);
-    }
-    errorEl.textContent = 'Gagal menghubungi server. Coba lagi.';
+    _removeLoadingBubble();
+    _appendAIBubble(messagesEl, 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   });
 }

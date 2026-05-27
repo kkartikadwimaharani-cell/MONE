@@ -1,54 +1,66 @@
-/* ── MAKIMA AI STYLES ─────────────────────────────── */
+/* ── MAKIMA AI CHAT PAGE (ChatGPT-style layout) ──── */
 
 .makima-ai-page {
-  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 56px);
+  max-width: 760px;
   margin: 0 auto;
-  padding: 20px 16px;
+  padding: 0;
+  position: relative;
 }
+
+/* ── HEADER ──────────────────────────────────────── */
 
 .makima-ai-header {
   text-align: center;
-  margin-bottom: 24px;
+  padding: 24px 16px 18px;
+  border-bottom: 1px solid rgba(204, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.makima-ai-header-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid var(--red);
+  box-shadow: 0 0 18px rgba(204, 0, 0, 0.4), 0 0 40px rgba(204, 0, 0, 0.15);
+  object-fit: cover;
+  margin: 0 auto 12px;
+  display: block;
 }
 
 .makima-ai-title {
   font-family: var(--font-logo);
   font-size: 2rem;
   color: var(--red);
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   margin: 0;
+  text-transform: uppercase;
 }
 
 .makima-ai-subtitle {
   font-family: var(--font-ui);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--white-dim);
-  letter-spacing: 3px;
+  letter-spacing: 4px;
   margin: 6px 0 0 0;
+  text-transform: uppercase;
 }
 
-.makima-ai-chat-container {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(204, 0, 0, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
+/* ── MESSAGES AREA ───────────────────────────────── */
 
 .makima-ai-messages {
-  min-height: 300px;
-  max-height: 450px;
+  flex: 1;
   overflow-y: auto;
-  padding: 20px 16px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .makima-ai-messages::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 
 .makima-ai-messages::-webkit-scrollbar-track {
@@ -57,65 +69,163 @@
 
 .makima-ai-messages::-webkit-scrollbar-thumb {
   background: var(--red-dark);
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
-.makima-msg {
+/* ── MESSAGE ROW ─────────────────────────────────── */
+
+.makima-msg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   max-width: 80%;
-  padding: 10px 14px;
-  border-radius: 12px;
+}
+
+.makima-msg-row-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.makima-msg-row-ai {
+  align-self: flex-start;
+}
+
+/* ── AVATAR ──────────────────────────────────────── */
+
+.makima-msg-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--red);
+  box-shadow: 0 0 10px rgba(204, 0, 0, 0.35);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ── MESSAGE BUBBLES ─────────────────────────────── */
+
+.makima-msg {
+  padding: 12px 16px;
+  border-radius: 14px;
   font-family: var(--font-body);
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.6;
   word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .makima-msg-user {
-  align-self: flex-end;
-  background: rgba(204, 0, 0, 0.2);
+  background: rgba(204, 0, 0, 0.18);
   border: 1px solid rgba(204, 0, 0, 0.3);
   color: var(--white);
+  border-radius: 14px 14px 4px 14px;
 }
 
 .makima-msg-ai {
-  align-self: flex-start;
-  background: rgba(20, 8, 8, 0.8);
+  background: rgba(16, 6, 6, 0.85);
   border: 1px solid rgba(204, 0, 0, 0.15);
   color: var(--white-dim);
+  border-radius: 14px 14px 14px 4px;
 }
+
+/* ── LOADING STATE ───────────────────────────────── */
 
 .makima-msg-loading {
-  opacity: 0.6;
-  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(16, 6, 6, 0.85);
+  border: 1px solid rgba(204, 0, 0, 0.15);
+  border-radius: 14px 14px 14px 4px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--white-dim);
+  opacity: 0.85;
 }
 
+.makima-msg-loading-text {
+  font-style: italic;
+  animation: makimaPulse 1.8s ease-in-out infinite;
+}
+
+.makima-loading-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.makima-loading-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: makimaDotBounce 1.4s ease-in-out infinite;
+}
+
+.makima-loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.makima-loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes makimaDotBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@keyframes makimaPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── INPUT AREA ──────────────────────────────────── */
+
 .makima-ai-input-area {
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  padding: 14px 16px 20px;
+  border-top: 1px solid rgba(204, 0, 0, 0.15);
+  background: rgba(6, 2, 2, 0.9);
 }
 
 .makima-ai-input-wrap {
   display: flex;
   gap: 10px;
   align-items: center;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .makima-ai-input {
   flex: 1;
-  background: rgba(10, 4, 4, 0.6);
+  background: rgba(10, 4, 4, 0.7);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 13px 18px;
   color: var(--white);
   font-family: var(--font-body);
   font-size: 0.9rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .makima-ai-input:focus {
   border-color: var(--red);
-  box-shadow: 0 0 8px rgba(204, 0, 0, 0.3);
+  box-shadow: 0 0 12px rgba(204, 0, 0, 0.3);
 }
 
 .makima-ai-input::placeholder {
@@ -127,44 +237,92 @@
   background: linear-gradient(135deg, var(--red), var(--red-dark));
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
+  border-radius: 12px;
+  padding: 13px 22px;
   font-family: var(--font-ui);
   font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s;
+  text-transform: uppercase;
 }
 
 .makima-ai-send-btn:hover {
-  transform: scale(1.03);
-  box-shadow: 0 0 12px rgba(204, 0, 0, 0.4);
+  transform: scale(1.04);
+  box-shadow: 0 0 16px rgba(204, 0, 0, 0.5);
 }
 
 .makima-ai-send-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .makima-ai-error {
   color: var(--red);
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   margin-top: 8px;
+  text-align: center;
   min-height: 1.2em;
 }
 
+/* ── RESPONSIVE (MOBILE) ─────────────────────────── */
+
 @media (max-width: 600px) {
-  .makima-ai-messages {
-    min-height: 250px;
-    max-height: 350px;
+  .makima-ai-page {
+    height: calc(100vh - 56px);
   }
 
-  .makima-msg {
-    max-width: 85%;
+  .makima-ai-header {
+    padding: 16px 12px 14px;
+  }
+
+  .makima-ai-header-avatar {
+    width: 70px;
+    height: 70px;
   }
 
   .makima-ai-title {
     font-size: 1.6rem;
+  }
+
+  .makima-ai-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+  }
+
+  .makima-ai-messages {
+    padding: 16px 10px;
+    gap: 12px;
+  }
+
+  .makima-msg-row {
+    max-width: 88%;
+    gap: 8px;
+  }
+
+  .makima-msg-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  .makima-msg {
+    font-size: 0.85rem;
+    padding: 10px 13px;
+  }
+
+  .makima-ai-input-area {
+    padding: 10px 10px 16px;
+  }
+
+  .makima-ai-input {
+    padding: 11px 14px;
+    font-size: 0.85rem;
+  }
+
+  .makima-ai-send-btn {
+    padding: 11px 16px;
+    font-size: 0.8rem;
   }
 }
