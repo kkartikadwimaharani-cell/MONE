@@ -1,7 +1,7 @@
 {
   "task_id": "task-fix-makima-ai-layout",
   "task_description": "Fix the MAKIMA AI page (/ai) to have its own dedicated layout instead of inheriting the TikTok Downloader hero and layout. Hide the downloader hero when on AI page, make the chat full-page with proper sizing, use the avatar image, add a back button, and ensure mobile responsiveness. Do not touch any TikTok Downloader functionality.",
-  "status": "in_progress",
+  "status": "completed",
   "feature_order": ["FEAT-001"],
   "blocked_reason": null
 }
