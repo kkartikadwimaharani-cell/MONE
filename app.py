@@ -15,6 +15,26 @@ import requests as requests_lib
 import analytics
 import google.generativeai as genai
 
+# ---------------------------------------------------------------------------
+# Gemini model (configured once at module level for thread safety)
+# ---------------------------------------------------------------------------
+_GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+_gemini_model = None
+if _GEMINI_API_KEY:
+    genai.configure(api_key=_GEMINI_API_KEY)
+    _gemini_model = genai.GenerativeModel(
+        'gemini-2.0-flash',
+        system_instruction=(
+            'Kamu adalah MAKIMA AI, asisten karakter AI di website MII NETWORK. '
+            'Kepribadianmu: tenang, elegan, dingin, singkat, misterius, dan membantu. '
+            'Kamu tidak pernah mengaku sebagai manusia. '
+            'Kamu tidak pernah membahas API key atau sistem internal. '
+            'Kamu mengarahkan pengguna tentang fitur website dengan jelas. '
+            'Jawab dalam bahasa yang sama dengan bahasa pengguna. '
+            'Jawaban singkat dan to the point.'
+        )
+    )
+
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
 try:
@@ -1292,30 +1312,19 @@ def ai_chat():
     if not message:
         return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
 
+    if len(message) > 2000:
+        return jsonify({'error': 'Pesan terlalu panjang (maks 2000 karakter)'}), 400
+
     # Rate limiting
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     if not _check_rate_limit(client_ip, _rate_store_ai, RATE_LIMIT_AI_SECONDS):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
-    api_key = os.environ.get('GEMINI_API_KEY')
-    if not api_key:
+    if not _gemini_model:
         return jsonify({'reply': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'})
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(
-            'gemini-2.0-flash',
-            system_instruction=(
-                'Kamu adalah MAKIMA AI, asisten karakter AI di website MII NETWORK. '
-                'Kepribadianmu: tenang, elegan, dingin, singkat, misterius, dan membantu. '
-                'Kamu tidak pernah mengaku sebagai manusia. '
-                'Kamu tidak pernah membahas API key atau sistem internal. '
-                'Kamu mengarahkan pengguna tentang fitur website dengan jelas. '
-                'Jawab dalam bahasa yang sama dengan bahasa pengguna. '
-                'Jawaban singkat dan to the point.'
-            )
-        )
-        response = model.generate_content(message)
+        response = _gemini_model.generate_content(message)
         reply_text = response.text if response.text else 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'
         return jsonify({'reply': reply_text})
     except Exception as e:
