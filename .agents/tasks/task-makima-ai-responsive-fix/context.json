@@ -1,0 +1,25 @@
+{
+  "project_type": "Flask web app (Python) with single HTML page + separate CSS/JS modules",
+  "language": "Python (backend), HTML/CSS/JS (frontend)",
+  "build_system": "Flask (no build step), deployed via Railway with Dockerfile/nixpacks",
+  "test_framework": "None (no test files found)",
+  "build_command": "pip install -r requirements.txt && python -c \"import app\"",
+  "test_command": "python -c \"import app; print('OK')\"",
+  "verification_instructions": "1. Run python -c 'import app' to verify no import errors. 2. Check CSS/JS syntax validity. 3. Verify HTML structure is valid.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET - full network access available. No test suite exists. Validation is AST/import-based.",
+  "contribution_requirements": "Do not modify TikTok downloader logic or endpoints. Focus only on MAKIMA AI chat area.",
+  "key_patterns": "Single-page app with view switching via JS (ui.js navigateTo function). CSS is split into modules (variables, base, layout, components, animations, drawer, responsive, makima-ai). The makima-ai.css handles all AI chat page styling. makima-ai.js handles all chat logic including localStorage-based multi-chat, speech synthesis, and API calls. View switching adds 'makima-ai-body' class to body and hides the main header when AI view is active.",
+  "relevant_files": [
+    "templates/index.html",
+    "static/css/makima-ai.css",
+    "static/css/responsive.css",
+    "static/css/animations.css",
+    "static/css/base.css",
+    "static/js/makima-ai.js",
+    "static/js/ui.js",
+    "app.py"
+  ],
+  "directory_structure": "Root: app.py (Flask), templates/index.html (single template), static/css/ (8 CSS modules), static/js/ (8 JS modules), static/img/ (avatar + owner images)"
+}

@@ -12,8 +12,22 @@ body.makima-ai-body {
 }
 
 #viewMakimaAI.view-container {
-  max-width: 100%;
-  width: 100%;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide main nav and background effects on AI page */
+body.makima-ai-body .top-nav {
+  display: none !important;
+}
+
+body.makima-ai-body .bg-overlay,
+body.makima-ai-body .bg-vignette,
+body.makima-ai-body .orb-container,
+body.makima-ai-body .anime-body-silhouette {
+  display: none !important;
 }
 
 /* ── AVATAR PROTECTION ───────────────────────────── */
@@ -71,7 +85,7 @@ body.makima-ai-body {
   object-fit: cover;
   object-position: center;
   border: 2px solid #ff0033;
-  box-shadow: 0 0 12px rgba(255, 0, 60, 0.4);
+  box-shadow: 0 0 18px rgba(255, 0, 60, 0.45);
 }
 
 .makima-sidebar-brand {
@@ -299,7 +313,7 @@ body.makima-ai-body {
   object-fit: cover;
   object-position: center;
   border: 2px solid #ff0033;
-  box-shadow: 0 0 12px rgba(255, 0, 60, 0.35);
+  box-shadow: 0 0 18px rgba(255, 0, 60, 0.45);
   flex-shrink: 0;
 }
 
@@ -460,7 +474,7 @@ body.makima-ai-body {
   object-fit: cover;
   object-position: center;
   border: 2px solid #ff0033;
-  box-shadow: 0 0 12px rgba(255, 0, 60, 0.35);
+  box-shadow: 0 0 18px rgba(255, 0, 60, 0.45);
   flex-shrink: 0;
 }
 
@@ -562,6 +576,7 @@ body.makima-ai-body {
   position: sticky;
   bottom: 0;
   padding: 12px 24px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(255, 0, 40, 0.2);
   background: rgba(5, 0, 0, 0.94);
   z-index: 50;
@@ -708,12 +723,6 @@ body.makima-ai-body {
     padding-bottom: 0 !important;
   }
 
-  #viewMakimaAI.view-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-  }
-
   .makima-chatgpt-layout {
     flex-direction: column;
   }
@@ -774,6 +783,7 @@ body.makima-ai-body {
 
   .makima-ai-input-area {
     padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   .makima-ai-input {
@@ -792,5 +802,39 @@ body.makima-ai-body {
 
   .makima-compact-header {
     padding: 8px 12px;
+  }
+
+  .makima-header-avatar {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ── RESPONSIVE (DESKTOP) ────────────────────────── */
+
+@media (min-width: 769px) {
+  /* Relies on base rule height: 100vh for proper sticky scroll containment */
+  .makima-sidebar {
+    position: sticky;
+    left: 0;
+    top: 0;
+  }
+
+  .makima-sidebar-overlay {
+    display: none !important;
+  }
+
+  .makima-menu-btn {
+    display: none !important;
+  }
+
+  .makima-compact-header {
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .makima-header-avatar {
+    width: 44px;
+    height: 44px;
   }
 }
