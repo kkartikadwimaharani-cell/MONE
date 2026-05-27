@@ -130,6 +130,17 @@ function hidePreview() {
       if (viewMakimaAI) viewMakimaAI.style.display = '';
     }
 
+    // Hide/show hero header and anime silhouette based on view
+    var heroHeader = document.querySelector('.page > .header');
+    var animeSilhouette = document.querySelector('.anime-body-silhouette');
+    if (view === 'makima-ai') {
+      if (heroHeader) heroHeader.style.display = 'none';
+      if (animeSilhouette) animeSilhouette.style.display = 'none';
+    } else {
+      if (heroHeader) heroHeader.style.display = '';
+      if (animeSilhouette) animeSilhouette.style.display = '';
+    }
+
     // Push history state when navigating away from downloader
     if (!skipPush && view !== 'downloader') {
       history.pushState({ view: view }, '', '');

@@ -1,0 +1,25 @@
+{
+  "project_type": "Python Flask SPA - TikTok Downloader with AI Chat feature",
+  "language": "Python (Flask backend), HTML/CSS/JavaScript (frontend SPA)",
+  "build_system": "pip with requirements.txt, deployed via Procfile/nixpacks",
+  "test_framework": "None - no test files exist",
+  "build_command": "pip install -r requirements.txt",
+  "test_command": "python -c \"import app\"",
+  "verification_instructions": "1. Run python -c 'import app' to verify no syntax errors. 2. Check that CSS/JS files are valid. 3. Verify the /ai route exists in app.py.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "No test suite exists. Validation is via import check and static analysis of HTML/CSS/JS.",
+  "contribution_requirements": "Do not touch TikTok Downloader functionality. Do not change downloader endpoints. Keep sidebar/menu intact. Use specific CSS classes (ai-page, ai-chat-layout, makima-avatar) to avoid affecting other pages.",
+  "key_patterns": "SPA architecture: single index.html template with view switching via JavaScript (navigateTo function in ui.js). Views are toggled by hiding/showing div containers (viewDownloader, viewMakimaAI, etc). CSS is split into multiple files (variables.css, base.css, layout.css, etc). The hero header with 'MII NETWORK' and 'TIKTOK DOWNLOADER' is in a <header class='header'> inside .page. The AI chat is rendered dynamically by renderMakimaAI() in makima-ai.js into #viewMakimaAI.",
+  "relevant_files": [
+    "app.py",
+    "templates/index.html",
+    "static/js/makima-ai.js",
+    "static/js/ui.js",
+    "static/js/config.js",
+    "static/css/makima-ai.css",
+    "static/css/layout.css",
+    "static/css/responsive.css"
+  ],
+  "directory_structure": "Root: app.py (Flask), templates/index.html (single template), static/css/ (8 CSS files), static/js/ (9 JS files), static/img/ (makima-ai-profile.png, owner.png)"
+}

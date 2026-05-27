@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix the MAKIMA AI page layout so it has its own dedicated full-page design, separate from the TikTok Downloader hero/layout. When navigating to the AI view (via sidebar or /ai route), the downloader hero header must be hidden and the AI page must display its own header with avatar, proper chat layout, loading states, and a back button.",
+  "status": "completed",
+  "steps": [
+    "1. In app.py, add a new Flask route '@app.route(\"/ai\")' that renders the same index.html template but passes a variable like 'initial_view=\"makima-ai\"' so the frontend can auto-navigate to the AI view on page load.",
+    "2. In templates/index.html, add a script block at the bottom that checks for the initial_view variable from Flask (using Jinja2) and calls navigateTo('makima-ai', true) if set. This allows direct URL access to /ai.",
+    "3. In static/js/ui.js, modify the navigateTo() function: when navigating to 'makima-ai', also hide the <header class='header'> element (the hero with MII NETWORK / TIKTOK DOWNLOADER). When navigating back to 'downloader', show it again. The header element can be selected with document.querySelector('.page > .header'). Also hide the anime-body-silhouette when on the AI page.",
+    "4. In static/css/makima-ai.css, update the .makima-ai-page styles to: set min-height to 65vh (currently uses height calc), set max-width to 720px (currently 760px), and ensure width: 100% with padding: 0 16px for mobile. The page should work as a flex column that fills available space.",
+    "5. In static/css/makima-ai.css, ensure the .makima-ai-messages area has min-height: 65vh and flex: 1 so it takes up most of the viewport.",
+    "6. In static/css/makima-ai.css, update .makima-ai-input-area to use position: sticky; bottom: 0 so the input stays at the bottom of the chat area.",
+    "7. In static/js/makima-ai.js, update the renderMakimaAI() function to add a 'BACK TO DOWNLOADER' button at the top of the page (above the header or below it). Use: '<button class=\"makima-ai-back-btn\" onclick=\"showMainView()\">&#8592; BACK TO DOWNLOADER</button>'. Style it in makima-ai.css.",
+    "8. In static/css/makima-ai.css, add a .makima-ai-back-btn style: subtle button at top-left, no heavy styling, just text with arrow, color var(--white-dim), font-family var(--font-ui), font-size 0.75rem, letter-spacing 2px, cursor pointer, padding 8px 0, background none, border none, margin-bottom 8px, opacity 0.7, hover opacity 1.",
+    "9. In static/css/responsive.css, add a media query rule for .makima-ai-page within the existing mobile master override (@media max-width: 768px): set width: 100% !important and max-width: 100% !important and padding: 0 16px to override the .view-container constraints that would limit it.",
+    "10. Verify that the hero-title (MII NETWORK), hero-sub (TIKTOK DOWNLOADER), hero-badge, and the downloader card are all hidden when on the AI page. They are inside #viewDownloader which is already hidden by the view system, but the <header class='header'> is NOT inside #viewDownloader - it sits above it in .page. So the header must be explicitly hidden."
+  ],
+  "acceptance_criteria": [
+    "Opening /ai in the browser shows the MAKIMA AI page directly without the MII NETWORK/TIKTOK DOWNLOADER hero",
+    "The AI chat header shows the profile avatar (makima-ai-profile.png) with red border and glow, title 'MAKIMA AI', and subtitle 'MII NETWORK CHARACTER ASSISTANT'",
+    "Chat area has min-height 65vh and max-width 720px, centered",
+    "On mobile (max-width 768px), chat area is width 100% with 16px padding",
+    "User bubbles align right, AI bubbles align left with avatar",
+    "Loading state shows 'MAKIMA AI sedang berpikir...' with avatar and animated dots",
+    "Input area is sticky at bottom with visible SEND button that does not get cut off",
+    "A 'BACK TO DOWNLOADER' button/link exists and returns to the main view",
+    "The sidebar/drawer menu still works and is unchanged",
+    "TikTok Downloader page is completely unaffected when accessed normally",
+    "No CSS conflicts - AI-specific styles use .makima-ai-* prefix classes"
+  ],
+  "verification": [
+    "Run 'python -c \"from app import app; client = app.test_client(); r = client.get(\\\"/ai\\\"); assert r.status_code == 200\"' to confirm the /ai route works",
+    "Run 'python -c \"import app\"' to confirm no import errors in app.py",
+    "Run 'grep -c \"makima-ai-page\" static/css/makima-ai.css' to confirm styles exist",
+    "Run 'grep -c \"route.*ai\" app.py' to confirm the /ai route was added"
+  ],
+  "blocked_reason": null,
+  "findings": "All verification passed. The /ai route returns 200, import succeeds. ffmpeg is not installed in this sandbox but that does not affect this feature (it is for the video download endpoint). The google.generativeai deprecation warning is pre-existing and unrelated."
+}
