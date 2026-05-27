@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Convert MAKIMA AI navigation from full page reload to SPA tab switching. The MAKIMA AI sidebar link should use preventDefault + history.pushState('/ai') + render AI content in main area. Back/downloader links should use history.pushState('/') + render downloader. Browser back/forward must work via popstate. No full page reloads. No window.location.href. Makima avatar only as round circle (28x28 sidebar, 96x96 header, 40x40 bubbles). No Makima photo as background. Chat area 70vh, sticky input, user bubbles right, AI bubbles left + avatar. Mobile input fix with native input, high z-index, no overlays.",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Update templates/index.html: (a) Add a #viewMakimaAI div (hidden by default) inside .page, after #viewDownloader closing tag, alongside the other view containers. (b) Change the MAKIMA AI sidebar link from href='/ai' to href='#' with data-view='makima-ai'. (c) Replace the SVG icon in the MAKIMA AI sidebar link with an <img> tag using class='makima-sidebar-avatar' src='/static/img/makima-ai-profile.png'. (d) Add <script src='/static/js/makima-ai.js'></script> before the closing </body> tag (after main.js).",
+    "Step 2 - Update static/js/ui.js: (a) Add 'makima-ai' to the viewConfig object with type 'makima-ai'. (b) In the navigateTo() function, add handling for type 'makima-ai': hide all other views, show #viewMakimaAI, add class 'makima-ai-body' to document.body, call renderMakimaAI(). (c) When navigating AWAY from makima-ai (to any other view), remove the 'makima-ai-body' class from body. (d) Update the history.pushState in navigateTo: when view is 'makima-ai', push '/ai' as the URL. (e) Update the popstate handler: if path is '/ai', call navigateTo('makima-ai', true) instead of window.location.href='/ai'. (f) Update the sideDrawer click delegation to handle the makima-ai drawer-item (it has data-view='makima-ai' but no data-feature, so it should go through the default navigateTo path).",
+    "Step 3 - Update static/js/makima-ai.js: (a) Change the showMainView() call in the back button onclick from showMainView() to navigateTo('downloader'). The back button HTML uses onclick='showMainView()' which is already globally exposed and calls navigateTo('downloader'), so this should already work. Verify that renderMakimaAI() targets document.getElementById('viewMakimaAI') correctly. (b) No other changes needed to the AI chat logic.",
+    "Step 4 - Update static/css/makima-ai.css: (a) Ensure the chat messages area uses min-height:70vh (already set for mobile, add for desktop as well or use height: 70vh for .makima-ai-messages as a flex:1 within a constrained parent). The existing CSS already has flex:1 and min-height:0 which fills available space - this is correct behavior. (b) Ensure .makima-ai-input-area has position:sticky or remains at bottom via flex layout (currently uses flex-shrink:0 which is correct). (c) Add z-index:9999 to .makima-ai-input to fix mobile keyboard blocking. (d) Add -webkit-appearance:none and touch-action:manipulation to .makima-ai-input for mobile fix. (e) Ensure no Makima photo background (there is none currently in CSS - verify and remove if any exists). (f) Verify avatar sizes are correct: sidebar 28x28 (already in .makima-sidebar-avatar), header 96x96 (already in .makima-ai-header-avatar), bubbles 40x40 (already in .makima-msg-avatar).",
+    "Step 5 - Update app.py: Change the /ai route to render 'index.html' instead of 'ai.html', so that direct navigation to /ai or page refresh on /ai loads the SPA shell which will detect the /ai path and render the AI view client-side.",
+    "Step 6 - Add on-load route detection in static/js/ui.js: After DOMContentLoaded or at the end of the IIFE, check window.location.pathname. If it is '/ai', call navigateTo('makima-ai', true) to render the AI view immediately without pushing state. This handles direct URL access and page refresh on /ai."
+  ],
+  "acceptance_criteria": [
+    "Clicking MAKIMA AI in sidebar does NOT reload the page - URL changes to /ai via pushState",
+    "The AI chat interface renders inside the main content area of index.html",
+    "Clicking BACK TO DOWNLOADER from AI view returns to / without page reload",
+    "Browser back/forward buttons work correctly between / and /ai",
+    "Direct navigation to /ai (typing URL or refresh) loads the SPA and shows AI view",
+    "Sidebar and header remain unchanged when switching views",
+    "Makima avatar appears as 28x28 circle in sidebar, 96x96 in AI header, 40x40 in chat bubbles",
+    "No Makima photo used as page background",
+    "Chat area fills available height (approx 70vh), input stays at bottom",
+    "Mobile input works - keyboard appears, no overlay blocks input, z-index is high",
+    "TikTok Downloader logic is completely untouched",
+    "No use of window.location.href for navigation between / and /ai"
+  ],
+  "verification": [
+    "Run 'python -c \"import app; print(app.app.url_map)\"' to verify /ai route serves index.html",
+    "Grep for window.location.href in static/js/ files - should NOT appear for /ai or / navigation (only external links allowed)",
+    "Grep for data-view='makima-ai' in templates/index.html to confirm sidebar link is updated",
+    "Grep for renderMakimaAI in static/js/makima-ai.js to confirm function exists and targets viewMakimaAI",
+    "Grep for popstate in static/js/ui.js to confirm /ai path is handled client-side",
+    "Verify static/js/makima-ai.js is included in templates/index.html"
+  ],
+  "blocked_reason": null,
+  "findings": "All changes verified. App imports cleanly. No window.location.href in JS files. The /ai route now serves index.html and client-side route detection shows the AI view. The makima-ai.js script already had renderMakimaAI targeting #viewMakimaAI and showMainView calling navigateTo('downloader') via the globally exposed function, so no changes needed there. Post-review fixes applied: (1) added viewMakimaAI to the hide list in the data-feature click handler branch so navigating from AI chat to a coming-soon feature hides the AI view, also removes makima-ai-body class; (2) deleted dead templates/ai.html file."
+}
