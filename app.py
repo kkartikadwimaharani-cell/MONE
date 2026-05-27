@@ -187,7 +187,7 @@ def index():
 
 @app.route('/ai')
 def ai_view():
-    return render_template('ai.html')
+    return render_template('index.html')
 
 
 @app.route('/<path:path>')

@@ -78,6 +78,7 @@ function hidePreview() {
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
+    'makima-ai': { type: 'makima-ai' },
     'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
     'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
@@ -98,15 +99,22 @@ function hidePreview() {
     var viewComingSoon = document.getElementById('viewComingSoon');
     var viewStore = document.getElementById('viewStore');
     var viewControl = document.getElementById('viewControl');
+    var viewMakimaAI = document.getElementById('viewMakimaAI');
 
     if (viewDownloader) viewDownloader.style.display = 'none';
     if (viewComingSoon) viewComingSoon.style.display = 'none';
     if (viewStore) viewStore.style.display = 'none';
     if (viewControl) viewControl.style.display = 'none';
+    if (viewMakimaAI) viewMakimaAI.style.display = 'none';
 
     // Disconnect control panel observer when leaving control view
     if (previousView === 'control' && view !== 'control') {
       disconnectControlObservers();
+    }
+
+    // Remove makima-ai-body class when navigating away from makima-ai
+    if (previousView === 'makima-ai') {
+      document.body.classList.remove('makima-ai-body');
     }
 
     var config = viewConfig[view];
@@ -122,12 +130,18 @@ function hidePreview() {
     } else if (config.type === 'control') {
       renderControl();
       if (viewControl) viewControl.style.display = '';
+    } else if (config.type === 'makima-ai') {
+      if (viewMakimaAI) viewMakimaAI.style.display = '';
+      document.body.classList.add('makima-ai-body');
+      renderMakimaAI();
     }
 
     // Push history state
     if (!skipPush) {
       if (view === 'downloader') {
         history.pushState({ view: view }, '', '/');
+      } else if (view === 'makima-ai') {
+        history.pushState({ view: view }, '', '/ai');
       } else {
         history.pushState({ view: view }, '', '/');
       }
@@ -282,7 +296,7 @@ function hidePreview() {
   window.addEventListener('popstate', function(e) {
     var path = window.location.pathname;
     if (path === '/ai' || path === '/ai/') {
-      window.location.href = '/ai';
+      navigateTo('makima-ai', true);
     } else {
       navigateTo('downloader', true);
     }
@@ -314,11 +328,14 @@ function hidePreview() {
         var viewComingSoon = document.getElementById('viewComingSoon');
         var viewStore = document.getElementById('viewStore');
         var viewControl = document.getElementById('viewControl');
+        var viewMakimaAI = document.getElementById('viewMakimaAI');
 
         if (viewDownloader) viewDownloader.style.display = 'none';
         if (viewComingSoon) viewComingSoon.style.display = 'none';
         if (viewStore) viewStore.style.display = 'none';
         if (viewControl) viewControl.style.display = 'none';
+        if (viewMakimaAI) viewMakimaAI.style.display = 'none';
+        document.body.classList.remove('makima-ai-body');
 
         var fm = featureMap[feature];
         renderComingSoon(fm.title, 'COMING SOON', fm.description);
@@ -337,5 +354,11 @@ function hidePreview() {
         navigateTo(view);
       }
     });
+  }
+
+  // Initial route detection for direct /ai access
+  var initialPath = window.location.pathname;
+  if (initialPath === '/ai' || initialPath === '/ai/') {
+    navigateTo('makima-ai', true);
   }
 })();

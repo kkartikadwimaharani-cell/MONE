@@ -261,6 +261,10 @@ body.makima-ai-body {
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  z-index: 9999;
+  -webkit-appearance: none;
+  touch-action: manipulation;
 }
 
 .makima-ai-input:focus {
