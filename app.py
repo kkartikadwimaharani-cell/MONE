@@ -16,22 +16,33 @@ import analytics
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
-# Gemini model (configured once at module level for thread safety)
+# Gemini model (lazy initialization for Railway env timing)
 # ---------------------------------------------------------------------------
-_GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 _gemini_model = None
-if _GEMINI_API_KEY:
-    genai.configure(api_key=_GEMINI_API_KEY)
-    _gemini_model = genai.GenerativeModel(
-        'gemini-2.0-flash',
-        system_instruction=(
-            'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
-            'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
-            'Tetap sopan dan membantu. Jangan mengaku manusia. '
-            'Jangan membahas API key atau sistem internal. '
-            'Ingat informasi penting yang user berikan selama percakapan.'
+_gemini_initialized = False
+
+def _get_gemini_model():
+    global _gemini_model, _gemini_initialized
+    if _gemini_initialized:
+        return _gemini_model
+    api_key = os.environ.get("GEMINI_API_KEY")
+    print("GEMINI_API_KEY exists:", bool(api_key))
+    if api_key:
+        genai.configure(api_key=api_key)
+        _gemini_model = genai.GenerativeModel(
+            'gemini-2.0-flash',
+            system_instruction=(
+                'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
+                'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
+                'Tetap sopan dan membantu. Jangan mengaku manusia. '
+                'Jangan membahas API key atau sistem internal. '
+                'Ingat informasi penting yang user berikan selama percakapan.'
+            )
         )
-    )
+    _gemini_initialized = True
+    return _gemini_model
+
+print("GEMINI_API_KEY exists:", bool(os.environ.get("GEMINI_API_KEY")))
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -1315,7 +1326,8 @@ def download_photo():
 
 @app.route('/api/test-gemini', methods=['GET'])
 def test_gemini():
-    if _GEMINI_API_KEY:
+    key = os.environ.get("GEMINI_API_KEY")
+    if key:
         return jsonify({'configured': True})
     return jsonify({'configured': False, 'error': 'GEMINI_API_KEY missing'})
 
@@ -1336,7 +1348,7 @@ def ai_chat():
     if not _check_rate_limit(client_ip, _rate_store_ai, RATE_LIMIT_AI_SECONDS):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
-    if not _gemini_model:
+    if not _get_gemini_model():
         return jsonify({'error': 'MAKIMA AI is not configured'}), 503
 
     # Build conversation context from history
@@ -1371,15 +1383,16 @@ def ai_chat():
     contents.append({'role': 'user', 'parts': [message]})
 
     try:
-        response = _gemini_model.generate_content(contents)
+        response = _get_gemini_model().generate_content(contents)
         reply_text = response.text if response.text else ''
         if not reply_text:
             return jsonify({'error': 'MAKIMA AI tidak dapat menghasilkan respons'}), 500
         return jsonify({'reply': reply_text})
     except Exception as e:
         err_msg = str(e)
-        if _GEMINI_API_KEY:
-            err_msg = err_msg.replace(_GEMINI_API_KEY, '[REDACTED]')
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if api_key:
+            err_msg = err_msg.replace(api_key, '[REDACTED]')
         app.logger.error('Gemini API error: %s', err_msg)
         return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
