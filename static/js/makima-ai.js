@@ -278,7 +278,7 @@ function renderMakimaAI() {
         '<div class="makima-sidebar-list" id="makimaSidebarList"></div>' +
         '<div class="makima-sidebar-footer">' +
           '<button class="makima-clear-all-btn" id="makimaClearAllBtn">CLEAR ALL</button>' +
-          '<button class="makima-back-link" onclick="showMainView()">KEMBALI KE DOWNLOADER</button>' +
+          '<button class="makima-back-link" onclick="showMainView()">\u2190 KEMBALI KE DOWNLOADER</button>' +
         '</div>' +
       '</div>' +
       '<!-- SIDEBAR OVERLAY (mobile) -->' +
@@ -763,6 +763,21 @@ function sendMakimaMessage() {
       } else if (result.status === 403) {
         errMsg = 'MAKIMA AI KHUSUS ADMIN.';
         _appendAIBubble(messagesEl, errMsg);
+        // Save error message to localStorage
+        var allChats403 = loadChats();
+        var targetChat403 = null;
+        for (var j3 = 0; j3 < allChats403.length; j3++) {
+          if (allChats403[j3].id === targetChatId) {
+            targetChat403 = allChats403[j3];
+            break;
+          }
+        }
+        if (targetChat403) {
+          targetChat403.messages.push({ role: 'assistant', text: errMsg });
+          targetChat403.updatedAt = new Date().toISOString();
+          allChats403 = _enforceStorageCaps(allChats403);
+          saveChats(allChats403);
+        }
         messagesEl.scrollTop = messagesEl.scrollHeight;
         _lockMakimaAI();
         _startCooldown();
@@ -771,6 +786,21 @@ function sendMakimaMessage() {
         errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
       }
       _appendAIBubble(messagesEl, errMsg);
+      // Save error message to localStorage
+      var allChatsErr = loadChats();
+      var targetChatErr = null;
+      for (var j2 = 0; j2 < allChatsErr.length; j2++) {
+        if (allChatsErr[j2].id === targetChatId) {
+          targetChatErr = allChatsErr[j2];
+          break;
+        }
+      }
+      if (targetChatErr) {
+        targetChatErr.messages.push({ role: 'assistant', text: errMsg });
+        targetChatErr.updatedAt = new Date().toISOString();
+        allChatsErr = _enforceStorageCaps(allChatsErr);
+        saveChats(allChatsErr);
+      }
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -780,6 +810,21 @@ function sendMakimaMessage() {
     _removeLoadingBubble();
     var errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
     _appendAIBubble(messagesEl, errMsg);
+    // Save error message to localStorage
+    var allChatsCatch = loadChats();
+    var targetChatCatch = null;
+    for (var jc = 0; jc < allChatsCatch.length; jc++) {
+      if (allChatsCatch[jc].id === targetChatId) {
+        targetChatCatch = allChatsCatch[jc];
+        break;
+      }
+    }
+    if (targetChatCatch) {
+      targetChatCatch.messages.push({ role: 'assistant', text: errMsg });
+      targetChatCatch.updatedAt = new Date().toISOString();
+      allChatsCatch = _enforceStorageCaps(allChatsCatch);
+      saveChats(allChatsCatch);
+    }
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
     _startCooldown();

@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix MAKIMA AI localStorage history persistence and save error messages to chat. Ensure chat history does not disappear when switching between chats. Also ensure Gemini is only called on SEND click, not on reload/navigation.",
+  "status": "in_progress",
+  "steps": [
+    "In static/js/makima-ai.js, in the sendMakimaMessage() function's .then() handler: after displaying error bubbles (429, 503, general errors), ALSO save the error message to localStorage by pushing {role:'assistant', text: errMsg} to the targetChat.messages array and calling saveChats(). Currently only successful replies are saved - error messages are displayed but never persisted.",
+    "In the .catch() handler of sendMakimaMessage(), similarly save the error message ('MAKIMA AI SEDANG TIDAK BISA MERESPONS...') to the targetChat in localStorage.",
+    "Verify that switchChat() function correctly loads messages from localStorage by calling _renderChatArea() which reads from getActiveChat(). This is already implemented correctly - the bug is solely that error messages are not saved.",
+    "Ensure the 'KEMBALI KE DOWNLOADER' button in the sidebar footer is clearly visible with a left arrow prefix in its text. Change the button text to include the arrow: update the onclick button text from 'KEMBALI KE DOWNLOADER' to include a left arrow character. The button already exists and calls showMainView() which navigates back without reload, without clearing localStorage.",
+    "In static/css/makima-ai.css, make the back button slightly more prominent - add a subtle background color and ensure it has good contrast. Style it to look like a clear navigation element.",
+    "Verify that Gemini API is ONLY called inside sendMakimaMessage() which is only triggered by click on SEND button or Enter key press. No other function calls the /api/ai-chat endpoint. The current code is already correct - renderMakimaAI(), switchChat(), _renderChatArea() do NOT call Gemini."
+  ],
+  "acceptance_criteria": [
+    "When Gemini returns 429 error, the error bubble 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.' is saved to the active chat's messages in localStorage",
+    "When switching to another chat and switching back, all messages including error bubbles are still displayed",
+    "Error messages from .catch() (network errors) are also persisted to localStorage",
+    "The KEMBALI KE DOWNLOADER button has a left arrow prefix and is styled clearly",
+    "showMainView() does not clear localStorage or reload the page (already correct, just verify)",
+    "No Gemini API calls happen on page load, chat switch, drawer open, or settings interaction"
+  ],
+  "verification": [
+    "Run: python -c \"import ast; ast.parse(open('app.py').read())\" to verify Python syntax",
+    "Run: node --check static/js/makima-ai.js to verify JS syntax",
+    "Grep for '/api/ai-chat' in makima-ai.js to confirm it only appears inside sendMakimaMessage()"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
