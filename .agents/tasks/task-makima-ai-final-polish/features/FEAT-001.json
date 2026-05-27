@@ -1,0 +1,45 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add password lock for MAKIMA AI (frontend + backend), mobile layout polish, image download protection, disable offline/PWA, and Gemini error handling improvements. This is one cohesive feature touching MAKIMA AI only.",
+  "status": "completed",
+  "steps": [
+    "STEP 1 - Backend password protection in app.py: Add password verification to POST /api/ai-chat endpoint. Read MAKIMA_ADMIN_PASSWORD from os.environ (default empty). The endpoint must accept 'password' field in JSON body. If env var is set and password does not match or is missing, return 403 with {\"error\": \"Premium access only\"}. Improve error handling: if Gemini returns 429/quota error, return {\"error\": \"Kuota Gemini sedang habis. Coba lagi nanti.\"}. If API key missing, return {\"error\": \"MAKIMA AI belum dikonfigurasi.\"}.",
+    "STEP 2 - Backend cache headers in app.py: In the set_security_headers after_request function, add Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate and Pragma: no-cache and Expires: 0 headers for HTML responses (content type text/html).",
+    "STEP 3 - Frontend password gate in static/js/makima-ai.js: Before renderMakimaAI() shows the chat, check localStorage 'makima_ai_unlocked'. If not 'true', show a password modal instead of the chat. Modal has title 'MAKIMA AI ACCESS', subtitle 'Private Feature', password input, ENTER button. On submit, send a test request or just store the password. On correct password (MYBINI02 checked locally AND stored for sending with each API request), set makima_ai_unlocked=true in localStorage and render chat. On wrong password, show 'Access denied.' message. Store the password in sessionStorage as 'makima_ai_password' so it can be sent with each API call.",
+    "STEP 4 - Send password with every API call in static/js/makima-ai.js: In the sendMakimaMessage() fetch call to /api/ai-chat, include the password from sessionStorage('makima_ai_password') in the JSON body.",
+    "STEP 5 - Add LOCK button in settings gear dropdown in static/js/makima-ai.js: In the _renderVoiceDropdown() function, after voice options, add a 'LOCK' button that removes 'makima_ai_unlocked' from localStorage and 'makima_ai_password' from sessionStorage, then re-renders the password gate.",
+    "STEP 6 - Mobile layout polish in static/css/makima-ai.css: Update the mobile media query (max-width: 768px) section. Set .makima-chatgpt-layout to min-height: 100dvh, width: 100%, overflow-x: hidden. Make header compact (height 48px). Set chat messages area flex:1, overflow-y:auto, padding:14px, padding-bottom:96px. User bubble right, AI bubble left with avatar. max-width bubble 78%. Input bar: position fixed, bottom 0, left 12px, right 12px, display flex, gap 8px, z-index 999, background dark. Input: flex 1, min-width 0, height 52px, border-radius 14px. SEND button: width 76px, flex-shrink 0, border-radius 14px. Ensure pointer-events active on input.",
+    "STEP 7 - Remove large background character in static/css/makima-ai.css: Ensure no large background image of the character is displayed. Background should be dark red/black gradient only. The .anime-body-silhouette is already hidden via body.makima-ai-body rule - confirm this stays. Avatar only as small circle (32-44px).",
+    "STEP 8 - Image protection enhancement in static/css/makima-ai.css: Add CSS rules for .protected-img, .makima-avatar, .makima-avatar img with user-select:none, -webkit-user-select:none, -webkit-touch-callout:none, pointer-events:none.",
+    "STEP 9 - Offline detection in static/js/protection.js: Add offline detection that shows a message 'Koneksi internet diperlukan untuk menggunakan MII NETWORK.' when navigator.onLine is false. Use window addEventListener for 'offline' event to show an overlay, and 'online' event to hide it.",
+    "STEP 10 - Verify templates/index.html already has service worker unregistration and cache busting (already present with ?v=20260528 on all CSS/JS). Confirm no <link rel='manifest'> exists. No changes needed if already clean.",
+    "STEP 11 - Improve error display in static/js/makima-ai.js: In the fetch .then() handler, check for specific error messages from backend (403 status for password error, 503 for not configured, quota errors) and display user-friendly Indonesian messages."
+  ],
+  "acceptance_criteria": [
+    "POST /api/ai-chat returns 403 when password field is missing or wrong (when MAKIMA_ADMIN_PASSWORD env is set)",
+    "POST /api/ai-chat works normally when correct password is provided",
+    "Frontend shows password modal before MAKIMA AI chat when makima_ai_unlocked is not set in localStorage",
+    "Password MYBINI02 grants access and stores unlock state",
+    "Wrong password shows 'Access denied.' message",
+    "LOCK button in settings removes unlock state and shows password modal again",
+    "Mobile layout: input bar is fixed at bottom, not cut off, SEND button visible",
+    "Mobile layout: chat messages scroll properly with padding-bottom for input area",
+    "Images have CSS protection against long-press/download",
+    "Service workers are unregistered, caches cleared, no manifest link",
+    "Offline state shows user-friendly message",
+    "HTML responses have no-cache headers",
+    "Gemini quota/key errors return specific user-friendly messages",
+    "TikTok Downloader functionality is completely untouched"
+  ],
+  "verification": [
+    "Run: python -c \"import app; print('OK')\" to verify app.py loads without errors",
+    "Run: grep -n 'MAKIMA_ADMIN_PASSWORD' app.py to confirm env var usage",
+    "Run: grep -n 'Premium access only' app.py to confirm 403 response",
+    "Run: grep -n 'makima_ai_unlocked' static/js/makima-ai.js to confirm password gate",
+    "Run: grep -n 'pointer-events.*none' static/css/makima-ai.css to confirm image protection",
+    "Run: grep -n 'no-store' app.py to confirm cache headers"
+  ],
+  "blocked_reason": null,
+  "findings": "All verification checks pass. App loads without errors (python3 -c import app). No manifest link in index.html. Cache busting already present. Service worker unregister code confirmed in both templates/index.html inline script and protection.js."
+}

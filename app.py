@@ -185,6 +185,12 @@ def set_security_headers(response):
         "img-src 'self' data: https:; "
         "media-src 'self' blob:;"
     )
+    # No-cache headers for HTML responses
+    content_type = response.headers.get('Content-Type', '')
+    if 'text/html' in content_type:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 
@@ -1377,13 +1383,25 @@ def ai_chat():
     if len(message) > 2000:
         return jsonify({'error': 'Pesan terlalu panjang (maks 2000 karakter)'}), 400
 
+    # Password protection
+    admin_password = os.environ.get('MAKIMA_ADMIN_PASSWORD', '')
+    if admin_password:
+        provided_password = data.get('password', '')
+        if not provided_password or provided_password != admin_password:
+            return jsonify({'error': 'Premium access only'}), 403
+
     # Rate limiting
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     if not _check_rate_limit(client_ip, _rate_store_ai, RATE_LIMIT_AI_SECONDS):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
+    # Check API key configuration
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return jsonify({'error': 'MAKIMA AI belum dikonfigurasi.'}), 503
+
     if not _get_gemini_model():
-        return jsonify({'error': 'MAKIMA AI is not configured'}), 503
+        return jsonify({'error': 'MAKIMA AI belum dikonfigurasi.'}), 503
 
     # Build conversation context from history
     # Note: history roles are client-controlled; this is by design for a character
@@ -1424,10 +1442,13 @@ def ai_chat():
         return jsonify({'reply': reply_text})
     except Exception as e:
         err_msg = str(e)
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if api_key:
-            err_msg = err_msg.replace(api_key, '[REDACTED]')
+        api_key_val = os.environ.get("GEMINI_API_KEY")
+        if api_key_val:
+            err_msg = err_msg.replace(api_key_val, '[REDACTED]')
         app.logger.error('Gemini API error: %s', err_msg)
+        # Check for quota/rate limit errors
+        if '429' in err_msg or 'quota' in err_msg.lower() or 'resource exhausted' in err_msg.lower():
+            return jsonify({'error': 'Kuota Gemini sedang habis. Coba lagi nanti.'}), 429
         return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
 

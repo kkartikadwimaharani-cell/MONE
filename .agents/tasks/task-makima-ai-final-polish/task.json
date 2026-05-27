@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-ai-final-polish",
+  "task_description": "Final polish for MAKIMA AI: password lock (frontend + backend), mobile layout improvements, image download protection, disable offline/PWA caching, and Gemini error handling. No changes to TikTok Downloader.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
