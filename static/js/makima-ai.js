@@ -9,18 +9,20 @@ function renderMakimaAI() {
 
   container.innerHTML =
     '<div class="makima-ai-page">' +
-      '<button class="makima-ai-back-btn" onclick="showMainView()">&#8592; BACK TO DOWNLOADER</button>' +
+      '<button class="makima-ai-back-btn" onclick="showMainView()">&#8592; KEMBALI KE DOWNLOADER</button>' +
       '<div class="makima-ai-header">' +
         '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA AI" class="makima-ai-header-avatar" />' +
         '<h2 class="makima-ai-title">MAKIMA AI</h2>' +
         '<p class="makima-ai-subtitle">MII NETWORK CHARACTER ASSISTANT</p>' +
+        '<span class="makima-ai-online-badge">ONLINE</span>' +
       '</div>' +
       '<div class="makima-ai-messages" id="makimaMessages"></div>' +
       '<div class="makima-ai-input-area">' +
         '<div class="makima-ai-input-wrap">' +
-          '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
+          '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
           '<button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>' +
         '</div>' +
+        '<p class="makima-ai-disclaimer">MAKIMA AI dapat membuat kesalahan. Periksa informasi penting.</p>' +
         '<div class="makima-ai-error" id="makimaError"></div>' +
       '</div>' +
     '</div>';
@@ -101,7 +103,7 @@ function _showLoadingBubble(container) {
   var bubble = document.createElement('div');
   bubble.className = 'makima-msg-loading';
   bubble.innerHTML =
-    '<span class="makima-msg-loading-text">MAKIMA AI sedang berpikir</span>' +
+    '<span class="makima-msg-loading-text">MAKIMA AI sedang berpikir...</span>' +
     '<span class="makima-loading-dots"><span></span><span></span><span></span></span>';
 
   row.appendChild(avatar);

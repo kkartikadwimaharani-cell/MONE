@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Overhaul MAKIMA AI chat UI to match desktop/mobile mockup specifications - fix layout, avatar sizes, input bar, SEND button, back button, online badge, disclaimer, and mobile keyboard fixes. Also bump cache version.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Update static/js/makima-ai.js renderMakimaAI() function to match mockup: (a) Change header avatar class to use proper size (56-64px desktop, 64-72px mobile via CSS), (b) Add ONLINE status badge after subtitle, (c) Change placeholder text to 'Ketik pesan untuk MAKIMA AI...', (d) Change back button text to use arrow entity + 'KEMBALI KE DOWNLOADER', (e) Add disclaimer text below input area: 'MAKIMA AI dapat membuat kesalahan. Periksa informasi penting.', (f) Change loading bubble text to include '...' at end: 'MAKIMA AI sedang berpikir...'",
+    "Step 2 - Update static/css/makima-ai.css to match all mobile/desktop specifications: (a) Header avatar desktop: 56-64px, mobile: 64-72px (remove current 96px/76px). (b) Add .makima-ai-online-badge style: small green/red badge with ONLINE text. (c) Input area mobile: position sticky, bottom 0, padding 12px 16px, z-index 50, background rgba(5,0,0,.92), border-top 1px solid rgba(255,0,40,.25). (d) Input field mobile: height 52px, border-radius 14px, flex 1, min-width 0. (e) SEND button mobile: width 76px, flex-shrink 0, border-radius 14px, background red, color white. (f) Chat messages: padding-bottom 90px on mobile. (g) Back button: outline red style with border, not white default - already looks correct, just ensure text is 'KEMBALI KE DOWNLOADER'. (h) Ensure min-height uses 100dvh. (i) Ensure input has proper z-index, pointer-events auto, -webkit-appearance none, touch-action manipulation for keyboard fix.",
+    "Step 3 - Update templates/index.html cache version from ?v=2.1 to ?v=2.2 on all CSS and JS link/script tags to bust cache after these changes.",
+    "Step 4 - Minor verification: Ensure the navigateTo function in static/js/ui.js correctly hides the .header element (hero with NO WATERMARK badge, MII NETWORK title, TIKTOK DOWNLOADER subtitle) when MAKIMA AI is active and shows it when downloader is active. This is ALREADY working correctly per current code - just verify no changes needed."
+  ],
+  "acceptance_criteria": [
+    "MAKIMA AI chat renders without page reload when clicking sidebar menu item",
+    "Header hero (NO WATERMARK badge, MII NETWORK title, TIKTOK DOWNLOADER) is hidden when MAKIMA AI is active",
+    "Avatar in chat header is 56-64px on desktop and 64-72px on mobile (not 96px)",
+    "ONLINE badge appears in chat header",
+    "Back button shows 'KEMBALI KE DOWNLOADER' with outline red style",
+    "Input placeholder reads 'Ketik pesan untuk MAKIMA AI...'",
+    "SEND button on mobile is 76px wide, not cut off, border-radius 14px",
+    "Input on mobile has height 52px, border-radius 14px",
+    "Input bar is sticky at bottom with proper z-index and background",
+    "Disclaimer text appears below input",
+    "Loading bubble says 'MAKIMA AI sedang berpikir...'",
+    "All CSS/JS tags use ?v=2.2 for cache busting",
+    "Makima photo is only used as round avatar (not background/hero/banner)",
+    "Docker build succeeds with no errors"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/miitokk && python -c \"import app; print('OK')\" to verify no Python syntax errors",
+    "Run: docker build -t miitokk:test . to verify the full build works",
+    "Grep for '?v=2.2' in templates/index.html to confirm cache busting updated",
+    "Grep for 'KEMBALI KE DOWNLOADER' in static/js/makima-ai.js to confirm back button text",
+    "Grep for 'Ketik pesan untuk MAKIMA AI' in static/js/makima-ai.js to confirm placeholder",
+    "Grep for 'sedang berpikir...' in static/js/makima-ai.js to confirm loading text"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

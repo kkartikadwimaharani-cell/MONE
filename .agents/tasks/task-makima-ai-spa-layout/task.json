@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-ai-spa-layout",
+  "task_description": "Overhaul MAKIMA AI feature to match desktop/mobile mockup: fix SPA navigation (no reload), proper chat layout with correct avatar sizes, ONLINE badge, sticky input bar with proper mobile sizing, SEND button not cut off, back button styled properly, disclaimer text, loading text, and cache busting. Do not touch TikTok downloader logic.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
