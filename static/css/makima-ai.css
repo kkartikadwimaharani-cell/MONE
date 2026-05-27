@@ -1,0 +1,170 @@
+/* ── MAKIMA AI STYLES ─────────────────────────────── */
+
+.makima-ai-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.makima-ai-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.makima-ai-title {
+  font-family: var(--font-logo);
+  font-size: 2rem;
+  color: var(--red);
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.makima-ai-subtitle {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--white-dim);
+  letter-spacing: 3px;
+  margin: 6px 0 0 0;
+}
+
+.makima-ai-chat-container {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(204, 0, 0, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.makima-ai-messages {
+  min-height: 300px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.makima-ai-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.makima-ai-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.makima-ai-messages::-webkit-scrollbar-thumb {
+  background: var(--red-dark);
+  border-radius: 2px;
+}
+
+.makima-msg {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.makima-msg-user {
+  align-self: flex-end;
+  background: rgba(204, 0, 0, 0.2);
+  border: 1px solid rgba(204, 0, 0, 0.3);
+  color: var(--white);
+}
+
+.makima-msg-ai {
+  align-self: flex-start;
+  background: rgba(20, 8, 8, 0.8);
+  border: 1px solid rgba(204, 0, 0, 0.15);
+  color: var(--white-dim);
+}
+
+.makima-msg-loading {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.makima-ai-input-area {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.makima-ai-input-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.makima-ai-input {
+  flex: 1;
+  background: rgba(10, 4, 4, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.makima-ai-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 8px rgba(204, 0, 0, 0.3);
+}
+
+.makima-ai-input::placeholder {
+  color: var(--white-dim);
+  opacity: 0.5;
+}
+
+.makima-ai-send-btn {
+  background: linear-gradient(135deg, var(--red), var(--red-dark));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.makima-ai-send-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 12px rgba(204, 0, 0, 0.4);
+}
+
+.makima-ai-send-btn:active {
+  transform: scale(0.97);
+}
+
+.makima-ai-error {
+  color: var(--red);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  margin-top: 8px;
+  min-height: 1.2em;
+}
+
+@media (max-width: 600px) {
+  .makima-ai-messages {
+    min-height: 250px;
+    max-height: 350px;
+  }
+
+  .makima-msg {
+    max-width: 85%;
+  }
+
+  .makima-ai-title {
+    font-size: 1.6rem;
+  }
+}
