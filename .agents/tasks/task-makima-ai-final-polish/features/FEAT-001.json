@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Add password lock for MAKIMA AI (frontend + backend), mobile layout polish, image download protection, disable offline/PWA, and Gemini error handling improvements. This is one cohesive feature touching MAKIMA AI only.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "STEP 1 - Backend password protection in app.py: Add password verification to POST /api/ai-chat endpoint. Read MAKIMA_ADMIN_PASSWORD from os.environ (default empty). The endpoint must accept 'password' field in JSON body. If env var is set and password does not match or is missing, return 403 with {\"error\": \"Premium access only\"}. Improve error handling: if Gemini returns 429/quota error, return {\"error\": \"Kuota Gemini sedang habis. Coba lagi nanti.\"}. If API key missing, return {\"error\": \"MAKIMA AI belum dikonfigurasi.\"}.",
     "STEP 2 - Backend cache headers in app.py: In the set_security_headers after_request function, add Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate and Pragma: no-cache and Expires: 0 headers for HTML responses (content type text/html).",
@@ -41,5 +41,5 @@
     "Run: grep -n 'no-store' app.py to confirm cache headers"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All verification checks pass. App loads without errors (python3 -c import app). No manifest link in index.html. Cache busting already present. Service worker unregister code confirmed in both templates/index.html inline script and protection.js."
 }
