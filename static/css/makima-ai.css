@@ -307,8 +307,8 @@ body.makima-ai-body .anime-body-silhouette {
 }
 
 .makima-header-avatar {
-  width: 56px;
-  height: 56px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center;
@@ -723,13 +723,6 @@ body.makima-ai-body .anime-body-silhouette {
     padding-bottom: 0 !important;
   }
 
-  #viewMakimaAI.view-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
   .makima-chatgpt-layout {
     flex-direction: column;
   }
@@ -820,6 +813,7 @@ body.makima-ai-body .anime-body-silhouette {
 /* ── RESPONSIVE (DESKTOP) ────────────────────────── */
 
 @media (min-width: 769px) {
+  /* Relies on base rule height: 100vh for proper sticky scroll containment */
   .makima-sidebar {
     position: sticky;
     left: 0;
@@ -834,8 +828,13 @@ body.makima-ai-body .anime-body-silhouette {
     display: none !important;
   }
 
-  .makima-header-avatar {
-    width: 56px;
+  .makima-compact-header {
     height: 56px;
+    min-height: 56px;
+  }
+
+  .makima-header-avatar {
+    width: 44px;
+    height: 44px;
   }
 }
