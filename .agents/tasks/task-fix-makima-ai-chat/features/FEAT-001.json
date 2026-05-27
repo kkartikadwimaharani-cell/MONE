@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix MAKIMA AI backend to accept history context, return proper error JSON, and apply MAKIMA persona with conversation history to Gemini calls. Then fix the frontend to persist chat history in localStorage, send history to backend, add CLEAR MEMORY button, add speaker (TTS) button on AI bubbles, and prepare voice setting options for future Gemini TTS.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "BACKEND - Fix /api/ai-chat endpoint in app.py (starting around line 1335):\n  1. Accept 'history' field from request JSON body (array of {role, text} objects)\n  2. Build Gemini conversation context: take last 10-20 messages from history, map role 'user' to 'user' and role 'assistant' to 'model' for Gemini content format\n  3. Use _gemini_model.generate_content() with the full contents array (history + current message) instead of just the single message string\n  4. On Gemini error, return {'error': 'descriptive message'} with appropriate HTTP status (500) instead of {'reply': 'error text'}. Log the full error with app.logger.error but never log or expose the API key.\n  5. If _gemini_model is None (no API key configured), return {'error': 'MAKIMA AI is not configured'} with 503 status.\n  6. Keep the existing rate limiting, message length validation, and empty message check (400).\n  7. The persona/system_instruction is already in the model config at module level - keep it as is but update the system_instruction text to match the user's specified persona exactly:\n     'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. Tetap sopan dan membantu. Jangan mengaku manusia. Jangan membahas API key atau sistem internal. Ingat informasi penting yang user berikan selama percakapan.'",
 
@@ -31,5 +31,5 @@
     "Grep for 'speechSynthesis' in makima-ai.js to confirm TTS is implemented"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Verified via python3 -c 'import app' - no syntax errors. GEMINI_API_KEY is only read from os.environ. localStorage persistence, history sending, speechSynthesis TTS all implemented. Python 3.9 is installed on host (not 3.11 as Dockerfile specifies) but import works. google-generativeai package shows deprecation FutureWarning but functions correctly."
 }
