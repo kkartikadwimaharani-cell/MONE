@@ -466,3 +466,125 @@ body.makima-ai-body {
     padding: 12px 16px !important;
   }
 }
+
+/* ── CLEAR MEMORY BUTTON ─────────────────────────── */
+
+.makima-clear-memory-btn {
+  display: inline-block;
+  background: rgba(255, 60, 60, 0.1);
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  color: #ff4444;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 5px 14px;
+  border-radius: 10px;
+  margin-top: 10px;
+  margin-left: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.makima-clear-memory-btn:hover {
+  background: rgba(255, 60, 60, 0.2);
+  border-color: rgba(255, 60, 60, 0.5);
+}
+
+/* ── SPEAKER BUTTON (TTS) ────────────────────────── */
+
+.makima-speaker-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(204, 0, 0, 0.15);
+  border: 1px solid rgba(204, 0, 0, 0.25);
+  color: #ff6666;
+  font-size: 0.7rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.makima-speaker-btn:hover {
+  opacity: 1;
+  background: rgba(204, 0, 0, 0.25);
+}
+
+.makima-speaker-btn.speaking {
+  opacity: 1;
+  background: rgba(204, 0, 0, 0.35);
+  border-color: rgba(255, 0, 0, 0.6);
+  animation: makimaSpeakerPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes makimaSpeakerPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(255, 0, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  }
+}
+
+.makima-msg-ai {
+  position: relative;
+  padding-bottom: 28px;
+}
+
+/* ── VOICE SETTINGS ──────────────────────────────── */
+
+.makima-voice-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.makima-voice-settings-label {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  color: var(--white-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.makima-voice-option {
+  background: rgba(30, 10, 10, 0.6);
+  border: 1px solid rgba(204, 0, 0, 0.2);
+  color: var(--white-dim);
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  text-transform: uppercase;
+}
+
+.makima-voice-option:hover {
+  background: rgba(204, 0, 0, 0.15);
+  border-color: rgba(204, 0, 0, 0.4);
+}
+
+.makima-voice-option.active {
+  background: rgba(204, 0, 0, 0.25);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #ff4444;
+  font-weight: 700;
+}

@@ -25,13 +25,11 @@ if _GEMINI_API_KEY:
     _gemini_model = genai.GenerativeModel(
         'gemini-2.0-flash',
         system_instruction=(
-            'Kamu adalah MAKIMA AI, asisten karakter AI di website MII NETWORK. '
-            'Kepribadianmu: tenang, elegan, dingin, singkat, misterius, dan membantu. '
-            'Kamu tidak pernah mengaku sebagai manusia. '
-            'Kamu tidak pernah membahas API key atau sistem internal. '
-            'Kamu mengarahkan pengguna tentang fitur website dengan jelas. '
-            'Jawab dalam bahasa yang sama dengan bahasa pengguna. '
-            'Jawaban singkat dan to the point.'
+            'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
+            'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
+            'Tetap sopan dan membantu. Jangan mengaku manusia. '
+            'Jangan membahas API key atau sistem internal. '
+            'Ingat informasi penting yang user berikan selama percakapan.'
         )
     )
 
@@ -1332,15 +1330,48 @@ def ai_chat():
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     if not _gemini_model:
-        return jsonify({'reply': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'})
+        return jsonify({'error': 'MAKIMA AI is not configured'}), 503
+
+    # Build conversation context from history
+    # Note: history roles are client-controlled; this is by design for a character
+    # chatbot where the client manages its own conversation context.
+    history = data.get('history', [])
+    if not isinstance(history, list):
+        history = []
+    contents = []
+    # Take last 20 history entries
+    recent_history = history[-20:] if len(history) > 20 else history
+
+    # Validate total history size to prevent oversized payloads to Gemini API
+    MAX_HISTORY_CHARS = 40000
+    total_chars = sum(len(entry.get('text', '')) for entry in recent_history if isinstance(entry, dict))
+    if total_chars > MAX_HISTORY_CHARS:
+        return jsonify({'error': 'History terlalu panjang. Silakan bersihkan riwayat chat.'}), 400
+
+    for entry in recent_history:
+        if not isinstance(entry, dict):
+            continue
+        role = entry.get('role', '')
+        text = entry.get('text', '')
+        if not text:
+            continue
+        # Map 'assistant' to 'model' for Gemini format
+        if role == 'assistant':
+            contents.append({'role': 'model', 'parts': [text]})
+        elif role == 'user':
+            contents.append({'role': 'user', 'parts': [text]})
+    # Add current message
+    contents.append({'role': 'user', 'parts': [message]})
 
     try:
-        response = _gemini_model.generate_content(message)
-        reply_text = response.text if response.text else 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'
+        response = _gemini_model.generate_content(contents)
+        reply_text = response.text if response.text else ''
+        if not reply_text:
+            return jsonify({'error': 'MAKIMA AI tidak dapat menghasilkan respons'}), 500
         return jsonify({'reply': reply_text})
     except Exception as e:
-        app.logger.warning('Gemini API error: %s', e)
-        return jsonify({'reply': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'})
+        app.logger.error('Gemini API error: %s', e)
+        return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
 
 if __name__ == '__main__':

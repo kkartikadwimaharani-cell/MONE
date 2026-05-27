@@ -1,0 +1,21 @@
+{
+  "project_type": "Flask web app deployed on Railway with Gunicorn",
+  "language": "Python (backend), JavaScript (frontend)",
+  "build_system": "pip + Dockerfile (python:3.11-slim with ffmpeg)",
+  "test_framework": "No formal test framework found",
+  "build_command": "pip install -r requirements.txt",
+  "test_command": "python -c \"import app\"",
+  "verification_instructions": "1. Run 'pip install -r requirements.txt' to install deps. 2. Run 'python -c \"import app\"' to verify syntax. 3. Verify /api/ai-chat endpoint logic by reading code.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET network mode. GEMINI_API_KEY env var needed at runtime but not available in sandbox for live testing. Validate via syntax/import checks.",
+  "contribution_requirements": "Do NOT touch TikTok downloader code. Do NOT hardcode API keys. Do NOT modify downloader endpoints.",
+  "key_patterns": "Flask app with routes in app.py. Frontend JS in /static/js/. CSS in /static/css/. Single-page app with views toggled via JS. Gemini model configured at module level using google-generativeai SDK.",
+  "relevant_files": [
+    "/projects/sandbox/miitokk/app.py",
+    "/projects/sandbox/miitokk/static/js/makima-ai.js",
+    "/projects/sandbox/miitokk/static/css/makima-ai.css",
+    "/projects/sandbox/miitokk/templates/index.html"
+  ],
+  "directory_structure": "app.py = main Flask backend. static/js/makima-ai.js = MAKIMA AI frontend logic. static/css/makima-ai.css = MAKIMA AI styles. templates/index.html = single HTML template."
+}
