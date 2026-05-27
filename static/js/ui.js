@@ -328,11 +328,14 @@ function hidePreview() {
         var viewComingSoon = document.getElementById('viewComingSoon');
         var viewStore = document.getElementById('viewStore');
         var viewControl = document.getElementById('viewControl');
+        var viewMakimaAI = document.getElementById('viewMakimaAI');
 
         if (viewDownloader) viewDownloader.style.display = 'none';
         if (viewComingSoon) viewComingSoon.style.display = 'none';
         if (viewStore) viewStore.style.display = 'none';
         if (viewControl) viewControl.style.display = 'none';
+        if (viewMakimaAI) viewMakimaAI.style.display = 'none';
+        document.body.classList.remove('makima-ai-body');
 
         var fm = featureMap[feature];
         renderComingSoon(fm.title, 'COMING SOON', fm.description);
