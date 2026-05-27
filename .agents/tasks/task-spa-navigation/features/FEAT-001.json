@@ -34,5 +34,5 @@
     "Verify static/js/makima-ai.js is included in templates/index.html"
   ],
   "blocked_reason": null,
-  "findings": "All changes verified. App imports cleanly. No window.location.href in JS files. The /ai route now serves index.html and client-side route detection shows the AI view. The makima-ai.js script already had renderMakimaAI targeting #viewMakimaAI and showMainView calling navigateTo('downloader') via the globally exposed function, so no changes needed there. Post-review fixes applied: (1) added viewMakimaAI to the hide list in the data-feature click handler branch so navigating from AI chat to a coming-soon feature hides the AI view, also removes makima-ai-body class; (2) deleted dead templates/ai.html file."
+  "findings": "Second pass: Removed all /ai URL routing from client-side. pushState now always uses '/' to keep MAKIMA AI as a same-page tab. Header (.header element) is hidden when AI view is active and shown again when leaving AI. Removed initial /ai path detection. popstate now uses state object. Added cache busting ?v=2.1, service worker unregister, sticky input, pointer-events fix, and min-height 100dvh for chat page."
 }
