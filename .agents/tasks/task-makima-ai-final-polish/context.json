@@ -1,0 +1,26 @@
+{
+  "project_type": "Flask Python SPA web app deployed on Railway",
+  "language": "Python (backend), HTML/CSS/JS (frontend)",
+  "build_system": "pip + gunicorn, Railway deploys via Dockerfile or nixpacks",
+  "test_framework": "No formal test framework - manual verification via build and runtime",
+  "build_command": "pip install -r requirements.txt",
+  "test_command": "python -c \"import app; print('App module loads successfully')\"",
+  "verification_instructions": "1. Run pip install -r requirements.txt 2. Run python -c to verify app module loads 3. Verify Dockerfile builds",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET network mode. Gemini API key and MAKIMA_ADMIN_PASSWORD would be set as Railway env vars in production.",
+  "contribution_requirements": "DO NOT touch TikTok Downloader files (downloader.js, photo.js). DO NOT change downloader logic. DO NOT do major refactoring. DO NOT hardcode Gemini API key.",
+  "key_patterns": "SPA with views toggled via navigateTo() in ui.js. Body class makima-ai-body applied when on AI page. MAKIMA AI rendered by renderMakimaAI() in makima-ai.js. Backend uses _get_gemini_model() lazy init. Rate limiting per endpoint. All CSS uses dark red/black theme with CSS variables from variables.css.",
+  "relevant_files": [
+    "app.py",
+    "templates/index.html",
+    "static/js/makima-ai.js",
+    "static/js/ui.js",
+    "static/js/protection.js",
+    "static/css/makima-ai.css",
+    "static/css/responsive.css",
+    "Dockerfile",
+    "requirements.txt"
+  ],
+  "directory_structure": "Root: app.py (Flask), templates/index.html (main template), static/css/ (stylesheets), static/js/ (scripts), static/img/ (images). SPA navigation via ui.js with views: downloader, makima-ai, store, control, coming-soon."
+}

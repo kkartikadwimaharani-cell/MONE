@@ -167,11 +167,87 @@ function _migrateLegacyChat() {
   }
 }
 
+/* ── PASSWORD GATE ────────────────────────────────── */
+
+var _MAKIMA_ACCESS_CODE = 'MYBINI02';
+
+function _isMakimaUnlocked() {
+  try {
+    return localStorage.getItem('makima_ai_unlocked') === 'true';
+  } catch (e) {
+    return false;
+  }
+}
+
+function _renderPasswordGate(container) {
+  container.innerHTML =
+    '<div class="makima-password-gate">' +
+      '<div class="makima-password-modal">' +
+        '<div class="makima-password-title">MAKIMA AI ACCESS</div>' +
+        '<div class="makima-password-subtitle">Private Feature</div>' +
+        '<input type="password" id="makimaPasswordInput" class="makima-password-input" placeholder="Enter access code..." autocomplete="off" />' +
+        '<button class="makima-password-btn" id="makimaPasswordBtn">ENTER</button>' +
+        '<div class="makima-password-error" id="makimaPasswordError"></div>' +
+      '</div>' +
+    '</div>';
+
+  var passInput = document.getElementById('makimaPasswordInput');
+  var passBtn = document.getElementById('makimaPasswordBtn');
+  var passError = document.getElementById('makimaPasswordError');
+
+  if (passBtn) {
+    passBtn.addEventListener('click', function() {
+      _checkMakimaPassword(passInput, passError);
+    });
+  }
+  if (passInput) {
+    passInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') _checkMakimaPassword(passInput, passError);
+    });
+    passInput.focus();
+  }
+}
+
+function _checkMakimaPassword(inputEl, errorEl) {
+  var value = inputEl ? inputEl.value.trim() : '';
+  if (value === _MAKIMA_ACCESS_CODE) {
+    try {
+      localStorage.setItem('makima_ai_unlocked', 'true');
+      sessionStorage.setItem('makima_ai_password', value);
+    } catch (e) {}
+    renderMakimaAI();
+  } else {
+    if (errorEl) errorEl.textContent = 'Access denied.';
+    if (inputEl) { inputEl.value = ''; inputEl.focus(); }
+  }
+}
+
+function _lockMakimaAI() {
+  try {
+    localStorage.removeItem('makima_ai_unlocked');
+    sessionStorage.removeItem('makima_ai_password');
+  } catch (e) {}
+  renderMakimaAI();
+}
+
 /* ── MAIN RENDER ─────────────────────────────────── */
 
 function renderMakimaAI() {
   var container = document.getElementById('viewMakimaAI');
   if (!container) return;
+
+  // Check password gate
+  if (!_isMakimaUnlocked()) {
+    _renderPasswordGate(container);
+    return;
+  }
+
+  // Ensure password is in sessionStorage for API calls
+  try {
+    if (!sessionStorage.getItem('makima_ai_password')) {
+      sessionStorage.setItem('makima_ai_password', _MAKIMA_ACCESS_CODE);
+    }
+  } catch (e) {}
 
   // Migrate legacy single-chat localStorage if present
   _migrateLegacyChat();
@@ -332,16 +408,25 @@ function _renderVoiceDropdown() {
     var activeClass = (v === current) ? ' active' : '';
     html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + _escapeHtml(v) + '">' + _escapeHtml(v) + '</button>';
   }
+  html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">Security</div>';
+  html += '<button class="makima-voice-opt makima-lock-btn" id="makimaLockBtn">LOCK</button>';
   dropdown.innerHTML = html;
 
-  var btns = dropdown.querySelectorAll('.makima-voice-opt');
+  var btns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
   for (var j = 0; j < btns.length; j++) {
     btns[j].addEventListener('click', function() {
       var voice = this.getAttribute('data-voice');
       _setVoiceSetting(voice);
-      var allBtns = dropdown.querySelectorAll('.makima-voice-opt');
+      var allBtns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
       for (var k = 0; k < allBtns.length; k++) allBtns[k].classList.remove('active');
       this.classList.add('active');
+    });
+  }
+
+  var lockBtn = document.getElementById('makimaLockBtn');
+  if (lockBtn) {
+    lockBtn.addEventListener('click', function() {
+      _lockMakimaAI();
     });
   }
 }
@@ -610,7 +695,7 @@ function sendMakimaMessage() {
   fetch('/api/ai-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: message, history: historyToSend })
+    body: JSON.stringify({ message: message, history: historyToSend, password: sessionStorage.getItem('makima_ai_password') || '' })
   })
   .then(function(res) {
     return res.json().then(function(data) {
@@ -642,7 +727,18 @@ function sendMakimaMessage() {
 
       messagesEl.scrollTop = messagesEl.scrollHeight;
     } else if (result.data.error) {
-      errorEl.textContent = result.data.error;
+      // User-friendly error messages based on status
+      var errMsg = result.data.error;
+      if (result.status === 403) {
+        errMsg = 'Akses ditolak. Password salah atau tidak valid.';
+        _lockMakimaAI();
+        return;
+      } else if (result.status === 503) {
+        errMsg = 'MAKIMA AI belum dikonfigurasi.';
+      } else if (result.status === 429) {
+        errMsg = errMsg || 'Terlalu cepat, coba lagi beberapa saat.';
+      }
+      errorEl.textContent = errMsg;
     }
   })
   .catch(function() {
