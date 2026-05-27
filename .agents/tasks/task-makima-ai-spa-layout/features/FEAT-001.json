@@ -34,5 +34,5 @@
     "Grep for 'sedang berpikir...' in static/js/makima-ai.js to confirm loading text"
   ],
   "blocked_reason": null,
-  "findings": "Docker build succeeded. Python import check passed. All 17 cache version tags updated from v=2.1 to v=2.2. All JS text changes verified via grep."
+  "findings": "Docker build succeeded. Python import check passed. All 17 cache version tags updated from v=2.1 to v=2.2. All JS text changes verified via grep. Review follow-up: fixed mobile .makima-ai-messages padding to include 90px bottom for sticky input clearance, and changed .makima-ai-input-wrap overflow from hidden to visible to prevent focus box-shadow clipping."
 }
