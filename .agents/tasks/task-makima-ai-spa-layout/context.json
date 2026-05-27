@@ -1,0 +1,22 @@
+{
+  "project_type": "Python Flask app with static HTML/CSS/JS frontend (SPA-like navigation)",
+  "language": "Python (backend), HTML/CSS/JavaScript (frontend)",
+  "build_system": "Docker with gunicorn, deployed on Railway",
+  "test_framework": "No automated tests - manual verification via Docker build",
+  "build_command": "docker build -t miitokk:test .",
+  "test_command": "python -c \"import app\" (basic import check since no test suite)",
+  "verification_instructions": "1. Run docker build to verify no syntax errors. 2. Verify app.py imports successfully. 3. Check CSS/JS have no syntax errors by reviewing changes.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET - full network access, Docker available",
+  "contribution_requirements": "Do not touch TikTok downloader logic, do not hardcode API keys, do not refactor massively, focus on MAKIMA AI navigation/layout/avatar/chat UI only",
+  "key_patterns": "SPA navigation via ui.js navigateTo() function, views toggled by display:none/block, body class 'makima-ai-body' added when AI view active, header hidden on AI view, CSS modular (variables.css, base.css, layout.css, components.css, animations.css, drawer.css, responsive.css, makima-ai.css), JS modular (config.js, ui.js, downloader.js, photo.js, effects.js, main.js, makima-ai.js), cache busting via ?v=2.1 query params",
+  "relevant_files": [
+    "static/js/makima-ai.js",
+    "static/css/makima-ai.css",
+    "static/js/ui.js",
+    "templates/index.html",
+    "app.py"
+  ],
+  "directory_structure": "app.py (Flask backend), templates/index.html (single HTML template), static/css/ (modular CSS files), static/js/ (modular JS files), static/img/ (images including makima-ai-profile.png)"
+}

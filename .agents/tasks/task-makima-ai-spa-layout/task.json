@@ -1,0 +1,14 @@
+{
+  "task_id": "task-makima-ai-spa-layout",
+  "task_description": "Overhaul MAKIMA AI feature to match desktop/mobile mockup: fix SPA navigation (no reload), proper chat layout with correct avatar sizes, ONLINE badge, sticky input bar with proper mobile sizing, SEND button not cut off, back button styled properly, disclaimer text, loading text, and cache busting. Do not touch TikTok downloader logic.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "pass",
+    "summary": "Docker build succeeds. Python app imports OK. All UI changes verified via grep: back button text, placeholder, loading text, ONLINE badge, disclaimer, cache version bump. Review issues (mobile padding, overflow clipping) addressed in follow-up commit."
+  }
+}
