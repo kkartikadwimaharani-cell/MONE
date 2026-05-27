@@ -1447,7 +1447,7 @@ def ai_chat():
             err_msg = err_msg.replace(api_key_val, '[REDACTED]')
         app.logger.error('Gemini API error: %s', err_msg)
         # Check for quota/rate limit errors
-        if '429' in err_msg or 'quota' in err_msg.lower() or 'resource' in err_msg.lower():
+        if '429' in err_msg or 'quota' in err_msg.lower() or 'resource exhausted' in err_msg.lower():
             return jsonify({'error': 'Kuota Gemini sedang habis. Coba lagi nanti.'}), 429
         return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
