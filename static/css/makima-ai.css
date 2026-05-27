@@ -23,6 +23,8 @@
 .makima-ai-header-avatar {
   width: 90px;
   height: 90px;
+  max-width: 90px;
+  max-height: 90px;
   border-radius: 50%;
   border: 3px solid var(--red);
   box-shadow: 0 0 18px rgba(204, 0, 0, 0.4), 0 0 40px rgba(204, 0, 0, 0.15);
@@ -305,6 +307,8 @@
   .makima-ai-header-avatar {
     width: 70px;
     height: 70px;
+    max-width: 70px;
+    max-height: 70px;
   }
 
   .makima-ai-title {

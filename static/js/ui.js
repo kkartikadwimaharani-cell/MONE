@@ -143,7 +143,8 @@ function hidePreview() {
 
     // Push history state when navigating away from downloader
     if (!skipPush && view !== 'downloader') {
-      history.pushState({ view: view }, '', '');
+      var url = view === 'makima-ai' ? '/ai' : '';
+      history.pushState({ view: view }, '', url);
     }
 
     // Update active state in drawer
@@ -285,6 +286,7 @@ function hidePreview() {
 
   function showMainView() {
     navigateTo('downloader', true);
+    history.pushState({ view: 'downloader' }, '', '/');
   }
 
   // Expose globally
@@ -293,7 +295,10 @@ function hidePreview() {
 
   // Handle browser back button
   window.addEventListener('popstate', function(e) {
-    if (currentView !== 'downloader') {
+    var path = window.location.pathname;
+    if (path === '/ai' || path === '/ai/') {
+      navigateTo('makima-ai', true);
+    } else {
       navigateTo('downloader', true);
     }
   });
@@ -343,11 +348,11 @@ function hidePreview() {
         return;
       }
 
-      // MAKIMA AI: navigate to /ai route (full page navigation)
+      // MAKIMA AI: use client-side navigation with pushState
       if (view === 'makima-ai') {
         e.preventDefault();
         if (window._closeDrawer) window._closeDrawer();
-        window.location.href = '/ai';
+        navigateTo('makima-ai');
         return;
       }
 
@@ -358,4 +363,12 @@ function hidePreview() {
       }
     });
   }
+
+  // On page load, initialize the correct view based on pathname (set in config.js)
+  document.addEventListener('DOMContentLoaded', function() {
+    if (currentView === 'makima-ai') {
+      navigateTo('makima-ai', true);
+      history.replaceState({ view: 'makima-ai' }, '', '/ai');
+    }
+  });
 })();
