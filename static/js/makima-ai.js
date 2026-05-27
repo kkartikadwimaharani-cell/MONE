@@ -689,7 +689,7 @@ function sendMakimaMessage() {
   var historyToSend = chat.messages.slice(-20);
 
   // Add message to chat
-  chat.messages.push({ role: 'user', text: message });
+  chat.messages.push({ role: 'user', text: message, createdAt: new Date().toISOString() });
 
   // Auto-title: first user message sets the title
   if (chat.title === 'Chat baru') {
@@ -720,6 +720,8 @@ function sendMakimaMessage() {
   // Send to API
   var targetChatId = chat.id;
 
+  console.log("[MAKIMA] Gemini request triggered by SEND only");
+
   fetch('/api/ai-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -747,7 +749,7 @@ function sendMakimaMessage() {
       }
       // Guard: only write if chat still exists (not cleared/deleted)
       if (targetChat) {
-        targetChat.messages.push({ role: 'assistant', text: result.data.reply });
+        targetChat.messages.push({ role: 'assistant', text: result.data.reply, createdAt: new Date().toISOString() });
         targetChat.updatedAt = new Date().toISOString();
         allChats = _enforceStorageCaps(allChats);
         saveChats(allChats);
@@ -773,7 +775,7 @@ function sendMakimaMessage() {
           }
         }
         if (targetChat403) {
-          targetChat403.messages.push({ role: 'assistant', text: errMsg });
+          targetChat403.messages.push({ role: 'assistant', text: errMsg, createdAt: new Date().toISOString() });
           targetChat403.updatedAt = new Date().toISOString();
           allChats403 = _enforceStorageCaps(allChats403);
           saveChats(allChats403);
@@ -796,7 +798,7 @@ function sendMakimaMessage() {
         }
       }
       if (targetChatErr) {
-        targetChatErr.messages.push({ role: 'assistant', text: errMsg });
+        targetChatErr.messages.push({ role: 'assistant', text: errMsg, createdAt: new Date().toISOString() });
         targetChatErr.updatedAt = new Date().toISOString();
         allChatsErr = _enforceStorageCaps(allChatsErr);
         saveChats(allChatsErr);
@@ -820,7 +822,7 @@ function sendMakimaMessage() {
       }
     }
     if (targetChatCatch) {
-      targetChatCatch.messages.push({ role: 'assistant', text: errMsg });
+      targetChatCatch.messages.push({ role: 'assistant', text: errMsg, createdAt: new Date().toISOString() });
       targetChatCatch.updatedAt = new Date().toISOString();
       allChatsCatch = _enforceStorageCaps(allChatsCatch);
       saveChats(allChatsCatch);
