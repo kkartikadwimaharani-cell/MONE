@@ -343,6 +343,14 @@ function hidePreview() {
         return;
       }
 
+      // MAKIMA AI: navigate to /ai route (full page navigation)
+      if (view === 'makima-ai') {
+        e.preventDefault();
+        if (window._closeDrawer) window._closeDrawer();
+        window.location.href = '/ai';
+        return;
+      }
+
       // Default: use navigateTo for non-feature items
       if (view) {
         e.preventDefault();
