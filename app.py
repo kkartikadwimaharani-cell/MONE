@@ -1333,11 +1333,24 @@ def ai_chat():
         return jsonify({'error': 'MAKIMA AI is not configured'}), 503
 
     # Build conversation context from history
+    # Note: history roles are client-controlled; this is by design for a character
+    # chatbot where the client manages its own conversation context.
     history = data.get('history', [])
+    if not isinstance(history, list):
+        history = []
     contents = []
     # Take last 20 history entries
     recent_history = history[-20:] if len(history) > 20 else history
+
+    # Validate total history size to prevent oversized payloads to Gemini API
+    MAX_HISTORY_CHARS = 40000
+    total_chars = sum(len(entry.get('text', '')) for entry in recent_history if isinstance(entry, dict))
+    if total_chars > MAX_HISTORY_CHARS:
+        return jsonify({'error': 'History terlalu panjang. Silakan bersihkan riwayat chat.'}), 400
+
     for entry in recent_history:
+        if not isinstance(entry, dict):
+            continue
         role = entry.get('role', '')
         text = entry.get('text', '')
         if not text:

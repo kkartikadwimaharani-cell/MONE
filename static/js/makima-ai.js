@@ -19,6 +19,11 @@ function _loadMakimaHistory() {
 
 function _saveMakimaHistory() {
   try {
+    // Cap history at 200 messages to prevent unbounded localStorage growth
+    var MAX_HISTORY_ENTRIES = 200;
+    if (_makimaChatHistory.length > MAX_HISTORY_ENTRIES) {
+      _makimaChatHistory = _makimaChatHistory.slice(-MAX_HISTORY_ENTRIES);
+    }
     localStorage.setItem('makima_ai_chat_history', JSON.stringify(_makimaChatHistory));
   } catch (e) {
     // localStorage full or unavailable
@@ -190,8 +195,9 @@ function _appendAIBubble(container, text) {
 function _speakMakimaText(text, btn) {
   if (!window.speechSynthesis) return;
 
-  // If already speaking, stop
+  // If already speaking, cancel current speech
   if (window.speechSynthesis.speaking) {
+    var wasThisButton = btn.classList.contains('speaking');
     window.speechSynthesis.cancel();
     _makimaIsSpeaking = false;
     // Remove speaking class from all buttons
@@ -200,7 +206,9 @@ function _speakMakimaText(text, btn) {
       allSpeakerBtns[i].classList.remove('speaking');
       allSpeakerBtns[i].innerHTML = '&#128264;';
     }
-    return;
+    // If same button was clicked, just stop (toggle off)
+    // If different button was clicked, continue to start new speech
+    if (wasThisButton) return;
   }
 
   var utterance = new SpeechSynthesisUtterance(text);
