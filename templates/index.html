@@ -8,14 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/base.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/layout.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/components.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/animations.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=2.2">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=2.3">
+  <link rel="stylesheet" href="/static/css/variables.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/base.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/layout.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/components.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/animations.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=20260528">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260528">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="/static/img/owner.png" alt="MIITOK logo" />
+      <img class="nav-logo-img" src="/static/img/owner.png" alt="MIITOK logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand">MII NETWORK</span>
     </div>
     <div class="nav-right">
@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="drawer-header">
       <div class="drawer-profile">
-        <img class="drawer-avatar" src="/static/img/owner.png" alt="MII NETWORK" />
+        <img class="drawer-avatar" src="/static/img/owner.png" alt="MII NETWORK" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
           <div class="drawer-brand-title">MII NETWORK</div>
           <div class="drawer-brand-sub">DOWNLOADER &bull; STORE &bull; TOOLS</div>
@@ -87,7 +87,7 @@
         <span class="drawer-item-badge soon-badge">SOON</span>
       </a>
       <a href="#" class="drawer-item" data-view="makima-ai">
-        <span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-sidebar-avatar" /></span>
+        <span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span>
         <span class="drawer-item-text">MAKIMA AI</span>
         <span class="drawer-item-badge active-badge">ACTIVE</span>
       </a>
@@ -421,15 +421,21 @@
       registrations.forEach(function(registration) { registration.unregister(); });
     });
   }
+  if ('caches' in window) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(key) { caches.delete(key); });
+    });
+  }
   </script>
-  <script src="/static/js/config.js?v=2.2"></script>
-  <script src="/static/js/ui.js?v=2.2"></script>
-  <script src="/static/js/downloader.js?v=2.2"></script>
-  <script src="/static/js/photo.js?v=2.2"></script>
-  <script src="/static/js/effects.js?v=2.2"></script>
-  <script src="/static/js/main.js?v=2.2"></script>
-  <script src="/static/js/makima-ai.js?v=2.3"></script>
-  <script src="/static/js/analytics.js?v=2.2"></script>
-  <script src="/static/js/ghost-scanner.js?v=2.2"></script>
+  <script src="/static/js/config.js?v=20260528"></script>
+  <script src="/static/js/ui.js?v=20260528"></script>
+  <script src="/static/js/downloader.js?v=20260528"></script>
+  <script src="/static/js/photo.js?v=20260528"></script>
+  <script src="/static/js/effects.js?v=20260528"></script>
+  <script src="/static/js/main.js?v=20260528"></script>
+  <script src="/static/js/makima-ai.js?v=20260528"></script>
+  <script src="/static/js/analytics.js?v=20260528"></script>
+  <script src="/static/js/ghost-scanner.js?v=20260528"></script>
+  <script src="/static/js/protection.js?v=20260528"></script>
 </body>
 </html>
