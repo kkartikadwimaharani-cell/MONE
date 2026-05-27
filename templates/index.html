@@ -97,7 +97,7 @@
         <span class="drawer-item-text">CAPTION COPIER</span>
         <span class="drawer-item-badge soon-badge">SOON</span>
       </a>
-      <a href="#" class="drawer-item" data-view="makima-ai">
+      <a href="/ai" class="drawer-item">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2a4 4 0 0 1 4-4z"/><path d="M9 8v1a3 3 0 0 0 6 0V8"/><path d="M12 13v9"/><path d="M8 13l-3 5"/><path d="M16 13l3 5"/><circle cx="12" cy="5" r="1"/><path d="M5 3l2 2"/><path d="M19 3l-2 2"/></svg></span>
         <span class="drawer-item-text">MAKIMA AI</span>
         <span class="drawer-item-badge active-badge">ACTIVE</span>
@@ -396,7 +396,6 @@
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
     <div id="viewStore" class="view-container" style="display:none"></div>
     <div id="viewControl" class="view-container" style="display:none"></div>
-    <div id="viewMakimaAI" class="view-container" style="display:none"></div>
 
   </div>
 
@@ -435,14 +434,5 @@
   <script src="/static/js/main.js"></script>
   <script src="/static/js/analytics.js"></script>
   <script src="/static/js/ghost-scanner.js"></script>
-  <script src="/static/js/makima-ai.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var path = window.location.pathname;
-      if (path === '/ai' || path === '/ai/') {
-        if (window.navigateTo) navigateTo('makima-ai', true);
-      }
-    });
-  </script>
 </body>
 </html>

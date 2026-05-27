@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix the MAKIMA AI page layout so it has its own dedicated full-page design, separate from the TikTok Downloader hero/layout. When navigating to the AI view (via sidebar or /ai route), the downloader hero header must be hidden and the AI page must display its own header with avatar, proper chat layout, loading states, and a back button.",
-  "status": "completed",
+  "status": "in_progress",
   "steps": [
     "1. In app.py, add a new Flask route '@app.route(\"/ai\")' that renders the same index.html template but passes a variable like 'initial_view=\"makima-ai\"' so the frontend can auto-navigate to the AI view on page load.",
     "2. In templates/index.html, add a script block at the bottom that checks for the initial_view variable from Flask (using Jinja2) and calls navigateTo('makima-ai', true) if set. This allows direct URL access to /ai.",
