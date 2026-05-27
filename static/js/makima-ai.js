@@ -9,7 +9,7 @@ function renderMakimaAI() {
 
   container.innerHTML =
     '<div class="makima-ai-page">' +
-      '<button class="makima-ai-back-btn" onclick="window.location.href=\'/\'">&#8592; BACK TO DOWNLOADER</button>' +
+      '<button class="makima-ai-back-btn" onclick="showMainView()">&#8592; BACK TO DOWNLOADER</button>' +
       '<div class="makima-ai-header">' +
         '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA AI" class="makima-ai-header-avatar" />' +
         '<h2 class="makima-ai-title">MAKIMA AI</h2>' +

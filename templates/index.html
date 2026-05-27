@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% if initial_view == 'makima-ai' %}MiiTok — Makima AI{% else %}MiiTok — TikTok Downloader{% endif %}</title>
+  <title>MiiTok — TikTok Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -23,7 +23,6 @@
   <div class="bg-vignette"></div>
   <div id="orbContainer" class="orb-container"></div>
 
-  {% if initial_view != 'makima-ai' %}
   <!-- Anime Body Silhouette Background -->
   <div class="anime-body-silhouette" aria-hidden="true">
     <div class="silhouette-aura"></div>
@@ -36,7 +35,6 @@
     <div class="silhouette-eye eye-left"></div>
     <div class="silhouette-eye eye-right"></div>
   </div>
-  {% endif %}
 
   <!-- Top Navbar -->
   <nav class="top-nav">
@@ -200,7 +198,6 @@
   <!-- Page -->
   <div class="page">
 
-    {% if initial_view != 'makima-ai' %}
     <!-- Header -->
     <header class="header">
       <div class="hero-badge">NO WATERMARK</div>
@@ -399,31 +396,10 @@
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
     <div id="viewStore" class="view-container" style="display:none"></div>
     <div id="viewControl" class="view-container" style="display:none"></div>
-
-    {% else %}
-    <div id="viewMakimaAI" class="view-container" style="display:block">
-      <div class="makima-ai-page">
-        <button class="makima-ai-back-btn" onclick="window.location.href='/'">&#8592; BACK TO DOWNLOADER</button>
-        <div class="makima-ai-header">
-          <img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-ai-header-avatar" />
-          <h2 class="makima-ai-title">MAKIMA AI</h2>
-          <p class="makima-ai-subtitle">MII NETWORK CHARACTER ASSISTANT</p>
-        </div>
-        <div class="makima-ai-messages" id="makimaMessages"></div>
-        <div class="makima-ai-input-area">
-          <div class="makima-ai-input-wrap">
-            <input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan..." autocomplete="off" autocorrect="off" spellcheck="false" />
-            <button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>
-          </div>
-          <div class="makima-ai-error" id="makimaError"></div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
+    <div id="viewMakimaAI" class="view-container" style="display:none"></div>
 
   </div>
 
-  {% if initial_view != 'makima-ai' %}
   <!-- ── MODAL ─────────────────────────────────────── -->
   <div class="modal-backdrop" id="modalBackdrop" onclick="backdropClick(event)">
     <div class="modal" id="modal">
@@ -449,7 +425,6 @@
       </div>
     </div>
   </div>
-  {% endif %}
 
   
   <script src="/static/js/config.js"></script>
@@ -461,27 +436,13 @@
   <script src="/static/js/analytics.js"></script>
   <script src="/static/js/ghost-scanner.js"></script>
   <script src="/static/js/makima-ai.js"></script>
-  {% if initial_view == 'makima-ai' %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      var inputEl = document.getElementById('makimaInput');
-      var sendBtn = document.getElementById('makimaSendBtn');
-      if (inputEl) {
-        inputEl.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') sendMakimaMessage();
-        });
-      }
-      if (sendBtn) {
-        sendBtn.addEventListener('click', sendMakimaMessage);
+      var path = window.location.pathname;
+      if (path === '/ai' || path === '/ai/') {
+        if (window.navigateTo) navigateTo('makima-ai', true);
       }
     });
   </script>
-  {% elif initial_view %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (window.navigateTo) navigateTo({{ initial_view | tojson }}, true);
-    });
-  </script>
-  {% endif %}
 </body>
 </html>
