@@ -434,7 +434,7 @@ function _appendAIBubble(container, text) {
   row.className = 'makima-msg-row makima-msg-row-ai';
 
   var avatar = document.createElement('img');
-  avatar.className = 'makima-msg-avatar makima-avatar-protected';
+  avatar.className = 'makima-msg-avatar makima-avatar-protected protected-img';
   avatar.src = _makimaAvatarSrc;
   avatar.alt = 'MAKIMA AI';
   avatar.draggable = false;
@@ -519,7 +519,7 @@ function _showLoadingBubble(container) {
   row.id = 'makimaLoadingRow';
 
   var avatar = document.createElement('img');
-  avatar.className = 'makima-msg-avatar makima-avatar-protected';
+  avatar.className = 'makima-msg-avatar makima-avatar-protected protected-img';
   avatar.src = _makimaAvatarSrc;
   avatar.alt = 'MAKIMA AI';
   avatar.draggable = false;

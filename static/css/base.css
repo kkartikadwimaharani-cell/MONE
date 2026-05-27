@@ -76,3 +76,16 @@ body {
   width: 40px;
   height: 40px;
 }
+
+/* Image Protection */
+.protected-img,
+.makima-avatar,
+.makima-avatar img,
+.nav-logo-img,
+.drawer-avatar,
+.makima-sidebar-avatar {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}
