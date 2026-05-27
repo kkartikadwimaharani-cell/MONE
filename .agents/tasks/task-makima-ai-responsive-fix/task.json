@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-ai-responsive-fix",
+  "task_description": "Fix MAKIMA AI chat page: remove background character, implement proper ChatGPT-style responsive layout with mobile drawer sidebar, fix avatar display, fix send button cutoff, and ensure API integration works correctly",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

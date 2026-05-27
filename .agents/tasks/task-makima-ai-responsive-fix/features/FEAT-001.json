@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Complete overhaul of MAKIMA AI chat: remove background character, fix responsive mobile layout (ChatGPT-style drawer sidebar), fix avatar display, fix send button cutoff, fix API integration, and ensure proper speaker button functionality",
+  "status": "in_progress",
+  "steps": [
+    "STEP 1 - REMOVE BACKGROUND CHARACTER: In templates/index.html, remove or hide the entire '.anime-body-silhouette' div and all its children (lines ~32-43). In static/css/animations.css, hide the .anime-body-silhouette with display:none or remove the silhouette-related styles. In static/css/responsive.css, remove/comment out the 'ANIME SILHOUETTE RESPONSIVE' section (the 4 media queries for .anime-body-silhouette). The background should be just the existing dark red/black gradient from base.css body background.",
+    "STEP 2 - FIX MOBILE RESPONSIVE LAYOUT (ChatGPT-style): In static/css/makima-ai.css, ensure the @media (max-width: 768px) section properly implements: (a) sidebar hidden by default (left: -280px), slides in as drawer when .open class added, (b) chat area takes full width 100%, (c) compact header with hamburger menu button visible, (d) messages area fills remaining height, (e) input area sticky at bottom with no cutoff. Also in static/css/responsive.css, the MOBILE MASTER OVERRIDE at the bottom has a '.makima-ai-page' rule that sets padding: 0 16px which conflicts with the chat layout - change it to padding: 0 so the chat is truly full width.",
+    "STEP 3 - FIX SEND BUTTON CUTOFF: In static/css/makima-ai.css, ensure .makima-ai-input-wrap has overflow: visible (already present). Ensure .makima-ai-send-btn has flex-shrink: 0 and a fixed width of 76px with min-width: 76px. The input-area padding on mobile should be 10px 12px with safe-area-inset handling. Add padding-bottom: env(safe-area-inset-bottom, 0) to .makima-ai-input-area for iPhone notch safety.",
+    "STEP 4 - FIX AVATAR DISPLAY: The avatar is already referenced in makima-ai.js using '/static/img/makima-ai-profile.png'. Ensure in makima-ai.css: (a) .makima-header-avatar is 36px on mobile (already correct but make it 56px on desktop for better visibility), (b) .makima-msg-avatar (bubble) is 32px desktop / 28px mobile (already set), (c) .makima-sidebar-avatar is 28px (already set). All avatars must have: border-radius: 50%; object-fit: cover; object-position: center; border: 2px solid #ff0033; box-shadow: 0 0 18px rgba(255,0,60,.45). Update the box-shadow value on all avatar classes from current 0 0 12px to 0 0 18px rgba(255,0,60,.45).",
+    "STEP 5 - FIX DESKTOP LAYOUT: Ensure the sidebar is visible by default on desktop (min-width: 769px). The .makima-chatgpt-layout should be flex-direction: row with sidebar 260px fixed on the left and chat area taking the remaining space. The .makima-menu-btn (hamburger) should be display: none on desktop (already set). Add a media query for min-width: 769px that ensures sidebar is always visible and properly positioned.",
+    "STEP 6 - FIX MAKIMA-AI-BODY PAGE CONFLICTS: When body has class 'makima-ai-body', the page needs to: (a) not show the top-nav (it conflicts with the makima compact header), or alternatively make the makima layout sit below the top-nav at 60px. Best approach: hide .top-nav when makima-ai-body is active, since makima has its own compact header. Add CSS rule: body.makima-ai-body .top-nav { display: none; } and body.makima-ai-body .page { padding-top: 0 !important; }. Also add body.makima-ai-body .bg-overlay, body.makima-ai-body .bg-vignette, body.makima-ai-body .orb-container { display: none; } to clean up background layers.",
+    "STEP 7 - ENSURE API WORKS (FRONTEND): The makima-ai.js already calls fetch('/api/ai-chat', ...) correctly with message and history. The backend (app.py) already reads GEMINI_API_KEY from os.environ.get and uses gemini-2.0-flash. Verify there is no frontend check for API key or 'not configured' message - grep confirmed there is none. However, if the backend returns an error when GEMINI_API_KEY is not set, the JS catch block shows 'Koneksi gagal'. Check the app.py /api/ai-chat endpoint for proper error handling - ensure it returns a user-friendly error JSON without exposing API details. Read the endpoint code in app.py (around line 750+) to confirm.",
+    "STEP 8 - ADD CSS RESET FOR MAKIMA VIEW CONTAINER: In static/css/responsive.css, the mobile master override sets .view-container width/max-width. But for #viewMakimaAI it should be 100% with no margin when makima-ai-body is active. Ensure the makima-ai.css styles for #viewMakimaAI.view-container have higher specificity or use !important: width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important;"
+  ],
+  "acceptance_criteria": [
+    "The anime body silhouette background is completely hidden/removed from the page",
+    "On mobile (max-width: 768px), the sidebar is hidden by default and only shows as a drawer when hamburger/menu button is clicked",
+    "On mobile, the chat area takes full viewport width with no side padding cutting into it",
+    "On mobile, the input area with SEND button is fully visible and not cut off at the bottom",
+    "On desktop (min-width: 769px), the sidebar is permanently visible on the left side",
+    "The Makima avatar appears in the chat header, in AI message bubbles, and in the sidebar at appropriate sizes",
+    "All avatar images have the specified border-radius, object-fit, border, and box-shadow styling",
+    "The speaker button appears on AI message bubbles and uses Web Speech API with lang: id-ID",
+    "The frontend calls /api/ai-chat without any client-side API key check",
+    "The top-nav is hidden when the Makima AI view is active to prevent UI conflicts",
+    "python -c 'import app' succeeds without errors"
+  ],
+  "verification": [
+    "Run: python -c 'import app' in the project directory to confirm no Python syntax errors",
+    "Run: python -c \"import json; [json.loads(open(f).read()) for f in []]\" (placeholder - no tests available)",
+    "Visually verify: grep for 'anime-body-silhouette' in the HTML/CSS to confirm it is hidden/removed",
+    "Verify: grep for 'display: none' or removal of silhouette in animations.css and responsive.css",
+    "Verify: the makima-ai.css @media (max-width: 768px) properly hides sidebar with negative left position",
+    "Verify: .makima-ai-send-btn has flex-shrink: 0 and min-width: 76px in the CSS"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
