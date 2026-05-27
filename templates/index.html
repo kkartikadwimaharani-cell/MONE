@@ -8,14 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css">
-  <link rel="stylesheet" href="/static/css/base.css">
-  <link rel="stylesheet" href="/static/css/layout.css">
-  <link rel="stylesheet" href="/static/css/components.css">
-  <link rel="stylesheet" href="/static/css/animations.css">
-  <link rel="stylesheet" href="/static/css/drawer.css">
-  <link rel="stylesheet" href="/static/css/responsive.css">
-  <link rel="stylesheet" href="/static/css/makima-ai.css">
+  <link rel="stylesheet" href="/static/css/variables.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/base.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/layout.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/components.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/animations.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=2.1">
 </head>
 <body>
 
@@ -426,15 +426,21 @@
     </div>
   </div>
 
-  
-  <script src="/static/js/config.js"></script>
-  <script src="/static/js/ui.js"></script>
-  <script src="/static/js/downloader.js"></script>
-  <script src="/static/js/photo.js"></script>
-  <script src="/static/js/effects.js"></script>
-  <script src="/static/js/main.js"></script>
-  <script src="/static/js/makima-ai.js"></script>
-  <script src="/static/js/analytics.js"></script>
-  <script src="/static/js/ghost-scanner.js"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      registrations.forEach(function(registration) { registration.unregister(); });
+    });
+  }
+  </script>
+  <script src="/static/js/config.js?v=2.1"></script>
+  <script src="/static/js/ui.js?v=2.1"></script>
+  <script src="/static/js/downloader.js?v=2.1"></script>
+  <script src="/static/js/photo.js?v=2.1"></script>
+  <script src="/static/js/effects.js?v=2.1"></script>
+  <script src="/static/js/main.js?v=2.1"></script>
+  <script src="/static/js/makima-ai.js?v=2.1"></script>
+  <script src="/static/js/analytics.js?v=2.1"></script>
+  <script src="/static/js/ghost-scanner.js?v=2.1"></script>
 </body>
 </html>
