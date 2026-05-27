@@ -25,8 +25,9 @@ def _get_gemini_model():
     global _gemini_model, _gemini_initialized
     if _gemini_initialized:
         return _gemini_model
-    api_key = os.environ.get("GEMINI_API_KEY")
-    print("GEMINI_API_KEY exists:", bool(api_key))
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    print("GEMINI_API_KEY exists:", bool(os.environ.get("GEMINI_API_KEY")))
+    print("GOOGLE_API_KEY exists:", bool(os.environ.get("GOOGLE_API_KEY")))
     if api_key:
         genai.configure(api_key=api_key)
         _gemini_model = genai.GenerativeModel(
@@ -43,6 +44,7 @@ def _get_gemini_model():
     return _gemini_model
 
 print("GEMINI_API_KEY exists:", bool(os.environ.get("GEMINI_API_KEY")))
+print("GOOGLE_API_KEY exists:", bool(os.environ.get("GOOGLE_API_KEY")))
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -1326,10 +1328,42 @@ def download_photo():
 
 @app.route('/api/test-gemini', methods=['GET'])
 def test_gemini():
-    key = os.environ.get("GEMINI_API_KEY")
-    if key:
-        return jsonify({'configured': True})
-    return jsonify({'configured': False, 'error': 'GEMINI_API_KEY missing'})
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return jsonify({
+            'configured': False,
+            'error': 'GEMINI_API_KEY missing',
+            'env_debug_url': '/api/test-env'
+        })
+
+    # Key exists, try actual API call
+    try:
+        model = _get_gemini_model()
+        if not model:
+            return jsonify({
+                'configured': False,
+                'error': 'Gemini model initialization failed',
+                'env_debug_url': '/api/test-env'
+            })
+        response = model.generate_content("Balas satu kata: aktif")
+        reply_text = response.text.strip() if response.text else ''
+        return jsonify({
+            'configured': True,
+            'gemini_key_exists': True,
+            'gemini_working': True,
+            'reply': reply_text
+        })
+    except Exception as e:
+        err_msg = str(e)
+        # Redact API key from error message
+        if api_key:
+            err_msg = err_msg.replace(api_key, '[REDACTED]')
+        return jsonify({
+            'configured': True,
+            'gemini_key_exists': True,
+            'gemini_working': False,
+            'error': err_msg
+        })
 
 
 @app.route('/api/ai-chat', methods=['POST'])
@@ -1399,10 +1433,18 @@ def ai_chat():
 
 @app.route('/api/test-env', methods=['GET'])
 def test_env():
+    import sys
+    import platform
+    # Find env var names containing GEMINI or GOOGLE (names only, not values)
+    env_names = [k for k in os.environ.keys() if 'GEMINI' in k.upper() or 'GOOGLE' in k.upper()]
     return jsonify({
         'gemini_key_exists': bool(os.environ.get("GEMINI_API_KEY")),
+        'google_key_exists': bool(os.environ.get("GOOGLE_API_KEY")),
+        'env_names': env_names,
         'cwd': os.getcwd(),
-        'backend_file': 'app.py'
+        'backend_file': 'app.py',
+        'python_version': platform.python_version(),
+        'node_version': None
     })
 
 
