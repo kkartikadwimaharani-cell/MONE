@@ -1,0 +1,32 @@
+{
+  "project_type": "Python Flask single-page web application with client-side view switching",
+  "language": "Python (backend), JavaScript (frontend), CSS",
+  "build_system": "pip + Docker (python:3.11-slim), deployed on Railway",
+  "test_framework": "No formal test framework - manual verification via running the server",
+  "build_command": "pip install -r requirements.txt",
+  "test_command": "python -c \"import app; print('App imports OK')\"",
+  "verification_instructions": "1. Install deps: pip install -r requirements.txt. 2. Run: python app.py. 3. Access http://localhost:5000/ai to verify MAKIMA AI page. 4. Test POST /api/ai-chat endpoint with curl.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET - full access to install packages. GEMINI_API_KEY env var available on Railway.",
+  "contribution_requirements": "Do NOT modify existing features. Do NOT touch TikTok Downloader. Do NOT put API keys in code. Use GEMINI_API_KEY environment variable.",
+  "key_patterns": {
+    "routing": "Flask routes defined in app.py, single index.html template served at /",
+    "view_switching": "Client-side view navigation via data-view attributes on drawer items, managed in static/js/ui.js with navigateTo() function and viewConfig object",
+    "sidebar": "Side drawer defined in templates/index.html with drawer-item class, data-view and data-feature attributes, badges (active-badge, soon-badge)",
+    "css_theme": "Dark red/black theme using CSS variables in static/css/variables.css. Glass backgrounds, red glows, font families: Anton/Bebas Neue for logos, Rajdhani/Oswald for UI, Poppins for body",
+    "state_management": "Global JS state variables in static/js/config.js, currentView tracks active view"
+  },
+  "relevant_files": [
+    "app.py",
+    "templates/index.html",
+    "static/js/ui.js",
+    "static/js/config.js",
+    "static/css/variables.css",
+    "static/css/components.css",
+    "static/css/drawer.css",
+    "requirements.txt",
+    "Dockerfile"
+  ],
+  "directory_structure": "Root: app.py (Flask server), analytics.py (analytics module), templates/index.html (single page), static/css/ (7 CSS files), static/js/ (8 JS files), static/img/, static/icons/"
+}

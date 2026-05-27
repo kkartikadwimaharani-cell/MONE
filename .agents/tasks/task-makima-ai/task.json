@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-ai",
+  "task_description": "Add MAKIMA AI feature to makima.cloud website - sidebar menu, chat page at /ai view, backend /api/ai-chat endpoint using Gemini API with MAKIMA persona",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

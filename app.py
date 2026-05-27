@@ -13,6 +13,7 @@ import hashlib
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
+import google.generativeai as genai
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -33,10 +34,12 @@ _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
 _rate_store_track = {}     # {ip: last_request_timestamp} for /track
 _rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
+_rate_store_ai = {}        # {ip: last_request_timestamp} for /api/ai-chat
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
 RATE_LIMIT_GHOST_SECONDS = 2  # Allow 1 request per 2 seconds per IP for ghost-scan
+RATE_LIMIT_AI_SECONDS = 3    # Allow 1 request per 3 seconds per IP for ai-chat
 
 # ---------------------------------------------------------------------------
 # vpnapi.io response cache
@@ -1279,6 +1282,45 @@ def download_photo():
         )
     except Exception:
         return jsonify({'error': 'Gagal mengunduh foto'}), 502
+
+
+@app.route('/api/ai-chat', methods=['POST'])
+def ai_chat():
+    data = request.get_json(silent=True) or {}
+    message = data.get('message', '').strip()
+
+    if not message:
+        return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip, _rate_store_ai, RATE_LIMIT_AI_SECONDS):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
+
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return jsonify({'reply': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'})
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            'gemini-2.0-flash',
+            system_instruction=(
+                'Kamu adalah MAKIMA AI, asisten karakter AI di website MII NETWORK. '
+                'Kepribadianmu: tenang, elegan, dingin, singkat, misterius, dan membantu. '
+                'Kamu tidak pernah mengaku sebagai manusia. '
+                'Kamu tidak pernah membahas API key atau sistem internal. '
+                'Kamu mengarahkan pengguna tentang fitur website dengan jelas. '
+                'Jawab dalam bahasa yang sama dengan bahasa pengguna. '
+                'Jawaban singkat dan to the point.'
+            )
+        )
+        response = model.generate_content(message)
+        reply_text = response.text if response.text else 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'
+        return jsonify({'reply': reply_text})
+    except Exception as e:
+        app.logger.warning('Gemini API error: %s', e)
+        return jsonify({'reply': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'})
 
 
 if __name__ == '__main__':

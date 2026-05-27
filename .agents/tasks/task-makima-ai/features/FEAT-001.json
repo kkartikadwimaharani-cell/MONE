@@ -1,0 +1,41 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add MAKIMA AI feature - sidebar menu item, frontend chat page, backend /api/ai-chat endpoint using Gemini API",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Add google-generativeai to requirements.txt. Add it on a new line after yt-dlp. Do NOT modify any existing lines.",
+    "Step 2 - Add MAKIMA AI menu item to sidebar in templates/index.html. Insert a new drawer-item in the MAIN section (after the CAPTION COPIER item, before the closing </div> of that section). Use: <a href=\"#\" class=\"drawer-item\" data-view=\"makima-ai\"> with an AI brain/sparkle SVG icon, text 'MAKIMA AI', and badge with class 'active-badge' showing 'ACTIVE'. Follow exact pattern of existing drawer items.",
+    "Step 3 - Add a new hidden view container div in templates/index.html. Insert <div id=\"viewMakimaAI\" class=\"view-container\" style=\"display:none\"></div> after the existing viewControl div (around line with viewControl). Do NOT modify any existing divs.",
+    "Step 4 - Add a new script tag in templates/index.html before the closing </body>: <script src=\"/static/js/makima-ai.js\"></script>. Place it after ghost-scanner.js.",
+    "Step 5 - Add a new CSS file link in the <head> of templates/index.html: <link rel=\"stylesheet\" href=\"/static/css/makima-ai.css\">. Place it after responsive.css.",
+    "Step 6 - Update the viewConfig object in static/js/ui.js to add 'makima-ai' entry: 'makima-ai': { type: 'makima-ai' }. Add it as a new property in the viewConfig object. Also add a new else-if branch in the navigateTo function to handle type 'makima-ai': it should call renderMakimaAI() and show viewMakimaAI container.",
+    "Step 7 - Create static/js/makima-ai.js with: a renderMakimaAI() function that builds the MAKIMA AI chat interface HTML into the viewMakimaAI container. The HTML should include: a title 'MAKIMA AI', subtitle 'AI CHARACTER ASSISTANT', a chat messages area (scrollable), an input box for user message, and a SEND button. Also include a sendMakimaMessage() function that POSTs to /api/ai-chat with the user message, displays user message in the chat area, shows a loading state, then displays the AI reply. Handle empty message (show inline error), and display error messages from the server response.",
+    "Step 8 - Create static/css/makima-ai.css with styles for the MAKIMA AI chat page. Use the same dark red/black theme (reference variables from variables.css). Style the chat container with glass background, red border glow. Style message bubbles: user messages aligned right with subtle red background, AI messages aligned left with darker background. Style the input area with red-bordered input field matching the existing url-input style. Style the send button matching the dl-btn style (red gradient).",
+    "Step 9 - Add the /api/ai-chat endpoint to app.py. Add it BEFORE the 'if __name__' block at the bottom. Import google.generativeai at the top of the file (add import after existing imports). The endpoint should: accept POST with JSON {\"message\": \"...\"}, validate message is not empty (return 400), read GEMINI_API_KEY from os.environ, configure google genai, use gemini-2.0-flash model with a system instruction defining the MAKIMA AI persona (calm, elegant, cold, brief, mysterious, helpful, never claims to be human, never discusses API keys or internal systems, directs users about website features clearly), send the user message, return {\"reply\": response_text}. On any Gemini error, return {\"reply\": \"MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.\"}. Add rate limiting using a new _rate_store_ai dict similar to existing rate stores."
+  ],
+  "acceptance_criteria": [
+    "requirements.txt includes google-generativeai",
+    "Sidebar has MAKIMA AI menu item with ACTIVE badge",
+    "Clicking MAKIMA AI in sidebar shows the chat page",
+    "Chat page has MAKIMA AI title, AI CHARACTER ASSISTANT subtitle, chat area, input, and SEND button",
+    "POST /api/ai-chat with {\"message\": \"hello\"} returns {\"reply\": \"...\"} with Gemini response",
+    "POST /api/ai-chat with empty message returns 400 status",
+    "If GEMINI_API_KEY is missing or Gemini errors, returns fallback error message",
+    "No existing features are modified or broken",
+    "Dark red/black theme is consistent with rest of site"
+  ],
+  "verification": [
+    "Run: pip install -r requirements.txt (confirm google-generativeai installs)",
+    "Run: python -c \"import app; print('OK')\" to confirm no import errors",
+    "Run: python -c \"from flask import Flask; import google.generativeai; print('deps OK')\"",
+    "Verify templates/index.html contains drawer-item with data-view='makima-ai' and text 'MAKIMA AI'",
+    "Verify templates/index.html contains viewMakimaAI div",
+    "Verify static/js/makima-ai.js exists and contains renderMakimaAI function",
+    "Verify static/css/makima-ai.css exists",
+    "Verify app.py contains /api/ai-chat route",
+    "Verify app.py reads GEMINI_API_KEY from os.environ (not hardcoded)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
