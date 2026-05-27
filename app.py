@@ -1388,7 +1388,7 @@ def ai_chat():
     if admin_password:
         provided_password = data.get('password', '')
         if not provided_password or provided_password != admin_password:
-            return jsonify({'error': 'Premium access only'}), 403
+            return jsonify({'error': 'MAKIMA AI KHUSUS ADMIN.'}), 403
 
     # Rate limiting
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
@@ -1398,10 +1398,10 @@ def ai_chat():
     # Check API key configuration
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return jsonify({'error': 'MAKIMA AI belum dikonfigurasi.'}), 503
+        return jsonify({'error': 'MAKIMA AI BELUM DIKONFIGURASI.'}), 503
 
     if not _get_gemini_model():
-        return jsonify({'error': 'MAKIMA AI belum dikonfigurasi.'}), 503
+        return jsonify({'error': 'MAKIMA AI BELUM DIKONFIGURASI.'}), 503
 
     # Build conversation context from history
     # Note: history roles are client-controlled; this is by design for a character
@@ -1448,8 +1448,8 @@ def ai_chat():
         app.logger.error('Gemini API error: %s', err_msg)
         # Check for quota/rate limit errors
         if '429' in err_msg or 'quota' in err_msg.lower() or 'resource exhausted' in err_msg.lower():
-            return jsonify({'error': 'Kuota Gemini sedang habis. Coba lagi nanti.'}), 429
-        return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
+            return jsonify({'error': 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.'}), 429
+        return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
 
 
 @app.route('/api/test-env', methods=['GET'])

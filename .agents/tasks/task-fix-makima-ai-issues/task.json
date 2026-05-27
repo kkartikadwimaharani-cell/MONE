@@ -1,0 +1,14 @@
+{
+  "task_id": "task-fix-makima-ai-issues",
+  "task_description": "Fix MAKIMA AI chat: enforce Gemini only called on SEND click with 5s cooldown, proper error messages for quota/auth/config errors, remove disclaimer, replace browser confirm with custom modal, update cache busting, improve mobile layout.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "Python app imports without error. All 18 cache busting strings updated. No test-gemini calls in frontend. No browser confirm() calls. No disclaimer text. Backend error messages all in ALL CAPS as required. Review fixes applied: extracted _startCooldown() helper, removed double error display from API error paths, added cooldown button state check on re-render, added Escape key support to confirm modal."
+  }
+}

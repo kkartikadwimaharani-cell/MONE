@@ -1,0 +1,21 @@
+{
+  "project_type": "Flask web app with Jinja2 templates, vanilla JS frontend",
+  "language": "Python (backend), JavaScript/HTML/CSS (frontend)",
+  "build_system": "Flask dev server, Dockerfile for deployment",
+  "test_framework": "None (no test files found)",
+  "build_command": "python -c \"import app\"",
+  "test_command": "No tests available - validation via syntax check and manual inspection",
+  "verification_instructions": "1. Check Python syntax: python -c 'import app'. 2. Validate JS syntax with node --check. 3. Verify no auto-calls to /api/test-gemini in frontend JS.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "No test framework. Validation is AST/syntax-based. Flask app loads google.generativeai which requires the package installed.",
+  "contribution_requirements": "Do NOT touch TikTok Downloader logic. Do NOT refactor other systems. Focus only on MAKIMA AI.",
+  "key_patterns": "Frontend is vanilla JS with DOM manipulation. CSS uses CSS custom properties from variables.css. Backend uses Flask with @app.route decorators. All static assets served from /static/. Cache busting via ?v= query strings in index.html.",
+  "relevant_files": [
+    "templates/index.html",
+    "static/js/makima-ai.js",
+    "static/css/makima-ai.css",
+    "app.py"
+  ],
+  "directory_structure": "Root: app.py (Flask), templates/index.html (single page), static/js/ (JS modules), static/css/ (CSS modules)"
+}
