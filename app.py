@@ -1397,5 +1397,14 @@ def ai_chat():
         return jsonify({'error': 'MAKIMA AI sedang tidak bisa merespons. Coba lagi nanti.'}), 500
 
 
+@app.route('/api/test-env', methods=['GET'])
+def test_env():
+    return jsonify({
+        'gemini_key_exists': bool(os.environ.get("GEMINI_API_KEY")),
+        'cwd': os.getcwd(),
+        'backend_file': 'app.py'
+    })
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
