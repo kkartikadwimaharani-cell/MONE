@@ -329,6 +329,11 @@ function _bindMakimaEvents() {
   var overlay = document.getElementById('makimaSidebarOverlay');
   var gearBtn = document.getElementById('makimaGearBtn');
 
+  // If cooldown is active during re-render, keep button disabled
+  if (_makimaCooldownActive && sendBtn) {
+    sendBtn.disabled = true;
+  }
+
   if (inputEl) {
     inputEl.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') sendMakimaMessage();
@@ -630,6 +635,19 @@ function _removeLoadingBubble() {
   }
 }
 
+/* ── COOLDOWN HELPER ──────────────────────────────── */
+
+function _startCooldown() {
+  _makimaCooldownActive = true;
+  var btn = document.getElementById('makimaSendBtn');
+  if (btn) btn.disabled = true;
+  setTimeout(function() {
+    _makimaCooldownActive = false;
+    var btn = document.getElementById('makimaSendBtn');
+    if (btn) btn.disabled = false;
+  }, 5000);
+}
+
 /* ── SEND MESSAGE ────────────────────────────────── */
 
 function sendMakimaMessage() {
@@ -746,48 +764,25 @@ function sendMakimaMessage() {
         errMsg = 'MAKIMA AI KHUSUS ADMIN.';
         _appendAIBubble(messagesEl, errMsg);
         messagesEl.scrollTop = messagesEl.scrollHeight;
-        errorEl.textContent = errMsg;
         _lockMakimaAI();
-        // Start cooldown and re-enable button
-        _makimaCooldownActive = true;
-        setTimeout(function() {
-          _makimaCooldownActive = false;
-          var btn = document.getElementById('makimaSendBtn');
-          if (btn) btn.disabled = false;
-        }, 5000);
+        _startCooldown();
         return;
       } else {
         errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
       }
       _appendAIBubble(messagesEl, errMsg);
       messagesEl.scrollTop = messagesEl.scrollHeight;
-      errorEl.textContent = errMsg;
     }
 
-    // Start cooldown
-    _makimaCooldownActive = true;
-    if (sendBtn) sendBtn.disabled = true;
-    setTimeout(function() {
-      _makimaCooldownActive = false;
-      var btn = document.getElementById('makimaSendBtn');
-      if (btn) btn.disabled = false;
-    }, 5000);
+    _startCooldown();
   })
   .catch(function() {
     _removeLoadingBubble();
     var errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
     _appendAIBubble(messagesEl, errMsg);
     messagesEl.scrollTop = messagesEl.scrollHeight;
-    errorEl.textContent = errMsg;
 
-    // Start cooldown
-    _makimaCooldownActive = true;
-    if (sendBtn) sendBtn.disabled = true;
-    setTimeout(function() {
-      _makimaCooldownActive = false;
-      var btn = document.getElementById('makimaSendBtn');
-      if (btn) btn.disabled = false;
-    }, 5000);
+    _startCooldown();
   });
 }
 
@@ -800,6 +795,8 @@ function _escapeHtml(str) {
 }
 
 /* ── CUSTOM CONFIRM MODAL ────────────────────────── */
+
+var _makimaConfirmEscHandler = null;
 
 function _showClearConfirmModal() {
   // Remove any existing modal
@@ -854,11 +851,23 @@ function _showClearConfirmModal() {
       _closeClearConfirmModal();
     }
   });
+
+  // Close on Escape key
+  _makimaConfirmEscHandler = function(e) {
+    if (e.key === 'Escape') {
+      _closeClearConfirmModal();
+    }
+  };
+  document.addEventListener('keydown', _makimaConfirmEscHandler);
 }
 
 function _closeClearConfirmModal() {
   var overlay = document.getElementById('makimaConfirmOverlay');
   if (overlay && overlay.parentNode) {
     overlay.parentNode.removeChild(overlay);
+  }
+  if (_makimaConfirmEscHandler) {
+    document.removeEventListener('keydown', _makimaConfirmEscHandler);
+    _makimaConfirmEscHandler = null;
   }
 }
