@@ -187,7 +187,7 @@ def index():
 
 @app.route('/ai')
 def ai_view():
-    return render_template('index.html', initial_view='makima-ai')
+    return render_template('index.html')
 
 
 # ---------------------------------------------------------------------------
