@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-makima-ai-issues",
+  "task_description": "Fix MAKIMA AI chat: enforce Gemini only called on SEND click with 5s cooldown, proper error messages for quota/auth/config errors, remove disclaimer, replace browser confirm with custom modal, update cache busting, improve mobile layout.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

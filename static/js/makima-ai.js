@@ -4,6 +4,7 @@ var _makimaAvatarSrc = '/static/img/makima-ai-profile.png';
 var _makimaIsSpeaking = false;
 var _makimaSidebarOpen = false;
 var _makimaVoiceDropdownOpen = false;
+var _makimaCooldownActive = false;
 
 /* ── MULTI-CHAT STORAGE ──────────────────────────── */
 
@@ -303,7 +304,6 @@ function renderMakimaAI() {
             '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
             '<button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>' +
           '</div>' +
-          '<p class="makima-ai-disclaimer">MAKIMA AI dapat membuat kesalahan. Periksa informasi penting.</p>' +
           '<div class="makima-ai-error" id="makimaError"></div>' +
         '</div>' +
       '</div>' +
@@ -342,7 +342,7 @@ function _bindMakimaEvents() {
     _closeMakimaSidebar();
   });
   if (clearAllBtn) clearAllBtn.addEventListener('click', function() {
-    if (confirm('Hapus semua chat?')) clearAllChats();
+    _showClearConfirmModal();
   });
   if (menuBtn) menuBtn.addEventListener('click', _toggleMakimaSidebar);
   if (overlay) overlay.addEventListener('click', _closeMakimaSidebar);
@@ -636,6 +636,7 @@ function sendMakimaMessage() {
   var input = document.getElementById('makimaInput');
   var messagesEl = document.getElementById('makimaMessages');
   var errorEl = document.getElementById('makimaError');
+  var sendBtn = document.getElementById('makimaSendBtn');
 
   if (!input || !messagesEl || !errorEl) return;
 
@@ -647,12 +648,21 @@ function sendMakimaMessage() {
     return;
   }
 
+  // Cooldown check
+  if (_makimaCooldownActive) {
+    errorEl.textContent = 'Tunggu beberapa detik sebelum mengirim lagi.';
+    return;
+  }
+
   // Get active chat
   var chat = getActiveChat();
   if (!chat) {
     chat = createNewChat();
     _renderSidebarList();
   }
+
+  // Disable send button
+  if (sendBtn) sendBtn.disabled = true;
 
   // Display user message
   _appendUserBubble(messagesEl, message);
@@ -727,23 +737,57 @@ function sendMakimaMessage() {
 
       messagesEl.scrollTop = messagesEl.scrollHeight;
     } else if (result.data.error) {
-      // User-friendly error messages based on status
-      var errMsg = result.data.error;
-      if (result.status === 403) {
-        errMsg = 'Akses ditolak. Password salah atau tidak valid.';
-        _lockMakimaAI();
-        return;
+      var errMsg = '';
+      if (result.status === 429) {
+        errMsg = 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.';
       } else if (result.status === 503) {
-        errMsg = 'MAKIMA AI belum dikonfigurasi.';
-      } else if (result.status === 429) {
-        errMsg = errMsg || 'Terlalu cepat, coba lagi beberapa saat.';
+        errMsg = 'MAKIMA AI BELUM DIKONFIGURASI.';
+      } else if (result.status === 403) {
+        errMsg = 'MAKIMA AI KHUSUS ADMIN.';
+        _appendAIBubble(messagesEl, errMsg);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        errorEl.textContent = errMsg;
+        _lockMakimaAI();
+        // Start cooldown and re-enable button
+        _makimaCooldownActive = true;
+        setTimeout(function() {
+          _makimaCooldownActive = false;
+          var btn = document.getElementById('makimaSendBtn');
+          if (btn) btn.disabled = false;
+        }, 5000);
+        return;
+      } else {
+        errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
       }
+      _appendAIBubble(messagesEl, errMsg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
       errorEl.textContent = errMsg;
     }
+
+    // Start cooldown
+    _makimaCooldownActive = true;
+    if (sendBtn) sendBtn.disabled = true;
+    setTimeout(function() {
+      _makimaCooldownActive = false;
+      var btn = document.getElementById('makimaSendBtn');
+      if (btn) btn.disabled = false;
+    }, 5000);
   })
   .catch(function() {
     _removeLoadingBubble();
-    errorEl.textContent = 'Koneksi gagal. Coba lagi nanti.';
+    var errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
+    _appendAIBubble(messagesEl, errMsg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    errorEl.textContent = errMsg;
+
+    // Start cooldown
+    _makimaCooldownActive = true;
+    if (sendBtn) sendBtn.disabled = true;
+    setTimeout(function() {
+      _makimaCooldownActive = false;
+      var btn = document.getElementById('makimaSendBtn');
+      if (btn) btn.disabled = false;
+    }, 5000);
   });
 }
 
@@ -753,4 +797,68 @@ function _escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/* ── CUSTOM CONFIRM MODAL ────────────────────────── */
+
+function _showClearConfirmModal() {
+  // Remove any existing modal
+  _closeClearConfirmModal();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'makima-confirm-overlay';
+  overlay.id = 'makimaConfirmOverlay';
+
+  var modal = document.createElement('div');
+  modal.className = 'makima-confirm-modal';
+
+  var title = document.createElement('div');
+  title.className = 'makima-confirm-title';
+  title.textContent = 'HAPUS SEMUA CHAT?';
+
+  var text = document.createElement('div');
+  text.className = 'makima-confirm-text';
+  text.textContent = 'Semua riwayat chat lokal akan dihapus dari perangkat ini.';
+
+  var actions = document.createElement('div');
+  actions.className = 'makima-confirm-actions';
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'makima-confirm-btn-cancel';
+  cancelBtn.textContent = 'BATAL';
+  cancelBtn.addEventListener('click', function() {
+    _closeClearConfirmModal();
+  });
+
+  var deleteBtn = document.createElement('button');
+  deleteBtn.className = 'makima-confirm-btn-delete';
+  deleteBtn.textContent = 'HAPUS';
+  deleteBtn.addEventListener('click', function() {
+    clearAllChats();
+    _closeClearConfirmModal();
+  });
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(deleteBtn);
+
+  modal.appendChild(title);
+  modal.appendChild(text);
+  modal.appendChild(actions);
+  overlay.appendChild(modal);
+
+  document.body.appendChild(overlay);
+
+  // Close on overlay background click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      _closeClearConfirmModal();
+    }
+  });
+}
+
+function _closeClearConfirmModal() {
+  var overlay = document.getElementById('makimaConfirmOverlay');
+  if (overlay && overlay.parentNode) {
+    overlay.parentNode.removeChild(overlay);
+  }
 }

@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix MAKIMA AI: enforce Gemini-only-on-SEND, 5s cooldown, disable button during request, proper error messages (429 quota, 403 password, 503 not configured), remove disclaimer text, replace browser confirm with custom dark modal for clear chat, update cache busting to ?v=20260528_2, improve mobile layout for chat area/input bar/send button, ensure password gate works correctly.",
+  "status": "in_progress",
+  "steps": [
+    "A. FRONTEND (static/js/makima-ai.js): (1) Add a _makimaCooldownActive variable and 5-second cooldown timer that blocks sendMakimaMessage if cooldown is active. (2) Disable the SEND button (add disabled attribute and reduce opacity) while a request is in progress, re-enable on response/error. (3) Do NOT auto-retry on error. (4) Ensure no calls to /api/test-gemini anywhere in the frontend. (5) Update error handling in the fetch .then() block: status 429 -> show 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.' as a system bubble (not just errorEl), status 503 -> 'MAKIMA AI BELUM DIKONFIGURASI.', status 403 -> 'MAKIMA AI KHUSUS ADMIN.', other errors -> 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.' Show these as AI message bubbles, not just the error div. (6) Replace the `if (confirm('Hapus semua chat?'))` in clearAllBtn click handler with a custom modal: dark background, red border, rounded 18px, red glow, title 'HAPUS SEMUA CHAT?', text 'Semua riwayat chat lokal akan dihapus dari perangkat ini.', BATAL button (left, closes modal), HAPUS button (right, calls clearAllChats). Build the modal in JS and add CSS styles for it in makima-ai.css. (7) Remove the disclaimer paragraph: `<p class=\"makima-ai-disclaimer\">MAKIMA AI dapat membuat kesalahan. Periksa informasi penting.</p>` from the renderMakimaAI() function output.",
+    "B. FRONTEND CSS (static/css/makima-ai.css): (1) Add styles for .makima-confirm-overlay and .makima-confirm-modal (dark bg, border 2px solid red, border-radius 18px, box-shadow red glow, centered). Add .makima-confirm-title, .makima-confirm-text, .makima-confirm-actions with two buttons styled like the MII Network theme. (2) Add .makima-ai-send-btn:disabled style (opacity 0.5, cursor not-allowed). (3) Remove .makima-ai-disclaimer style (or leave it, since the element is removed). (4) Mobile improvements: ensure .makima-ai-input-area uses full width with no left/right cutoff, .makima-ai-send-btn remains fully visible at 76px width, chat area fills available height using 100dvh, add overflow-x: hidden to .makima-chatgpt-layout, sidebar is only a drawer on mobile (already done but verify overlay does not block chat when closed).",
+    "C. BACKEND (app.py): (1) In the /api/ai-chat exception handler, ensure 429 quota errors return the message in ALL CAPS: 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.' (2) Ensure 503 returns 'MAKIMA AI BELUM DIKONFIGURASI.' (3) For password failures (403), return 'MAKIMA AI KHUSUS ADMIN.' (4) For other errors (500), return 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'",
+    "D. HTML TEMPLATE (templates/index.html): (1) Update all cache busting versions from ?v=20260528 to ?v=20260528_2 for CSS and JS files. (2) Verify the service worker unregister script is present (it already is). (3) Verify Cache-Control no-store headers are set for HTML (already done in set_security_headers)."
+  ],
+  "acceptance_criteria": [
+    "No call to /api/test-gemini exists anywhere in frontend JS files",
+    "sendMakimaMessage() has a 5-second cooldown between requests",
+    "SEND button is disabled during active request",
+    "Error 429 shows system bubble: KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.",
+    "Error 503 shows: MAKIMA AI BELUM DIKONFIGURASI.",
+    "Error 403 shows: MAKIMA AI KHUSUS ADMIN.",
+    "Other errors show: MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.",
+    "Clear chat uses custom dark modal with red border instead of window.confirm()",
+    "Disclaimer text is removed from the rendered HTML",
+    "All ?v= strings in index.html are updated to ?v=20260528_2",
+    "Backend /api/ai-chat returns correct ALL CAPS error messages",
+    "Mobile: input bar and send button are not cut off, chat area uses full width"
+  ],
+  "verification": [
+    "Run: python -c \"import app\" to verify no Python syntax errors",
+    "Run: grep -r 'test-gemini' /projects/sandbox/miitokk/static/js/ to confirm no auto-calls",
+    "Run: grep 'v=20260528_2' /projects/sandbox/miitokk/templates/index.html | wc -l to confirm cache busting updated (should be >= 10)",
+    "Run: grep 'confirm(' /projects/sandbox/miitokk/static/js/makima-ai.js to confirm no browser confirm() calls",
+    "Run: grep 'disclaimer' /projects/sandbox/miitokk/static/js/makima-ai.js to confirm disclaimer text removed",
+    "Run: grep 'KUOTA GEMINI' /projects/sandbox/miitokk/app.py to confirm backend error message"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
