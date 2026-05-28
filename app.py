@@ -22,10 +22,24 @@ _gemini_model_cache = {}  # {model_name: GenerativeModel}
 _gemini_configured = False
 
 _MAKIMA_SYSTEM_INSTRUCTION = (
-    'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
-    'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
-    'Tetap sopan dan membantu. Jangan mengaku manusia. '
+    'Kamu adalah MAKIMA AI, asisten pribadi pemilik MII NETWORK. '
+    'Jawab dengan bahasa Indonesia santai, tenang, elegan, sedikit dingin, dan personal. '
+    'Gunakan "kamu", bukan "Anda". '
+    'Jawaban pendek, jelas, tidak kaku. Maksimal 1-4 kalimat kecuali user minta teknis. '
+    'Jangan terdengar seperti chatbot customer service. '
+    'Jangan mengaku sudah browsing atau mengakses web. '
+    'Kamu TIDAK punya kemampuan browsing real-time. '
+    'Kalau user minta cek web/link terbaru, jawab: '
+    '"Aku belum bisa mengecek web langsung dari sini. Tapi aku bisa bantu beri arahan umum atau susun langkah ceknya." '
+    'Jangan mengarang link atau URL. '
+    'Jangan memberi rekomendasi website spesifik kalau tidak yakin URL-nya benar. '
+    'Jangan pura-pura bisa membuat gambar atau video. '
+    'Kalau user minta buat gambar, jawab: "Aku belum bisa membuat gambar langsung di sini. Tapi aku bisa buatkan prompt gambarnya." '
+    'Jangan tutup jawaban dengan pertanyaan template seperti "Apakah kamu ingin saya membantu..." atau "Ada yang bisa saya bantu lagi?". '
+    'Kalau tidak tahu, katakan dengan tenang. '
+    'Kalau user minta sesuatu yang belum bisa dilakukan, tawarkan alternatif berupa prompt, langkah, atau ide. '
     'Jangan membahas API key atau sistem internal. '
+    'Jangan mengaku manusia. '
     'Ingat informasi penting yang user berikan selama percakapan.'
 )
 
@@ -1381,6 +1395,80 @@ def test_gemini():
         })
 
 
+def _filter_makima_output(text):
+    """Filter AI output to remove forbidden phrases and patterns."""
+    import re as _re
+
+    if not text:
+        return text
+
+    # Forbidden phrases that indicate fake browsing
+    _forbidden_phrases = [
+        'setelah mencari',
+        'saya menemukan',
+        'berikut sumber web',
+        'saya mengakses web',
+        'setelah saya telusuri',
+        'berdasarkan pencarian',
+        'saya browsing',
+        'saya cari di web',
+        'setelah menelusuri',
+        'hasil pencarian',
+        'saya temukan di web',
+        'menurut hasil pencarian',
+    ]
+
+    # Check and replace sentences containing forbidden phrases
+    sentences = _re.split(r'(?<=[.!?])\s+', text)
+    filtered_sentences = []
+    has_forbidden = False
+
+    for sentence in sentences:
+        sentence_lower = sentence.lower()
+        contains_forbidden = False
+        for phrase in _forbidden_phrases:
+            if phrase in sentence_lower:
+                contains_forbidden = True
+                has_forbidden = True
+                break
+        if not contains_forbidden:
+            filtered_sentences.append(sentence)
+
+    if has_forbidden:
+        # Prepend the standard disclaimer if we removed browsing claims
+        disclaimer = 'Aku belum bisa mengecek web langsung dari sini.'
+        if filtered_sentences:
+            text = disclaimer + ' ' + ' '.join(filtered_sentences)
+        else:
+            text = disclaimer
+    else:
+        text = ' '.join(filtered_sentences) if filtered_sentences else text
+
+    # Remove fabricated URLs (any http/https links)
+    text = _re.sub(r'https?://[^\s\)]+', '', text)
+    # Clean up extra spaces from removed URLs
+    text = _re.sub(r'  +', ' ', text).strip()
+
+    # Replace "Anda" with "kamu"
+    text = text.replace('Anda', 'kamu').replace('anda', 'kamu')
+
+    # Remove template closing questions
+    _template_patterns = [
+        r'Apakah kamu ingin saya membantu[^.?!]*[.?!]?',
+        r'Ada yang bisa saya bantu[^.?!]*[.?!]?',
+        r'Apakah ada yang ingin[^.?!]*[.?!]?',
+        r'Mau saya bantu[^.?!]*[.?!]?',
+    ]
+    for pattern in _template_patterns:
+        text = _re.sub(pattern, '', text, flags=_re.IGNORECASE)
+
+    # Final cleanup
+    text = _re.sub(r'\s+', ' ', text).strip()
+    text = _re.sub(r'\s+([.!?,])', r'\1', text)
+
+    return text
+
+
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
     data = request.get_json(silent=True) or {}
@@ -1531,7 +1619,7 @@ def ai_chat():
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_gemini(model)
         if reply:
-            return jsonify({'reply': reply})
+            return jsonify({'reply': _filter_makima_output(reply)})
         if err == 'not_configured':
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         if err == 'quota':
@@ -1544,7 +1632,7 @@ def ai_chat():
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_groq(model)
         if reply:
-            return jsonify({'reply': reply})
+            return jsonify({'reply': _filter_makima_output(reply)})
         if err == 'not_configured':
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         if err == 'quota':
@@ -1561,7 +1649,7 @@ def ai_chat():
         if gemini_key:
             reply, err = _call_gemini(model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
             if reply:
-                return jsonify({'reply': reply})
+                return jsonify({'reply': _filter_makima_output(reply)})
             if err != 'quota':
                 # Non-quota error from Gemini: return the error, do not fall through to Groq
                 if err == 'not_configured':
@@ -1575,7 +1663,7 @@ def ai_chat():
             groq_model = model if model in groq_allowed else 'llama-3.1-8b-instant'
             reply, err = _call_groq(groq_model)
             if reply:
-                return jsonify({'reply': reply})
+                return jsonify({'reply': _filter_makima_output(reply)})
             if err == 'quota':
                 return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 429
             return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 500

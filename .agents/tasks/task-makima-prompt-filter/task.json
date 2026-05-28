@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-prompt-filter",
+  "task_description": "Fix MAKIMA AI system prompt and output filter to prevent bot-like responses, add forbidden phrase filtering, update CSS for readability, and add markdown rendering in JS.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

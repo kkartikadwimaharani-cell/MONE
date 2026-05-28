@@ -1,0 +1,20 @@
+{
+  "project_type": "Flask web app with AI chat feature (Gemini/Groq backend)",
+  "language": "Python (backend), JavaScript/CSS (frontend)",
+  "build_system": "pip install from requirements.txt, deployed via Dockerfile/nixpacks on Railway",
+  "test_framework": "No test framework detected",
+  "build_command": "pip install -r requirements.txt",
+  "test_command": "python -c \"import app; print('OK')\"",
+  "verification_instructions": "1. Install deps with pip. 2. Run python -c 'import app' to verify no syntax errors. 3. Manually confirm system prompt, output filter, CSS and JS changes.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "INTEGRATIONS_ONLY network - cannot install packages from PyPI or run docker builds. Use AST validation (python -c import) for verification.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Changes are direct to app.py, makima-ai.css, makima-ai.js.",
+  "key_patterns": "System instruction is in _MAKIMA_SYSTEM_INSTRUCTION variable (line 28). Gemini model is initialized with system_instruction param. Groq uses OpenAI-style messages with system role. AI responses returned as jsonify({'reply': reply}). JS uses textContent for rendering (no markdown parsing). CSS uses mobile breakpoint at 768px.",
+  "relevant_files": [
+    "app.py",
+    "static/css/makima-ai.css",
+    "static/js/makima-ai.js"
+  ],
+  "directory_structure": "Root: app.py (Flask), static/css/ (stylesheets), static/js/ (client JS), templates/ (Jinja2 HTML)"
+}
