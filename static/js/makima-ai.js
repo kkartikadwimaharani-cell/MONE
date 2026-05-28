@@ -1,10 +1,10 @@
-console.log('MAKIMA AI VERSION 20260528_7');
+console.log('MAKIMA AI VERSION 20260528_9');
 /* == MAKIMA AI CHAT (ChatGPT-style Multi-Chat) == */
 
 var _makimaAvatarSrc = '/static/img/makima-ai-profile.png';
 var _makimaIsSpeaking = false;
 var _makimaSidebarOpen = false;
-var _makimaVoiceDropdownOpen = false;
+var _makimaSettingsPanelOpen = false;
 var _makimaCooldownActive = false;
 var _makimaRequestInProgress = false;
 
@@ -14,7 +14,6 @@ var _makimaProvider = 'auto';
 var _makimaModel = 'gemini-2.0-flash';
 
 var _makimaModelOptions = {
-  auto: ['gemini-2.0-flash', 'gemini-2.5-flash'],
   gemini: ['gemini-2.0-flash', 'gemini-2.5-flash'],
   groq: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']
 };
@@ -300,7 +299,7 @@ function renderMakimaAI() {
         '<div class="makima-sidebar-list" id="makimaSidebarList"></div>' +
         '<div class="makima-sidebar-footer">' +
           '<button class="makima-clear-all-btn" id="makimaClearAllBtn">CLEAR ALL</button>' +
-          '<button class="makima-back-link" onclick="showMainView()">← KEMBALI KE DOWNLOADER</button>' +
+          '<button class="makima-back-link" onclick="showMainView()">&#8592; KEMBALI KE DOWNLOADER</button>' +
         '</div>' +
       '</div>' +
       '<div class="makima-sidebar-overlay" id="makimaSidebarOverlay"></div>' +
@@ -312,7 +311,6 @@ function renderMakimaAI() {
           '<span class="makima-online-badge">ONLINE</span>' +
           '<div class="makima-voice-gear-wrap">' +
             '<button class="makima-gear-btn" id="makimaGearBtn" title="Settings">&#9881;</button>' +
-            '<div class="makima-voice-dropdown" id="makimaVoiceDropdown"></div>' +
           '</div>' +
         '</div>' +
         '<div class="makima-ai-messages" id="makimaMessages"></div>' +
@@ -324,12 +322,14 @@ function renderMakimaAI() {
           '<div class="makima-ai-error" id="makimaError"></div>' +
         '</div>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<div class="makima-settings-backdrop" id="makimaSettingsBackdrop"></div>' +
+    '<div class="makima-settings-panel-overlay" id="makimaSettingsPanel"></div>';
 
   _bindMakimaEvents();
   _renderSidebarList();
   _renderChatArea();
-  _renderVoiceDropdown();
+  _renderSettingsPanel();
 }
 
 /* == EVENT BINDING == */
@@ -342,6 +342,7 @@ function _bindMakimaEvents() {
   var menuBtn = document.getElementById('makimaMenuBtn');
   var overlay = document.getElementById('makimaSidebarOverlay');
   var gearBtn = document.getElementById('makimaGearBtn');
+  var settingsBackdrop = document.getElementById('makimaSettingsBackdrop');
 
   if ((_makimaCooldownActive || _makimaRequestInProgress) && sendBtn) {
     sendBtn.disabled = true;
@@ -364,18 +365,8 @@ function _bindMakimaEvents() {
   });
   if (menuBtn) menuBtn.addEventListener('click', _toggleMakimaSidebar);
   if (overlay) overlay.addEventListener('click', _closeMakimaSidebar);
-  if (gearBtn) gearBtn.addEventListener('click', _toggleVoiceDropdown);
-
-  document.addEventListener('click', function(e) {
-    if (_makimaVoiceDropdownOpen) {
-      var dropdown = document.getElementById('makimaVoiceDropdown');
-      var gear = document.getElementById('makimaGearBtn');
-      if (dropdown && gear && !dropdown.contains(e.target) && !gear.contains(e.target)) {
-        _makimaVoiceDropdownOpen = false;
-        dropdown.classList.remove('open');
-      }
-    }
-  });
+  if (gearBtn) gearBtn.addEventListener('click', _toggleSettingsPanel);
+  if (settingsBackdrop) settingsBackdrop.addEventListener('click', _closeSettingsPanel);
 
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
@@ -405,32 +396,45 @@ function _closeMakimaSidebar() {
   if (overlay) overlay.classList.remove('open');
 }
 
-/* == VOICE/SETTINGS DROPDOWN == */
+/* == SETTINGS PANEL == */
 
-function _toggleVoiceDropdown() {
-  _makimaVoiceDropdownOpen = !_makimaVoiceDropdownOpen;
-  var dropdown = document.getElementById('makimaVoiceDropdown');
-  if (dropdown) dropdown.classList.toggle('open', _makimaVoiceDropdownOpen);
+function _toggleSettingsPanel() {
+  if (_makimaSettingsPanelOpen) {
+    _closeSettingsPanel();
+  } else {
+    _openSettingsPanel();
+  }
 }
 
-function _renderVoiceDropdown() {
-  var dropdown = document.getElementById('makimaVoiceDropdown');
-  if (!dropdown) return;
+function _openSettingsPanel() {
+  _makimaSettingsPanelOpen = true;
+  var panel = document.getElementById('makimaSettingsPanel');
+  var backdrop = document.getElementById('makimaSettingsBackdrop');
+  if (panel) panel.classList.add('open');
+  if (backdrop) backdrop.classList.add('open');
+}
+
+function _closeSettingsPanel() {
+  _makimaSettingsPanelOpen = false;
+  var panel = document.getElementById('makimaSettingsPanel');
+  var backdrop = document.getElementById('makimaSettingsBackdrop');
+  if (panel) panel.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+}
+
+/* == SETTINGS PANEL RENDER == */
+
+function _renderSettingsPanel() {
+  var panel = document.getElementById('makimaSettingsPanel');
+  if (!panel) return;
+
   var voices = ['Kore', 'Charon', 'Aoede', 'Sulafat', 'Achernar'];
-  var current = _getVoiceSetting();
+  var currentVoice = _getVoiceSetting();
 
-  var html = '<div class="makima-voice-dropdown-title">Voice Settings</div>';
-  for (var i = 0; i < voices.length; i++) {
-    var v = voices[i];
-    var activeClass = (v === current) ? ' active' : '';
-    html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + _escapeHtml(v) + '">' + _escapeHtml(v) + '</button>';
-  }
+  var html = '<button class="makima-settings-close" id="makimaSettingsClose">&times;</button>';
 
-  // Settings panel
-  html += '<div class="makima-settings-panel">';
-  html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">AI MODE</div>';
-
-  // Segmented control
+  /* AI MODE section */
+  html += '<div class="makima-settings-section-title">AI MODE</div>';
   html += '<div class="makima-mode-selector">';
   var modes = ['auto', 'gemini', 'groq'];
   var modeLabels = ['AUTO', 'GEMINI', 'GROQ'];
@@ -440,50 +444,63 @@ function _renderVoiceDropdown() {
   }
   html += '</div>';
 
-  // Model selector
-  var models = _makimaModelOptions[_makimaProvider] || _makimaModelOptions.auto;
-  html += '<select class="makima-model-select" id="makimaModelSelect">';
-  for (var mi = 0; mi < models.length; mi++) {
-    var sel = (models[mi] === _makimaModel) ? ' selected' : '';
-    html += '<option value="' + models[mi] + '"' + sel + '>' + models[mi] + '</option>';
+  /* Model selector or auto text */
+  if (_makimaProvider === 'auto') {
+    html += '<div class="makima-auto-text">Gemini first, Groq fallback</div>';
+  } else {
+    var models = _makimaModelOptions[_makimaProvider] || [];
+    html += '<select class="makima-model-select" id="makimaModelSelect">';
+    for (var mi = 0; mi < models.length; mi++) {
+      var sel = (models[mi] === _makimaModel) ? ' selected' : '';
+      html += '<option value="' + models[mi] + '"' + sel + '>' + models[mi] + '</option>';
+    }
+    html += '</select>';
   }
-  html += '</select>';
 
-  // Save button
   html += '<button class="makima-save-model-btn" id="makimaSaveModelBtn">SAVE MODEL</button>';
-  html += '</div>';
 
-  // Security section
-  html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">Security</div>';
-  html += '<button class="makima-voice-opt makima-lock-btn" id="makimaLockBtn">LOCK</button>';
-  dropdown.innerHTML = html;
-
-  // Bind voice buttons
-  var btns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
-  for (var j = 0; j < btns.length; j++) {
-    btns[j].addEventListener('click', function() {
-      var voice = this.getAttribute('data-voice');
-      _setVoiceSetting(voice);
-      var allBtns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
-      for (var k = 0; k < allBtns.length; k++) allBtns[k].classList.remove('active');
-      this.classList.add('active');
-    });
+  /* VOICE section */
+  html += '<div class="makima-settings-section-title">VOICE</div>';
+  for (var v = 0; v < voices.length; v++) {
+    var vActive = (voices[v] === currentVoice) ? ' active' : '';
+    html += '<button class="makima-voice-opt' + vActive + '" data-voice="' + _escapeHtml(voices[v]) + '">' + _escapeHtml(voices[v]) + '</button>';
   }
+  html += '<button class="makima-test-voice-btn" id="makimaTestVoiceBtn">TEST VOICE</button>';
+  html += '<div class="makima-elevenlabs-placeholder">ElevenLabs integration coming soon</div>';
 
-  // Bind mode buttons
-  var modeBtns = dropdown.querySelectorAll('.makima-mode-btn');
+  /* SECURITY section */
+  html += '<div class="makima-settings-section-title">SECURITY</div>';
+  html += '<button class="makima-lock-btn" id="makimaLockBtn">LOCK</button>';
+
+  panel.innerHTML = html;
+
+  /* Bind close button */
+  var closeBtn = document.getElementById('makimaSettingsClose');
+  if (closeBtn) closeBtn.addEventListener('click', _closeSettingsPanel);
+
+  /* Bind mode buttons */
+  var modeBtns = panel.querySelectorAll('.makima-mode-btn');
   for (var mb = 0; mb < modeBtns.length; mb++) {
     modeBtns[mb].addEventListener('click', function() {
       var newProvider = this.getAttribute('data-provider');
       _makimaProvider = newProvider;
-      // Update model to first of new provider
-      var newModels = _makimaModelOptions[newProvider] || _makimaModelOptions.auto;
-      _makimaModel = newModels[0];
-      _renderVoiceDropdown();
+      if (newProvider !== 'auto') {
+        var newModels = _makimaModelOptions[newProvider] || [];
+        _makimaModel = newModels[0] || '';
+      }
+      _renderSettingsPanel();
     });
   }
 
-  // Bind save button
+  /* Bind model select change */
+  var modelSelect = document.getElementById('makimaModelSelect');
+  if (modelSelect) {
+    modelSelect.addEventListener('change', function() {
+      _makimaModel = this.value;
+    });
+  }
+
+  /* Bind save button */
   var saveBtn = document.getElementById('makimaSaveModelBtn');
   if (saveBtn) {
     saveBtn.addEventListener('click', function() {
@@ -494,13 +511,51 @@ function _renderVoiceDropdown() {
     });
   }
 
-  // Bind lock button
+  /* Bind voice buttons */
+  var voiceBtns = panel.querySelectorAll('.makima-voice-opt');
+  for (var vb = 0; vb < voiceBtns.length; vb++) {
+    voiceBtns[vb].addEventListener('click', function() {
+      var voice = this.getAttribute('data-voice');
+      _setVoiceSetting(voice);
+      var allVBtns = panel.querySelectorAll('.makima-voice-opt');
+      for (var k = 0; k < allVBtns.length; k++) allVBtns[k].classList.remove('active');
+      this.classList.add('active');
+    });
+  }
+
+  /* Bind test voice button */
+  var testBtn = document.getElementById('makimaTestVoiceBtn');
+  if (testBtn) {
+    testBtn.addEventListener('click', function() {
+      _testVoice();
+    });
+  }
+
+  /* Bind lock button */
   var lockBtn = document.getElementById('makimaLockBtn');
   if (lockBtn) {
     lockBtn.addEventListener('click', function() {
       _lockMakimaAI();
     });
   }
+}
+
+function _testVoice() {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var utterance = new SpeechSynthesisUtterance('Makima AI siap melayani Anda.');
+  utterance.lang = 'id-ID';
+  utterance.rate = 0.95;
+  utterance.pitch = 0.9;
+  var voiceName = _getVoiceSetting();
+  var availableVoices = window.speechSynthesis.getVoices();
+  for (var v = 0; v < availableVoices.length; v++) {
+    if (availableVoices[v].name.indexOf(voiceName) !== -1) {
+      utterance.voice = availableVoices[v];
+      break;
+    }
+  }
+  window.speechSynthesis.speak(utterance);
 }
 
 /* == TOAST NOTIFICATION == */
@@ -652,6 +707,9 @@ function _speakMakimaText(text, btn) {
     if (wasThisButton) return;
   }
 
+  btn.classList.add('spinning');
+  btn.innerHTML = '&#128264;';
+
   var utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'id-ID';
   utterance.rate = 0.95;
@@ -666,18 +724,23 @@ function _speakMakimaText(text, btn) {
     }
   }
 
-  btn.classList.add('speaking');
-  btn.innerHTML = '&#9632;';
-  _makimaIsSpeaking = true;
+  utterance.onstart = function() {
+    btn.classList.remove('spinning');
+    btn.classList.add('speaking');
+    btn.innerHTML = '&#9632;';
+    _makimaIsSpeaking = true;
+  };
 
   utterance.onend = function() {
     btn.classList.remove('speaking');
+    btn.classList.remove('spinning');
     btn.innerHTML = '&#128264;';
     _makimaIsSpeaking = false;
   };
 
   utterance.onerror = function() {
     btn.classList.remove('speaking');
+    btn.classList.remove('spinning');
     btn.innerHTML = '&#128264;';
     _makimaIsSpeaking = false;
   };
