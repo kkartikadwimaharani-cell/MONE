@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Replace MAKIMA AI system prompt with comprehensive new version, add server-side output filter for forbidden phrases, update CSS for line-height and mobile bubble width, and update JS to render markdown properly instead of raw textContent.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. In app.py (around line 28), replace the `_MAKIMA_SYSTEM_INSTRUCTION` variable content with the comprehensive new prompt provided by the user. The new prompt must include: persona definition (asisten pribadi pemilik MII NETWORK), style rules (santai, tenang, elegan, sedikit dingin, personal), use 'kamu' not 'Anda', short answers (1-4 sentences), no browsing claims, no fake links, no pretending to make images/video, no closing with template questions, no customer service tone, admit limitations calmly, offer alternatives (prompt/langkah/ide).",
     "2. In app.py, add a new function `_filter_makima_output(text)` before the ai_chat route that checks the AI reply for forbidden phrases and replaces them. Forbidden phrases: 'setelah mencari', 'saya menemukan', 'berikut sumber web', 'saya mengakses web', 'setelah saya telusuri', 'berdasarkan pencarian', 'saya browsing', 'saya cari di web'. If any are found, replace the entire sentence containing it with an appropriate alternative like 'Aku belum bisa mengecek web langsung dari sini.' Also strip any URLs that look fabricated (http/https links that are not from a known safe list). Also ensure the response does not use 'Anda' (replace with 'kamu'), does not end with template questions like 'Apakah Anda ingin...', 'Ada yang bisa saya bantu...'. Call this filter on every successful reply before returning jsonify.",
@@ -29,5 +29,5 @@
     "Run: grep '_renderMarkdown' static/js/makima-ai.js to confirm markdown renderer exists"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Required pip install of flask, google-generativeai, requests, yt-dlp to verify import. All acceptance criteria met. The google.generativeai package shows a FutureWarning about deprecation but works fine."
 }
