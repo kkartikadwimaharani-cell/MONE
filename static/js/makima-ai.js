@@ -368,6 +368,12 @@ function _bindMakimaEvents() {
   if (gearBtn) gearBtn.addEventListener('click', _toggleSettingsPanel);
   if (settingsBackdrop) settingsBackdrop.addEventListener('click', _closeSettingsPanel);
 
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && _makimaSettingsPanelOpen) {
+      _closeSettingsPanel();
+    }
+  });
+
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -407,11 +413,13 @@ function _toggleSettingsPanel() {
 }
 
 function _openSettingsPanel() {
+  _loadProviderSettings();
   _makimaSettingsPanelOpen = true;
   var panel = document.getElementById('makimaSettingsPanel');
   var backdrop = document.getElementById('makimaSettingsBackdrop');
   if (panel) panel.classList.add('open');
   if (backdrop) backdrop.classList.add('open');
+  _renderSettingsPanel();
 }
 
 function _closeSettingsPanel() {
@@ -542,13 +550,17 @@ function _renderSettingsPanel() {
 
 function _testVoice() {
   if (!window.speechSynthesis) return;
+  var availableVoices = window.speechSynthesis.getVoices();
+  if (!availableVoices || availableVoices.length === 0) {
+    _showMakimaToast('Voices loading...');
+    return;
+  }
   window.speechSynthesis.cancel();
   var utterance = new SpeechSynthesisUtterance('Makima AI siap melayani Anda.');
   utterance.lang = 'id-ID';
   utterance.rate = 0.95;
   utterance.pitch = 0.9;
   var voiceName = _getVoiceSetting();
-  var availableVoices = window.speechSynthesis.getVoices();
   for (var v = 0; v < availableVoices.length; v++) {
     if (availableVoices[v].name.indexOf(voiceName) !== -1) {
       utterance.voice = availableVoices[v];
@@ -708,7 +720,7 @@ function _speakMakimaText(text, btn) {
   }
 
   btn.classList.add('spinning');
-  btn.innerHTML = '&#128264;';
+  btn.innerHTML = '...';
 
   var utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'id-ID';

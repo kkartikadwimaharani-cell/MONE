@@ -114,7 +114,7 @@ body.makima-ai-body { width: 100%; min-height: 100dvh; overflow-x: hidden; }
 .makima-speaker-btn { position: absolute; bottom: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; background: rgba(180,0,0,0.2); border: 1px solid rgba(204,0,0,0.35); color: #ff6666; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
 .makima-speaker-btn:hover { background: rgba(204,0,0,0.3); box-shadow: 0 0 8px rgba(255,0,0,0.3); }
 .makima-speaker-btn.speaking { background: rgba(204,0,0,0.4); border-color: #cc0000; box-shadow: 0 0 12px rgba(255,0,0,0.4); animation: makimaSpeakerPulse 1.5s infinite; }
-.makima-speaker-btn.spinning { animation: makimaSpinnerSpin 1s linear infinite; }
+.makima-speaker-btn.spinning { animation: makimaSpinnerPulse 1s ease-in-out infinite; }
 
 /* == LOADING BUBBLE == */
 .makima-msg-loading { display: flex; align-items: center; gap: 8px; padding: 14px 18px; background: rgba(16,6,6,0.85); border: 1px solid rgba(204,0,0,0.15); border-radius: 18px 18px 18px 4px; }
@@ -192,6 +192,7 @@ body.makima-ai-body { width: 100%; min-height: 100dvh; overflow-x: hidden; }
 @keyframes makimaSpeakerPulse { 0%, 100% { box-shadow: 0 0 6px rgba(255,0,0,0.3); } 50% { box-shadow: 0 0 14px rgba(255,0,0,0.6); } }
 @keyframes makimaToastIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes makimaSpinnerSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes makimaSpinnerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* == LEGACY DROPDOWN HIDDEN == */
 .makima-voice-dropdown { display: none !important; }
