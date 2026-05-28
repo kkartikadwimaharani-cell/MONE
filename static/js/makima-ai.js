@@ -1,5 +1,5 @@
-console.log('MAKIMA AI VERSION 20260528_7');
-/* == MAKIMA AI CHAT (ChatGPT-style Multi-Chat) == */
+console.log('MAKIMA AI VERSION 20260529_CHATGPT_REDESIGN');
+/* == MAKIMA AI CHAT (ChatGPT-style Multi-Chat - Redesigned) == */
 
 var _makimaAvatarSrc = '/static/img/makima-ai-profile.png';
 var _makimaIsSpeaking = false;
@@ -7,6 +7,25 @@ var _makimaSidebarOpen = false;
 var _makimaVoiceDropdownOpen = false;
 var _makimaCooldownActive = false;
 var _makimaRequestInProgress = false;
+var _makimaQuickActionsVisible = false;
+var _makimaModelPickerOpen = false;
+
+/* == QUICK ACTION TEMPLATES == */
+
+var _makimaQuickActions = [
+  { label: 'Buat prompt', text: 'Buatkan prompt untuk ' },
+  { label: 'Ringkas teks', text: 'Ringkas teks ini: ' },
+  { label: 'Ide konten', text: 'Beri aku ide konten untuk ' },
+  { label: 'Perbaiki kode', text: 'Bantu perbaiki kode ini: ' },
+  { label: 'Promosi toko', text: 'Buatkan teks promosi premium untuk MII Store: ' }
+];
+
+var _makimaEmptyStateActions = [
+  { label: 'Buat prompt', text: 'Buatkan prompt untuk ' },
+  { label: 'Ide konten', text: 'Beri aku ide konten untuk ' },
+  { label: 'Promosi toko', text: 'Buatkan teks promosi premium untuk MII Store: ' },
+  { label: 'Perbaiki kode', text: 'Bantu perbaiki kode ini: ' }
+];
 
 /* == PROVIDER/MODEL STATE == */
 
@@ -289,6 +308,8 @@ function renderMakimaAI() {
     if (!found) setActiveChatId(chats[0].id);
   }
 
+  var providerLabel = _makimaProvider.charAt(0).toUpperCase() + _makimaProvider.slice(1);
+
   container.innerHTML =
     '<div class="makima-ai-page makima-chatgpt-layout">' +
       '<div class="makima-sidebar" id="makimaSidebar">' +
@@ -300,7 +321,7 @@ function renderMakimaAI() {
         '<div class="makima-sidebar-list" id="makimaSidebarList"></div>' +
         '<div class="makima-sidebar-footer">' +
           '<button class="makima-clear-all-btn" id="makimaClearAllBtn">CLEAR ALL</button>' +
-          '<button class="makima-back-link" onclick="showMainView()">← KEMBALI KE DOWNLOADER</button>' +
+          '<button class="makima-back-link" onclick="showMainView()">\u2190 KEMBALI KE DOWNLOADER</button>' +
         '</div>' +
       '</div>' +
       '<div class="makima-sidebar-overlay" id="makimaSidebarOverlay"></div>' +
@@ -310,14 +331,22 @@ function renderMakimaAI() {
           '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA" class="makima-header-avatar makima-avatar-protected" draggable="false" oncontextmenu="return false" ondragstart="return false" />' +
           '<span class="makima-header-title">MAKIMA AI</span>' +
           '<span class="makima-online-badge">ONLINE</span>' +
+          '<div class="makima-model-picker-wrap">' +
+            '<button class="makima-model-picker-btn" id="makimaModelPickerBtn">' + _escapeHtml(providerLabel) + ' &gt;</button>' +
+            '<div class="makima-model-picker-popover" id="makimaModelPickerPopover"></div>' +
+          '</div>' +
           '<div class="makima-voice-gear-wrap">' +
             '<button class="makima-gear-btn" id="makimaGearBtn" title="Settings">&#9881;</button>' +
             '<div class="makima-voice-dropdown" id="makimaVoiceDropdown"></div>' +
           '</div>' +
         '</div>' +
-        '<div class="makima-ai-messages" id="makimaMessages"></div>' +
+        '<div class="makima-chat-content-area">' +
+          '<div class="makima-ai-messages" id="makimaMessages"></div>' +
+        '</div>' +
         '<div class="makima-ai-input-area">' +
+          '<div class="makima-quick-actions-bar" id="makimaQuickActionsBar"></div>' +
           '<div class="makima-ai-input-wrap">' +
+            '<button class="makima-plus-btn" id="makimaPlusBtn" title="Quick Actions">+</button>' +
             '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
             '<button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>' +
           '</div>' +
@@ -330,6 +359,101 @@ function renderMakimaAI() {
   _renderSidebarList();
   _renderChatArea();
   _renderVoiceDropdown();
+  _renderQuickActionsBar();
+  _renderModelPickerPopover();
+}
+
+/* == QUICK ACTIONS BAR == */
+
+function _renderQuickActionsBar() {
+  var bar = document.getElementById('makimaQuickActionsBar');
+  if (!bar) return;
+  var html = '';
+  for (var i = 0; i < _makimaQuickActions.length; i++) {
+    html += '<button class="makima-quick-action-pill" data-qa-index="' + i + '">' + _escapeHtml(_makimaQuickActions[i].label) + '</button>';
+  }
+  bar.innerHTML = html;
+
+  if (_makimaQuickActionsVisible) {
+    bar.classList.add('visible');
+  } else {
+    bar.classList.remove('visible');
+  }
+
+  var pills = bar.querySelectorAll('.makima-quick-action-pill');
+  for (var j = 0; j < pills.length; j++) {
+    pills[j].addEventListener('click', function() {
+      var idx = parseInt(this.getAttribute('data-qa-index'), 10);
+      var inputEl = document.getElementById('makimaInput');
+      if (inputEl && _makimaQuickActions[idx]) {
+        inputEl.value = _makimaQuickActions[idx].text;
+        inputEl.focus();
+      }
+    });
+  }
+}
+
+/* == MODEL PICKER POPOVER == */
+
+function _renderModelPickerPopover() {
+  var popover = document.getElementById('makimaModelPickerPopover');
+  if (!popover) return;
+
+  var providers = ['auto', 'gemini', 'groq'];
+  var providerLabels = ['Auto', 'Gemini', 'Groq'];
+
+  var html = '<div class="makima-picker-tabs">';
+  for (var p = 0; p < providers.length; p++) {
+    var activeTab = (_makimaProvider === providers[p]) ? ' active' : '';
+    html += '<button class="makima-picker-tab' + activeTab + '" data-picker-provider="' + providers[p] + '">' + providerLabels[p] + '</button>';
+  }
+  html += '</div>';
+
+  var models = _makimaModelOptions[_makimaProvider] || _makimaModelOptions.auto;
+  html += '<div class="makima-picker-models">';
+  for (var m = 0; m < models.length; m++) {
+    var activeModel = (models[m] === _makimaModel) ? ' active' : '';
+    var checkIcon = (models[m] === _makimaModel) ? ' \u2713' : '';
+    html += '<button class="makima-picker-model-item' + activeModel + '" data-picker-model="' + models[m] + '">' + models[m] + checkIcon + '</button>';
+  }
+  html += '</div>';
+
+  popover.innerHTML = html;
+
+  var tabs = popover.querySelectorAll('.makima-picker-tab');
+  for (var t = 0; t < tabs.length; t++) {
+    tabs[t].addEventListener('click', function(e) {
+      e.stopPropagation();
+      var newProvider = this.getAttribute('data-picker-provider');
+      _makimaProvider = newProvider;
+      var newModels = _makimaModelOptions[newProvider] || _makimaModelOptions.auto;
+      _makimaModel = newModels[0];
+      _renderModelPickerPopover();
+      _updateModelPickerBtnLabel();
+    });
+  }
+
+  var modelItems = popover.querySelectorAll('.makima-picker-model-item');
+  for (var mi = 0; mi < modelItems.length; mi++) {
+    modelItems[mi].addEventListener('click', function(e) {
+      e.stopPropagation();
+      _makimaModel = this.getAttribute('data-picker-model');
+      _saveProviderSettings();
+      _showMakimaToast('Model saved');
+      _makimaModelPickerOpen = false;
+      popover.classList.remove('open');
+      _updateModelPickerBtnLabel();
+      _renderModelPickerPopover();
+    });
+  }
+}
+
+function _updateModelPickerBtnLabel() {
+  var btn = document.getElementById('makimaModelPickerBtn');
+  if (btn) {
+    var label = _makimaProvider.charAt(0).toUpperCase() + _makimaProvider.slice(1);
+    btn.innerHTML = _escapeHtml(label) + ' &gt;';
+  }
 }
 
 /* == EVENT BINDING == */
@@ -342,6 +466,8 @@ function _bindMakimaEvents() {
   var menuBtn = document.getElementById('makimaMenuBtn');
   var overlay = document.getElementById('makimaSidebarOverlay');
   var gearBtn = document.getElementById('makimaGearBtn');
+  var plusBtn = document.getElementById('makimaPlusBtn');
+  var modelPickerBtn = document.getElementById('makimaModelPickerBtn');
 
   if ((_makimaCooldownActive || _makimaRequestInProgress) && sendBtn) {
     sendBtn.disabled = true;
@@ -366,6 +492,26 @@ function _bindMakimaEvents() {
   if (overlay) overlay.addEventListener('click', _closeMakimaSidebar);
   if (gearBtn) gearBtn.addEventListener('click', _toggleVoiceDropdown);
 
+  if (plusBtn) {
+    plusBtn.addEventListener('click', function() {
+      _makimaQuickActionsVisible = !_makimaQuickActionsVisible;
+      var bar = document.getElementById('makimaQuickActionsBar');
+      if (bar) {
+        bar.classList.toggle('visible', _makimaQuickActionsVisible);
+      }
+      this.classList.toggle('active', _makimaQuickActionsVisible);
+    });
+  }
+
+  if (modelPickerBtn) {
+    modelPickerBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      _makimaModelPickerOpen = !_makimaModelPickerOpen;
+      var popover = document.getElementById('makimaModelPickerPopover');
+      if (popover) popover.classList.toggle('open', _makimaModelPickerOpen);
+    });
+  }
+
   document.addEventListener('click', function(e) {
     if (_makimaVoiceDropdownOpen) {
       var dropdown = document.getElementById('makimaVoiceDropdown');
@@ -373,6 +519,14 @@ function _bindMakimaEvents() {
       if (dropdown && gear && !dropdown.contains(e.target) && !gear.contains(e.target)) {
         _makimaVoiceDropdownOpen = false;
         dropdown.classList.remove('open');
+      }
+    }
+    if (_makimaModelPickerOpen) {
+      var popover = document.getElementById('makimaModelPickerPopover');
+      var pickerBtn = document.getElementById('makimaModelPickerBtn');
+      if (popover && pickerBtn && !popover.contains(e.target) && !pickerBtn.contains(e.target)) {
+        _makimaModelPickerOpen = false;
+        popover.classList.remove('open');
       }
     }
   });
@@ -426,39 +580,10 @@ function _renderVoiceDropdown() {
     html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + _escapeHtml(v) + '">' + _escapeHtml(v) + '</button>';
   }
 
-  // Settings panel
-  html += '<div class="makima-settings-panel">';
-  html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">AI MODE</div>';
-
-  // Segmented control
-  html += '<div class="makima-mode-selector">';
-  var modes = ['auto', 'gemini', 'groq'];
-  var modeLabels = ['AUTO', 'GEMINI', 'GROQ'];
-  for (var m = 0; m < modes.length; m++) {
-    var mActive = (_makimaProvider === modes[m]) ? ' active' : '';
-    html += '<button class="makima-mode-btn' + mActive + '" data-provider="' + modes[m] + '">' + modeLabels[m] + '</button>';
-  }
-  html += '</div>';
-
-  // Model selector
-  var models = _makimaModelOptions[_makimaProvider] || _makimaModelOptions.auto;
-  html += '<select class="makima-model-select" id="makimaModelSelect">';
-  for (var mi = 0; mi < models.length; mi++) {
-    var sel = (models[mi] === _makimaModel) ? ' selected' : '';
-    html += '<option value="' + models[mi] + '"' + sel + '>' + models[mi] + '</option>';
-  }
-  html += '</select>';
-
-  // Save button
-  html += '<button class="makima-save-model-btn" id="makimaSaveModelBtn">SAVE MODEL</button>';
-  html += '</div>';
-
-  // Security section
   html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">Security</div>';
   html += '<button class="makima-voice-opt makima-lock-btn" id="makimaLockBtn">LOCK</button>';
   dropdown.innerHTML = html;
 
-  // Bind voice buttons
   var btns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
   for (var j = 0; j < btns.length; j++) {
     btns[j].addEventListener('click', function() {
@@ -470,31 +595,6 @@ function _renderVoiceDropdown() {
     });
   }
 
-  // Bind mode buttons
-  var modeBtns = dropdown.querySelectorAll('.makima-mode-btn');
-  for (var mb = 0; mb < modeBtns.length; mb++) {
-    modeBtns[mb].addEventListener('click', function() {
-      var newProvider = this.getAttribute('data-provider');
-      _makimaProvider = newProvider;
-      // Update model to first of new provider
-      var newModels = _makimaModelOptions[newProvider] || _makimaModelOptions.auto;
-      _makimaModel = newModels[0];
-      _renderVoiceDropdown();
-    });
-  }
-
-  // Bind save button
-  var saveBtn = document.getElementById('makimaSaveModelBtn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', function() {
-      var selectEl = document.getElementById('makimaModelSelect');
-      if (selectEl) _makimaModel = selectEl.value;
-      _saveProviderSettings();
-      _showMakimaToast('MODEL SAVED');
-    });
-  }
-
-  // Bind lock button
   var lockBtn = document.getElementById('makimaLockBtn');
   if (lockBtn) {
     lockBtn.addEventListener('click', function() {
@@ -578,7 +678,10 @@ function _renderChatArea() {
   messagesEl.innerHTML = '';
 
   var chat = getActiveChat();
-  if (!chat || chat.messages.length === 0) return;
+  if (!chat || chat.messages.length === 0) {
+    _renderEmptyState(messagesEl);
+    return;
+  }
 
   for (var i = 0; i < chat.messages.length; i++) {
     var entry = chat.messages[i];
@@ -591,31 +694,51 @@ function _renderChatArea() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+/* == EMPTY STATE == */
+
+function _renderEmptyState(container) {
+  var html = '<div class="makima-empty-state">';
+  html += '<div class="makima-empty-title">MAKIMA AI</div>';
+  html += '<div class="makima-empty-subtitle">Apa yang ingin kamu urus?</div>';
+  html += '<div class="makima-empty-actions">';
+  for (var i = 0; i < _makimaEmptyStateActions.length; i++) {
+    html += '<button class="makima-empty-action-pill" data-ea-index="' + i + '">' + _escapeHtml(_makimaEmptyStateActions[i].label) + '</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+  container.innerHTML = html;
+
+  var pills = container.querySelectorAll('.makima-empty-action-pill');
+  for (var j = 0; j < pills.length; j++) {
+    pills[j].addEventListener('click', function() {
+      var idx = parseInt(this.getAttribute('data-ea-index'), 10);
+      var inputEl = document.getElementById('makimaInput');
+      if (inputEl && _makimaEmptyStateActions[idx]) {
+        inputEl.value = _makimaEmptyStateActions[idx].text;
+        inputEl.focus();
+      }
+    });
+  }
+}
+
 /* == MESSAGE BUBBLES == */
 
 function _renderMarkdown(text) {
-  // Escape HTML entities first to prevent XSS
   text = text.replace(/&/g, '&amp;')
              .replace(/</g, '&lt;')
              .replace(/>/g, '&gt;')
              .replace(/"/g, '&quot;')
              .replace(/'/g, '&#039;');
-  // Handle fenced code blocks (triple-backtick) before inline transforms
   var codeBlocks = [];
   text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
     var idx = codeBlocks.length;
     codeBlocks.push('<pre><code>' + code.replace(/\n$/, '') + '</code></pre>');
     return '%%CODEBLOCK_' + idx + '%%';
   });
-  // Convert **bold** to <strong>
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Convert *italic* to <em>
   text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // Convert `code` to <code>
   text = text.replace(/`(.+?)`/g, '<code>$1</code>');
-  // Convert newlines to <br>
   text = text.replace(/\n/g, '<br>');
-  // Restore fenced code blocks
   for (var i = 0; i < codeBlocks.length; i++) {
     text = text.replace('%%CODEBLOCK_' + i + '%%', codeBlocks[i]);
   }
@@ -646,6 +769,9 @@ function _appendAIBubble(container, text) {
   avatar.setAttribute('oncontextmenu', 'return false');
   avatar.setAttribute('ondragstart', 'return false');
 
+  var bubbleWrap = document.createElement('div');
+  bubbleWrap.className = 'makima-msg-bubble-wrap';
+
   var bubble = document.createElement('div');
   bubble.className = 'makima-msg makima-msg-ai';
   bubble.innerHTML = _renderMarkdown(text);
@@ -657,10 +783,12 @@ function _appendAIBubble(container, text) {
   speakerBtn.addEventListener('click', function() {
     _speakMakimaText(text, speakerBtn);
   });
-  bubble.appendChild(speakerBtn);
+
+  bubbleWrap.appendChild(bubble);
+  bubbleWrap.appendChild(speakerBtn);
 
   row.appendChild(avatar);
-  row.appendChild(bubble);
+  row.appendChild(bubbleWrap);
   container.appendChild(row);
 }
 
@@ -683,15 +811,27 @@ function _speakMakimaText(text, btn) {
 
   var utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'id-ID';
-  utterance.rate = 0.95;
-  utterance.pitch = 0.9;
+  utterance.rate = 0.88;
+  utterance.pitch = 0.85;
+  utterance.volume = 1;
 
-  var voiceName = _getVoiceSetting();
   var availableVoices = window.speechSynthesis.getVoices();
+  var idVoice = null;
   for (var v = 0; v < availableVoices.length; v++) {
-    if (availableVoices[v].name.indexOf(voiceName) !== -1) {
-      utterance.voice = availableVoices[v];
+    if (availableVoices[v].lang && availableVoices[v].lang.indexOf('id') !== -1) {
+      idVoice = availableVoices[v];
       break;
+    }
+  }
+  if (idVoice) {
+    utterance.voice = idVoice;
+  } else {
+    var voiceName = _getVoiceSetting();
+    for (var vn = 0; vn < availableVoices.length; vn++) {
+      if (availableVoices[vn].name.indexOf(voiceName) !== -1) {
+        utterance.voice = availableVoices[vn];
+        break;
+      }
     }
   }
 
@@ -801,6 +941,12 @@ function sendMakimaMessage() {
 
   _makimaRequestInProgress = true;
   if (sendBtn) sendBtn.disabled = true;
+
+  // Clear empty state if present
+  var emptyState = messagesEl.querySelector('.makima-empty-state');
+  if (emptyState) {
+    messagesEl.innerHTML = '';
+  }
 
   _appendUserBubble(messagesEl, message);
 
