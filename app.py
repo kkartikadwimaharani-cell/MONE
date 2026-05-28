@@ -1397,8 +1397,6 @@ def test_gemini():
 
 def _filter_makima_output(text):
     """Filter AI output to remove forbidden phrases and patterns."""
-    import re as _re
-
     if not text:
         return text
 
@@ -1419,7 +1417,7 @@ def _filter_makima_output(text):
     ]
 
     # Check and replace sentences containing forbidden phrases
-    sentences = _re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r'(?<=[.!?])\s+', text)
     filtered_sentences = []
     has_forbidden = False
 
@@ -1445,12 +1443,14 @@ def _filter_makima_output(text):
         text = ' '.join(filtered_sentences) if filtered_sentences else text
 
     # Remove fabricated URLs (any http/https links)
-    text = _re.sub(r'https?://[^\s\)]+', '', text)
+    text = re.sub(r'https?://[^\s\)]+', '', text)
     # Clean up extra spaces from removed URLs
-    text = _re.sub(r'  +', ' ', text).strip()
+    text = re.sub(r'  +', ' ', text).strip()
 
-    # Replace "Anda" with "kamu"
-    text = text.replace('Anda', 'kamu').replace('anda', 'kamu')
+    # Replace "Anda" with "kamu" (capital Anda is always the pronoun, safe to replace directly)
+    text = text.replace('Anda', 'kamu')
+    # Use word-boundary regex for lowercase to avoid corrupting words like "tanda", "menandaskan"
+    text = re.sub(r'\banda\b', 'kamu', text, flags=re.IGNORECASE)
 
     # Remove template closing questions
     _template_patterns = [
@@ -1460,11 +1460,11 @@ def _filter_makima_output(text):
         r'Mau saya bantu[^.?!]*[.?!]?',
     ]
     for pattern in _template_patterns:
-        text = _re.sub(pattern, '', text, flags=_re.IGNORECASE)
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
 
     # Final cleanup
-    text = _re.sub(r'\s+', ' ', text).strip()
-    text = _re.sub(r'\s+([.!?,])', r'\1', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'\s+([.!?,])', r'\1', text)
 
     return text
 
