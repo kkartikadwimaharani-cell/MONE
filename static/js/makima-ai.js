@@ -9,6 +9,7 @@ var _makimaCooldownActive = false;
 var _makimaRequestInProgress = false;
 var _makimaQuickActionsVisible = false;
 var _makimaModelPickerOpen = false;
+var _makimaDocClickBound = false;
 
 /* == QUICK ACTION TEMPLATES == */
 
@@ -20,12 +21,7 @@ var _makimaQuickActions = [
   { label: 'Promosi toko', text: 'Buatkan teks promosi premium untuk MII Store: ' }
 ];
 
-var _makimaEmptyStateActions = [
-  { label: 'Buat prompt', text: 'Buatkan prompt untuk ' },
-  { label: 'Ide konten', text: 'Beri aku ide konten untuk ' },
-  { label: 'Promosi toko', text: 'Buatkan teks promosi premium untuk MII Store: ' },
-  { label: 'Perbaiki kode', text: 'Bantu perbaiki kode ini: ' }
-];
+var _makimaEmptyStateActions = [_makimaQuickActions[0], _makimaQuickActions[2], _makimaQuickActions[4], _makimaQuickActions[3]];
 
 /* == PROVIDER/MODEL STATE == */
 
@@ -428,6 +424,7 @@ function _renderModelPickerPopover() {
       _makimaProvider = newProvider;
       var newModels = _makimaModelOptions[newProvider] || _makimaModelOptions.auto;
       _makimaModel = newModels[0];
+      _saveProviderSettings();
       _renderModelPickerPopover();
       _updateModelPickerBtnLabel();
     });
@@ -512,24 +509,27 @@ function _bindMakimaEvents() {
     });
   }
 
-  document.addEventListener('click', function(e) {
-    if (_makimaVoiceDropdownOpen) {
-      var dropdown = document.getElementById('makimaVoiceDropdown');
-      var gear = document.getElementById('makimaGearBtn');
-      if (dropdown && gear && !dropdown.contains(e.target) && !gear.contains(e.target)) {
-        _makimaVoiceDropdownOpen = false;
-        dropdown.classList.remove('open');
+  if (!_makimaDocClickBound) {
+    _makimaDocClickBound = true;
+    document.addEventListener('click', function(e) {
+      if (_makimaVoiceDropdownOpen) {
+        var dropdown = document.getElementById('makimaVoiceDropdown');
+        var gear = document.getElementById('makimaGearBtn');
+        if (dropdown && gear && !dropdown.contains(e.target) && !gear.contains(e.target)) {
+          _makimaVoiceDropdownOpen = false;
+          dropdown.classList.remove('open');
+        }
       }
-    }
-    if (_makimaModelPickerOpen) {
-      var popover = document.getElementById('makimaModelPickerPopover');
-      var pickerBtn = document.getElementById('makimaModelPickerBtn');
-      if (popover && pickerBtn && !popover.contains(e.target) && !pickerBtn.contains(e.target)) {
-        _makimaModelPickerOpen = false;
-        popover.classList.remove('open');
+      if (_makimaModelPickerOpen) {
+        var popover = document.getElementById('makimaModelPickerPopover');
+        var pickerBtn = document.getElementById('makimaModelPickerBtn');
+        if (popover && pickerBtn && !popover.contains(e.target) && !pickerBtn.contains(e.target)) {
+          _makimaModelPickerOpen = false;
+          popover.classList.remove('open');
+        }
       }
-    }
-  });
+    });
+  }
 
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
@@ -816,20 +816,19 @@ function _speakMakimaText(text, btn) {
   utterance.volume = 1;
 
   var availableVoices = window.speechSynthesis.getVoices();
-  var idVoice = null;
-  for (var v = 0; v < availableVoices.length; v++) {
-    if (availableVoices[v].lang && availableVoices[v].lang.indexOf('id') !== -1) {
-      idVoice = availableVoices[v];
+  var voiceName = _getVoiceSetting();
+  var foundUserVoice = false;
+  for (var vn = 0; vn < availableVoices.length; vn++) {
+    if (availableVoices[vn].name.indexOf(voiceName) !== -1) {
+      utterance.voice = availableVoices[vn];
+      foundUserVoice = true;
       break;
     }
   }
-  if (idVoice) {
-    utterance.voice = idVoice;
-  } else {
-    var voiceName = _getVoiceSetting();
-    for (var vn = 0; vn < availableVoices.length; vn++) {
-      if (availableVoices[vn].name.indexOf(voiceName) !== -1) {
-        utterance.voice = availableVoices[vn];
+  if (!foundUserVoice) {
+    for (var v = 0; v < availableVoices.length; v++) {
+      if (availableVoices[v].lang && availableVoices[v].lang.indexOf('id') !== -1) {
+        utterance.voice = availableVoices[v];
         break;
       }
     }
