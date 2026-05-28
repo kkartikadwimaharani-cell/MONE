@@ -1504,12 +1504,20 @@ def ai_chat():
             if resp.status_code == 429:
                 return None, 'quota'
             if resp.status_code != 200:
-                app.logger.error('Groq API error: status=%d', resp.status_code)
+                app.logger.error('Groq API error: status=%d body=%s', resp.status_code, resp.text[:500])
                 return None, 'error'
-            resp_data = resp.json()
+            try:
+                resp_data = resp.json()
+            except (ValueError, Exception) as json_err:
+                app.logger.error('Groq response JSON parse failed: %s body=%s', json_err, resp.text[:500])
+                return None, 'error'
             choices = resp_data.get('choices', [])
-            if choices and choices[0].get('message', {}).get('content'):
-                return choices[0]['message']['content'], None
+            if not isinstance(choices, list) or not choices:
+                app.logger.error('Groq response missing choices: %s', resp.text[:500])
+                return None, 'empty_response'
+            content = choices[0].get('message', {}).get('content') if isinstance(choices[0], dict) else None
+            if content:
+                return content, None
             return None, 'empty_response'
         except Exception as e:
             err_msg = str(e)
@@ -1544,7 +1552,7 @@ def ai_chat():
         return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
 
     else:
-        # Auto mode: try Gemini first, fallback to Groq on quota error
+        # Auto mode: try Gemini first, fallback to Groq only on quota error
         gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         groq_key = os.environ.get("GROQ_API_KEY")
         if not gemini_key and not groq_key:
@@ -1555,15 +1563,16 @@ def ai_chat():
             if reply:
                 return jsonify({'reply': reply})
             if err != 'quota':
-                # Non-quota error from Gemini, still try Groq if available
-                if not groq_key:
-                    if err == 'not_configured':
-                        return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
-                    return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
+                # Non-quota error from Gemini: return the error, do not fall through to Groq
+                if err == 'not_configured':
+                    return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+                return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
 
-        # Fallback to Groq
+        # Fallback to Groq (only reached on Gemini quota error or missing Gemini key)
         if groq_key:
-            groq_model = 'llama-3.1-8b-instant'
+            # Respect user's Groq model selection if applicable
+            groq_allowed = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']
+            groq_model = model if model in groq_allowed else 'llama-3.1-8b-instant'
             reply, err = _call_groq(groq_model)
             if reply:
                 return jsonify({'reply': reply})

@@ -846,9 +846,9 @@ function sendMakimaMessage() {
     } else if (result.data.error) {
       var errMsg = '';
       if (result.status === 429) {
-        errMsg = 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.';
+        errMsg = result.data.error || 'KUOTA SEDANG HABIS. COBA LAGI NANTI.';
       } else if (result.status === 503) {
-        errMsg = 'API PROVIDER BELUM DIKONFIGURASI.';
+        errMsg = result.data.error || 'API PROVIDER BELUM DIKONFIGURASI.';
       } else if (result.status === 403) {
         errMsg = 'MAKIMA AI KHUSUS ADMIN.';
         _appendAIBubble(messagesEl, errMsg);
