@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Complete overhaul of MAKIMA AI: backend multi-provider support (Gemini/Groq/Auto), frontend model selection UI with SAVE MODEL, enforce SEND-only API calls with cooldown, fix sidebar button overlap, fix chat history persistence, cache busting, and premium modern UI.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "STEP 1 - BACKEND: Rewrite /api/ai-chat in app.py to accept 'provider' and 'model' fields from the request body. Add Groq support using GROQ_API_KEY env var and https://api.groq.com/openai/v1/chat/completions endpoint. Logic: if provider=gemini, use Gemini only with the specified model. If provider=groq, use Groq only with the specified model. If provider=auto, try Gemini first, if 429/quota error then fallback to Groq. Never retry in a loop. Add 'groq' to requirements.txt (use requests library for Groq HTTP call, not a SDK). Keep MAKIMA_ADMIN_PASSWORD check. Never expose API keys in response/logs.",
     "STEP 2 - BACKEND: Update the Gemini model initialization to support dynamic model selection (gemini-2.0-flash, gemini-2.5-flash) passed from the request instead of hardcoding gemini-2.0-flash. Keep lazy init pattern but allow model param override.",
@@ -40,5 +40,5 @@
     "Grep templates/index.html for 'v=20260528_7' - should find all CSS/JS references updated"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Python import succeeds. Docker build succeeds. JS syntax validated with node --check. No references to /api/test-gemini in frontend. Version strings updated to 20260528_7 (18 references). Host Python is 3.9 but Dockerfile uses 3.11-slim which is correct for production."
 }
