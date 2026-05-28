@@ -509,6 +509,7 @@ body.makima-ai-body .anime-body-silhouette {
   border-radius: 14px 14px 14px 4px;
   position: relative;
   padding-bottom: 28px;
+  line-height: 1.55;
 }
 
 /* ── LOADING STATE ───────────────────────────────── */
@@ -1021,6 +1022,10 @@ body.makima-ai-body .anime-body-silhouette {
 
   .makima-msg-row-ai {
     align-self: flex-start;
+  }
+
+  .makima-msg-ai {
+    max-width: 78%;
   }
 
   .makima-msg-avatar {

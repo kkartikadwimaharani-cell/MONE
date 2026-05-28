@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Replace MAKIMA AI system prompt with comprehensive new version, add server-side output filter for forbidden phrases, update CSS for line-height and mobile bubble width, and update JS to render markdown properly instead of raw textContent.",
+  "status": "completed",
+  "steps": [
+    "1. In app.py (around line 28), replace the `_MAKIMA_SYSTEM_INSTRUCTION` variable content with the comprehensive new prompt provided by the user. The new prompt must include: persona definition (asisten pribadi pemilik MII NETWORK), style rules (santai, tenang, elegan, sedikit dingin, personal), use 'kamu' not 'Anda', short answers (1-4 sentences), no browsing claims, no fake links, no pretending to make images/video, no closing with template questions, no customer service tone, admit limitations calmly, offer alternatives (prompt/langkah/ide).",
+    "2. In app.py, add a new function `_filter_makima_output(text)` before the ai_chat route that checks the AI reply for forbidden phrases and replaces them. Forbidden phrases: 'setelah mencari', 'saya menemukan', 'berikut sumber web', 'saya mengakses web', 'setelah saya telusuri', 'berdasarkan pencarian', 'saya browsing', 'saya cari di web'. If any are found, replace the entire sentence containing it with an appropriate alternative like 'Aku belum bisa mengecek web langsung dari sini.' Also strip any URLs that look fabricated (http/https links that are not from a known safe list). Also ensure the response does not use 'Anda' (replace with 'kamu'), does not end with template questions like 'Apakah Anda ingin...', 'Ada yang bisa saya bantu...'. Call this filter on every successful reply before returning jsonify.",
+    "3. In app.py, apply the `_filter_makima_output()` function to the reply in all places where `jsonify({'reply': reply})` is returned (there are multiple: gemini direct, groq direct, auto-gemini, auto-groq fallback).",
+    "4. In static/css/makima-ai.css, update the `.makima-msg-ai` rule to set `line-height: 1.55`. Currently line-height is set on `.makima-msg` at 1.6 - change `.makima-msg-ai` specifically to 1.55.",
+    "5. In static/css/makima-ai.css, in the mobile media query (@media max-width: 768px), the `.makima-msg-row` already has `max-width: 78%` - verify this is correct. Also add a max-width: 78% to `.makima-msg-ai` within the mobile query for the bubble itself.",
+    "6. In static/js/makima-ai.js, update the `_appendAIBubble` function to use `innerHTML` with a simple markdown renderer instead of raw `textContent`. Create a helper function `_renderMarkdown(text)` that: converts **bold** to <strong>, *italic* to <em>, `code` to <code>, newlines to <br>, strips raw markdown characters that didn't match patterns, and escapes HTML entities FIRST before applying markdown transforms (to prevent XSS). Apply this in _appendAIBubble and also in _renderChatArea where AI messages are rendered.",
+    "7. Also clear the Gemini model cache (`_gemini_model_cache`) after changing the system instruction variable, because cached models use the old instruction. Add `_gemini_model_cache.clear()` or simply reset `_gemini_model_cache = {}` right after the new `_MAKIMA_SYSTEM_INSTRUCTION` definition (or invalidate by removing the cache check so models are always freshly created with the new instruction). Actually the simplest fix: since _gemini_model_cache is populated lazily at runtime, just changing the variable is fine - but we need to ensure the cache dict is empty at startup. It already is (initialized as {}), so no code change needed here - just verify."
+  ],
+  "acceptance_criteria": [
+    "The _MAKIMA_SYSTEM_INSTRUCTION variable contains the full new prompt with all rules about no browsing, use 'kamu', short answers, etc.",
+    "A _filter_makima_output function exists that sanitizes replies for forbidden phrases and patterns",
+    "All jsonify({'reply': reply}) calls in ai_chat() are wrapped with the filter",
+    "CSS .makima-msg-ai has line-height: 1.55",
+    "Mobile bubble max-width is 78%",
+    "JS _appendAIBubble renders basic markdown (bold, italic, code, line breaks) safely via innerHTML with HTML escaping",
+    "No XSS vulnerability - HTML is escaped before markdown transforms are applied",
+    "python -c 'import app' succeeds without syntax errors"
+  ],
+  "verification": [
+    "Run: python -c \"import app; print('import OK')\" to confirm no syntax errors in app.py",
+    "Run: grep -c '_filter_makima_output' app.py to confirm the filter function exists and is called multiple times",
+    "Run: grep 'line-height.*1.55' static/css/makima-ai.css to confirm CSS change",
+    "Run: grep '_renderMarkdown' static/js/makima-ai.js to confirm markdown renderer exists"
+  ],
+  "blocked_reason": null,
+  "findings": "Required pip install of flask, google-generativeai, requests, yt-dlp to verify import. All acceptance criteria met. The google.generativeai package shows a FutureWarning about deprecation but works fine."
+}

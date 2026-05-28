@@ -593,6 +593,35 @@ function _renderChatArea() {
 
 /* == MESSAGE BUBBLES == */
 
+function _renderMarkdown(text) {
+  // Escape HTML entities first to prevent XSS
+  text = text.replace(/&/g, '&amp;')
+             .replace(/</g, '&lt;')
+             .replace(/>/g, '&gt;')
+             .replace(/"/g, '&quot;')
+             .replace(/'/g, '&#039;');
+  // Handle fenced code blocks (triple-backtick) before inline transforms
+  var codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+    var idx = codeBlocks.length;
+    codeBlocks.push('<pre><code>' + code.replace(/\n$/, '') + '</code></pre>');
+    return '%%CODEBLOCK_' + idx + '%%';
+  });
+  // Convert **bold** to <strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Convert *italic* to <em>
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Convert `code` to <code>
+  text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+  // Convert newlines to <br>
+  text = text.replace(/\n/g, '<br>');
+  // Restore fenced code blocks
+  for (var i = 0; i < codeBlocks.length; i++) {
+    text = text.replace('%%CODEBLOCK_' + i + '%%', codeBlocks[i]);
+  }
+  return text;
+}
+
 function _appendUserBubble(container, text) {
   var row = document.createElement('div');
   row.className = 'makima-msg-row makima-msg-row-user';
@@ -619,7 +648,7 @@ function _appendAIBubble(container, text) {
 
   var bubble = document.createElement('div');
   bubble.className = 'makima-msg makima-msg-ai';
-  bubble.textContent = text;
+  bubble.innerHTML = _renderMarkdown(text);
 
   var speakerBtn = document.createElement('button');
   speakerBtn.className = 'makima-speaker-btn';

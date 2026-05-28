@@ -1,0 +1,14 @@
+{
+  "task_id": "task-makima-prompt-filter",
+  "task_description": "Fix MAKIMA AI system prompt and output filter to prevent bot-like responses, add forbidden phrase filtering, update CSS for readability, and add markdown rendering in JS.",
+  "status": "completed",
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "python import succeeds, all grep checks confirm presence of filter function (5 occurrences), CSS line-height 1.55, JS _renderMarkdown function."
+  },
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
