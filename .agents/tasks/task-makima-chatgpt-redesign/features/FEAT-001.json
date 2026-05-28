@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Complete MAKIMA AI ChatGPT-style UI redesign: quick action buttons, model picker popover, empty state, improved input bar with plus button, enhanced chat bubbles, and improved speaker button. This is a comprehensive UI overhaul of static/js/makima-ai.js and static/css/makima-ai.css.",
+  "status": "in_progress",
+  "steps": [
+    "STEP 1 - QUICK ACTION BUTTONS & EMPTY STATE in makima-ai.js: Add a quick actions system with these templates: 'Buat prompt' -> 'Buatkan prompt untuk ', 'Ringkas teks' -> 'Ringkas teks ini: ', 'Ide konten' -> 'Beri aku ide konten untuk ', 'Perbaiki kode' -> 'Bantu perbaiki kode ini: ', 'Promosi toko' -> 'Buatkan teks promosi premium untuk MII Store: '. When chat is empty, show an empty state in center: 'MAKIMA AI' title + 'Apa yang ingin kamu urus?' subtitle + 4 quick action pill buttons (Buat prompt, Ide konten, Promosi toko, Perbaiki kode). When clicked, insert template text into input field but do NOT send or call API. Also add quick action buttons above the input bar that are horizontally scrollable on mobile.",
+    "STEP 2 - MODEL PICKER POPOVER in makima-ai.js: Replace the current model settings inside the voice dropdown with a compact model picker button in the header area showing 'Auto >' (or current provider name). When clicked, open a compact popover (not inside the gear dropdown) with: Provider selection (Auto, Gemini, Groq), then model list based on provider. Gemini models: gemini-2.0-flash, gemini-2.5-flash. Groq models: llama-3.1-8b-instant, llama-3.3-70b-versatile. Style: dark glass, border merah tipis, rounded 16px, shadow halus. Active item has a check icon. Clicking saves to localStorage (makima_ai_provider, makima_ai_model) and shows toast 'Model saved'. NO API calls on model selection.",
+    "STEP 3 - INPUT BAR REDESIGN in makima-ai.js: Add a plus (+) button on the left of the input that toggles a quick action menu (shows/hides the quick action buttons above input). Keep the SEND button on the right. The input should be flexible width. Plus button does NOT call any API. Only SEND calls /api/ai-chat. Style the input bar to look premium like ChatGPT: clean, rounded, with proper spacing.",
+    "STEP 4 - CHAT BUBBLES & FONT in makima-ai.css: Assistant bubble: max-width 76-78% on mobile, dark transparent background, border red subtle, rounded 18px, line-height 1.55. User bubble: max-width 72-75% on mobile, dark red background, rounded 18px. Use --font-body (Poppins) for chat content, NOT decorative fonts. Reduce glow effects. Ensure markdown renders cleanly (code blocks, bold, italic).",
+    "STEP 5 - SPEAKER BUTTON IMPROVEMENT in makima-ai.js and makima-ai.css: Make speaker button 32x32, fully round, clear visibility. Add states: idle, play, stop, loading. Do not cover text. Browser TTS settings: prefer Indonesian voice if available, rate 0.88, pitch 0.85, volume 1, no autoplay. Only speak when user clicks the speaker button.",
+    "STEP 6 - CSS OVERHAUL in makima-ai.css: Apply ChatGPT-inspired dark layout. Desktop: sidebar permanent left, chat content center max-width 820px, input at bottom. Mobile: sidebar as drawer overlay, input bar fixed bottom with safe-area, full-screen chat area, clean/minimal glow. Quick action pills: rounded full, background dark glass, border merah tipis, hover/active merah gelap, small size, horizontal scroll on mobile. Model picker popover: compact, dark glass, border merah tipis, rounded 16px, shadow halus. Toast stays as-is. Empty state centered vertically.",
+    "STEP 7 - RESPONSIVE FIXES in makima-ai.css: Ensure mobile header is compact (hamburger left, avatar, MAKIMA AI title, ONLINE badge, settings right). Sidebar only drawer overlay on mobile. Input bar fixed bottom with safe-area-inset-bottom. Chat area does not get cut off. Desktop sidebar is permanent. Quick actions horizontally scrollable on mobile without filling screen."
+  ],
+  "acceptance_criteria": [
+    "Running 'python -c \"import app\"' succeeds without errors",
+    "The makima-ai.js file has no JavaScript syntax errors (verified via node --check)",
+    "Quick action buttons exist and insert template text into input without calling API",
+    "Empty state shows 'MAKIMA AI' and 'Apa yang ingin kamu urus?' with quick action buttons when no messages exist",
+    "Model picker popover exists in header with Auto/Gemini/Groq options and saves to localStorage without API calls",
+    "Plus button in input bar toggles quick actions visibility",
+    "SEND remains the only button that calls /api/ai-chat",
+    "Speaker button is 32x32 round with TTS rate 0.88, pitch 0.85",
+    "Chat bubbles use Poppins font, proper max-width, rounded 18px",
+    "Mobile layout has fixed bottom input bar with safe-area support",
+    "Desktop layout has permanent sidebar and centered chat (max-width 820px)"
+  ],
+  "verification": [
+    "python -c \"import app\" to verify backend still imports correctly",
+    "node --check static/js/makima-ai.js to verify no JS syntax errors",
+    "Visually inspect the generated HTML structure in the JS to confirm all elements are present"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
