@@ -1,0 +1,44 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Complete overhaul of MAKIMA AI: backend multi-provider support (Gemini/Groq/Auto), frontend model selection UI with SAVE MODEL, enforce SEND-only API calls with cooldown, fix sidebar button overlap, fix chat history persistence, cache busting, and premium modern UI.",
+  "status": "completed",
+  "steps": [
+    "STEP 1 - BACKEND: Rewrite /api/ai-chat in app.py to accept 'provider' and 'model' fields from the request body. Add Groq support using GROQ_API_KEY env var and https://api.groq.com/openai/v1/chat/completions endpoint. Logic: if provider=gemini, use Gemini only with the specified model. If provider=groq, use Groq only with the specified model. If provider=auto, try Gemini first, if 429/quota error then fallback to Groq. Never retry in a loop. Add 'groq' to requirements.txt (use requests library for Groq HTTP call, not a SDK). Keep MAKIMA_ADMIN_PASSWORD check. Never expose API keys in response/logs.",
+    "STEP 2 - BACKEND: Update the Gemini model initialization to support dynamic model selection (gemini-2.0-flash, gemini-2.5-flash) passed from the request instead of hardcoding gemini-2.0-flash. Keep lazy init pattern but allow model param override.",
+    "STEP 3 - FRONTEND JS (makima-ai.js): Add provider/model selection state. On load, read from localStorage keys 'makima_ai_provider' (default: 'auto') and 'makima_ai_model' (default: 'gemini-2.0-flash'). Add settings panel toggle in the gear dropdown area. Settings panel shows: AI MODE segmented control (AUTO/GEMINI/GROQ), model dropdown that changes based on provider selection, and SAVE MODEL button. On SAVE MODEL click: save to localStorage, show toast 'MODEL SAVED', do NOT call any API. On provider change in UI: update model options list, do NOT call any API.",
+    "STEP 4 - FRONTEND JS (makima-ai.js): Modify sendMakimaMessage() to include provider and model in the fetch body: { message, history, password, provider, model }. Add debug log: console.log('[MAKIMA] AI REQUEST ONLY FROM SEND', { provider, model }). Ensure NO other function in the file calls fetch to /api/ai-chat or /api/test-gemini. Remove any existing call to /api/test-gemini from frontend if present.",
+    "STEP 5 - FRONTEND JS (makima-ai.js): Enforce strict rules: (a) AI provider only called on SEND click, not on page load, refresh, sidebar open, chat switch, New Chat, Clear All, settings open, model/provider select, SAVE MODEL, or Back. (b) If input empty, do not request. (c) If request in progress, disable SEND button. (d) No auto retry. (e) 5-second cooldown between SEND clicks (already exists, verify it works). (f) Do NOT call /api/test-gemini from anywhere in frontend.",
+    "STEP 6 - FRONTEND JS (makima-ai.js): Fix chat history persistence. Ensure: switching chats loads the correct messages (already works but verify). New Chat creates empty chat. Clear All only deletes all. Error messages from quota/failures are saved as assistant messages in active chat. After every change, save to localStorage immediately.",
+    "STEP 7 - FRONTEND CSS (makima-ai.css): Add styles for the AI MODE settings panel. Dark glass panel with thin red border, subtle red glow. Segmented control / pill buttons for AUTO/GEMINI/GROQ. Active button has red glow, inactive is dark transparent. Model select styled consistently. SAVE MODEL button styled like the send button. Toast notification style (small, top-right, fades out). All rounded 14px, proper spacing, premium feel matching MII Network theme.",
+    "STEP 8 - FRONTEND CSS (makima-ai.css): Fix sidebar footer buttons (CLEAR ALL, KEMBALI KE DOWNLOADER) being overlapped by the input bar on mobile. Ensure: sidebar has padding-bottom >= 150px on its list area. The footer buttons are sticky at bottom of sidebar, always visible above input bar. On mobile drawer, chat list is scrollable and bottom buttons stay fixed at bottom of drawer. Input bar does not overlap drawer content.",
+    "STEP 9 - FRONTEND CSS (makima-ai.css): Polish the overall UI to look more like a modern AI chat (ChatGPT-style). Mobile: compact header (hamburger left, avatar, MAKIMA AI title, ONLINE badge, settings right), full-width chat, sidebar only as drawer overlay with dark blur background. Bubbles: user right, AI left with avatar, not too wide. Smooth scroll. Input sticky bottom, SEND always visible. Desktop: permanent sidebar left, chat right, no overlap. Dark red/black gradient, thin red borders, subtle glow, rounded modern corners, more spacing.",
+    "STEP 10 - FRONTEND (index.html): Update all CSS/JS version strings from ?v=20260528_5 to ?v=20260528_7. Keep the service worker unregister and caches.delete code already present. Add console.log('MAKIMA AI VERSION 20260528_7') at the top of makima-ai.js.",
+    "STEP 11 - ERROR MESSAGES: Frontend must display appropriate error messages based on HTTP status: 429 = 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.' (or 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.' if all fail). 503 = 'API PROVIDER BELUM DIKONFIGURASI.' 403 = 'MAKIMA AI KHUSUS ADMIN.' Other errors = generic message. Backend should return these as error field in JSON response (already partially done, extend for Groq scenarios)."
+  ],
+  "acceptance_criteria": [
+    "Backend /api/ai-chat accepts provider (auto/gemini/groq) and model fields and routes to correct provider",
+    "Backend does not expose API keys in responses or logs",
+    "Frontend only calls /api/ai-chat when SEND button is clicked with non-empty input",
+    "Frontend does not call /api/test-gemini anywhere",
+    "5-second cooldown enforced between SEND clicks",
+    "SEND button disabled while request is in progress",
+    "Settings panel shows AI MODE (AUTO/GEMINI/GROQ) with correct model options per provider",
+    "SAVE MODEL saves to localStorage without calling any API",
+    "Provider/model from localStorage are sent in SEND request body",
+    "Chat history persists correctly when switching between chats",
+    "Sidebar buttons (Clear All, Back) are not overlapped by input on mobile",
+    "Version strings updated to 20260528_7 in index.html",
+    "Docker build succeeds without errors",
+    "Python app imports without errors"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/miitokk && python -c \"import app\" to verify no Python syntax errors",
+    "Run: cd /projects/sandbox/miitokk && docker build -t miitokk:test . to verify Docker build succeeds",
+    "Grep static/js/makima-ai.js for '/api/test-gemini' - should return no results",
+    "Grep static/js/makima-ai.js for 'AI REQUEST ONLY FROM SEND' - should find the debug log",
+    "Grep templates/index.html for 'v=20260528_7' - should find all CSS/JS references updated"
+  ],
+  "blocked_reason": null,
+  "findings": "Python import succeeds. Docker build succeeds. JS syntax validated with node --check. No references to /api/test-gemini in frontend. Version strings updated to 20260528_7 (18 references). Host Python is 3.9 but Dockerfile uses 3.11-slim which is correct for production. Review fixes applied: (1) frontend 429/503 error handling uses result.data.error with hardcoded strings as fallback only, (2) auto mode Groq fallback respects user model selection, (3) auto mode only falls back to Groq on quota errors not other Gemini errors, (4) Groq _call_groq wraps resp.json() separately and logs resp.text[:500] on parse failure with type validation on choices."
+}
