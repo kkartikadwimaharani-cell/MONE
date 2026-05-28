@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-ai-ui-overhaul",
+  "task_description": "Complete Makima AI UI overhaul to look like a modern AI chat app (ChatGPT-style) while maintaining the Makima / MII Network dark red theme. Covers: ChatGPT layout, responsive mobile/desktop, premium settings panel with AI mode selector, speaker button refinement, chat history persistence, and version bump.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

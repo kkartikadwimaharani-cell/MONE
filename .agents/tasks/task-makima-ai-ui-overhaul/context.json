@@ -1,0 +1,22 @@
+{
+  "project_type": "Flask web app - TikTok Downloader + Makima AI Chat (SPA with multiple views)",
+  "language": "Python (backend), HTML/CSS/JS (frontend, vanilla, no frameworks)",
+  "build_system": "Docker/nixpacks for deployment, no build step for frontend (vanilla HTML/CSS/JS)",
+  "test_framework": "None - no test suite exists",
+  "build_command": "python -c \"import app\" (syntax check)",
+  "test_command": "No test suite - validate by checking file syntax",
+  "verification_instructions": "1. Check Python syntax: python -c 'import app'. 2. Validate HTML well-formedness. 3. Verify CSS/JS have no syntax errors by reviewing structure.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt (Flask, yt-dlp, google-generativeai, requests)",
+  "environment_constraints": "OPEN_INTERNET mode. No test suite exists. Validation is structural/syntactic only.",
+  "contribution_requirements": "Do NOT touch downloader.js, photo.js, or any downloader-related logic. Do NOT hardcode API keys. Do NOT expose API keys to frontend. Do NOT create/generate images. Do NOT add new asset files.",
+  "key_patterns": "SPA navigation via ui.js navigateTo(). Makima AI renders into #viewMakimaAI container. All AI UI in makima-ai.css + makima-ai.js. CSS variables defined in variables.css. Version string pattern: 20260528_N used across all CSS/JS refs in index.html.",
+  "relevant_files": [
+    "templates/index.html",
+    "static/css/makima-ai.css",
+    "static/js/makima-ai.js",
+    "static/css/variables.css",
+    "static/js/ui.js"
+  ],
+  "directory_structure": "templates/index.html = single HTML page. static/css/ = split CSS files. static/js/ = split JS files. app.py = Flask backend. static/img/ = images (do not modify)."
+}
