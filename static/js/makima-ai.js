@@ -1,12 +1,41 @@
-/* ── MAKIMA AI CHAT (ChatGPT-style Multi-Chat) ──── */
+console.log('MAKIMA AI VERSION 20260528_7');
+/* == MAKIMA AI CHAT (ChatGPT-style Multi-Chat) == */
 
 var _makimaAvatarSrc = '/static/img/makima-ai-profile.png';
 var _makimaIsSpeaking = false;
 var _makimaSidebarOpen = false;
 var _makimaVoiceDropdownOpen = false;
 var _makimaCooldownActive = false;
+var _makimaRequestInProgress = false;
 
-/* ── MULTI-CHAT STORAGE ──────────────────────────── */
+/* == PROVIDER/MODEL STATE == */
+
+var _makimaProvider = 'auto';
+var _makimaModel = 'gemini-2.0-flash';
+
+var _makimaModelOptions = {
+  auto: ['gemini-2.0-flash', 'gemini-2.5-flash'],
+  gemini: ['gemini-2.0-flash', 'gemini-2.5-flash'],
+  groq: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']
+};
+
+function _loadProviderSettings() {
+  try {
+    var p = localStorage.getItem('makima_ai_provider');
+    if (p && (p === 'auto' || p === 'gemini' || p === 'groq')) _makimaProvider = p;
+    var m = localStorage.getItem('makima_ai_model');
+    if (m) _makimaModel = m;
+  } catch (e) {}
+}
+
+function _saveProviderSettings() {
+  try {
+    localStorage.setItem('makima_ai_provider', _makimaProvider);
+    localStorage.setItem('makima_ai_model', _makimaModel);
+  } catch (e) {}
+}
+
+/* == MULTI-CHAT STORAGE == */
 
 function loadChats() {
   try {
@@ -24,17 +53,15 @@ function saveChats(chats) {
   }
 }
 
-/* ── STORAGE CAPS ────────────────────────────────── */
+/* == STORAGE CAPS == */
 
 var _MAKIMA_MAX_CHATS = 50;
 var _MAKIMA_MAX_MESSAGES_PER_CHAT = 200;
 
 function _enforceStorageCaps(chats) {
-  // Prune oldest chats if over cap
   if (chats.length > _MAKIMA_MAX_CHATS) {
     chats.splice(_MAKIMA_MAX_CHATS);
   }
-  // Prune oldest messages per chat if over cap
   for (var i = 0; i < chats.length; i++) {
     if (chats[i].messages.length > _MAKIMA_MAX_MESSAGES_PER_CHAT) {
       chats[i].messages = chats[i].messages.slice(-_MAKIMA_MAX_MESSAGES_PER_CHAT);
@@ -124,7 +151,7 @@ function clearAllChats() {
   _renderSidebarList();
 }
 
-/* ── VOICE SETTINGS ──────────────────────────────── */
+/* == VOICE SETTINGS == */
 
 function _getVoiceSetting() {
   try {
@@ -140,7 +167,7 @@ function _setVoiceSetting(voice) {
   } catch (e) {}
 }
 
-/* ── LEGACY MIGRATION ─────────────────────────────── */
+/* == LEGACY MIGRATION == */
 
 function _migrateLegacyChat() {
   try {
@@ -163,12 +190,11 @@ function _migrateLegacyChat() {
     }
     localStorage.removeItem('makima_ai_chat_history');
   } catch (e) {
-    // If migration fails, just remove the old key to prevent repeated attempts
     try { localStorage.removeItem('makima_ai_chat_history'); } catch (e2) {}
   }
 }
 
-/* ── PASSWORD GATE ────────────────────────────────── */
+/* == PASSWORD GATE == */
 
 var _MAKIMA_ACCESS_CODE = 'MYBINI02';
 
@@ -231,29 +257,26 @@ function _lockMakimaAI() {
   renderMakimaAI();
 }
 
-/* ── MAIN RENDER ─────────────────────────────────── */
+/* == MAIN RENDER == */
 
 function renderMakimaAI() {
   var container = document.getElementById('viewMakimaAI');
   if (!container) return;
 
-  // Check password gate
   if (!_isMakimaUnlocked()) {
     _renderPasswordGate(container);
     return;
   }
 
-  // Ensure password is in sessionStorage for API calls
   try {
     if (!sessionStorage.getItem('makima_ai_password')) {
       sessionStorage.setItem('makima_ai_password', _MAKIMA_ACCESS_CODE);
     }
   } catch (e) {}
 
-  // Migrate legacy single-chat localStorage if present
+  _loadProviderSettings();
   _migrateLegacyChat();
 
-  // Ensure at least one chat exists
   var chats = loadChats();
   if (chats.length === 0) {
     createNewChat();
@@ -268,7 +291,6 @@ function renderMakimaAI() {
 
   container.innerHTML =
     '<div class="makima-ai-page makima-chatgpt-layout">' +
-      '<!-- SIDEBAR -->' +
       '<div class="makima-sidebar" id="makimaSidebar">' +
         '<div class="makima-sidebar-header">' +
           '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA" class="makima-sidebar-avatar makima-avatar-protected" draggable="false" oncontextmenu="return false" ondragstart="return false" />' +
@@ -278,27 +300,22 @@ function renderMakimaAI() {
         '<div class="makima-sidebar-list" id="makimaSidebarList"></div>' +
         '<div class="makima-sidebar-footer">' +
           '<button class="makima-clear-all-btn" id="makimaClearAllBtn">CLEAR ALL</button>' +
-          '<button class="makima-back-link" onclick="showMainView()">\u2190 KEMBALI KE DOWNLOADER</button>' +
+          '<button class="makima-back-link" onclick="showMainView()">← KEMBALI KE DOWNLOADER</button>' +
         '</div>' +
       '</div>' +
-      '<!-- SIDEBAR OVERLAY (mobile) -->' +
       '<div class="makima-sidebar-overlay" id="makimaSidebarOverlay"></div>' +
-      '<!-- MAIN CHAT AREA -->' +
       '<div class="makima-chat-main">' +
-        '<!-- COMPACT HEADER -->' +
         '<div class="makima-compact-header">' +
           '<button class="makima-menu-btn" id="makimaMenuBtn" title="Menu">&#9776;</button>' +
           '<img src="' + _makimaAvatarSrc + '" alt="MAKIMA" class="makima-header-avatar makima-avatar-protected" draggable="false" oncontextmenu="return false" ondragstart="return false" />' +
           '<span class="makima-header-title">MAKIMA AI</span>' +
           '<span class="makima-online-badge">ONLINE</span>' +
           '<div class="makima-voice-gear-wrap">' +
-            '<button class="makima-gear-btn" id="makimaGearBtn" title="Voice Settings">&#9881;</button>' +
+            '<button class="makima-gear-btn" id="makimaGearBtn" title="Settings">&#9881;</button>' +
             '<div class="makima-voice-dropdown" id="makimaVoiceDropdown"></div>' +
           '</div>' +
         '</div>' +
-        '<!-- MESSAGES -->' +
         '<div class="makima-ai-messages" id="makimaMessages"></div>' +
-        '<!-- INPUT -->' +
         '<div class="makima-ai-input-area">' +
           '<div class="makima-ai-input-wrap">' +
             '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
@@ -309,16 +326,13 @@ function renderMakimaAI() {
       '</div>' +
     '</div>';
 
-  // Bind events
   _bindMakimaEvents();
-
-  // Render sidebar list and chat messages
   _renderSidebarList();
   _renderChatArea();
   _renderVoiceDropdown();
 }
 
-/* ── EVENT BINDING ───────────────────────────────── */
+/* == EVENT BINDING == */
 
 function _bindMakimaEvents() {
   var inputEl = document.getElementById('makimaInput');
@@ -329,8 +343,7 @@ function _bindMakimaEvents() {
   var overlay = document.getElementById('makimaSidebarOverlay');
   var gearBtn = document.getElementById('makimaGearBtn');
 
-  // If cooldown is active during re-render, keep button disabled
-  if (_makimaCooldownActive && sendBtn) {
+  if ((_makimaCooldownActive || _makimaRequestInProgress) && sendBtn) {
     sendBtn.disabled = true;
   }
 
@@ -353,7 +366,6 @@ function _bindMakimaEvents() {
   if (overlay) overlay.addEventListener('click', _closeMakimaSidebar);
   if (gearBtn) gearBtn.addEventListener('click', _toggleVoiceDropdown);
 
-  // Close voice dropdown on outside click
   document.addEventListener('click', function(e) {
     if (_makimaVoiceDropdownOpen) {
       var dropdown = document.getElementById('makimaVoiceDropdown');
@@ -365,7 +377,6 @@ function _bindMakimaEvents() {
     }
   });
 
-  // Preload speech synthesis voices (some browsers load them async)
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -376,7 +387,7 @@ function _bindMakimaEvents() {
   }
 }
 
-/* ── SIDEBAR TOGGLE ──────────────────────────────── */
+/* == SIDEBAR TOGGLE == */
 
 function _toggleMakimaSidebar() {
   _makimaSidebarOpen = !_makimaSidebarOpen;
@@ -394,7 +405,7 @@ function _closeMakimaSidebar() {
   if (overlay) overlay.classList.remove('open');
 }
 
-/* ── VOICE DROPDOWN ──────────────────────────────── */
+/* == VOICE/SETTINGS DROPDOWN == */
 
 function _toggleVoiceDropdown() {
   _makimaVoiceDropdownOpen = !_makimaVoiceDropdownOpen;
@@ -407,16 +418,47 @@ function _renderVoiceDropdown() {
   if (!dropdown) return;
   var voices = ['Kore', 'Charon', 'Aoede', 'Sulafat', 'Achernar'];
   var current = _getVoiceSetting();
+
   var html = '<div class="makima-voice-dropdown-title">Voice Settings</div>';
   for (var i = 0; i < voices.length; i++) {
     var v = voices[i];
     var activeClass = (v === current) ? ' active' : '';
     html += '<button class="makima-voice-opt' + activeClass + '" data-voice="' + _escapeHtml(v) + '">' + _escapeHtml(v) + '</button>';
   }
+
+  // Settings panel
+  html += '<div class="makima-settings-panel">';
+  html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">AI MODE</div>';
+
+  // Segmented control
+  html += '<div class="makima-mode-selector">';
+  var modes = ['auto', 'gemini', 'groq'];
+  var modeLabels = ['AUTO', 'GEMINI', 'GROQ'];
+  for (var m = 0; m < modes.length; m++) {
+    var mActive = (_makimaProvider === modes[m]) ? ' active' : '';
+    html += '<button class="makima-mode-btn' + mActive + '" data-provider="' + modes[m] + '">' + modeLabels[m] + '</button>';
+  }
+  html += '</div>';
+
+  // Model selector
+  var models = _makimaModelOptions[_makimaProvider] || _makimaModelOptions.auto;
+  html += '<select class="makima-model-select" id="makimaModelSelect">';
+  for (var mi = 0; mi < models.length; mi++) {
+    var sel = (models[mi] === _makimaModel) ? ' selected' : '';
+    html += '<option value="' + models[mi] + '"' + sel + '>' + models[mi] + '</option>';
+  }
+  html += '</select>';
+
+  // Save button
+  html += '<button class="makima-save-model-btn" id="makimaSaveModelBtn">SAVE MODEL</button>';
+  html += '</div>';
+
+  // Security section
   html += '<div class="makima-voice-dropdown-title" style="margin-top:8px;border-top:1px solid rgba(204,0,0,0.15);padding-top:8px;">Security</div>';
   html += '<button class="makima-voice-opt makima-lock-btn" id="makimaLockBtn">LOCK</button>';
   dropdown.innerHTML = html;
 
+  // Bind voice buttons
   var btns = dropdown.querySelectorAll('.makima-voice-opt:not(.makima-lock-btn)');
   for (var j = 0; j < btns.length; j++) {
     btns[j].addEventListener('click', function() {
@@ -428,6 +470,31 @@ function _renderVoiceDropdown() {
     });
   }
 
+  // Bind mode buttons
+  var modeBtns = dropdown.querySelectorAll('.makima-mode-btn');
+  for (var mb = 0; mb < modeBtns.length; mb++) {
+    modeBtns[mb].addEventListener('click', function() {
+      var newProvider = this.getAttribute('data-provider');
+      _makimaProvider = newProvider;
+      // Update model to first of new provider
+      var newModels = _makimaModelOptions[newProvider] || _makimaModelOptions.auto;
+      _makimaModel = newModels[0];
+      _renderVoiceDropdown();
+    });
+  }
+
+  // Bind save button
+  var saveBtn = document.getElementById('makimaSaveModelBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      var selectEl = document.getElementById('makimaModelSelect');
+      if (selectEl) _makimaModel = selectEl.value;
+      _saveProviderSettings();
+      _showMakimaToast('MODEL SAVED');
+    });
+  }
+
+  // Bind lock button
   var lockBtn = document.getElementById('makimaLockBtn');
   if (lockBtn) {
     lockBtn.addEventListener('click', function() {
@@ -436,7 +503,27 @@ function _renderVoiceDropdown() {
   }
 }
 
-/* ── SIDEBAR LIST RENDER ─────────────────────────── */
+/* == TOAST NOTIFICATION == */
+
+function _showMakimaToast(msg) {
+  var existing = document.getElementById('makimaToast');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  var toast = document.createElement('div');
+  toast.className = 'makima-toast';
+  toast.id = 'makimaToast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+
+  setTimeout(function() {
+    toast.classList.add('fade-out');
+    setTimeout(function() {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 400);
+  }, 2000);
+}
+
+/* == SIDEBAR LIST RENDER == */
 
 function _renderSidebarList() {
   var listEl = document.getElementById('makimaSidebarList');
@@ -463,7 +550,6 @@ function _renderSidebarList() {
   }
   listEl.innerHTML = html;
 
-  // Bind click events
   var items = listEl.querySelectorAll('.makima-sidebar-item');
   for (var j = 0; j < items.length; j++) {
     items[j].addEventListener('click', function(e) {
@@ -484,7 +570,7 @@ function _renderSidebarList() {
   }
 }
 
-/* ── CHAT AREA RENDER ────────────────────────────── */
+/* == CHAT AREA RENDER == */
 
 function _renderChatArea() {
   var messagesEl = document.getElementById('makimaMessages');
@@ -505,7 +591,7 @@ function _renderChatArea() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-/* ── MESSAGE BUBBLES ─────────────────────────────── */
+/* == MESSAGE BUBBLES == */
 
 function _appendUserBubble(container, text) {
   var row = document.createElement('div');
@@ -535,7 +621,6 @@ function _appendAIBubble(container, text) {
   bubble.className = 'makima-msg makima-msg-ai';
   bubble.textContent = text;
 
-  // Speaker button
   var speakerBtn = document.createElement('button');
   speakerBtn.className = 'makima-speaker-btn';
   speakerBtn.innerHTML = '&#128264;';
@@ -550,7 +635,7 @@ function _appendAIBubble(container, text) {
   container.appendChild(row);
 }
 
-/* ── TTS (SPEECH) ────────────────────────────────── */
+/* == TTS (SPEECH) == */
 
 function _speakMakimaText(text, btn) {
   if (!window.speechSynthesis) return;
@@ -572,7 +657,6 @@ function _speakMakimaText(text, btn) {
   utterance.rate = 0.95;
   utterance.pitch = 0.9;
 
-  // Apply voice setting from stored preference
   var voiceName = _getVoiceSetting();
   var availableVoices = window.speechSynthesis.getVoices();
   for (var v = 0; v < availableVoices.length; v++) {
@@ -601,7 +685,7 @@ function _speakMakimaText(text, btn) {
   window.speechSynthesis.speak(utterance);
 }
 
-/* ── LOADING BUBBLE ──────────────────────────────── */
+/* == LOADING BUBBLE == */
 
 function _showLoadingBubble(container) {
   var row = document.createElement('div');
@@ -635,7 +719,7 @@ function _removeLoadingBubble() {
   }
 }
 
-/* ── COOLDOWN HELPER ──────────────────────────────── */
+/* == COOLDOWN HELPER == */
 
 function _startCooldown() {
   _makimaCooldownActive = true;
@@ -644,11 +728,11 @@ function _startCooldown() {
   setTimeout(function() {
     _makimaCooldownActive = false;
     var btn = document.getElementById('makimaSendBtn');
-    if (btn) btn.disabled = false;
+    if (btn && !_makimaRequestInProgress) btn.disabled = false;
   }, 5000);
 }
 
-/* ── SEND MESSAGE ────────────────────────────────── */
+/* == SEND MESSAGE == */
 
 function sendMakimaMessage() {
   var input = document.getElementById('makimaInput');
@@ -666,32 +750,35 @@ function sendMakimaMessage() {
     return;
   }
 
-  // Cooldown check
   if (_makimaCooldownActive) {
     errorEl.textContent = 'Tunggu beberapa detik sebelum mengirim lagi.';
     return;
   }
 
-  // Get active chat
+  if (_makimaRequestInProgress) {
+    errorEl.textContent = 'Tunggu respons sebelumnya.';
+    return;
+  }
+
+  var provider = _makimaProvider || 'auto';
+  var model = _makimaModel || 'gemini-2.0-flash';
+  console.log('[MAKIMA] AI REQUEST ONLY FROM SEND', { provider: provider, model: model });
+
   var chat = getActiveChat();
   if (!chat) {
     chat = createNewChat();
     _renderSidebarList();
   }
 
-  // Disable send button
+  _makimaRequestInProgress = true;
   if (sendBtn) sendBtn.disabled = true;
 
-  // Display user message
   _appendUserBubble(messagesEl, message);
 
-  // Prepare history to send (last 20 messages of active chat)
   var historyToSend = chat.messages.slice(-20);
 
-  // Add message to chat
   chat.messages.push({ role: 'user', text: message, createdAt: new Date().toISOString() });
 
-  // Auto-title: first user message sets the title
   if (chat.title === 'Chat baru') {
     chat.title = message.substring(0, 30);
     _renderSidebarList();
@@ -699,7 +786,6 @@ function sendMakimaMessage() {
 
   chat.updatedAt = new Date().toISOString();
 
-  // Save
   var chats = loadChats();
   for (var i = 0; i < chats.length; i++) {
     if (chats[i].id === chat.id) {
@@ -713,19 +799,21 @@ function sendMakimaMessage() {
   input.value = '';
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
-  // Show loading
   _showLoadingBubble(messagesEl);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
-  // Send to API
   var targetChatId = chat.id;
-
-  console.log("[MAKIMA] Gemini request triggered by SEND only");
 
   fetch('/api/ai-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: message, history: historyToSend, password: sessionStorage.getItem('makima_ai_password') || '' })
+    body: JSON.stringify({
+      message: message,
+      history: historyToSend,
+      password: sessionStorage.getItem('makima_ai_password') || '',
+      provider: provider,
+      model: model
+    })
   })
   .then(function(res) {
     return res.json().then(function(data) {
@@ -734,11 +822,11 @@ function sendMakimaMessage() {
   })
   .then(function(result) {
     _removeLoadingBubble();
+    _makimaRequestInProgress = false;
 
     if (result.data.reply) {
       _appendAIBubble(messagesEl, result.data.reply);
 
-      // Save assistant reply - use pinned targetChatId, not current active chat
       var allChats = loadChats();
       var targetChat = null;
       for (var j = 0; j < allChats.length; j++) {
@@ -747,7 +835,6 @@ function sendMakimaMessage() {
           break;
         }
       }
-      // Guard: only write if chat still exists (not cleared/deleted)
       if (targetChat) {
         targetChat.messages.push({ role: 'assistant', text: result.data.reply, createdAt: new Date().toISOString() });
         targetChat.updatedAt = new Date().toISOString();
@@ -761,11 +848,10 @@ function sendMakimaMessage() {
       if (result.status === 429) {
         errMsg = 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.';
       } else if (result.status === 503) {
-        errMsg = 'MAKIMA AI BELUM DIKONFIGURASI.';
+        errMsg = 'API PROVIDER BELUM DIKONFIGURASI.';
       } else if (result.status === 403) {
         errMsg = 'MAKIMA AI KHUSUS ADMIN.';
         _appendAIBubble(messagesEl, errMsg);
-        // Save error message to localStorage
         var allChats403 = loadChats();
         var targetChat403 = null;
         for (var j3 = 0; j3 < allChats403.length; j3++) {
@@ -785,10 +871,9 @@ function sendMakimaMessage() {
         _startCooldown();
         return;
       } else {
-        errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
+        errMsg = result.data.error || 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
       }
       _appendAIBubble(messagesEl, errMsg);
-      // Save error message to localStorage
       var allChatsErr = loadChats();
       var targetChatErr = null;
       for (var j2 = 0; j2 < allChatsErr.length; j2++) {
@@ -810,9 +895,9 @@ function sendMakimaMessage() {
   })
   .catch(function() {
     _removeLoadingBubble();
+    _makimaRequestInProgress = false;
     var errMsg = 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.';
     _appendAIBubble(messagesEl, errMsg);
-    // Save error message to localStorage
     var allChatsCatch = loadChats();
     var targetChatCatch = null;
     for (var jc = 0; jc < allChatsCatch.length; jc++) {
@@ -833,7 +918,7 @@ function sendMakimaMessage() {
   });
 }
 
-/* ── UTILS ───────────────────────────────────────── */
+/* == UTILS == */
 
 function _escapeHtml(str) {
   var div = document.createElement('div');
@@ -841,12 +926,11 @@ function _escapeHtml(str) {
   return div.innerHTML;
 }
 
-/* ── CUSTOM CONFIRM MODAL ────────────────────────── */
+/* == CUSTOM CONFIRM MODAL == */
 
 var _makimaConfirmEscHandler = null;
 
 function _showClearConfirmModal() {
-  // Remove any existing modal
   _closeClearConfirmModal();
 
   var overlay = document.createElement('div');
@@ -892,14 +976,12 @@ function _showClearConfirmModal() {
 
   document.body.appendChild(overlay);
 
-  // Close on overlay background click
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) {
       _closeClearConfirmModal();
     }
   });
 
-  // Close on Escape key
   _makimaConfirmEscHandler = function(e) {
     if (e.key === 'Escape') {
       _closeClearConfirmModal();

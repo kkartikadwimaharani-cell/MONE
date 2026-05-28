@@ -18,33 +18,42 @@ import google.generativeai as genai
 # ---------------------------------------------------------------------------
 # Gemini model (lazy initialization for Railway env timing)
 # ---------------------------------------------------------------------------
-_gemini_model = None
-_gemini_initialized = False
+_gemini_model_cache = {}  # {model_name: GenerativeModel}
+_gemini_configured = False
 
-def _get_gemini_model():
-    global _gemini_model, _gemini_initialized
-    if _gemini_initialized:
-        return _gemini_model
+_MAKIMA_SYSTEM_INSTRUCTION = (
+    'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
+    'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
+    'Tetap sopan dan membantu. Jangan mengaku manusia. '
+    'Jangan membahas API key atau sistem internal. '
+    'Ingat informasi penting yang user berikan selama percakapan.'
+)
+
+_GEMINI_ALLOWED_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash']
+
+def _get_gemini_model(model_name=None):
+    global _gemini_configured, _gemini_model_cache
+    if model_name is None:
+        model_name = 'gemini-2.0-flash'
+    if model_name not in _GEMINI_ALLOWED_MODELS:
+        model_name = 'gemini-2.0-flash'
+    if model_name in _gemini_model_cache:
+        return _gemini_model_cache[model_name]
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    print("GEMINI_API_KEY exists:", bool(os.environ.get("GEMINI_API_KEY")))
-    print("GOOGLE_API_KEY exists:", bool(os.environ.get("GOOGLE_API_KEY")))
-    if api_key:
+    if not api_key:
+        return None
+    if not _gemini_configured:
         genai.configure(api_key=api_key)
-        _gemini_model = genai.GenerativeModel(
-            'gemini-2.0-flash',
-            system_instruction=(
-                'Kamu adalah MAKIMA AI, asisten digital untuk MII NETWORK. '
-                'Gaya bicara tenang, elegan, dingin, singkat, dan sedikit misterius. '
-                'Tetap sopan dan membantu. Jangan mengaku manusia. '
-                'Jangan membahas API key atau sistem internal. '
-                'Ingat informasi penting yang user berikan selama percakapan.'
-            )
-        )
-    _gemini_initialized = True
-    return _gemini_model
+        _gemini_configured = True
+    model = genai.GenerativeModel(
+        model_name,
+        system_instruction=_MAKIMA_SYSTEM_INSTRUCTION
+    )
+    _gemini_model_cache[model_name] = model
+    return model
 
-print("GEMINI_API_KEY exists:", bool(os.environ.get("GEMINI_API_KEY")))
-print("GOOGLE_API_KEY exists:", bool(os.environ.get("GOOGLE_API_KEY")))
+print("[startup] Gemini model cache ready")
+print("GROQ_API_KEY exists:", bool(os.environ.get("GROQ_API_KEY")))
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -1395,61 +1404,174 @@ def ai_chat():
     if not _check_rate_limit(client_ip, _rate_store_ai, RATE_LIMIT_AI_SECONDS):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
-    # Check API key configuration
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        return jsonify({'error': 'MAKIMA AI BELUM DIKONFIGURASI.'}), 503
-
-    if not _get_gemini_model():
-        return jsonify({'error': 'MAKIMA AI BELUM DIKONFIGURASI.'}), 503
+    # Provider and model selection
+    provider = data.get('provider', 'auto').strip().lower()
+    model = data.get('model', 'gemini-2.0-flash').strip()
+    if provider not in ('auto', 'gemini', 'groq'):
+        provider = 'auto'
 
     # Build conversation context from history
-    # Note: history roles are client-controlled; this is by design for a character
-    # chatbot where the client manages its own conversation context.
     history = data.get('history', [])
     if not isinstance(history, list):
         history = []
-    contents = []
-    # Take last 20 history entries
     recent_history = history[-20:] if len(history) > 20 else history
 
-    # Validate total history size to prevent oversized payloads to Gemini API
+    # Validate total history size to prevent oversized payloads
     MAX_HISTORY_CHARS = 40000
     total_chars = sum(len(entry.get('text', '')) for entry in recent_history if isinstance(entry, dict))
     if total_chars > MAX_HISTORY_CHARS:
         return jsonify({'error': 'History terlalu panjang. Silakan bersihkan riwayat chat.'}), 400
 
-    for entry in recent_history:
-        if not isinstance(entry, dict):
-            continue
-        role = entry.get('role', '')
-        text = entry.get('text', '')
-        if not text:
-            continue
-        # Map 'assistant' to 'model' for Gemini format
-        if role == 'assistant':
-            contents.append({'role': 'model', 'parts': [text]})
-        elif role == 'user':
-            contents.append({'role': 'user', 'parts': [text]})
-    # Add current message
-    contents.append({'role': 'user', 'parts': [message]})
+    # Build Gemini-style contents
+    def _build_gemini_contents():
+        contents = []
+        for entry in recent_history:
+            if not isinstance(entry, dict):
+                continue
+            role = entry.get('role', '')
+            text = entry.get('text', '')
+            if not text:
+                continue
+            if role == 'assistant':
+                contents.append({'role': 'model', 'parts': [text]})
+            elif role == 'user':
+                contents.append({'role': 'user', 'parts': [text]})
+        contents.append({'role': 'user', 'parts': [message]})
+        return contents
 
-    try:
-        response = _get_gemini_model().generate_content(contents)
-        reply_text = response.text if response.text else ''
-        if not reply_text:
-            return jsonify({'error': 'MAKIMA AI tidak dapat menghasilkan respons'}), 500
-        return jsonify({'reply': reply_text})
-    except Exception as e:
-        err_msg = str(e)
-        api_key_val = os.environ.get("GEMINI_API_KEY")
-        if api_key_val:
-            err_msg = err_msg.replace(api_key_val, '[REDACTED]')
-        app.logger.error('Gemini API error: %s', err_msg)
-        # Check for quota/rate limit errors
-        if '429' in err_msg or 'quota' in err_msg.lower() or 'resource exhausted' in err_msg.lower():
+    # Build OpenAI-style messages for Groq
+    def _build_groq_messages():
+        messages = [{'role': 'system', 'content': _MAKIMA_SYSTEM_INSTRUCTION}]
+        for entry in recent_history:
+            if not isinstance(entry, dict):
+                continue
+            role = entry.get('role', '')
+            text = entry.get('text', '')
+            if not text:
+                continue
+            if role in ('user', 'assistant'):
+                messages.append({'role': role, 'content': text})
+        messages.append({'role': 'user', 'content': message})
+        return messages
+
+    def _call_gemini(gemini_model_name):
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            return None, 'not_configured'
+        gemini_model = _get_gemini_model(gemini_model_name)
+        if not gemini_model:
+            return None, 'not_configured'
+        contents = _build_gemini_contents()
+        try:
+            response = gemini_model.generate_content(contents)
+            reply_text = response.text if response.text else ''
+            if not reply_text:
+                return None, 'empty_response'
+            return reply_text, None
+        except Exception as e:
+            err_msg = str(e)
+            api_key_val = os.environ.get("GEMINI_API_KEY")
+            if api_key_val:
+                err_msg = err_msg.replace(api_key_val, '[REDACTED]')
+            app.logger.error('Gemini API error: %s', err_msg)
+            if '429' in err_msg or 'quota' in err_msg.lower() or 'resource exhausted' in err_msg.lower():
+                return None, 'quota'
+            return None, 'error'
+
+    def _call_groq(groq_model_name):
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if not groq_key:
+            return None, 'not_configured'
+        allowed_groq_models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']
+        if groq_model_name not in allowed_groq_models:
+            groq_model_name = 'llama-3.1-8b-instant'
+        messages = _build_groq_messages()
+        try:
+            resp = requests_lib.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                headers={
+                    'Authorization': 'Bearer ' + groq_key,
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'model': groq_model_name,
+                    'messages': messages,
+                    'max_tokens': 2048,
+                    'temperature': 0.7
+                },
+                timeout=30
+            )
+            if resp.status_code == 429:
+                return None, 'quota'
+            if resp.status_code != 200:
+                app.logger.error('Groq API error: status=%d', resp.status_code)
+                return None, 'error'
+            resp_data = resp.json()
+            choices = resp_data.get('choices', [])
+            if choices and choices[0].get('message', {}).get('content'):
+                return choices[0]['message']['content'], None
+            return None, 'empty_response'
+        except Exception as e:
+            err_msg = str(e)
+            app.logger.error('Groq API error: %s', err_msg)
+            return None, 'error'
+
+    # Route to provider
+    if provider == 'gemini':
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+        reply, err = _call_gemini(model)
+        if reply:
+            return jsonify({'reply': reply})
+        if err == 'not_configured':
+            return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+        if err == 'quota':
             return jsonify({'error': 'KUOTA GEMINI SEDANG HABIS. COBA LAGI NANTI.'}), 429
         return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
+
+    elif provider == 'groq':
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if not groq_key:
+            return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+        reply, err = _call_groq(model)
+        if reply:
+            return jsonify({'reply': reply})
+        if err == 'not_configured':
+            return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+        if err == 'quota':
+            return jsonify({'error': 'KUOTA GROQ SEDANG HABIS. COBA LAGI NANTI.'}), 429
+        return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
+
+    else:
+        # Auto mode: try Gemini first, fallback to Groq on quota error
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if not gemini_key and not groq_key:
+            return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+
+        if gemini_key:
+            reply, err = _call_gemini(model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
+            if reply:
+                return jsonify({'reply': reply})
+            if err != 'quota':
+                # Non-quota error from Gemini, still try Groq if available
+                if not groq_key:
+                    if err == 'not_configured':
+                        return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
+                    return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
+
+        # Fallback to Groq
+        if groq_key:
+            groq_model = 'llama-3.1-8b-instant'
+            reply, err = _call_groq(groq_model)
+            if reply:
+                return jsonify({'reply': reply})
+            if err == 'quota':
+                return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 429
+            return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 500
+
+        return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 500
 
 
 @app.route('/api/test-env', methods=['GET'])
