@@ -30,5 +30,5 @@
     "Run: grep 'MAKIMA.*AI REQUEST ONLY FROM SEND' static/js/makima-ai.js to confirm debug log exists"
   ],
   "blocked_reason": null,
-  "findings": "All 3 tasks completed successfully. CSS fully rewritten with ChatGPT-style dark theme layout. JS overhauled with settings panel as separate overlay (not dropdown). HTML version bumped from 20260528_7 to 20260528_9 (18 occurrences). Python import check fails due to missing Flask module in environment (pre-existing, not related to changes)."
+  "findings": "All 3 tasks completed successfully. CSS fully rewritten with ChatGPT-style dark theme layout. JS overhauled with settings panel as separate overlay (not dropdown). HTML version bumped from 20260528_7 to 20260528_9 (18 occurrences). Python import check fails due to missing Flask module in environment (pre-existing, not related to changes). Review fixes applied: (1) Escape key handler added in _bindMakimaEvents, (2) model drift fixed by calling _loadProviderSettings on panel open, (3) spinner changed from rotating emoji to opacity-pulsing '...' text, (4) _testVoice guards empty voice list with toast."
 }
