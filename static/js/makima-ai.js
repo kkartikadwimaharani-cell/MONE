@@ -731,17 +731,23 @@ function _renderEmptyState(container) {
 /* == MESSAGE BUBBLES == */
 
 function _renderMarkdown(text) {
+  var codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+    var idx = codeBlocks.length;
+    var escapedCode = code.replace(/\n$/, '')
+                         .replace(/&/g, '&amp;')
+                         .replace(/</g, '&lt;')
+                         .replace(/>/g, '&gt;')
+                         .replace(/"/g, '&quot;')
+                         .replace(/'/g, '&#039;');
+    codeBlocks.push('<div class="makima-code-block-wrap"><button class="makima-code-copy-btn">COPY</button><pre><code>' + escapedCode + '</code></pre></div>');
+    return '%%CODEBLOCK_' + idx + '%%';
+  });
   text = text.replace(/&/g, '&amp;')
              .replace(/</g, '&lt;')
              .replace(/>/g, '&gt;')
              .replace(/"/g, '&quot;')
              .replace(/'/g, '&#039;');
-  var codeBlocks = [];
-  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
-    var idx = codeBlocks.length;
-    codeBlocks.push('<div class="makima-code-block-wrap"><button class="makima-code-copy-btn">COPY</button><pre><code>' + code.replace(/\n$/, '') + '</code></pre></div>');
-    return '%%CODEBLOCK_' + idx + '%%';
-  });
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
   text = text.replace(/`(.+?)`/g, '<code>$1</code>');
@@ -774,6 +780,11 @@ function _attachCopyButtons(container) {
       if (codeEl) {
         navigator.clipboard.writeText(codeEl.textContent).then(function() {
           btn.textContent = 'COPIED!';
+          setTimeout(function() {
+            btn.textContent = 'COPY';
+          }, 2000);
+        }).catch(function() {
+          btn.textContent = 'FAILED';
           setTimeout(function() {
             btn.textContent = 'COPY';
           }, 2000);

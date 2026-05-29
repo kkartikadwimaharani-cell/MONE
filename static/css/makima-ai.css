@@ -551,7 +551,7 @@ body.makima-ai-body .anime-body-silhouette {
 .makima-ai-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 24px 130px;
+  padding: 24px 24px 160px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1378,7 +1378,7 @@ textarea.makima-ai-input::placeholder {
   .makima-ai-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 14px 130px;
+    padding: 16px 14px 160px;
     gap: 12px;
     max-width: 100%;
   }
