@@ -377,5 +377,13 @@ html, body {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #viewMakimaAI.view-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }

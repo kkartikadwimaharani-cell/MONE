@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-chat-ui-restructure",
+  "task_description": "Restructure MAKIMA AI chat UI for proper mobile-first layout: drawer sidebar, proper chat bubbles, code blocks with copy button, coding quick actions, model picker, and textarea input. Do NOT touch TikTok downloader code.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
