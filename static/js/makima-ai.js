@@ -14,14 +14,14 @@ var _makimaDocClickBound = false;
 /* == QUICK ACTION TEMPLATES == */
 
 var _makimaQuickActions = [
-  { label: 'Buat prompt', text: 'Buatkan prompt untuk ' },
-  { label: 'Ringkas teks', text: 'Ringkas teks ini: ' },
-  { label: 'Ide konten', text: 'Beri aku ide konten untuk ' },
-  { label: 'Perbaiki kode', text: 'Bantu perbaiki kode ini: ' },
-  { label: 'Promosi toko', text: 'Buatkan teks promosi premium untuk MII Store: ' }
+  { label: 'Buat kode', text: 'Buatkan kode untuk ' },
+  { label: 'Perbaiki UI', text: 'Bantu rapikan UI ini: ' },
+  { label: 'Debug error', text: 'Bantu cek error ini: ' },
+  { label: 'Jelaskan kode', text: 'Jelaskan kode ini: ' },
+  { label: 'Buat prompt', text: 'Buatkan prompt untuk ' }
 ];
 
-var _makimaEmptyStateActions = [_makimaQuickActions[0], _makimaQuickActions[2], _makimaQuickActions[4], _makimaQuickActions[3]];
+var _makimaEmptyStateActions = [_makimaQuickActions[0], _makimaQuickActions[1], _makimaQuickActions[2], _makimaQuickActions[4]];
 
 /* == PROVIDER/MODEL STATE == */
 
@@ -328,7 +328,7 @@ function renderMakimaAI() {
           '<span class="makima-header-title">MAKIMA AI</span>' +
           '<span class="makima-online-badge">ONLINE</span>' +
           '<div class="makima-model-picker-wrap">' +
-            '<button class="makima-model-picker-btn" id="makimaModelPickerBtn">' + _escapeHtml(providerLabel) + ' &gt;</button>' +
+            '<button class="makima-model-picker-btn" id="makimaModelPickerBtn">' + _escapeHtml(providerLabel) + ' &#9662;</button>' +
             '<div class="makima-model-picker-popover" id="makimaModelPickerPopover"></div>' +
           '</div>' +
           '<div class="makima-voice-gear-wrap">' +
@@ -343,7 +343,7 @@ function renderMakimaAI() {
           '<div class="makima-quick-actions-bar" id="makimaQuickActionsBar"></div>' +
           '<div class="makima-ai-input-wrap">' +
             '<button class="makima-plus-btn" id="makimaPlusBtn" title="Quick Actions">+</button>' +
-            '<input type="text" id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." autocomplete="off" autocorrect="off" spellcheck="false" />' +
+            '<textarea id="makimaInput" class="makima-ai-input" placeholder="Ketik pesan untuk MAKIMA AI..." rows="1" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>' +
             '<button class="makima-ai-send-btn" id="makimaSendBtn">SEND</button>' +
           '</div>' +
           '<div class="makima-ai-error" id="makimaError"></div>' +
@@ -449,7 +449,7 @@ function _updateModelPickerBtnLabel() {
   var btn = document.getElementById('makimaModelPickerBtn');
   if (btn) {
     var label = _makimaProvider.charAt(0).toUpperCase() + _makimaProvider.slice(1);
-    btn.innerHTML = _escapeHtml(label) + ' &gt;';
+    btn.innerHTML = _escapeHtml(label) + ' &#9662;';
   }
 }
 
@@ -472,7 +472,14 @@ function _bindMakimaEvents() {
 
   if (inputEl) {
     inputEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') sendMakimaMessage();
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMakimaMessage();
+      }
+    });
+    inputEl.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 130) + 'px';
     });
   }
   if (sendBtn) sendBtn.addEventListener('click', sendMakimaMessage);
@@ -724,17 +731,23 @@ function _renderEmptyState(container) {
 /* == MESSAGE BUBBLES == */
 
 function _renderMarkdown(text) {
+  var codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+    var idx = codeBlocks.length;
+    var escapedCode = code.replace(/\n$/, '')
+                         .replace(/&/g, '&amp;')
+                         .replace(/</g, '&lt;')
+                         .replace(/>/g, '&gt;')
+                         .replace(/"/g, '&quot;')
+                         .replace(/'/g, '&#039;');
+    codeBlocks.push('<div class="makima-code-block-wrap"><button class="makima-code-copy-btn">COPY</button><pre><code>' + escapedCode + '</code></pre></div>');
+    return '%%CODEBLOCK_' + idx + '%%';
+  });
   text = text.replace(/&/g, '&amp;')
              .replace(/</g, '&lt;')
              .replace(/>/g, '&gt;')
              .replace(/"/g, '&quot;')
              .replace(/'/g, '&#039;');
-  var codeBlocks = [];
-  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
-    var idx = codeBlocks.length;
-    codeBlocks.push('<pre><code>' + code.replace(/\n$/, '') + '</code></pre>');
-    return '%%CODEBLOCK_' + idx + '%%';
-  });
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
   text = text.replace(/`(.+?)`/g, '<code>$1</code>');
@@ -755,6 +768,30 @@ function _appendUserBubble(container, text) {
 
   row.appendChild(bubble);
   container.appendChild(row);
+}
+
+function _attachCopyButtons(container) {
+  var btns = container.querySelectorAll('.makima-code-copy-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function() {
+      var btn = this;
+      var wrap = btn.parentElement;
+      var codeEl = wrap.querySelector('pre code');
+      if (codeEl) {
+        navigator.clipboard.writeText(codeEl.textContent).then(function() {
+          btn.textContent = 'COPIED!';
+          setTimeout(function() {
+            btn.textContent = 'COPY';
+          }, 2000);
+        }).catch(function() {
+          btn.textContent = 'FAILED';
+          setTimeout(function() {
+            btn.textContent = 'COPY';
+          }, 2000);
+        });
+      }
+    });
+  }
 }
 
 function _appendAIBubble(container, text) {
@@ -790,6 +827,8 @@ function _appendAIBubble(container, text) {
   row.appendChild(avatar);
   row.appendChild(bubbleWrap);
   container.appendChild(row);
+
+  _attachCopyButtons(bubble);
 }
 
 /* == TTS (SPEECH) == */
@@ -971,6 +1010,7 @@ function sendMakimaMessage() {
   saveChats(chats);
 
   input.value = '';
+  input.style.height = 'auto';
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   _showLoadingBubble(messagesEl);

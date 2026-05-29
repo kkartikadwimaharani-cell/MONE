@@ -1,0 +1,23 @@
+{
+  "project_type": "Flask web app with multi-page SPA-style navigation (no framework, vanilla JS)",
+  "language": "Python (backend), JavaScript/CSS/HTML (frontend)",
+  "build_system": "No build step for frontend. Flask serves static files directly. Dockerfile uses gunicorn.",
+  "test_framework": "No automated tests present in the project",
+  "build_command": "python -c \"import app\"",
+  "test_command": "No test command available",
+  "verification_instructions": "1. Run python -c 'import app' to verify no syntax errors. 2. Visually verify CSS/JS have no syntax errors by checking file structure. 3. Verify HTML template renders without errors.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r requirements.txt",
+  "environment_constraints": "OPEN_INTERNET network mode. No automated test suite. Verification is limited to syntax validation and structural checks.",
+  "contribution_requirements": "Do NOT touch downloader.js or TikTok-related code. Do NOT add new features beyond what is specified.",
+  "key_patterns": "CSS is split into multiple files (variables.css, base.css, components.css, layout.css, makima-ai.css, responsive.css). JS is split per feature (makima-ai.js, downloader.js, ui.js). Navigation is SPA-style via ui.js navigateTo(). MAKIMA AI renders into #viewMakimaAI container. The chat uses localStorage for persistence. Input is currently an <input type=text> not <textarea>.",
+  "relevant_files": [
+    "static/css/makima-ai.css",
+    "static/js/makima-ai.js",
+    "templates/index.html",
+    "static/css/responsive.css",
+    "static/js/ui.js",
+    "app.py"
+  ],
+  "directory_structure": "Root: app.py (Flask), templates/index.html (single HTML), static/css/ (8 CSS files), static/js/ (10 JS files), static/img/ (images)"
+}

@@ -1,0 +1,14 @@
+{
+  "task_id": "task-makima-chat-ui-restructure",
+  "task_description": "Restructure MAKIMA AI chat UI for proper mobile-first layout: drawer sidebar, proper chat bubbles, code blocks with copy button, coding quick actions, model picker, and textarea input. Do NOT touch TikTok downloader code.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "node --check passes for makima-ai.js. python3 import app succeeds. CSS brace balance check passes (188/188). All acceptance criteria verified via grep: mobile sidebar uses position:fixed left:-100% with 82vw/320px max-width/z-index 1000, textarea with auto-resize to 130px max, COPY button uses navigator.clipboard.writeText, quick actions match 5 coding templates, model picker uses down-triangle character, send button is 72px min-width with flex-shrink:0."
+  }
+}
