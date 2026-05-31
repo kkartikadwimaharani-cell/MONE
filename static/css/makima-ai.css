@@ -1164,6 +1164,7 @@ textarea.makima-ai-input::placeholder {
 /* == PASSWORD GATE == */
 
 .makima-password-gate {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
