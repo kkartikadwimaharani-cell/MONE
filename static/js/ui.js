@@ -79,6 +79,7 @@ function hidePreview() {
   var viewConfig = {
     'downloader': { type: 'main' },
     'makima-ai': { type: 'makima-ai' },
+    'hinter-mt': { type: 'coming-soon', title: 'HINTER MT', badge: 'SOON', description: 'HINTER MT belum tersedia.' },
     'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
     'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
@@ -305,7 +306,8 @@ function hidePreview() {
   var featureMap = {
     'wa-status': { title: 'WA STATUS CONVERTER', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { title: 'STATUS SPLITTER', description: 'Split long videos into WhatsApp Status parts.' },
-    'caption-copier': { title: 'CAPTION COPIER', description: 'Caption copy tool is under development.' }
+    'caption-copier': { title: 'CAPTION COPIER', description: 'Caption copy tool is under development.' },
+    'hinter-mt': { title: 'HINTER MT', description: 'HINTER MT belum tersedia.' }
   };
 
   // Wire up drawer items using event delegation on the drawer (robust on mobile)
