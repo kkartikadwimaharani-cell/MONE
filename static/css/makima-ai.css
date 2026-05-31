@@ -1254,6 +1254,30 @@ textarea.makima-ai-input::placeholder {
   min-height: 1.2em;
 }
 
+/* == BACK BUTTON IN PASSWORD GATE == */
+
+.makima-back-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 10;
+  background: rgba(12, 4, 4, 0.8);
+  border: 1px solid rgba(204, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 10px 18px;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.makima-back-btn:hover {
+  border-color: var(--red);
+  box-shadow: 0 0 12px rgba(204, 0, 0, 0.3);
+}
+
 /* == LOCK BUTTON IN DROPDOWN == */
 
 .makima-lock-btn {

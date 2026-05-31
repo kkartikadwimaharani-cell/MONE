@@ -1,0 +1,7 @@
+{
+  "task_id": "task-makima-dashboard-improvements",
+  "task_description": "Add BACK button to Makima AI password gate, add HINTER MT menu item to dashboard sidebar, enhance Makima AI system prompt for coding mode with safety boundaries",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

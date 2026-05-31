@@ -1,0 +1,22 @@
+{
+  "project_type": "Flask web app with static frontend (SPA-like navigation)",
+  "language": "Python (backend), JavaScript/HTML/CSS (frontend)",
+  "build_system": "Flask dev server, no formal build step for frontend",
+  "test_framework": "No formal test suite found - manual verification",
+  "build_command": "python -c \"import app\" (syntax check)",
+  "test_command": "python -c \"import app\" && echo 'OK'",
+  "verification_instructions": "1. Verify Python can import app.py without errors. 2. Verify HTML/JS/CSS have no syntax errors by inspection.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install flask yt-dlp requests google-generativeai",
+  "environment_constraints": "OPEN_INTERNET - full network access available. No formal test suite exists. API keys read from env vars (GEMINI_API_KEY, GROQ_API_KEY) - never hardcode.",
+  "contribution_requirements": "Do NOT touch TikTok downloader logic. Do NOT hardcode API keys. Do NOT break existing features.",
+  "key_patterns": "SPA navigation via viewConfig in ui.js. Side drawer items use data-view and optionally data-feature attributes. Coming-soon items use featureMap + soon-badge class. Password gate rendered by _renderPasswordGate() in makima-ai.js. System prompt is _MAKIMA_SYSTEM_INSTRUCTION in app.py. CSS uses dark glass theme with red accent (--red), var(--font-ui), var(--font-logo), etc.",
+  "relevant_files": [
+    "static/js/makima-ai.js",
+    "static/js/ui.js",
+    "static/css/makima-ai.css",
+    "templates/index.html",
+    "app.py"
+  ],
+  "directory_structure": "app.py (Flask backend), templates/index.html (single page HTML), static/js/ (JS modules: ui.js, makima-ai.js, downloader.js, etc.), static/css/ (CSS modules: makima-ai.css, variables.css, etc.), static/img/ (images)"
+}

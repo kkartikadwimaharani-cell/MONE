@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add BACK button to Makima AI password gate, add HINTER MT menu item to dashboard, enhance system prompt for coding capabilities, and add safety boundaries",
+  "status": "in_progress",
+  "steps": [
+    "STEP 1 - Add BACK button to password gate in static/js/makima-ai.js: In the _renderPasswordGate() function (line 224), add a back button BEFORE the makima-password-modal div, inside makima-password-gate. The button text should be '\u2190 KEMBALI'. On click, it should call showMainView() (already defined globally in ui.js at line 287). The button HTML: '<button class=\"makima-back-btn\" onclick=\"showMainView()\">\u2190 KEMBALI</button>'. Place it as the first child inside makima-password-gate, before the modal div.",
+    "STEP 2 - Add CSS styles for the back button in static/css/makima-ai.css: Add styles for .makima-back-btn after the PASSWORD GATE section (after line ~1240). Style: position absolute top-left of the gate, dark glass background (rgba(12,4,4,0.8)), border 1px solid rgba(204,0,0,0.3), border-radius 10px, padding 10px 18px, color white, font-family var(--font-ui), font-size 0.75rem, letter-spacing 1.5px, cursor pointer, transition for border and box-shadow. On hover: border-color var(--red), box-shadow 0 0 12px rgba(204,0,0,0.3). Position: top 24px, left 24px, z-index 10.",
+    "STEP 3 - Add HINTER MT menu item in templates/index.html: After the MAKIMA AI drawer-item (the one with data-view=\"makima-ai\"), add a new drawer-item with data-view=\"hinter-mt\" and data-feature=\"hinter-mt\". Use a terminal/code SVG icon. Text: 'HINTER MT'. Badge: soon-badge with text 'SOON'.",
+    "STEP 4 - Register HINTER MT in the featureMap in static/js/ui.js: Add 'hinter-mt' to the featureMap object (around line 308) with title 'HINTER MT' and description 'HINTER MT belum tersedia.' Also add 'hinter-mt' to the viewConfig object with type 'coming-soon', title 'HINTER MT', badge 'SOON', description 'HINTER MT belum tersedia.'",
+    "STEP 5 - Enhance system prompt in app.py: Replace the _MAKIMA_SYSTEM_INSTRUCTION string (lines 26-47) with an enhanced version that includes coding capabilities. Keep ALL existing rules about browsing, images, URL, etc. ADD new coding persona rules: Makima can help with HTML/CSS/JS/Python/Flask/Node.js, UI/UX, bug fixing, deploy Railway/GitHub, API integration, frontend/backend. Coding style: direct solutions, clean/rapi, short explanations, provide ready-to-use code, separate by file if long, use bahasa Indonesia natural, use 'kamu' not 'Anda'. Add safety rules: reject malware/phishing/token stealing/hack/spam/bypass payment/data theft/system damage requests with the response 'Aku tidak bisa bantu membuat itu. Tapi aku bisa bantu buat versi aman, edukasi, atau proteksinya.' then offer safe alternatives. Add code formatting rules: 1-2 sentence explanation first, code in markdown code blocks, label filenames if multiple files."
+  ],
+  "acceptance_criteria": [
+    "Password gate shows a BACK button with text '\u2190 KEMBALI' positioned at the top-left",
+    "Clicking the BACK button returns to the downloader/main view without resetting the app or calling AI API",
+    "HINTER MT appears in the side drawer after MAKIMA AI with a 'SOON' badge",
+    "Clicking HINTER MT shows a coming-soon message 'HINTER MT belum tersedia.' without errors",
+    "System prompt in app.py includes coding capabilities and safety boundaries",
+    "No TikTok downloader logic is modified",
+    "No API keys are hardcoded",
+    "app.py imports successfully without errors"
+  ],
+  "verification": [
+    "Run: python -c \"import app\" to confirm no syntax errors in app.py",
+    "Run: python -c \"from app import _MAKIMA_SYSTEM_INSTRUCTION; assert 'coding' in _MAKIMA_SYSTEM_INSTRUCTION.lower() or 'kode' in _MAKIMA_SYSTEM_INSTRUCTION.lower()\" to verify coding prompt is present",
+    "Run: grep -c 'HINTER MT' templates/index.html to confirm menu item exists",
+    "Run: grep -c 'hinter-mt' static/js/ui.js to confirm feature registration",
+    "Run: grep -c 'makima-back-btn' static/js/makima-ai.js to confirm back button exists",
+    "Run: grep -c 'makima-back-btn' static/css/makima-ai.css to confirm back button styles exist"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

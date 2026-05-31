@@ -224,6 +224,7 @@ function _isMakimaUnlocked() {
 function _renderPasswordGate(container) {
   container.innerHTML =
     '<div class="makima-password-gate">' +
+      '<button class="makima-back-btn" onclick="showMainView()">\u2190 KEMBALI</button>' +
       '<div class="makima-password-modal">' +
         '<div class="makima-password-title">MAKIMA AI ACCESS</div>' +
         '<div class="makima-password-subtitle">Private Feature</div>' +
