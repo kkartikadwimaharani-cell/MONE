@@ -2284,3 +2284,116 @@ body.makima-mode .app-drawer .drawer-close {
   object-fit: cover !important;
   background: none !important;
 }
+
+/* ── FINAL DRAWER ORDER + LIGHTWEIGHT EFFECT OVERRIDE (2026-06-02) ─────────
+   Layout-only: keep downloader/API/AI logic untouched. */
+.app-drawer,
+.side-drawer.mobile-drawer.app-drawer,
+body.makima-mode .app-drawer,
+body.makima-mode .side-drawer.mobile-drawer.app-drawer {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  background: #050507 !important;
+  padding: 0 !important;
+}
+
+.app-drawer .drawer-header,
+.side-drawer.mobile-drawer.app-drawer .drawer-header,
+body.makima-mode .app-drawer .drawer-header {
+  order: 0 !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  margin-top: 0 !important;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 16px !important;
+  background: #050507 !important;
+  border-bottom: 1px solid rgba(255, 0, 45, 0.18) !important;
+  z-index: 20 !important;
+}
+
+.app-drawer .drawer-brand,
+.app-drawer .drawer-profile,
+.side-drawer.mobile-drawer.app-drawer .drawer-brand,
+.side-drawer.mobile-drawer.app-drawer .drawer-profile {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 0 50px 12px 0 !important;
+}
+
+.app-drawer .drawer-status,
+.app-drawer .drawer-badges,
+.side-drawer.mobile-drawer.app-drawer .drawer-status,
+.side-drawer.mobile-drawer.app-drawer .drawer-badges {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.app-drawer .drawer-close,
+.side-drawer.mobile-drawer.app-drawer .drawer-close,
+body.makima-mode .app-drawer .drawer-close {
+  order: initial !important;
+  position: absolute !important;
+  top: calc(16px + env(safe-area-inset-top)) !important;
+  right: 16px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  z-index: 30 !important;
+}
+
+.app-drawer .drawer-menu-scroll,
+.side-drawer.mobile-drawer.app-drawer .drawer-menu-scroll,
+body.makima-mode .app-drawer .drawer-menu-scroll {
+  order: 1 !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 18px 20px calc(28px + env(safe-area-inset-bottom)) !important;
+}
+
+.app-drawer .drawer-footer,
+.side-drawer.mobile-drawer.app-drawer .drawer-footer {
+  margin-top: 0 !important;
+}
+
+@media (min-width: 901px) {
+  .big-glow,
+  .blur-layer,
+  .animated-bg,
+  .orb-container {
+    display: none !important;
+  }
+
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .big-glow,
+  .blur-layer,
+  .animated-bg,
+  .orb-container,
+  .bg-overlay {
+    display: none !important;
+  }
+
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
