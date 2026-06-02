@@ -21,6 +21,7 @@
         <!-- Header -->
         <div class="mkai-header">
           <div class="mkai-header-left">
+            <button class="mkai-back-btn" id="mkaiBack" type="button" title="Kembali ke dashboard">← KEMBALI</button>
             <div class="mkai-avatar-wrap">
               <img class="mkai-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI"
                    draggable="false" oncontextmenu="return false">
@@ -88,6 +89,7 @@
     // Events
     document.getElementById('mkaiSend').addEventListener('click', send);
     document.getElementById('mkaiClear').addEventListener('click', clearChat);
+    document.getElementById('mkaiBack').addEventListener('click', goBackToDashboard);
     const ta = document.getElementById('mkaiInput');
     ta.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -246,14 +248,17 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     })
-    .then(r => { if (!r.ok) throw new Error(); return r.blob(); })
+    .then(r => { if (!r.ok) throw new Error('tts-unavailable'); return r.blob(); })
     .then(blob => {
       const url  = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
       btn.classList.remove('loading');
       btn.classList.add('playing');
       btn.querySelector('span').textContent = 'Stop';
-      currentAudio.play();
+      const playPromise = currentAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => fallbackSpeak(text, btn));
+      }
       currentAudio.onended = () => {
         btn.classList.remove('playing');
         btn.querySelector('span').textContent = 'Dengarkan';
@@ -263,14 +268,41 @@
       };
     })
     .catch(() => {
-      btn.classList.remove('loading');
-      btn.querySelector('span').textContent = 'Gagal';
-      currentSpeakerBtn = null;
-      setTimeout(() => { btn.querySelector('span').textContent = 'Dengarkan'; }, 2000);
+      fallbackSpeak(text, btn);
     });
   }
 
+  function fallbackSpeak(text, btn) {
+    btn.classList.remove('loading');
+
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      btn.querySelector('span').textContent = 'Gagal';
+      currentSpeakerBtn = null;
+      setTimeout(() => { btn.querySelector('span').textContent = 'Dengarkan'; }, 2000);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    currentAudio = { pause: () => window.speechSynthesis.cancel() };
+    btn.classList.add('playing');
+    btn.querySelector('span').textContent = 'Stop';
+
+    utterance.onend = utterance.onerror = () => {
+      btn.classList.remove('playing', 'loading');
+      btn.querySelector('span').textContent = 'Dengarkan';
+      currentAudio = null;
+      currentSpeakerBtn = null;
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
   function stopAudio() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     if (currentSpeakerBtn) {
       currentSpeakerBtn.classList.remove('playing', 'loading');
@@ -295,6 +327,15 @@
     chatHistory = [];
     stopAudio();
     msgs().innerHTML = welcomeHTML();
+  }
+
+  function goBackToDashboard() {
+    stopAudio();
+    if (typeof window.showMainView === 'function') {
+      window.showMainView();
+    } else if (typeof window.navigateTo === 'function') {
+      window.navigateTo('downloader');
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────
@@ -349,6 +390,8 @@
       if (e.target.closest('[data-view="makima-ai"]')) setTimeout(tryRender, 60);
     });
   }
+
+  window.renderMakimaAI = tryRender;
 
   document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', init)

@@ -504,3 +504,176 @@
   font-size: 13px;
   line-height: 1.65;
 }
+
+/* ── Stability fixes: solid drawer, darker Makima surface, no x-scroll ── */
+html,
+body,
+#viewMakimaAI,
+.mkai-wrap,
+.mkai-header,
+.mkai-messages,
+.mkai-input-area {
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+.side-drawer {
+  width: min(86vw, 380px) !important;
+  max-width: calc(100vw - 18px) !important;
+  background: linear-gradient(180deg, #090000 0%, #120101 45%, #060000 100%) !important;
+  border-right: 1px solid rgba(255, 35, 35, 0.62) !important;
+  box-shadow: 8px 0 42px rgba(0,0,0,0.88), 0 0 26px rgba(180,0,0,0.18) !important;
+  color: rgba(255,255,255,0.92) !important;
+}
+
+.drawer-overlay {
+  background: rgba(0, 0, 0, 0.86) !important;
+}
+
+.drawer-section-label {
+  color: rgba(255, 78, 78, 0.82) !important;
+}
+
+.drawer-item {
+  color: rgba(255,255,255,0.82) !important;
+  background: rgba(255,255,255,0.025);
+  min-width: 0;
+}
+
+.drawer-item:hover,
+.drawer-item.active {
+  color: #fff !important;
+  background: rgba(165, 18, 18, 0.2) !important;
+}
+
+.drawer-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-item-badge {
+  color: rgba(255,255,255,0.78);
+}
+
+#viewMakimaAI,
+.mkai-wrap {
+  background: radial-gradient(circle at 50% 0%, rgba(80, 0, 0, 0.34) 0%, rgba(12, 0, 0, 0.98) 38%, #060000 100%) !important;
+}
+
+.mkai-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0.76));
+}
+
+.mkai-header {
+  gap: 12px;
+  background: rgba(5,0,0,0.96);
+  border-bottom-color: rgba(180,30,30,0.18);
+}
+
+.mkai-header-left,
+.mkai-header-right {
+  min-width: 0;
+}
+
+.mkai-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(220, 42, 42, 0.45);
+  background: rgba(120, 8, 8, 0.28);
+  color: rgba(255,255,255,0.9);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.mkai-back-btn:hover {
+  background: rgba(180, 18, 18, 0.34);
+  border-color: rgba(255, 70, 70, 0.65);
+}
+
+.mkai-model-select,
+.mkai-clear-btn,
+.mkai-input-inner,
+.mkai-ai-text,
+.mkai-bubble-user,
+.mkai-code-block {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .side-drawer {
+    width: min(88vw, 340px) !important;
+    max-width: calc(100vw - 14px) !important;
+    background: #090000 !important;
+  }
+
+  .drawer-section {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .drawer-item {
+    padding: 11px 10px !important;
+    gap: 8px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .drawer-item-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .drawer-item-badge {
+    font-size: 0.5rem !important;
+    padding: 2px 5px !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  .mkai-header {
+    padding: 10px 12px;
+    align-items: flex-start;
+  }
+
+  .mkai-header-left {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mkai-header-right {
+    gap: 6px;
+  }
+
+  .mkai-back-btn {
+    width: 100%;
+    order: -1;
+  }
+
+  .mkai-model-select {
+    width: 112px;
+    max-width: 34vw;
+    padding: 5px 7px;
+  }
+
+  .mkai-messages {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .mkai-input-area {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
