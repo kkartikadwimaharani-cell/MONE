@@ -155,7 +155,7 @@
     if (!wrap) return;
 
     wrap.innerHTML = `
-      <div class="mkai-access-wrap">
+      <div class="mkai-access-wrap makima-access-page">
         <div class="mkai-access-card">
           <button class="mkai-back-btn mkai-access-back" id="mkaiAccessBack" type="button">← KEMBALI</button>
           <img class="mkai-access-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
@@ -179,6 +179,8 @@
         const input = document.getElementById('mkaiAccessPassword');
         const password = input ? input.value.trim() : '';
         if (!password) return;
+        if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+        if (typeof window.setAppMode === 'function') window.setAppMode('makima');
         setAccessPassword(password);
         renderUI();
       });
@@ -192,7 +194,7 @@
     ensureStorageDefaults();
 
     wrap.innerHTML = `
-      <div class="mkai-wrap">
+      <div class="mkai-wrap makima-chat-page">
         <div class="mkai-header">
           <div class="mkai-header-left">
             <button class="mkai-back-btn" id="mkaiBack" type="button" title="Kembali ke dashboard">← KEMBALI</button>
@@ -540,6 +542,8 @@
   }
 
   function goBackToDashboard() {
+    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.setAppMode === 'function') window.setAppMode('dashboard');
     stopAudio();
     if (typeof window.showMainView === 'function') {
       window.showMainView();
@@ -581,6 +585,8 @@
   function tryRender() {
     const c = document.getElementById('viewMakimaAI');
     if (!c || c.style.display === 'none') return;
+    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.setAppMode === 'function') window.setAppMode('makima');
     if (!storageReady) ensureStorageDefaults();
     if (!hasAccess()) {
       if (!c.querySelector('.mkai-access-wrap')) renderAccess();
