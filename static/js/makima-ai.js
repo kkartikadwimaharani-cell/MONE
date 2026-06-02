@@ -154,15 +154,15 @@
     const wrap = document.getElementById('viewMakimaAI');
     if (!wrap) return;
 
-    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+    else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
     if (typeof window.setAppMode === 'function') window.setAppMode('makima');
-    console.log("[MAKIMA] access page loaded - no API call");
 
     wrap.innerHTML = `
       <div class="mkai-access-wrap makima-access-page">
         <div class="mkai-access-card">
           <button class="mkai-back-btn mkai-access-back" id="mkaiAccessBack" type="button">← KEMBALI</button>
-          <img class="mkai-access-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
+          <img class="mkai-access-avatar makima-access-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
           <div class="mkai-access-title">MAKIMA AI ACCESS</div>
           <div class="mkai-access-sub">Masukkan password untuk membuka ruang chat.</div>
           <form class="mkai-access-form" id="mkaiAccessForm">
@@ -174,7 +174,8 @@
 
     const back = document.getElementById('mkaiAccessBack');
     if (back) back.addEventListener('click', function () {
-      if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+      if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+      else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
       goBackToDashboard();
     });
 
@@ -185,7 +186,8 @@
         const input = document.getElementById('mkaiAccessPassword');
         const password = input ? input.value.trim() : '';
         if (!password) return;
-        if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+        if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+        else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
         if (typeof window.setAppMode === 'function') window.setAppMode('makima');
         setAccessPassword(password);
         renderUI();
@@ -197,15 +199,18 @@
   function renderUI() {
     const wrap = document.getElementById('viewMakimaAI');
     if (!wrap) return;
+    if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+    else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.setAppMode === 'function') window.setAppMode('makima');
     ensureStorageDefaults();
 
     wrap.innerHTML = `
       <div class="mkai-wrap makima-chat-page">
-        <div class="mkai-header">
+        <div class="mkai-header makima-header">
           <div class="mkai-header-left">
             <button class="mkai-back-btn" id="mkaiBack" type="button" title="Kembali ke dashboard">← KEMBALI</button>
             <div class="mkai-avatar-wrap">
-              <img class="mkai-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI"
+              <img class="mkai-avatar makima-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI"
                    draggable="false" oncontextmenu="return false">
               <span class="mkai-online-dot"></span>
             </div>
@@ -548,7 +553,8 @@
   }
 
   function goBackToDashboard() {
-    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+    else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
     if (typeof window.setAppMode === 'function') window.setAppMode('dashboard');
     stopAudio();
     if (typeof window.showMainView === 'function') {
@@ -589,10 +595,12 @@
 
   // ── Init ───────────────────────────────────────────────────
   function tryRender() {
-    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+    else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
     const c = document.getElementById('viewMakimaAI');
     if (!c || c.style.display === 'none') return;
-    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
+    else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
     if (typeof window.setAppMode === 'function') window.setAppMode('makima');
     if (!storageReady) ensureStorageDefaults();
     if (!hasAccess()) {
@@ -617,6 +625,7 @@
   }
 
   window.renderMakimaAI = tryRender;
+  window.showMakimaAccess = renderAccess;
   window.safeJsonParse = window.safeJsonParse || safeJsonParse;
 
   document.readyState === 'loading'

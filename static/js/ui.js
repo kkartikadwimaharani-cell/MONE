@@ -14,15 +14,29 @@ function hidePreview() {
 }
 
 
-function closeAllDrawers() {
+function closeDashboardDrawer() {
   document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
-  document.querySelectorAll(".sidebar, .mobile-menu, .dashboard-drawer, .drawer, .nav-drawer, .side-drawer")
+
+  document.querySelectorAll(
+    ".dashboard-drawer, .mobile-menu, .main-sidebar, .drawer-backdrop, .menu-backdrop, .overlay"
+  ).forEach(el => {
+    el.classList.remove("open", "active", "show");
+    if (
+      el.classList.contains("drawer-backdrop") ||
+      el.classList.contains("menu-backdrop") ||
+      el.classList.contains("overlay")
+    ) {
+      el.remove();
+    } else {
+      el.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  document.querySelectorAll(".sidebar, .drawer, .nav-drawer, .side-drawer")
     .forEach(el => {
       el.classList.remove("open", "active", "show");
       el.setAttribute("aria-hidden", "true");
     });
-  document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
-    .forEach(el => el.remove());
 
   document.querySelectorAll(".drawer-overlay, .menu-overlay")
     .forEach(el => {
@@ -33,6 +47,11 @@ function closeAllDrawers() {
   document.body.style.overflow = "";
 }
 
+function closeAllDrawers() {
+  closeDashboardDrawer();
+}
+
+window.closeDashboardDrawer = closeDashboardDrawer;
 window.closeAllDrawers = closeAllDrawers;
 
 function setAppMode(mode) {
@@ -186,6 +205,7 @@ window.setAppMode = setAppMode;
       if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'makima-ai') {
       closeAllDrawers();
+      closeDashboardDrawer();
       if (viewMakimaAI) viewMakimaAI.style.display = '';
       if (headerEl) headerEl.style.display = 'none';
       document.body.classList.add('makima-ai-body');
