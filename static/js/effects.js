@@ -79,12 +79,12 @@
   }
 
   document.addEventListener('click', function(e) {
-    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
+    if (e.target.closest('button, a, .modal, .desktop-sidebar, .mobile-drawer, .drawer-backdrop, .dl-btn, .q-btn, .clear-btn, input')) return;
     createOrb(e.clientX, e.clientY, false);
   });
 
   document.addEventListener('touchstart', function(e) {
-    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
+    if (e.target.closest('button, a, .modal, .desktop-sidebar, .mobile-drawer, .drawer-backdrop, .dl-btn, .q-btn, .clear-btn, input')) return;
     if (e.touches && e.touches.length > 0) {
       createOrb(e.touches[0].clientX, e.touches[0].clientY, false);
     }
@@ -94,7 +94,7 @@
     var now = Date.now();
     if (now - lastTouchMove < 80) return;
     lastTouchMove = now;
-    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
+    if (e.target.closest('button, a, .modal, .desktop-sidebar, .mobile-drawer, .drawer-backdrop, .dl-btn, .q-btn, .clear-btn, input')) return;
     if (e.touches && e.touches.length > 0) {
       createOrb(e.touches[0].clientX, e.touches[0].clientY, true);
     }
@@ -122,12 +122,12 @@
   }
 
   document.addEventListener('click', function(e) {
-    if (e.target.closest('button, a, input, .modal, .side-drawer, .drawer-overlay')) return;
+    if (e.target.closest('button, a, input, .modal, .desktop-sidebar, .mobile-drawer, .drawer-backdrop')) return;
     awakeSilhouette();
   });
 
   document.addEventListener('touchstart', function(e) {
-    if (e.target.closest('button, a, input, .modal, .side-drawer, .drawer-overlay')) return;
+    if (e.target.closest('button, a, input, .modal, .desktop-sidebar, .mobile-drawer, .drawer-backdrop')) return;
     awakeSilhouette();
   }, { passive: true });
 })();
