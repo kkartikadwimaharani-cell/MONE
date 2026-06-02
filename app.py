@@ -113,6 +113,8 @@ _ELEVENLABS_DISABLED_ERROR = 'ELEVENLABS_DISABLED'
 _ELEVENLABS_DISABLED_MARKERS = (
     'detected_unusual_activity',
     'free tier access has been disabled',
+    'paid_plan_required',
+    'quota_exceeded',
 )
 
 
@@ -1727,10 +1729,16 @@ def test_env():
 @app.route('/api/tts-status', methods=['GET'])
 def tts_status():
     """Health/debug status for backend ElevenLabs TTS wiring."""
+    api_key = os.getenv('ELEVENLABS_API_KEY') or ''
+    voice_id = os.getenv('ELEVENLABS_VOICE_ID') or ''
     return jsonify({
         'tts_route_ready': True,
-        'elevenlabs_key_exists': bool(os.getenv('ELEVENLABS_API_KEY')),
-        'elevenlabs_voice_id_exists': bool(os.getenv('ELEVENLABS_VOICE_ID'))
+        'elevenlabs_key_exists': bool(api_key),
+        'elevenlabs_voice_id_exists': bool(voice_id),
+        'key_prefix': api_key[:4],
+        'key_suffix': api_key[-4:],
+        'voice_prefix': voice_id[:4],
+        'voice_suffix': voice_id[-4:]
     })
 
 
@@ -1744,9 +1752,10 @@ def tts():
     api_key = os.environ.get('ELEVENLABS_API_KEY')
     voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
 
-    print("[TTS] text exists:", bool(text))
+    print("[TTS] text length:", len(text))
     print("[TTS] key exists:", bool(api_key))
     print("[TTS] voice exists:", bool(voice_id))
+    print("[TTS] voice id safe:", voice_id[:4] if voice_id else '', voice_id[-4:] if voice_id else '')
 
     if not text:
         return jsonify({'error': 'Text is required'}), 400
@@ -1760,12 +1769,12 @@ def tts():
 
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128'
     payload = {
-        'text': text[:2500],
+        'text': text[:300],
         'model_id': 'eleven_multilingual_v2',
         'voice_settings': {
             'stability': 0.45,
             'similarity_boost': 0.8,
-            'style': 0.35,
+            'style': 0.25,
             'use_speaker_boost': True
         }
     }
@@ -1784,13 +1793,14 @@ def tts():
 
         print("[TTS] elevenlabs status:", resp.status_code)
         print("[TTS] elevenlabs content-type:", resp.headers.get("content-type"))
+        print("[TTS] elevenlabs body preview:", resp.text[:300] if not resp.ok else "AUDIO_OK")
 
         if not resp.ok:
             app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:300])
             if _is_elevenlabs_disabled_response(resp.status_code, resp.text):
                 return jsonify({'error': _ELEVENLABS_DISABLED_ERROR}), 503
             return jsonify({
-                'error': 'ElevenLabs failed',
+                'error': 'ELEVENLABS_FAILED',
                 'status': resp.status_code,
                 'detail': resp.text[:300]
             }), 502
@@ -1799,7 +1809,7 @@ def tts():
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
-        return jsonify({'error': 'ElevenLabs failed', 'detail': str(e)[:300]}), 502
+        return jsonify({'error': 'ELEVENLABS_FAILED', 'detail': str(e)[:300]}), 502
 
 
 if __name__ == '__main__':

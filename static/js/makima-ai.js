@@ -590,17 +590,16 @@
         body: JSON.stringify({ text: assistantText })
       });
 
-      if (!res.ok) {
-        const errorCode = await readTtsErrorCode(res);
-        if (errorCode === 'ELEVENLABS_DISABLED') {
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('audio/mpeg')) {
+        const errorPayload = await readTtsErrorPayload(res);
+        console.warn('[TTS] JSON error:', errorPayload || { status: res.status, contentType });
+        if (isTtsDisabledError(errorPayload)) {
           markElevenLabsDisabled();
-          console.warn('[TTS] ElevenLabs disabled, using browser TTS');
-          fallbackSpeak(text, btn);
-          return;
+          console.warn('[TTS] ElevenLabs disabled/quota error, using browser TTS');
         }
-
-        console.error('[TTS] failed:', res.status);
-        throw new Error('TTS failed ' + res.status);
+        fallbackSpeak(text, btn);
+        return;
       }
 
       const blob = await res.blob();
@@ -632,16 +631,26 @@
     sessionStorage.setItem('elevenlabs_disabled', 'true');
   }
 
-  async function readTtsErrorCode(res) {
+  async function readTtsErrorPayload(res) {
     const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) return null;
+    if (!contentType.includes('application/json')) {
+      return { status: res.status, contentType };
+    }
 
     try {
-      const data = await res.json();
-      return data?.error || null;
+      return await res.json();
     } catch (err) {
-      return null;
+      return { status: res.status, contentType, detail: 'Unable to parse TTS error JSON' };
     }
+  }
+
+  function isTtsDisabledError(errorPayload) {
+    const joinedError = `${errorPayload?.error || ''} ${errorPayload?.detail || ''}`.toLowerCase();
+    return joinedError.includes('elevenlabs_disabled')
+      || joinedError.includes('detected_unusual_activity')
+      || joinedError.includes('free tier access has been disabled')
+      || joinedError.includes('paid_plan_required')
+      || joinedError.includes('quota_exceeded');
   }
 
   function fallbackSpeak(text, btn) {
