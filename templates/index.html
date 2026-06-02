@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/base.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/layout.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/components.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/animations.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=20260602_menu_fix_1">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/variables.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/base.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/layout.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/components.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/animations.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=20260602_unified_drawer_1">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260602_unified_drawer_1">
 </head>
 <body>
 
@@ -41,18 +41,13 @@
     </div>
   </nav>
 
-  <!-- Side Drawer Overlay -->
-  <div class="drawer-overlay drawer-backdrop" id="drawerOverlay" aria-hidden="true"></div>
-
   <!-- Side Drawer -->
-  <aside class="side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
-    <!-- Close Button -->
-    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-
+  <aside class="app-drawer side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
     <!-- Header -->
     <div class="drawer-header">
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
       <div class="drawer-profile">
         <img class="drawer-avatar" src="/static/img/owner.png" alt="MII NETWORK" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
@@ -65,6 +60,8 @@
         <span class="drawer-badge-online">SERVER ONLINE</span>
       </div>
     </div>
+
+    <div class="drawer-menu-scroll">
 
     <!-- Section: Main -->
     <div class="drawer-section drawer-section-main">
@@ -189,6 +186,7 @@
     <div class="drawer-footer">
       <div class="drawer-footer-brand">MII NETWORK &copy; 2026 &bull; CONTROL</div>
       <div class="drawer-footer-sub">FREE &bull; FAST &bull; NO WATERMARK</div>
+    </div>
     </div>
   </aside>
 
@@ -439,15 +437,15 @@
     });
   }
   </script>
-  <script src="/static/js/config.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/ui.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/downloader.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/photo.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/effects.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/main.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/makima-ai.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/analytics.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/ghost-scanner.js?v=20260602_menu_fix_1"></script>
-  <script src="/static/js/protection.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/config.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/ui.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/downloader.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/photo.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/effects.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/main.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/makima-ai.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/analytics.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/ghost-scanner.js?v=20260602_unified_drawer_1"></script>
+  <script src="/static/js/protection.js?v=20260602_unified_drawer_1"></script>
 </body>
 </html>

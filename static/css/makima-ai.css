@@ -2119,3 +2119,168 @@ body.dashboard-mode {
     pointer-events: auto !important;
   }
 }
+
+/* ── FINAL UNIFIED DRAWER OVERRIDE (2026-06-02) ─────────────
+   Desktop and mobile use the same overlay drawer. No permanent sidebar. */
+.desktop-sidebar,
+.sidebar-permanent,
+.main-sidebar {
+  display: none !important;
+}
+
+.main-content,
+.dashboard-content,
+.page-content,
+.page {
+  width: 100% !important;
+  margin-left: 0 !important;
+  transform: none !important;
+}
+
+.hamburger-btn {
+  display: flex !important;
+}
+
+.app-drawer,
+.side-drawer.mobile-drawer.app-drawer,
+body.makima-mode .app-drawer,
+body.makima-mode .side-drawer.mobile-drawer.app-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 100000 !important;
+  background: #050507 !important;
+  background-image: none !important;
+  border-right: 1px solid rgba(255, 0, 45, .25) !important;
+  box-shadow: 12px 0 34px rgba(0, 0, 0, .58) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  max-width: none !important;
+  transform: none !important;
+  transition: left .22s ease !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 45, .35) transparent;
+}
+
+@media (max-width: 900px) {
+  .app-drawer,
+  .side-drawer.mobile-drawer.app-drawer,
+  body.makima-mode .app-drawer,
+  body.makima-mode .side-drawer.mobile-drawer.app-drawer {
+    left: -100% !important;
+    width: min(88vw, 380px) !important;
+  }
+
+  .app-drawer.open,
+  .side-drawer.mobile-drawer.app-drawer.open,
+  body.makima-mode .app-drawer.open,
+  body.makima-mode .side-drawer.mobile-drawer.app-drawer.open {
+    left: 0 !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .app-drawer,
+  .side-drawer.mobile-drawer.app-drawer,
+  body.makima-mode .app-drawer,
+  body.makima-mode .side-drawer.mobile-drawer.app-drawer {
+    left: -420px !important;
+    width: 380px !important;
+  }
+
+  .app-drawer.open,
+  .side-drawer.mobile-drawer.app-drawer.open,
+  body.makima-mode .app-drawer.open,
+  body.makima-mode .side-drawer.mobile-drawer.app-drawer.open {
+    left: 0 !important;
+  }
+}
+
+.drawer-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  display: block !important;
+  z-index: 99990 !important;
+  background: rgba(0, 0, 0, .65) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.app-drawer .drawer-header,
+.side-drawer.mobile-drawer.app-drawer .drawer-header {
+  flex-shrink: 0 !important;
+  position: relative !important;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 16px !important;
+  background: #050507 !important;
+  border-bottom: 1px solid rgba(255, 0, 45, .18) !important;
+  z-index: 20 !important;
+}
+
+.app-drawer .drawer-close,
+.side-drawer.mobile-drawer.app-drawer .drawer-close,
+body.makima-mode .app-drawer .drawer-close {
+  position: absolute !important;
+  top: calc(16px + env(safe-area-inset-top)) !important;
+  right: 16px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  z-index: 30 !important;
+}
+
+.app-drawer .drawer-menu-scroll,
+.side-drawer.mobile-drawer.app-drawer .drawer-menu-scroll {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 18px 20px calc(28px + env(safe-area-inset-bottom)) !important;
+}
+
+.app-drawer .drawer-section,
+.side-drawer.mobile-drawer.app-drawer .drawer-section {
+  padding: 0 0 12px !important;
+}
+
+.app-drawer .drawer-separator,
+.side-drawer.mobile-drawer.app-drawer .drawer-separator {
+  margin: 4px 0 14px !important;
+}
+
+.app-drawer .drawer-promo-card,
+.app-drawer .drawer-hud-card,
+.side-drawer.mobile-drawer.app-drawer .drawer-promo-card,
+.side-drawer.mobile-drawer.app-drawer .drawer-hud-card {
+  margin: 8px 0 14px !important;
+}
+
+.app-drawer .drawer-footer,
+.side-drawer.mobile-drawer.app-drawer .drawer-footer {
+  margin-top: 0 !important;
+  padding: 16px 0 0 !important;
+}
+
+.app-drawer .makima-menu-avatar,
+.app-drawer .makima-sidebar-avatar,
+.side-drawer.mobile-drawer.app-drawer .makima-menu-avatar,
+.side-drawer.mobile-drawer.app-drawer .makima-sidebar-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  border-radius: 999px !important;
+  object-fit: cover !important;
+  background: none !important;
+}
