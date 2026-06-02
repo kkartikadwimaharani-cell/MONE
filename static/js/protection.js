@@ -22,16 +22,12 @@ document.addEventListener("touchstart", function(e) {
 
 // Disable offline/PWA - Unregister all service workers
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(reg) { reg.unregister(); });
-  });
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
 }
 
 // Clear all caches
 if ("caches" in window) {
-  caches.keys().then(function(keys) {
-    keys.forEach(function(key) { caches.delete(key); });
-  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
 
 // Offline detection overlay
