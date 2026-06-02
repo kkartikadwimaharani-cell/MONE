@@ -33,6 +33,12 @@
   let thinkingBubble = null;
   let storageReady = false;
 
+  // Clear stale TTS disable/cache flags from older frontend builds.
+  try { window.sessionStorage.removeItem('elevenlabs_disabled'); } catch (e) {}
+  try { window.sessionStorage.removeItem('tts_disabled'); } catch (e) {}
+  try { window.sessionStorage.removeItem('old_tts_error'); } catch (e) {}
+  try { window.localStorage.removeItem('tts_cache'); } catch (e) {}
+
   // Temporary cache reset/versioning hotfix.
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
@@ -577,11 +583,6 @@
 
     try {
       const assistantText = text;
-      if (isElevenLabsDisabled()) {
-        console.warn('[TTS] ElevenLabs disabled, using browser TTS');
-        fallbackSpeak(text, btn);
-        return;
-      }
 
       console.log('[TTS] calling /api/tts');
       const res = await fetch('/api/tts', {
@@ -593,13 +594,9 @@
       console.log('[TTS] response status:', res.status);
       console.log('[TTS] response content-type:', res.headers.get('content-type'));
       const contentType = res.headers.get('content-type') || '';
-      if (!res.ok || !contentType.includes('audio/mpeg')) {
+      if (!res.ok || !contentType.toLowerCase().includes('audio')) {
         const errorPayload = await readTtsErrorPayload(res);
         console.warn('[TTS] JSON error:', errorPayload || { status: res.status, contentType });
-        if (isTtsDisabledError(errorPayload)) {
-          markElevenLabsDisabled();
-          console.warn('[TTS] ElevenLabs disabled/quota error, using browser TTS');
-        }
         fallbackSpeak(text, btn);
         return;
       }
@@ -625,14 +622,6 @@
     }
   }
 
-  function isElevenLabsDisabled() {
-    return sessionStorage.getItem('elevenlabs_disabled') === 'true';
-  }
-
-  function markElevenLabsDisabled() {
-    sessionStorage.setItem('elevenlabs_disabled', 'true');
-  }
-
   async function readTtsErrorPayload(res) {
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
@@ -644,15 +633,6 @@
     } catch (err) {
       return { status: res.status, contentType, detail: 'Unable to parse TTS error JSON' };
     }
-  }
-
-  function isTtsDisabledError(errorPayload) {
-    const joinedError = `${errorPayload?.error || ''} ${errorPayload?.detail || ''}`.toLowerCase();
-    return joinedError.includes('elevenlabs_disabled')
-      || joinedError.includes('detected_unusual_activity')
-      || joinedError.includes('free tier access has been disabled')
-      || joinedError.includes('paid_plan_required')
-      || joinedError.includes('quota_exceeded');
   }
 
   function fallbackSpeak(text, btn) {

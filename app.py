@@ -109,24 +109,6 @@ _rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
 _rate_store_ai = {}        # {ip: last_request_timestamp} for /api/ai-chat
 _rate_store_tts = {}       # {ip: last_request_timestamp} for /api/tts
 
-_ELEVENLABS_DISABLED_ERROR = 'ELEVENLABS_DISABLED'
-_ELEVENLABS_DISABLED_MARKERS = (
-    'detected_unusual_activity',
-    'free tier access has been disabled',
-    'paid_plan_required',
-    'quota_exceeded',
-)
-
-
-def _is_elevenlabs_disabled_response(status_code, body):
-    """Return True when ElevenLabs indicates this API key/free tier is disabled."""
-    if status_code == 401:
-        return True
-
-    body_text = (body or '').lower()
-    return any(marker in body_text for marker in _ELEVENLABS_DISABLED_MARKERS)
-
-
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
@@ -1726,25 +1708,36 @@ def test_env():
     })
 
 
+def _add_no_store_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @app.route('/api/tts-status', methods=['GET'])
 def tts_status():
-    """Health/debug status for backend ElevenLabs TTS wiring."""
+    """Safe ElevenLabs TTS env fingerprint without exposing full secrets."""
     api_key = os.getenv('ELEVENLABS_API_KEY') or ''
     voice_id = os.getenv('ELEVENLABS_VOICE_ID') or ''
-    return jsonify({
-        'tts_route_ready': True,
+    response = jsonify({
         'elevenlabs_key_exists': bool(api_key),
         'elevenlabs_voice_id_exists': bool(voice_id),
-        'key_prefix': api_key[:4],
-        'key_suffix': api_key[-4:],
-        'voice_prefix': voice_id[:4],
-        'voice_suffix': voice_id[-4:]
+        'key_prefix': api_key[:6],
+        'key_suffix': api_key[-6:],
+        'voice_prefix': voice_id[:6],
+        'voice_suffix': voice_id[-6:]
     })
+    return _add_no_store_headers(response)
 
 
 @app.route('/api/tts', methods=['POST'])
 def tts():
     """ElevenLabs Text-to-Speech — returns raw MP3 audio on click only."""
+    @after_this_request
+    def add_tts_no_store_headers(response):
+        return _add_no_store_headers(response)
+
     print("[TTS] /api/tts called")
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
@@ -1796,20 +1789,23 @@ def tts():
         print("[TTS] elevenlabs body preview:", resp.text[:300] if not resp.ok else "AUDIO_OK")
 
         if not resp.ok:
-            app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:300])
-            if _is_elevenlabs_disabled_response(resp.status_code, resp.text):
-                return jsonify({'error': _ELEVENLABS_DISABLED_ERROR}), 503
+            body_preview = resp.text[:300]
+            app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, body_preview)
             return jsonify({
                 'error': 'ELEVENLABS_FAILED',
                 'status': resp.status_code,
-                'detail': resp.text[:300]
+                'detail': body_preview
             }), 502
 
         return Response(resp.content, mimetype='audio/mpeg')
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
-        return jsonify({'error': 'ELEVENLABS_FAILED', 'detail': str(e)[:300]}), 502
+        return jsonify({
+            'error': 'ELEVENLABS_FAILED',
+            'status': 502,
+            'detail': str(e)[:300]
+        }), 502
 
 
 if __name__ == '__main__':
