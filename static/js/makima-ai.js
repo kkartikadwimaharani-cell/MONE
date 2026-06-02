@@ -27,8 +27,8 @@
   let activeChatId = null;
   let chatHistory = [];
   let isTyping = false;
-  let currentAudio = null;
-  let currentAudioUrl = null;
+  let currentTtsAudio = null;
+  let currentTtsUrl = null;
   let currentSpeakerBtn = null;
   let thinkingBubble = null;
   let storageReady = false;
@@ -564,7 +564,7 @@
     console.log('[TTS] text length:', text.length);
     if (!text || !text.trim()) return;
 
-    if (currentSpeakerBtn === btn && currentAudio) {
+    if (currentSpeakerBtn === btn && currentTtsAudio) {
       stopAudio();
       return;
     }
@@ -605,18 +605,39 @@
       const blob = await res.blob();
       if (!blob || blob.size === 0) throw new Error('TTS returned empty audio');
 
-      currentAudioUrl = URL.createObjectURL(blob);
-      currentAudio = new Audio(currentAudioUrl);
+      currentTtsUrl = URL.createObjectURL(blob);
 
-      currentAudio.onended = resetAudioButton;
-      currentAudio.onerror = () => fallbackSpeak(text, btn);
+      const audio = document.createElement('audio');
+      audio.src = currentTtsUrl;
+      audio.preload = 'auto';
+      audio.controls = false;
+      audio.setAttribute('playsinline', 'true');
+
+      // Jangan display:none, supaya beberapa screen recorder lebih mudah menangkap audio.
+      // Elemen tetap tidak terlihat karena dipindah offscreen.
+      audio.style.position = 'fixed';
+      audio.style.left = '-9999px';
+      audio.style.top = '0';
+      audio.style.width = '1px';
+      audio.style.height = '1px';
+      audio.style.opacity = '0';
+      audio.style.pointerEvents = 'none';
+
+      document.body.appendChild(audio);
+      currentTtsAudio = audio;
+
+      audio.onended = resetAudioButton;
+      audio.onerror = () => {
+        cleanupAudioElement();
+        fallbackSpeak(text, btn);
+      };
 
       btn.disabled = false;
       btn.classList.remove('loading');
       btn.classList.add('playing');
       setButtonLabel(btn, 'Berhenti');
 
-      await currentAudio.play();
+      await audio.play();
     } catch (err) {
       console.warn('[TTS] ElevenLabs failed, fallback browser:', err);
       fallbackSpeak(text, btn);
@@ -654,8 +675,7 @@
   }
 
   function fallbackSpeak(text, btn) {
-    revokeAudioUrl();
-    currentAudio = null;
+    cleanupAudioElement();
     btn.disabled = false;
     btn.classList.remove('loading');
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -669,7 +689,7 @@
     utterance.lang = 'id-ID';
     utterance.rate = 0.88;
     utterance.pitch = 0.85;
-    currentAudio = { pause: () => window.speechSynthesis.cancel() };
+    currentTtsAudio = { pause: () => window.speechSynthesis.cancel() };
     btn.classList.add('playing');
     setButtonLabel(btn, 'Berhenti');
     utterance.onend = utterance.onerror = resetAudioButton;
@@ -678,26 +698,37 @@
 
   function stopAudio() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (currentAudio) currentAudio.pause();
-    currentAudio = null;
+    if (currentTtsAudio) {
+      currentTtsAudio.pause();
+      if (typeof currentTtsAudio.currentTime === 'number') currentTtsAudio.currentTime = 0;
+    }
+    cleanupAudioElement();
     resetAudioButton();
   }
 
   function resetAudioButton() {
-    revokeAudioUrl();
+    cleanupAudioElement();
     if (currentSpeakerBtn) {
       currentSpeakerBtn.disabled = false;
       currentSpeakerBtn.classList.remove('playing', 'loading');
       setButtonLabel(currentSpeakerBtn, 'Dengarkan');
     }
     currentSpeakerBtn = null;
-    currentAudio = null;
+    currentTtsAudio = null;
+  }
+
+  function cleanupAudioElement() {
+    if (currentTtsAudio && currentTtsAudio instanceof HTMLAudioElement) {
+      currentTtsAudio.remove();
+    }
+    revokeAudioUrl();
+    currentTtsAudio = null;
   }
 
   function revokeAudioUrl() {
-    if (currentAudioUrl) {
-      URL.revokeObjectURL(currentAudioUrl);
-      currentAudioUrl = null;
+    if (currentTtsUrl) {
+      URL.revokeObjectURL(currentTtsUrl);
+      currentTtsUrl = null;
     }
   }
 
