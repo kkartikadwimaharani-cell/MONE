@@ -1725,13 +1725,15 @@ def _safe_secret_fingerprint(value):
 @app.route('/api/tts-status', methods=['GET'])
 def tts_status():
     """Safe ElevenLabs TTS env fingerprint without exposing full secrets."""
-    api_key = (os.getenv('ELEVENLABS_API_KEY') or '').strip()
-    voice_id = (os.getenv('ELEVENLABS_VOICE_ID') or '').strip()
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
     response = jsonify({
         'elevenlabs_key_exists': bool(api_key),
         'elevenlabs_voice_id_exists': bool(voice_id),
-        'key_fingerprint': _safe_secret_fingerprint(api_key),
-        'voice_fingerprint': _safe_secret_fingerprint(voice_id)
+        'key_prefix': api_key[:6] if api_key else None,
+        'key_suffix': api_key[-6:] if api_key else None,
+        'voice_prefix': voice_id[:6] if voice_id else None,
+        'voice_suffix': voice_id[-6:] if voice_id else None
     })
     return _add_no_store_headers(response)
 
@@ -1747,14 +1749,14 @@ def tts():
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
 
-    # Railway injects ElevenLabs credentials through env vars; do not use any repo fallback.
-    api_key = (os.environ.get('ELEVENLABS_API_KEY') or '').strip()
-    voice_id = (os.environ.get('ELEVENLABS_VOICE_ID') or '').strip()
+    # Railway injects ElevenLabs credentials through env vars; read them per request with no cached fallback.
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
 
-    print("[TTS] text length:", len(text))
-    print("[TTS] key exists:", str(bool(api_key)).lower())
-    print("[TTS] voice exists:", str(bool(voice_id)).lower())
-    print("[TTS] voice id safe:", voice_id[:4] if voice_id else '', voice_id[-4:] if voice_id else '')
+    print("[TTS] key exists:", bool(api_key))
+    print("[TTS] voice exists:", bool(voice_id))
+    print("[TTS] key safe:", api_key[:6] if api_key else None, api_key[-6:] if api_key else None)
+    print("[TTS] voice safe:", voice_id[:6] if voice_id else None, voice_id[-6:] if voice_id else None)
 
     if not text:
         return jsonify({'error': 'Text is required'}), 400
@@ -1779,7 +1781,7 @@ def tts():
     }
 
     try:
-        resp = requests_lib.post(
+        r = requests_lib.post(
             url,
             headers={
                 'xi-api-key': api_key,
@@ -1790,37 +1792,25 @@ def tts():
             timeout=30
         )
 
-        print("[TTS] elevenlabs status:", resp.status_code)
-        print("[TTS] content-type:", resp.headers.get("content-type"))
-        print("[TTS] elevenlabs body preview:", resp.text[:300] if not resp.ok else "AUDIO_OK")
+        print("[TTS] elevenlabs status:", r.status_code)
+        print("[TTS] content-type:", r.headers.get("content-type"))
 
-        if not resp.ok:
-            body_preview = resp.text[:300]
-            app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, body_preview)
-
-            if resp.status_code == 401:
-                return jsonify({
-                    'error': 'ELEVENLABS_401_FALLBACK_BROWSER_TTS',
-                    'status': 401,
-                    'fallback': 'browser_tts',
-                    'detail': 'ElevenLabs authorization rejected the Railway env key.'
-                }), 502
-
+        if not r.ok:
+            body_preview = r.text[:300]
+            app.logger.error('ElevenLabs TTS error: status=%d body=%s', r.status_code, body_preview)
             return jsonify({
                 'error': 'ELEVENLABS_FAILED',
-                'status': resp.status_code,
-                'fallback': 'browser_tts',
+                'status': r.status_code,
                 'detail': body_preview
             }), 502
 
-        return Response(resp.content, mimetype='audio/mpeg')
+        return Response(r.content, mimetype='audio/mpeg')
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
         return jsonify({
             'error': 'ELEVENLABS_FAILED',
             'status': 502,
-            'fallback': 'browser_tts',
             'detail': str(e)[:300]
         }), 502
 
