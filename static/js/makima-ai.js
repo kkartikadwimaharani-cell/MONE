@@ -27,8 +27,8 @@
   let activeChatId = null;
   let chatHistory = [];
   let isTyping = false;
-  let currentTtsAudio = null;
-  let currentTtsUrl = null;
+  let currentAudio = null;
+  let currentAudioUrl = null;
   let currentSpeakerBtn = null;
   let thinkingBubble = null;
   let storageReady = false;
@@ -560,11 +560,11 @@
   async function handleSpeak(e) {
     const btn = e.currentTarget;
     const text = decodeURIComponent(btn.dataset.msg || '');
-    console.log('[TTS] Dengarkan clicked');
+    console.log('[TTS] clicked');
     console.log('[TTS] text length:', text.length);
     if (!text || !text.trim()) return;
 
-    if (currentSpeakerBtn === btn && currentTtsAudio) {
+    if (currentSpeakerBtn === btn && currentAudio) {
       stopAudio();
       return;
     }
@@ -590,6 +590,8 @@
         body: JSON.stringify({ text: assistantText })
       });
 
+      console.log('[TTS] response status:', res.status);
+      console.log('[TTS] response content-type:', res.headers.get('content-type'));
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.includes('audio/mpeg')) {
         const errorPayload = await readTtsErrorPayload(res);
@@ -605,39 +607,18 @@
       const blob = await res.blob();
       if (!blob || blob.size === 0) throw new Error('TTS returned empty audio');
 
-      currentTtsUrl = URL.createObjectURL(blob);
+      currentAudioUrl = URL.createObjectURL(blob);
+      currentAudio = new Audio(currentAudioUrl);
 
-      const audio = document.createElement('audio');
-      audio.src = currentTtsUrl;
-      audio.preload = 'auto';
-      audio.controls = false;
-      audio.setAttribute('playsinline', 'true');
-
-      // Jangan display:none, supaya beberapa screen recorder lebih mudah menangkap audio.
-      // Elemen tetap tidak terlihat karena dipindah offscreen.
-      audio.style.position = 'fixed';
-      audio.style.left = '-9999px';
-      audio.style.top = '0';
-      audio.style.width = '1px';
-      audio.style.height = '1px';
-      audio.style.opacity = '0';
-      audio.style.pointerEvents = 'none';
-
-      document.body.appendChild(audio);
-      currentTtsAudio = audio;
-
-      audio.onended = resetAudioButton;
-      audio.onerror = () => {
-        cleanupAudioElement();
-        fallbackSpeak(text, btn);
-      };
+      currentAudio.onended = resetAudioButton;
+      currentAudio.onerror = () => fallbackSpeak(text, btn);
 
       btn.disabled = false;
       btn.classList.remove('loading');
       btn.classList.add('playing');
       setButtonLabel(btn, 'Berhenti');
 
-      await audio.play();
+      await currentAudio.play();
     } catch (err) {
       console.warn('[TTS] ElevenLabs failed, fallback browser:', err);
       fallbackSpeak(text, btn);
@@ -675,7 +656,8 @@
   }
 
   function fallbackSpeak(text, btn) {
-    cleanupAudioElement();
+    revokeAudioUrl();
+    currentAudio = null;
     btn.disabled = false;
     btn.classList.remove('loading');
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -689,7 +671,7 @@
     utterance.lang = 'id-ID';
     utterance.rate = 0.88;
     utterance.pitch = 0.85;
-    currentTtsAudio = { pause: () => window.speechSynthesis.cancel() };
+    currentAudio = { pause: () => window.speechSynthesis.cancel() };
     btn.classList.add('playing');
     setButtonLabel(btn, 'Berhenti');
     utterance.onend = utterance.onerror = resetAudioButton;
@@ -698,37 +680,26 @@
 
   function stopAudio() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (currentTtsAudio) {
-      currentTtsAudio.pause();
-      if (typeof currentTtsAudio.currentTime === 'number') currentTtsAudio.currentTime = 0;
-    }
-    cleanupAudioElement();
+    if (currentAudio) currentAudio.pause();
+    currentAudio = null;
     resetAudioButton();
   }
 
   function resetAudioButton() {
-    cleanupAudioElement();
+    revokeAudioUrl();
     if (currentSpeakerBtn) {
       currentSpeakerBtn.disabled = false;
       currentSpeakerBtn.classList.remove('playing', 'loading');
       setButtonLabel(currentSpeakerBtn, 'Dengarkan');
     }
     currentSpeakerBtn = null;
-    currentTtsAudio = null;
-  }
-
-  function cleanupAudioElement() {
-    if (currentTtsAudio && currentTtsAudio instanceof HTMLAudioElement) {
-      currentTtsAudio.remove();
-    }
-    revokeAudioUrl();
-    currentTtsAudio = null;
+    currentAudio = null;
   }
 
   function revokeAudioUrl() {
-    if (currentTtsUrl) {
-      URL.revokeObjectURL(currentTtsUrl);
-      currentTtsUrl = null;
+    if (currentAudioUrl) {
+      URL.revokeObjectURL(currentAudioUrl);
+      currentAudioUrl = null;
     }
   }
 
