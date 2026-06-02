@@ -5,6 +5,35 @@
 (function () {
   'use strict';
 
+  try {
+    sessionStorage.removeItem("elevenlabs_disabled");
+    sessionStorage.removeItem("tts_disabled");
+    sessionStorage.removeItem("old_tts_error");
+    localStorage.removeItem("tts_cache");
+
+    if ("caches" in window) {
+      caches.keys().then(keys => {
+        keys.forEach(key => {
+          if (
+            key.toLowerCase().includes("makima") ||
+            key.toLowerCase().includes("ai") ||
+            key.toLowerCase().includes("tts")
+          ) {
+            caches.delete(key);
+          }
+        });
+      });
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(reg => reg.unregister());
+      });
+    }
+  } catch (e) {
+    console.warn("[CACHE] clear skipped:", e);
+  }
+
   const STORAGE_KEYS = {
     chats: 'makima_ai_chats',
     activeChatId: 'makima_ai_active_chat_id',
