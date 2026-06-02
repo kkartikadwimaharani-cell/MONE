@@ -13,6 +13,36 @@ function hidePreview() {
   if (card) card.classList.remove('show');
 }
 
+
+function closeAllDrawers() {
+  document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
+  document.querySelectorAll(".sidebar, .mobile-menu, .dashboard-drawer, .drawer, .nav-drawer")
+    .forEach(el => el.classList.remove("open", "active", "show"));
+  document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
+    .forEach(el => el.remove());
+
+  document.querySelectorAll(".drawer-overlay, .menu-overlay")
+    .forEach(el => {
+      el.classList.remove("active", "open", "show");
+      el.setAttribute("aria-hidden", "true");
+    });
+
+  var sideDrawer = document.getElementById("sideDrawer");
+  if (sideDrawer) sideDrawer.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+window.closeAllDrawers = closeAllDrawers;
+
+function setAppMode(mode) {
+  var isMakima = mode === "makima";
+  document.body.classList.toggle("makima-mode", isMakima);
+  document.body.classList.toggle("dashboard-mode", !isMakima);
+  if (!isMakima) document.body.classList.remove("makima-ai-body");
+}
+
+window.setAppMode = setAppMode;
+
 /* ── SIDE DRAWER ──────────────────────────────── */
 (function() {
   console.log('[MAKIMA] app init');
@@ -25,6 +55,9 @@ function hidePreview() {
     console.warn('[MAKIMA] localStorage unavailable:', e);
   }
 
+  closeAllDrawers();
+  setAppMode(currentView === 'makima-ai' ? 'makima' : 'dashboard');
+
   var btn = document.getElementById('hamburgerBtn');
   var drawer = document.getElementById('sideDrawer');
   var overlay = document.getElementById('drawerOverlay');
@@ -33,6 +66,9 @@ function hidePreview() {
   if (!btn || !drawer || !overlay) return;
 
   function openDrawer() {
+    if (document.body.classList.contains('makima-mode')) return;
+    closeAllDrawers();
+    document.body.classList.add('drawer-open');
     drawer.classList.add('active');
     overlay.classList.add('active');
     drawer.setAttribute('aria-hidden', 'false');
@@ -41,11 +77,7 @@ function hidePreview() {
   }
 
   function closeDrawer() {
-    drawer.classList.remove('active');
-    overlay.classList.remove('active');
-    drawer.setAttribute('aria-hidden', 'true');
-    overlay.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+    closeAllDrawers();
   }
 
   // Expose closeDrawer for use by navigation logic
@@ -62,7 +94,7 @@ function hidePreview() {
 
   if (closeBtn) {
     closeBtn.addEventListener('click', function() {
-      closeDrawer();
+      closeAllDrawers();
     });
   }
 
@@ -104,6 +136,7 @@ function hidePreview() {
 
   function navigateTo(view, skipPush) {
     if (!viewConfig[view]) return;
+    closeAllDrawers();
     var previousView = currentView;
     currentView = view;
 
@@ -132,6 +165,7 @@ function hidePreview() {
     }
 
     var config = viewConfig[view];
+    setAppMode(config.type === 'makima-ai' ? 'makima' : 'dashboard');
 
     if (config.type === 'main') {
       if (viewDownloader) viewDownloader.style.display = '';
@@ -164,7 +198,7 @@ function hidePreview() {
     updateDrawerActive(view);
 
     // Close drawer
-    if (window._closeDrawer) window._closeDrawer();
+    closeAllDrawers();
 
     // Scroll to top
     window.scrollTo(0, 0);
@@ -301,6 +335,7 @@ function hidePreview() {
   }
 
   function showMainView() {
+    closeAllDrawers();
     navigateTo('downloader');
   }
 
@@ -327,6 +362,11 @@ function hidePreview() {
 
   // Wire up drawer items using event delegation on the drawer (robust on mobile)
   var sideDrawer = document.getElementById('sideDrawer');
+  document.addEventListener('DOMContentLoaded', function() {
+    closeAllDrawers();
+    setAppMode(currentView === 'makima-ai' ? 'makima' : 'dashboard');
+  });
+
   if (sideDrawer) {
     sideDrawer.addEventListener('click', function(e) {
       var item = e.target.closest('.drawer-item[data-view]');
@@ -338,7 +378,7 @@ function hidePreview() {
       // If item has data-feature, use featureMap for Coming Soon
       if (feature && featureMap[feature]) {
         e.preventDefault();
-        if (window._closeDrawer) window._closeDrawer();
+        closeAllDrawers();
 
         var viewDownloader = document.getElementById('viewDownloader');
         var viewComingSoon = document.getElementById('viewComingSoon');
@@ -351,6 +391,7 @@ function hidePreview() {
         if (viewStore) viewStore.style.display = 'none';
         if (viewControl) viewControl.style.display = 'none';
         if (viewMakimaAI) viewMakimaAI.style.display = 'none';
+        setAppMode('dashboard');
         document.body.classList.remove('makima-ai-body');
 
         // Show header again when leaving AI view

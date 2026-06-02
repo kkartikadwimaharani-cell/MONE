@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/static/css/responsive.css?v=rollback_20260602_1">
   <link rel="stylesheet" href="/static/css/makima-ai.css?v=rollback_20260602_1">
 </head>
-<body>
+<body class="dashboard-mode">
 
   <div class="bg-overlay"></div>
   <div class="bg-vignette"></div>
@@ -26,7 +26,7 @@
 
 
   <!-- Top Navbar -->
-  <nav class="top-nav">
+  <nav class="top-nav main-dashboard">
     <div class="nav-left">
       <img class="nav-logo-img" src="/static/img/owner.png" alt="MIITOK logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand">MII NETWORK</span>
@@ -42,7 +42,7 @@
   <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
 
   <!-- Side Drawer -->
-  <aside class="side-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
+  <aside class="side-drawer dashboard-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
     <!-- Close Button -->
     <button class="drawer-close" id="drawerClose" aria-label="Close menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -201,7 +201,7 @@
     </header>
 
     <!-- Card -->
-    <div id="viewDownloader">
+    <div id="viewDownloader" class="main-dashboard">
     <div class="card">
 
       <!-- Quality -->
@@ -390,7 +390,7 @@
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
     <div id="viewStore" class="view-container" style="display:none"></div>
     <div id="viewControl" class="view-container" style="display:none"></div>
-    <div id="viewMakimaAI" class="view-container" style="display:none"></div>
+    <div id="viewMakimaAI" class="view-container makima-ai-page" style="display:none"></div>
 
   </div>
 

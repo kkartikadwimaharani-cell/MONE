@@ -846,3 +846,87 @@ body {
   position: relative;
   z-index: 1;
 }
+
+/* ── View isolation: dashboard and Makima must not overlap ── */
+body.makima-mode .main-dashboard,
+body.makima-mode .dashboard-drawer,
+body.makima-mode .mobile-menu,
+body.makima-mode .main-sidebar,
+body.makima-mode .drawer-overlay,
+body.makima-mode .top-nav {
+  display: none !important;
+}
+
+body.dashboard-mode .makima-ai-page,
+body.dashboard-mode .makima-access-page,
+body.dashboard-mode .makima-chat-page {
+  display: none !important;
+}
+
+body.makima-mode .page {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  align-items: stretch !important;
+}
+
+body.makima-mode #viewMakimaAI {
+  display: block !important;
+  width: 100% !important;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+body.dashboard-mode #viewMakimaAI {
+  display: none !important;
+}
+
+/* Keep dashboard drawer solid and readable on mobile. */
+.dashboard-drawer,
+.side-drawer.dashboard-drawer {
+  background: #050508 !important;
+  background-image: linear-gradient(180deg, rgba(12, 0, 0, 0.98), rgba(5, 5, 8, 0.99)) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+  border-right: 1px solid rgba(255, 0, 45, 0.38) !important;
+  box-shadow: 8px 0 42px rgba(0, 0, 0, 0.88), 0 0 22px rgba(180, 0, 0, 0.16) !important;
+}
+
+.dashboard-drawer::before,
+.side-drawer.dashboard-drawer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(5, 5, 8, 0.74), rgba(5, 5, 8, 0.94)), url('/static/img/makima-ai-profile.png') center / cover no-repeat !important;
+  opacity: 0.08 !important;
+  filter: brightness(0.35) contrast(1.05) !important;
+}
+
+.dashboard-drawer > *,
+.side-drawer.dashboard-drawer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-drawer .drawer-item,
+.dashboard-drawer .drawer-item-text,
+.dashboard-drawer .drawer-section-label,
+.dashboard-drawer .drawer-brand-title,
+.dashboard-drawer .drawer-brand-sub,
+.dashboard-drawer .drawer-hud-label,
+.dashboard-drawer .drawer-promo-title,
+.dashboard-drawer .drawer-promo-text {
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+}
+
+@media (max-width: 768px) {
+  .dashboard-drawer,
+  .side-drawer.dashboard-drawer {
+    width: min(84vw, 340px) !important;
+    max-width: min(84vw, 340px) !important;
+    background: #050508 !important;
+  }
+}
