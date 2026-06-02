@@ -1305,7 +1305,7 @@ body.dashboard-mode {
     width: min(84vw, 340px) !important;
     max-width: min(84vw, 340px) !important;
     height: 100dvh !important;
-    z-index: 1000 !important;
+    z-index: 99995 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     background: #050507 !important;
@@ -1404,7 +1404,7 @@ body.dashboard-mode {
     width: 84vw !important;
     max-width: 340px !important;
     height: 100dvh !important;
-    z-index: 1000 !important;
+    z-index: 99995 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     background: #050507 !important;
@@ -1672,5 +1672,306 @@ body.dashboard-mode {
 
   .drawer-overlay {
     display: block !important;
+  }
+}
+
+/* ── FINAL MOBILE DRAWER POLISH (2026-06-02) ─────────────
+   Keep dashboard/downloader/API logic untouched; this is layout-only. */
+.side-drawer.mobile-drawer {
+  padding-top: calc(18px + env(safe-area-inset-top)) !important;
+}
+
+.drawer-close,
+.close-menu,
+.mobile-drawer .close-btn,
+.mobile-drawer .drawer-close {
+  position: sticky !important;
+  top: calc(12px + env(safe-area-inset-top)) !important;
+  right: auto !important;
+  margin-left: auto !important;
+  margin-right: 16px !important;
+  margin-bottom: 12px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 100000 !important;
+  transform: none !important;
+  background: rgba(10, 10, 14, .96) !important;
+  border: 1px solid rgba(255, 0, 45, .42) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .38), 0 0 14px rgba(255, 0, 45, .20) !important;
+}
+
+.drawer-close svg,
+.mobile-drawer .drawer-close svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+.drawer-item,
+.menu-item,
+.nav-item {
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  color: rgba(255, 255, 255, .9) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.drawer-item-text,
+.menu-item .label,
+.nav-item .label {
+  flex: 1 !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.drawer-item-badge,
+.menu-item .badge,
+.nav-item .badge {
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.drawer-item.active,
+.menu-item.active,
+.nav-item.active {
+  background: rgba(180, 0, 25, 0.22) !important;
+  border-color: rgba(255, 0, 45, 0.35) !important;
+}
+
+.drawer-item-icon {
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.drawer-item-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.makima-menu-avatar,
+.makima-sidebar-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  object-fit: cover !important;
+  border: 1px solid rgba(255, 0, 45, .55) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 45, .35) !important;
+  flex-shrink: 0 !important;
+  background: none !important;
+}
+
+@media (max-width: 900px) {
+  body {
+    overflow-x: hidden !important;
+  }
+
+  .desktop-sidebar,
+  .sidebar-permanent,
+  .main-sidebar {
+    display: none !important;
+  }
+
+  .main-content,
+  .dashboard-content,
+  .page-content,
+  .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    transform: none !important;
+  }
+
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .mobile-drawer,
+  .side-drawer.mobile-drawer {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: min(86vw, 360px) !important;
+    max-width: 360px !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding: calc(18px + env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom)) !important;
+    z-index: 99995 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #050507 !important;
+    background-image: none !important;
+    border-right: 1px solid rgba(255, 0, 45, 0.25) !important;
+    box-shadow: 10px 0 34px rgba(0, 0, 0, .58) !important;
+    transition: left .22s ease !important;
+    transform: none !important;
+  }
+
+  .mobile-drawer.open,
+  .side-drawer.mobile-drawer.open,
+  .side-drawer.mobile-drawer.active {
+    left: 0 !important;
+    transform: none !important;
+  }
+
+  .mobile-drawer.active:not(.open),
+  .mobile-drawer.show:not(.open) {
+    left: -100% !important;
+    transform: none !important;
+  }
+
+  .mobile-drawer .drawer-header,
+  .mobile-drawer .drawer-footer {
+    display: block !important;
+  }
+
+  .mobile-drawer .drawer-header {
+    order: 1 !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid rgba(255, 0, 45, .16) !important;
+  }
+
+  .mobile-drawer .drawer-profile {
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-drawer .drawer-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-drawer .drawer-brand-title {
+    font-size: 1.12rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .mobile-drawer .drawer-brand-sub {
+    font-size: .62rem !important;
+    letter-spacing: .12em !important;
+  }
+
+  .mobile-drawer .drawer-badges {
+    gap: 8px !important;
+  }
+
+  .mobile-drawer .drawer-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .mobile-drawer .drawer-close {
+    order: 0 !important;
+  }
+
+  .mobile-drawer .drawer-section-main {
+    order: 2 !important;
+  }
+
+  .mobile-drawer .drawer-section-promo {
+    order: 3 !important;
+  }
+
+  .mobile-drawer .drawer-section-system {
+    order: 4 !important;
+  }
+
+  .mobile-drawer .drawer-section-label {
+    margin: 22px 0 0 !important;
+    padding-left: 4px !important;
+    line-height: 1 !important;
+  }
+
+  .mobile-drawer .drawer-item {
+    min-height: 48px !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
+  .mobile-drawer .drawer-separator,
+  .mobile-drawer .drawer-promo-card,
+  .mobile-drawer .drawer-hud-card {
+    display: none !important;
+  }
+
+  .mobile-drawer .drawer-footer {
+    order: 5 !important;
+    padding: 22px 0 0 !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    text-align: center !important;
+  }
+
+  .mobile-drawer .drawer-footer-brand {
+    display: none !important;
+  }
+
+  .mobile-drawer .drawer-footer-sub {
+    display: block !important;
+    font-size: .62rem !important;
+    letter-spacing: .22em !important;
+    color: rgba(255, 255, 255, .46) !important;
+  }
+
+  .drawer-backdrop,
+  .drawer-overlay.drawer-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99990 !important;
+    background: rgba(0, 0, 0, .68) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .drawer-backdrop.open,
+  .drawer-backdrop.active,
+  .drawer-overlay.drawer-backdrop.open,
+  .drawer-overlay.drawer-backdrop.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-drawer,
+  .drawer-backdrop,
+  .drawer-overlay.drawer-backdrop {
+    display: none !important;
+  }
+
+  .desktop-sidebar {
+    display: block;
+  }
+
+  .hamburger-btn {
+    display: none !important;
   }
 }
