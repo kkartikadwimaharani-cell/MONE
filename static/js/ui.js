@@ -39,24 +39,22 @@ function resetDashboardDrawerState() {
 }
 
 function closeDashboardDrawer() {
-  document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
+  const drawer = document.querySelector(".dashboard-drawer");
+  if (drawer) {
+    drawer.classList.remove("open");
+    drawer.setAttribute("aria-hidden", "true");
+  }
 
-  document.querySelectorAll(".dashboard-drawer, .mobile-menu, .main-sidebar, .drawer")
-    .forEach(function(el) {
-      el.classList.remove("open", "active", "show");
-      el.style.removeProperty("left");
-      el.style.removeProperty("transform");
-      el.setAttribute("aria-hidden", "true");
-    });
+  document.body.classList.remove("drawer-open", "menu-open");
 
-  document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
+  document.querySelectorAll(".drawer-backdrop, .menu-backdrop")
     .forEach(function(el) { el.remove(); });
 
-  document.querySelectorAll(".drawer-overlay, .menu-overlay")
-    .forEach(function(el) {
-      el.classList.remove("active", "open", "show");
-      el.setAttribute("aria-hidden", "true");
-    });
+  var overlay = document.getElementById('drawerOverlay');
+  if (overlay) {
+    overlay.classList.remove('active', 'open', 'show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
 
   document.body.style.overflow = "";
 }
@@ -102,25 +100,37 @@ window.setAppMode = setAppMode;
 
   function openDrawer() {
     if (document.body.classList.contains('makima-mode')) return;
-    closeAllDrawers();
     document.body.classList.add('drawer-open');
     drawer.classList.add('open');
+    drawer.classList.remove('active', 'show');
+    if (!document.querySelector('.drawer-backdrop') && !overlay) {
+      var backdrop = document.createElement('div');
+      backdrop.className = 'drawer-backdrop';
+      document.body.appendChild(backdrop);
+    }
     overlay.classList.add('active');
+    overlay.classList.remove('open', 'show');
     drawer.setAttribute('aria-hidden', 'false');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
   }
 
   function closeDrawer() {
-    closeAllDrawers();
+    closeDashboardDrawer();
+  }
+
+  function toggleDrawer() {
+    if (drawer.classList.contains('open')) closeDrawer();
+    else openDrawer();
   }
 
   // Expose closeDrawer for use by navigation logic
   window._closeDrawer = closeDrawer;
 
   btn.addEventListener('click', function(e) {
+    e.preventDefault();
     e.stopPropagation();
-    openDrawer();
+    toggleDrawer();
   });
 
   overlay.addEventListener('click', function() {
@@ -129,7 +139,7 @@ window.setAppMode = setAppMode;
 
   if (closeBtn) {
     closeBtn.addEventListener('click', function() {
-      closeAllDrawers();
+      closeDashboardDrawer();
     });
   }
 
@@ -157,7 +167,7 @@ window.setAppMode = setAppMode;
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
-    'makima-ai': { type: 'coming-soon', title: 'MAKIMA AI', badge: 'MAINTENANCE', description: 'MAKIMA AI sedang diperbaiki.' },
+    'makima-ai': { type: 'makima-ai' },
     'hinter-mt': { type: 'coming-soon', title: 'HINTER MT', badge: 'SOON', description: 'HINTER MT belum tersedia.' },
     'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
@@ -390,6 +400,22 @@ window.setAppMode = setAppMode;
     }
   });
 
+  function showDashboardToast(message) {
+    var old = document.querySelector('.dashboard-toast');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.className = 'dashboard-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() { toast.classList.add('show'); });
+    window.setTimeout(function() {
+      toast.classList.remove('show');
+      window.setTimeout(function() { if (toast.parentNode) toast.remove(); }, 220);
+    }, 2200);
+  }
+
+  window.showDashboardToast = showDashboardToast;
+
   // Feature mapping for Coming Soon items
   var featureMap = {
     'wa-status': { title: 'WA STATUS CONVERTER', description: 'Convert video to WhatsApp Status ready format.' },
@@ -420,7 +446,12 @@ window.setAppMode = setAppMode;
       // If item has data-feature, use featureMap for Coming Soon
       if (feature && featureMap[feature]) {
         e.preventDefault();
-        closeAllDrawers();
+        closeDashboardDrawer();
+
+        if (feature === 'hinter-mt') {
+          showDashboardToast('HINTER MT belum tersedia.');
+          return;
+        }
 
         var viewDownloader = document.getElementById('viewDownloader');
         var viewComingSoon = document.getElementById('viewComingSoon');
