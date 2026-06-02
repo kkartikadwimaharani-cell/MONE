@@ -707,9 +707,8 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(rgba(5, 5, 8, 0.42), rgba(5, 5, 8, 0.88)), url('/static/img/makima-ai-profile.png') center / cover no-repeat;
-  opacity: 0.10 !important;
-  filter: brightness(0.45);
+  background: linear-gradient(rgba(5, 5, 8, 0.30), rgba(5, 5, 8, 0.82));
+  opacity: 0.32 !important;
 }
 
 .drawer-overlay {
@@ -772,13 +771,16 @@ body {
   margin: 0 0 18px;
 }
 
-.mkai-access-avatar {
-  width: 76px;
-  height: 76px;
+.mkai-access-avatar,
+.makima-access-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
   object-fit: cover;
-  border-radius: 50%;
   border: 1px solid rgba(255, 0, 45, 0.45);
-  margin-bottom: 14px;
+  box-shadow: 0 0 24px rgba(255, 0, 45, 0.28);
+  display: block;
+  margin: 0 auto 14px;
 }
 
 .mkai-access-title {
@@ -848,10 +850,12 @@ body {
 }
 
 /* ── View isolation: dashboard and Makima must not overlap ── */
-body.makima-mode .main-dashboard,
+body.makima-mode .dashboard-page,
 body.makima-mode .dashboard-drawer,
-body.makima-mode .mobile-menu,
+body.makima-mode .dashboard-header,
 body.makima-mode .main-sidebar,
+body.makima-mode .mobile-menu,
+body.makima-mode .main-dashboard,
 body.makima-mode .drawer-overlay,
 body.makima-mode .top-nav {
   display: none !important;
@@ -899,9 +903,8 @@ body.dashboard-mode #viewMakimaAI {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(rgba(5, 5, 8, 0.74), rgba(5, 5, 8, 0.94)), url('/static/img/makima-ai-profile.png') center / cover no-repeat !important;
-  opacity: 0.08 !important;
-  filter: brightness(0.35) contrast(1.05) !important;
+  background: linear-gradient(rgba(5, 5, 8, 0.54), rgba(5, 5, 8, 0.90)) !important;
+  opacity: 0.16 !important;
 }
 
 .dashboard-drawer > *,
