@@ -1715,18 +1715,23 @@ def _add_no_store_headers(response):
     return response
 
 
+def _safe_secret_fingerprint(value):
+    """Return a short stable fingerprint for env diagnostics without leaking secrets."""
+    if not value:
+        return ''
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()[:12]
+
+
 @app.route('/api/tts-status', methods=['GET'])
 def tts_status():
     """Safe ElevenLabs TTS env fingerprint without exposing full secrets."""
-    api_key = os.getenv('ELEVENLABS_API_KEY') or ''
-    voice_id = os.getenv('ELEVENLABS_VOICE_ID') or ''
+    api_key = (os.getenv('ELEVENLABS_API_KEY') or '').strip()
+    voice_id = (os.getenv('ELEVENLABS_VOICE_ID') or '').strip()
     response = jsonify({
         'elevenlabs_key_exists': bool(api_key),
         'elevenlabs_voice_id_exists': bool(voice_id),
-        'key_prefix': api_key[:6],
-        'key_suffix': api_key[-6:],
-        'voice_prefix': voice_id[:6],
-        'voice_suffix': voice_id[-6:]
+        'key_fingerprint': _safe_secret_fingerprint(api_key),
+        'voice_fingerprint': _safe_secret_fingerprint(voice_id)
     })
     return _add_no_store_headers(response)
 
@@ -1742,8 +1747,9 @@ def tts():
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
 
-    api_key = os.environ.get('ELEVENLABS_API_KEY')
-    voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
+    # Railway injects ElevenLabs credentials through env vars; do not use any repo fallback.
+    api_key = (os.environ.get('ELEVENLABS_API_KEY') or '').strip()
+    voice_id = (os.environ.get('ELEVENLABS_VOICE_ID') or '').strip()
 
     print("[TTS] text length:", len(text))
     print("[TTS] key exists:", str(bool(api_key)).lower())
@@ -1791,9 +1797,19 @@ def tts():
         if not resp.ok:
             body_preview = resp.text[:300]
             app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, body_preview)
+
+            if resp.status_code == 401:
+                return jsonify({
+                    'error': 'ELEVENLABS_401_FALLBACK_BROWSER_TTS',
+                    'status': 401,
+                    'fallback': 'browser_tts',
+                    'detail': 'ElevenLabs authorization rejected the Railway env key.'
+                }), 502
+
             return jsonify({
                 'error': 'ELEVENLABS_FAILED',
                 'status': resp.status_code,
+                'fallback': 'browser_tts',
                 'detail': body_preview
             }), 502
 
@@ -1804,6 +1820,7 @@ def tts():
         return jsonify({
             'error': 'ELEVENLABS_FAILED',
             'status': 502,
+            'fallback': 'browser_tts',
             'detail': str(e)[:300]
         }), 502
 
