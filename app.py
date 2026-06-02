@@ -1746,8 +1746,8 @@ def tts():
     voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
 
     print("[TTS] text length:", len(text))
-    print("[TTS] key exists:", bool(api_key))
-    print("[TTS] voice exists:", bool(voice_id))
+    print("[TTS] key exists:", str(bool(api_key)).lower())
+    print("[TTS] voice exists:", str(bool(voice_id)).lower())
     print("[TTS] voice id safe:", voice_id[:4] if voice_id else '', voice_id[-4:] if voice_id else '')
 
     if not text:
@@ -1785,7 +1785,7 @@ def tts():
         )
 
         print("[TTS] elevenlabs status:", resp.status_code)
-        print("[TTS] elevenlabs content-type:", resp.headers.get("content-type"))
+        print("[TTS] content-type:", resp.headers.get("content-type"))
         print("[TTS] elevenlabs body preview:", resp.text[:300] if not resp.ok else "AUDIO_OK")
 
         if not resp.ok:
