@@ -33,24 +33,6 @@
   let thinkingBubble = null;
   let storageReady = false;
 
-  // Clear stale TTS disable/cache flags from older frontend builds.
-  try { window.sessionStorage.removeItem('elevenlabs_disabled'); } catch (e) {}
-  try { window.sessionStorage.removeItem('tts_disabled'); } catch (e) {}
-  try { window.sessionStorage.removeItem('old_tts_error'); } catch (e) {}
-  try { window.localStorage.removeItem('tts_cache'); } catch (e) {}
-
-  // Temporary cache reset/versioning hotfix.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-      .then(regs => regs.forEach(reg => reg.unregister()))
-      .catch(() => {});
-  }
-  if ('caches' in window) {
-    caches.keys()
-      .then(keys => keys.forEach(key => caches.delete(key)))
-      .catch(() => {});
-  }
-
   function safeJsonParse(value, fallback) {
     try {
       return value ? JSON.parse(value) : fallback;
@@ -587,7 +569,11 @@
       console.log('[TTS] calling /api/tts');
       const res = await fetch('/api/tts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        },
         body: JSON.stringify({ text: assistantText })
       });
 
