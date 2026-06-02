@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>MiiTok — TikTok Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/base.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/layout.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/components.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/animations.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=rollback_20260602_1">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=rollback_20260602_1">
+  <link rel="stylesheet" href="/static/css/variables.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/base.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/layout.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/components.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/animations.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=20260602_menu_fix_1">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260602_menu_fix_1">
 </head>
 <body>
 
@@ -32,7 +35,7 @@
       <span class="nav-brand">MII NETWORK</span>
     </div>
     <div class="nav-right">
-      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open navigation menu">
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sideDrawer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </div>
@@ -422,21 +425,29 @@
 
   <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => {
+        registrations.forEach(reg => reg.unregister());
+        console.log('[CACHE] Service workers unregistered');
+      });
   }
+
   if ('caches' in window) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key));
+      console.log('[CACHE] Cache storage cleared');
+    });
   }
   </script>
-  <script src="/static/js/config.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/ui.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/downloader.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/photo.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/effects.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/main.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/makima-ai.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/analytics.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/ghost-scanner.js?v=rollback_20260602_1"></script>
-  <script src="/static/js/protection.js?v=rollback_20260602_1"></script>
+  <script src="/static/js/config.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/ui.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/downloader.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/photo.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/effects.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/main.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/makima-ai.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/analytics.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/ghost-scanner.js?v=20260602_menu_fix_1"></script>
+  <script src="/static/js/protection.js?v=20260602_menu_fix_1"></script>
 </body>
 </html>

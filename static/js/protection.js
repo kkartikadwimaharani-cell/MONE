@@ -20,14 +20,21 @@ document.addEventListener("touchstart", function(e) {
   }
 }, { passive: true });
 
-// Disable offline/PWA - Unregister all service workers
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+// Temporarily disable service workers so fresh CSS/JS assets load immediately.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then(registrations => {
+      registrations.forEach(reg => reg.unregister());
+      console.log('[CACHE] Service workers unregistered');
+    });
 }
 
-// Clear all caches
-if ("caches" in window) {
-  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+// Temporarily clear Cache Storage to avoid mixed old/new assets.
+if ('caches' in window) {
+  caches.keys().then(keys => {
+    keys.forEach(key => caches.delete(key));
+    console.log('[CACHE] Cache storage cleared');
+  });
 }
 
 // Offline detection overlay
