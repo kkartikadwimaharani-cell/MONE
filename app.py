@@ -1519,7 +1519,7 @@ def ai_chat():
     history = data.get('history', [])
     if not isinstance(history, list):
         history = []
-    recent_history = history[-20:] if len(history) > 20 else history
+    recent_history = history[-12:] if len(history) > 12 else history
 
     # Validate total history size to prevent oversized payloads
     MAX_HISTORY_CHARS = 40000
@@ -1708,24 +1708,24 @@ def test_env():
 @app.route('/api/tts', methods=['POST'])
 def tts():
     """ElevenLabs Text-to-Speech — dipanggil saat user klik tombol speaker."""
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(ip, _rate_store_tts, 5):
-        return jsonify({'error': 'Terlalu banyak permintaan.'}), 429
-
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
 
     if not text:
         return jsonify({'error': 'Teks kosong.'}), 400
 
-    # Batasi panjang teks agar hemat kredit ElevenLabs
-    if len(text) > 1000:
-        text = text[:1000]
-
     api_key = os.environ.get('ELEVENLABS_API_KEY')
     voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
     if not api_key or not voice_id:
         return jsonify({'error': 'TTS belum dikonfigurasi.'}), 503
+
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(ip, _rate_store_tts, 5):
+        return jsonify({'error': 'Terlalu banyak permintaan.'}), 429
+
+    # Batasi panjang teks agar hemat kredit ElevenLabs
+    if len(text) > 1000:
+        text = text[:1000]
 
     try:
         resp = requests_lib.post(
@@ -1739,9 +1739,9 @@ def tts():
                 'text': text,
                 'model_id': 'eleven_multilingual_v2',
                 'voice_settings': {
-                    'stability': 0.5,
-                    'similarity_boost': 0.75,
-                    'style': 0.0,
+                    'stability': 0.45,
+                    'similarity_boost': 0.8,
+                    'style': 0.35,
                     'use_speaker_boost': True
                 }
             },
