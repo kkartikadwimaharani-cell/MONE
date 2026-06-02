@@ -1478,3 +1478,199 @@ body.dashboard-mode {
     display: none !important;
   }
 }
+
+/* ── FINAL RESTORED DASHBOARD LAYOUT OVERRIDE ─────────────
+   Keep the old single drawer layout: no permanent mobile sidebar,
+   no cloned menu, no content shrink. */
+.side-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 82vw !important;
+  max-width: 380px !important;
+  height: 100dvh !important;
+  z-index: 99995 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  transform: translateX(-100%) !important;
+  transition: transform .22s ease !important;
+  background: #050507 !important;
+  background-image: none !important;
+  border-right: 1px solid rgba(255, 0, 45, .25) !important;
+  box-shadow: 2px 0 24px rgba(0, 0, 0, .55) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.side-drawer.active,
+.side-drawer.open {
+  left: 0 !important;
+  transform: translateX(0) !important;
+}
+
+.side-drawer::before,
+.side-drawer::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+.drawer-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99990 !important;
+  display: block !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  background: rgba(0, 0, 0, .62) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.drawer-overlay.active,
+.drawer-overlay.open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.page,
+.main-content,
+.dashboard-content,
+.page-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  transform: none !important;
+}
+
+.hamburger-btn {
+  display: flex !important;
+  position: relative !important;
+  z-index: 100001 !important;
+}
+
+.desktop-sidebar,
+.sidebar-permanent,
+.main-sidebar,
+.mobile-drawer,
+.drawer-backdrop {
+  display: none !important;
+}
+
+.makima-menu-avatar,
+.makima-sidebar-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+  background: none !important;
+}
+
+.dashboard-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 100010;
+  max-width: min(92vw, 360px);
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 0, 45, .35);
+  border-radius: 999px;
+  background: rgba(5, 5, 7, .96);
+  color: rgba(255, 255, 255, .94);
+  font-family: var(--font-ui);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+
+.dashboard-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 900px) {
+  .desktop-sidebar,
+  .sidebar-permanent,
+  .main-sidebar {
+    display: none !important;
+  }
+
+  .main-content,
+  .dashboard-content,
+  .page-content,
+  .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    transform: none !important;
+  }
+
+  .side-drawer {
+    left: 0 !important;
+    width: 84vw !important;
+    max-width: 340px !important;
+    height: 100dvh !important;
+    z-index: 99995 !important;
+    background: #050507 !important;
+    overflow-y: auto !important;
+    transition: transform .22s ease !important;
+    transform: translateX(-100%) !important;
+    box-shadow: none !important;
+  }
+
+  .side-drawer.active,
+  .side-drawer.open {
+    transform: translateX(0) !important;
+  }
+
+  .side-drawer .drawer-header,
+  .side-drawer .drawer-promo-card,
+  .side-drawer .drawer-hud-card,
+  .side-drawer .drawer-footer,
+  .side-drawer .drawer-separator {
+    display: none !important;
+  }
+
+  .side-drawer .drawer-section {
+    padding: 14px 14px 4px !important;
+  }
+
+  .side-drawer .drawer-section:first-of-type {
+    padding-top: 56px !important;
+  }
+
+  .drawer-overlay {
+    z-index: 99990 !important;
+    background: rgba(0, 0, 0, .62) !important;
+  }
+
+  .orb-container,
+  .bg-overlay {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-drawer,
+  .drawer-backdrop {
+    display: none !important;
+  }
+
+  .drawer-overlay {
+    display: block !important;
+  }
+}
