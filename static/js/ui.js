@@ -2,17 +2,29 @@
 
 function setStatus(msg, type) {
   var el = document.getElementById('status');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'status' + (type ? ' ' + type : '');
 }
 
 function hidePreview() {
   previewData = null;
-  document.getElementById('previewCard').classList.remove('show');
+  var card = document.getElementById('previewCard');
+  if (card) card.classList.remove('show');
 }
 
 /* ── SIDE DRAWER ──────────────────────────────── */
 (function() {
+  console.log('[MAKIMA] app init');
+  console.log('[MAKIMA] page:', location.pathname);
+  try {
+    window.localStorage.setItem('__makima_storage_probe', '1');
+    window.localStorage.removeItem('__makima_storage_probe');
+    console.log('[MAKIMA] localStorage ready');
+  } catch (e) {
+    console.warn('[MAKIMA] localStorage unavailable:', e);
+  }
+
   var btn = document.getElementById('hamburgerBtn');
   var drawer = document.getElementById('sideDrawer');
   var overlay = document.getElementById('drawerOverlay');
@@ -173,9 +185,12 @@ function hidePreview() {
       '<button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>' +
       '</div>';
     // Use textContent to avoid XSS from any future dynamic values
-    container.querySelector('.coming-soon-title').textContent = title;
-    container.querySelector('.coming-soon-badge').textContent = badge;
-    container.querySelector('.coming-soon-subtitle').textContent = description;
+    var titleEl = container.querySelector('.coming-soon-title');
+    var badgeEl = container.querySelector('.coming-soon-badge');
+    var subtitleEl = container.querySelector('.coming-soon-subtitle');
+    if (titleEl) titleEl.textContent = title;
+    if (badgeEl) badgeEl.textContent = badge;
+    if (subtitleEl) subtitleEl.textContent = description;
   }
 
   function renderStore() {

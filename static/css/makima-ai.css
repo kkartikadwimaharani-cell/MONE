@@ -677,3 +677,172 @@ body,
     padding-right: 12px;
   }
 }
+
+/* ── HOTFIX: dashboard/sidebar readability and safe mobile drawer ── */
+html,
+body {
+  overflow-x: hidden !important;
+}
+
+.sidebar,
+.mobile-menu,
+.dashboard-drawer,
+.side-drawer {
+  width: min(82vw, 340px) !important;
+  max-width: min(82vw, 340px) !important;
+  background: rgba(5, 5, 8, 0.94) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  border-right: 1px solid rgba(255, 0, 45, 0.22) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+  overflow-x: hidden !important;
+}
+
+.sidebar::before,
+.mobile-menu::before,
+.dashboard-drawer::before,
+.side-drawer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(5, 5, 8, 0.42), rgba(5, 5, 8, 0.88)), url('/static/img/makima-ai-profile.png') center / cover no-repeat;
+  opacity: 0.10 !important;
+  filter: brightness(0.45);
+}
+
+.drawer-overlay {
+  background: rgba(0, 0, 0, 0.76) !important;
+}
+
+.drawer-close {
+  display: flex !important;
+  background: rgba(5, 5, 8, 0.82) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.drawer-item,
+.drawer-item-text,
+.drawer-section-label,
+.drawer-brand-title,
+.drawer-brand-sub,
+.drawer-hud-label,
+.drawer-promo-title,
+.drawer-promo-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.drawer-item {
+  min-width: 0 !important;
+}
+
+.drawer-item-text {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ── HOTFIX: MAKIMA AI password access page ── */
+.mkai-access-wrap {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: radial-gradient(circle at top, rgba(115, 0, 18, 0.34), rgba(5, 5, 8, 0.98) 52%, #050508 100%);
+  color: rgba(255, 255, 255, 0.92);
+  overflow-x: hidden;
+}
+
+.mkai-access-card {
+  width: min(100%, 420px);
+  padding: 22px;
+  border: 1px solid rgba(255, 0, 45, 0.28);
+  border-radius: 22px;
+  background: rgba(5, 5, 8, 0.88);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52);
+  text-align: center;
+}
+
+.mkai-access-back {
+  margin: 0 0 18px;
+}
+
+.mkai-access-avatar {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 0, 45, 0.45);
+  margin-bottom: 14px;
+}
+
+.mkai-access-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.mkai-access-sub,
+.mkai-access-note {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.86rem;
+}
+
+.mkai-access-form {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.mkai-access-input {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 0, 45, 0.28);
+  background: rgba(0, 0, 0, 0.36);
+  color: #fff;
+  padding: 0 14px;
+  outline: none;
+}
+
+.mkai-access-submit {
+  min-height: 46px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(180, 0, 32, 0.95), rgba(96, 0, 18, 0.95));
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .sidebar,
+  .mobile-menu,
+  .dashboard-drawer,
+  .side-drawer {
+    width: min(82vw, 340px) !important;
+    max-width: min(82vw, 340px) !important;
+  }
+
+  .drawer-overlay.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+.side-drawer > *,
+.sidebar > *,
+.mobile-menu > *,
+.dashboard-drawer > * {
+  position: relative;
+  z-index: 1;
+}
