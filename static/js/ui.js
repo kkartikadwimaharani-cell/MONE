@@ -14,32 +14,46 @@ function hidePreview() {
 }
 
 
-function closeDashboardDrawer() {
-  document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
+function resetDashboardDrawerState() {
+  document.body.classList.remove("menu-open", "drawer-open", "sidebar-open", "makima-mode");
+  document.body.classList.add("dashboard-mode");
 
-  document.querySelectorAll(
-    ".dashboard-drawer, .mobile-menu, .main-sidebar, .drawer-backdrop, .menu-backdrop, .overlay"
-  ).forEach(el => {
-    el.classList.remove("open", "active", "show");
-    if (
-      el.classList.contains("drawer-backdrop") ||
-      el.classList.contains("menu-backdrop") ||
-      el.classList.contains("overlay")
-    ) {
-      el.remove();
-    } else {
-      el.setAttribute("aria-hidden", "true");
-    }
-  });
-
-  document.querySelectorAll(".sidebar, .drawer, .nav-drawer, .side-drawer")
-    .forEach(el => {
+  document.querySelectorAll(".dashboard-drawer, .mobile-menu, .main-sidebar, .drawer")
+    .forEach(function(el) {
       el.classList.remove("open", "active", "show");
+      el.style.removeProperty("left");
+      el.style.removeProperty("transform");
       el.setAttribute("aria-hidden", "true");
     });
 
+  document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
+    .forEach(function(el) { el.remove(); });
+
+  var drawerOverlay = document.getElementById('drawerOverlay');
+  if (drawerOverlay) {
+    drawerOverlay.classList.remove('open', 'active', 'show');
+    drawerOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  document.body.style.overflow = "";
+}
+
+function closeDashboardDrawer() {
+  document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
+
+  document.querySelectorAll(".dashboard-drawer, .mobile-menu, .main-sidebar, .drawer")
+    .forEach(function(el) {
+      el.classList.remove("open", "active", "show");
+      el.style.removeProperty("left");
+      el.style.removeProperty("transform");
+      el.setAttribute("aria-hidden", "true");
+    });
+
+  document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
+    .forEach(function(el) { el.remove(); });
+
   document.querySelectorAll(".drawer-overlay, .menu-overlay")
-    .forEach(el => {
+    .forEach(function(el) {
       el.classList.remove("active", "open", "show");
       el.setAttribute("aria-hidden", "true");
     });
@@ -51,6 +65,7 @@ function closeAllDrawers() {
   closeDashboardDrawer();
 }
 
+window.resetDashboardDrawerState = resetDashboardDrawerState;
 window.closeDashboardDrawer = closeDashboardDrawer;
 window.closeAllDrawers = closeAllDrawers;
 
@@ -75,8 +90,8 @@ window.setAppMode = setAppMode;
     console.warn('[MAKIMA] localStorage unavailable:', e);
   }
 
-  closeAllDrawers();
-  setAppMode(currentView === 'makima-ai' ? 'makima' : 'dashboard');
+  resetDashboardDrawerState();
+  setAppMode('dashboard');
 
   var btn = document.getElementById('hamburgerBtn');
   var drawer = document.getElementById('sideDrawer');
@@ -89,7 +104,7 @@ window.setAppMode = setAppMode;
     if (document.body.classList.contains('makima-mode')) return;
     closeAllDrawers();
     document.body.classList.add('drawer-open');
-    drawer.classList.add('active');
+    drawer.classList.add('open');
     overlay.classList.add('active');
     drawer.setAttribute('aria-hidden', 'false');
     overlay.setAttribute('aria-hidden', 'false');
@@ -119,7 +134,7 @@ window.setAppMode = setAppMode;
   }
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && drawer.classList.contains('active')) {
+    if (e.key === 'Escape' && (drawer.classList.contains('open') || drawer.classList.contains('active'))) {
       closeDrawer();
     }
   });
@@ -142,7 +157,7 @@ window.setAppMode = setAppMode;
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
-    'makima-ai': { type: 'makima-ai' },
+    'makima-ai': { type: 'coming-soon', title: 'MAKIMA AI', badge: 'MAINTENANCE', description: 'MAKIMA AI sedang diperbaiki.' },
     'hinter-mt': { type: 'coming-soon', title: 'HINTER MT', badge: 'SOON', description: 'HINTER MT belum tersedia.' },
     'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
@@ -386,14 +401,18 @@ window.setAppMode = setAppMode;
   // Wire up drawer items using event delegation on the drawer (robust on mobile)
   var sideDrawer = document.getElementById('sideDrawer');
   document.addEventListener('DOMContentLoaded', function() {
-    closeAllDrawers();
-    setAppMode(currentView === 'makima-ai' ? 'makima' : 'dashboard');
+    resetDashboardDrawerState();
+    setAppMode('dashboard');
   });
 
   if (sideDrawer) {
     sideDrawer.addEventListener('click', function(e) {
+      var anyItem = e.target.closest('.drawer-item');
       var item = e.target.closest('.drawer-item[data-view]');
-      if (!item) return;
+      if (!item) {
+        if (anyItem) closeAllDrawers();
+        return;
+      }
 
       var feature = item.getAttribute('data-feature');
       var view = item.getAttribute('data-view');
