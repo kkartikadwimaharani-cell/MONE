@@ -1052,3 +1052,129 @@ body.dashboard-mode .makima-ai-page {
   color: rgba(255, 255, 255, 0.94) !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.86) !important;
 }
+
+/* ── HOME / DASHBOARD DRAWER STABILITY FIX ────── */
+html,
+body {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+body.dashboard-mode {
+  overflow-x: hidden !important;
+}
+
+.dashboard-drawer,
+.mobile-menu,
+.main-sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 82vw !important;
+  max-width: 340px !important;
+  height: 100dvh !important;
+  z-index: 1000 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  transition: left .25s ease !important;
+  transform: none !important;
+  background: rgba(5, 5, 8, 0.96) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  border-right: 1px solid rgba(255, 0, 45, 0.22) !important;
+  isolation: isolate !important;
+}
+
+.dashboard-drawer.open,
+.mobile-menu.open,
+.main-sidebar.open {
+  left: 0 !important;
+  transform: none !important;
+}
+
+.dashboard-drawer.active:not(.open),
+.mobile-menu.active:not(.open),
+.main-sidebar.active:not(.open),
+.side-drawer.active:not(.open) {
+  left: -100% !important;
+  transform: none !important;
+}
+
+.drawer-overlay {
+  z-index: 999 !important;
+  background: rgba(0, 0, 0, 0.66) !important;
+}
+
+.drawer-overlay.active,
+.drawer-overlay.open,
+.drawer-overlay.show {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.dashboard-drawer::before,
+.mobile-menu::before,
+.main-sidebar::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-image: var(--makima-bg) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  opacity: 0.08 !important;
+  filter: brightness(0.35) !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+.dashboard-drawer > *,
+.mobile-menu > *,
+.main-sidebar > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.menu-item,
+.nav-item,
+.drawer-item {
+  color: rgba(255,255,255,0.9) !important;
+  background: rgba(0,0,0,0.18) !important;
+}
+
+.menu-item.active,
+.nav-item.active,
+.drawer-item.active {
+  background: rgba(180, 0, 25, 0.22) !important;
+  border: 1px solid rgba(255, 0, 45, 0.35) !important;
+}
+
+.drawer-item {
+  gap: 10px !important;
+  min-height: 40px !important;
+}
+
+.drawer-item-icon {
+  color: rgba(255,255,255,0.92) !important;
+  opacity: 1 !important;
+}
+
+.drawer-item-text {
+  color: rgba(255,255,255,0.94) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.drawer-item-badge {
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+  position: static !important;
+}
+
+.hamburger-btn {
+  position: relative !important;
+  z-index: 1001 !important;
+  pointer-events: auto !important;
+}
