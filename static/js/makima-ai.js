@@ -577,6 +577,12 @@
 
     try {
       const assistantText = text;
+      if (isElevenLabsDisabled()) {
+        console.warn('[TTS] ElevenLabs disabled, using browser TTS');
+        fallbackSpeak(text, btn);
+        return;
+      }
+
       console.log('[TTS] calling /api/tts');
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -585,6 +591,14 @@
       });
 
       if (!res.ok) {
+        const errorCode = await readTtsErrorCode(res);
+        if (errorCode === 'ELEVENLABS_DISABLED') {
+          markElevenLabsDisabled();
+          console.warn('[TTS] ElevenLabs disabled, using browser TTS');
+          fallbackSpeak(text, btn);
+          return;
+        }
+
         console.error('[TTS] failed:', res.status);
         throw new Error('TTS failed ' + res.status);
       }
@@ -607,6 +621,26 @@
     } catch (err) {
       console.warn('[TTS] ElevenLabs failed, fallback browser:', err);
       fallbackSpeak(text, btn);
+    }
+  }
+
+  function isElevenLabsDisabled() {
+    return sessionStorage.getItem('elevenlabs_disabled') === 'true';
+  }
+
+  function markElevenLabsDisabled() {
+    sessionStorage.setItem('elevenlabs_disabled', 'true');
+  }
+
+  async function readTtsErrorCode(res) {
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return null;
+
+    try {
+      const data = await res.json();
+      return data?.error || null;
+    } catch (err) {
+      return null;
     }
   }
 

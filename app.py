@@ -108,6 +108,23 @@ _rate_store_track = {}     # {ip: last_request_timestamp} for /track
 _rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
 _rate_store_ai = {}        # {ip: last_request_timestamp} for /api/ai-chat
 _rate_store_tts = {}       # {ip: last_request_timestamp} for /api/tts
+
+_ELEVENLABS_DISABLED_ERROR = 'ELEVENLABS_DISABLED'
+_ELEVENLABS_DISABLED_MARKERS = (
+    'detected_unusual_activity',
+    'free tier access has been disabled',
+)
+
+
+def _is_elevenlabs_disabled_response(status_code, body):
+    """Return True when ElevenLabs indicates this API key/free tier is disabled."""
+    if status_code == 401:
+        return True
+
+    body_text = (body or '').lower()
+    return any(marker in body_text for marker in _ELEVENLABS_DISABLED_MARKERS)
+
+
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
@@ -1770,6 +1787,8 @@ def tts():
 
         if not resp.ok:
             app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:300])
+            if _is_elevenlabs_disabled_response(resp.status_code, resp.text):
+                return jsonify({'error': _ELEVENLABS_DISABLED_ERROR}), 503
             return jsonify({
                 'error': 'ElevenLabs failed',
                 'status': resp.status_code,
