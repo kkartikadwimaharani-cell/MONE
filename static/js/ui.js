@@ -16,8 +16,11 @@ function hidePreview() {
 
 function closeAllDrawers() {
   document.body.classList.remove("menu-open", "drawer-open", "sidebar-open");
-  document.querySelectorAll(".sidebar, .mobile-menu, .dashboard-drawer, .drawer, .nav-drawer")
-    .forEach(el => el.classList.remove("open", "active", "show"));
+  document.querySelectorAll(".sidebar, .mobile-menu, .dashboard-drawer, .drawer, .nav-drawer, .side-drawer")
+    .forEach(el => {
+      el.classList.remove("open", "active", "show");
+      el.setAttribute("aria-hidden", "true");
+    });
   document.querySelectorAll(".drawer-backdrop, .menu-backdrop, .overlay")
     .forEach(el => el.remove());
 
@@ -27,8 +30,6 @@ function closeAllDrawers() {
       el.setAttribute("aria-hidden", "true");
     });
 
-  var sideDrawer = document.getElementById("sideDrawer");
-  if (sideDrawer) sideDrawer.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
 }
 
@@ -166,6 +167,7 @@ window.setAppMode = setAppMode;
 
     var config = viewConfig[view];
     setAppMode(config.type === 'makima-ai' ? 'makima' : 'dashboard');
+    closeAllDrawers();
 
     if (config.type === 'main') {
       if (viewDownloader) viewDownloader.style.display = '';
@@ -183,6 +185,7 @@ window.setAppMode = setAppMode;
       if (viewControl) viewControl.style.display = '';
       if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'makima-ai') {
+      closeAllDrawers();
       if (viewMakimaAI) viewMakimaAI.style.display = '';
       if (headerEl) headerEl.style.display = 'none';
       document.body.classList.add('makima-ai-body');

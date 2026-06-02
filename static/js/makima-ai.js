@@ -154,6 +154,10 @@
     const wrap = document.getElementById('viewMakimaAI');
     if (!wrap) return;
 
+    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+    if (typeof window.setAppMode === 'function') window.setAppMode('makima');
+    console.log("[MAKIMA] access page loaded - no API call");
+
     wrap.innerHTML = `
       <div class="mkai-access-wrap makima-access-page">
         <div class="mkai-access-card">
@@ -165,12 +169,14 @@
             <input class="mkai-access-input" id="mkaiAccessPassword" type="password" autocomplete="current-password" placeholder="Password" required>
             <button class="mkai-access-submit" type="submit">BUKA MAKIMA AI</button>
           </form>
-          <div class="mkai-access-note">Tidak ada API yang dipanggil di halaman access.</div>
         </div>
       </div>`;
 
     const back = document.getElementById('mkaiAccessBack');
-    if (back) back.addEventListener('click', goBackToDashboard);
+    if (back) back.addEventListener('click', function () {
+      if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
+      goBackToDashboard();
+    });
 
     const form = document.getElementById('mkaiAccessForm');
     if (form) {
@@ -583,6 +589,7 @@
 
   // ── Init ───────────────────────────────────────────────────
   function tryRender() {
+    if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
     const c = document.getElementById('viewMakimaAI');
     if (!c || c.style.display === 'none') return;
     if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();
