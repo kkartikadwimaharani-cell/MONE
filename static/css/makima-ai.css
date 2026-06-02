@@ -2890,3 +2890,127 @@ pre {
     display: none;
   }
 }
+
+/* ============================================================
+   MAKIMA AI targeted fixes — model popover, TTS controls, thinking
+   ============================================================ */
+#viewMakimaAI .mkai-wrap.makima-chat-page,
+#viewMakimaAI .mkai-main,
+#viewMakimaAI .mkai-header,
+#viewMakimaAI .mkai-header-right,
+#viewMakimaAI .mkai-model-picker {
+  overflow: visible;
+}
+
+#viewMakimaAI .mkai-wrap.makima-chat-page {
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+}
+
+.mkai-model-popover {
+  position: fixed;
+  z-index: 9999;
+  top: 96px;
+  right: 16px;
+  width: min(92vw, 320px);
+  max-height: 60vh;
+  overflow-y: auto;
+  display: none;
+  padding: 8px;
+  background: #15161a;
+  border: 1px solid rgba(255, 0, 45, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  backdrop-filter: blur(18px);
+}
+
+.mkai-model-popover.open,
+.mkai-model-picker.open .mkai-model-popover {
+  display: grid;
+  gap: 4px;
+}
+
+.mkai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px calc(150px + env(safe-area-inset-bottom));
+  scroll-behavior: smooth;
+}
+
+.thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 12px 0;
+  max-width: 78%;
+  background: rgba(15,15,18,.78);
+  border: 1px solid rgba(255,0,45,.16);
+  border-radius: 18px;
+  padding: 12px 14px;
+  color: rgba(255,255,255,.72);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.thinking-bubble i {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 74, 96, .9);
+  animation: mkaiThinkingDot 1.1s ease-in-out infinite;
+}
+
+.thinking-bubble i:nth-child(3) { animation-delay: .14s; }
+.thinking-bubble i:nth-child(4) { animation-delay: .28s; }
+
+@keyframes mkaiThinkingDot {
+  0%, 80%, 100% { opacity: .3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+.mkai-typing-row {
+  display: none !important;
+}
+
+.mkai-action-btn.speaker:disabled {
+  opacity: .68;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .mkai-model-popover {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(92px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 45vh;
+  }
+
+  .mkai-messages {
+    padding: 16px 14px calc(150px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 520px) {
+  .mkai-back-btn,
+  .back-button {
+    width: 42px;
+    min-width: 42px;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 0;
+  }
+
+  .mkai-back-btn::before,
+  .back-button::before {
+    content: "←";
+    font-size: 18px;
+  }
+
+  .mkai-model-btn,
+  .model-button {
+    min-width: 84px;
+    flex-shrink: 0;
+  }
+}
