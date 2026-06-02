@@ -105,6 +105,7 @@ _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /do
 _rate_store_track = {}     # {ip: last_request_timestamp} for /track
 _rate_store_ghost = {}     # {ip: last_request_timestamp} for /api/ghost-scan
 _rate_store_ai = {}        # {ip: last_request_timestamp} for /api/ai-chat
+_rate_store_tts = {}       # {ip: last_request_timestamp} for /api/tts
 RATE_LIMIT_SECONDS = 10
 RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
@@ -1708,7 +1709,7 @@ def test_env():
 def tts():
     """ElevenLabs Text-to-Speech — dipanggil saat user klik tombol speaker."""
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(ip, _rate_store_ai, 5):
+    if not _check_rate_limit(ip, _rate_store_tts, 5):
         return jsonify({'error': 'Terlalu banyak permintaan.'}), 429
 
     data = request.get_json(silent=True) or {}
@@ -1722,11 +1723,9 @@ def tts():
         text = text[:1000]
 
     api_key = os.environ.get('ELEVENLABS_API_KEY')
-    if not api_key:
-        return jsonify({'error': 'TTS belum dikonfigurasi. Tambahkan ELEVENLABS_API_KEY di Railway.'}), 503
-
-    # Ganti ELEVENLABS_VOICE_ID di Railway kalau mau pakai voice lain
-    voice_id = os.environ.get('ELEVENLABS_VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+    voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
+    if not api_key or not voice_id:
+        return jsonify({'error': 'TTS belum dikonfigurasi.'}), 503
 
     try:
         resp = requests_lib.post(
