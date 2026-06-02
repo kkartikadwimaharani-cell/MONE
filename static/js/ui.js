@@ -22,7 +22,7 @@ function setAppMode(mode) {
 
 window.setAppMode = setAppMode;
 
-/* ── SIDE DRAWER ──────────────────────────────── */
+/* ── APP DRAWER ───────────────────────────────── */
 (function() {
   console.log('[MAKIMA] app init');
   console.log('[MAKIMA] page:', location.pathname);
@@ -34,87 +34,65 @@ window.setAppMode = setAppMode;
     console.warn('[MAKIMA] localStorage unavailable:', e);
   }
 
-  var btn = document.getElementById('hamburgerBtn');
-  var drawer = document.getElementById('sideDrawer');
-  var overlay = document.getElementById('drawerOverlay');
-  var closeBtn = document.getElementById('drawerClose');
+  var hamburger = document.querySelector('.hamburger-btn');
+  var drawer = document.querySelector('.app-drawer');
 
   setAppMode('dashboard');
 
-  if (!btn || !drawer || !overlay) return;
+  if (!hamburger || !drawer) return;
 
-  var desktopQuery = window.matchMedia('(min-width: 901px)');
-
-  function isDesktopMenu() {
-    return desktopQuery.matches;
+  function removeBackdrops() {
+    document.querySelectorAll('.drawer-backdrop').forEach(function(el) {
+      el.remove();
+    });
   }
 
   function openDrawer() {
-    drawer.classList.add('active', 'open');
+    if (!drawer) return;
+    drawer.classList.add('open');
+    drawer.classList.remove('active', 'show');
     drawer.setAttribute('aria-hidden', 'false');
-    btn.setAttribute('aria-expanded', 'true');
-
-    if (isDesktopMenu()) {
-      overlay.classList.remove('active', 'open', 'show');
-      overlay.setAttribute('aria-hidden', 'true');
-      document.body.classList.add('desktop-menu-open');
-      document.body.classList.remove('drawer-open');
-      document.body.style.overflow = '';
-      return;
-    }
-
-    overlay.classList.add('active', 'open');
-    overlay.setAttribute('aria-hidden', 'false');
+    hamburger.setAttribute('aria-expanded', 'true');
     document.body.classList.add('drawer-open');
-    document.body.classList.remove('desktop-menu-open');
+    document.body.classList.remove('menu-open', 'sidebar-open', 'desktop-menu-open');
     document.body.style.overflow = 'hidden';
+
+    if (!document.querySelector('.drawer-backdrop')) {
+      var backdrop = document.createElement('div');
+      backdrop.className = 'drawer-backdrop';
+      backdrop.setAttribute('aria-hidden', 'true');
+      backdrop.addEventListener('click', closeDrawer);
+      document.body.appendChild(backdrop);
+    }
   }
 
   function closeDrawer() {
-    drawer.classList.remove('active', 'open', 'show');
-    overlay.classList.remove('active', 'open', 'show');
-    drawer.setAttribute('aria-hidden', 'true');
-    overlay.setAttribute('aria-hidden', 'true');
-    btn.setAttribute('aria-expanded', 'false');
+    if (drawer) {
+      drawer.classList.remove('open', 'active', 'show');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+    removeBackdrops();
+    hamburger.setAttribute('aria-expanded', 'false');
     document.body.classList.remove('drawer-open', 'menu-open', 'sidebar-open', 'desktop-menu-open');
     document.body.style.overflow = '';
   }
 
-  // Expose closeDrawer for use by navigation logic
+  window._openDrawer = openDrawer;
   window._closeDrawer = closeDrawer;
 
-  btn.addEventListener('click', function(e) {
+  hamburger.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    if (drawer.classList.contains('open') || drawer.classList.contains('active')) {
-      closeDrawer();
-    } else {
-      openDrawer();
-    }
+    if (drawer && drawer.classList.contains('open')) closeDrawer();
+    else openDrawer();
   });
 
-  overlay.addEventListener('click', function() {
-    if (!isDesktopMenu()) closeDrawer();
+  document.querySelectorAll('.drawer-close').forEach(function(btn) {
+    btn.addEventListener('click', closeDrawer);
   });
-
-  if (desktopQuery.addEventListener) {
-    desktopQuery.addEventListener('change', function() {
-      closeDrawer();
-    });
-  } else if (desktopQuery.addListener) {
-    desktopQuery.addListener(function() {
-      closeDrawer();
-    });
-  }
-
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
-      closeDrawer();
-    });
-  }
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && drawer.classList.contains('active')) {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) {
       closeDrawer();
     }
   });
