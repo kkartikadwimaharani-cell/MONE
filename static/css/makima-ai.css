@@ -1975,3 +1975,147 @@ body.dashboard-mode {
     display: none !important;
   }
 }
+
+/* ── MENU FIX + CACHE BUST OVERRIDE (2026-06-02) ─────────────
+   Layout-only: keep downloader/API/AI logic untouched. */
+.hamburger-btn {
+  display: flex !important;
+  position: relative !important;
+  z-index: 100001 !important;
+}
+
+.side-drawer.mobile-drawer {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@media (min-width: 901px) {
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .drawer-overlay,
+  .drawer-overlay.drawer-backdrop,
+  .drawer-backdrop {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .side-drawer.mobile-drawer {
+    position: fixed !important;
+    top: 60px !important;
+    left: 0 !important;
+    width: 320px !important;
+    max-width: 320px !important;
+    height: calc(100vh - 60px) !important;
+    height: calc(100dvh - 60px) !important;
+    padding: 18px 16px !important;
+    z-index: 9998 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+    background: rgba(5, 5, 7, .98) !important;
+    border-right: 1px solid rgba(255, 0, 45, .25) !important;
+    box-shadow: 12px 0 30px rgba(0, 0, 0, .42) !important;
+  }
+
+  .side-drawer.mobile-drawer.active,
+  .side-drawer.mobile-drawer.open {
+    transform: translateX(0) !important;
+  }
+
+  .side-drawer.mobile-drawer .drawer-close,
+  .drawer-close,
+  .close-menu,
+  .mobile-drawer .close-btn {
+    display: none !important;
+  }
+
+  .side-drawer.mobile-drawer .drawer-header,
+  .side-drawer.mobile-drawer .drawer-promo-card,
+  .side-drawer.mobile-drawer .drawer-hud-card,
+  .side-drawer.mobile-drawer .drawer-footer,
+  .side-drawer.mobile-drawer .drawer-separator {
+    display: block !important;
+  }
+
+  .side-drawer.mobile-drawer .drawer-section {
+    padding: 12px 0 6px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .mobile-drawer,
+  .side-drawer.mobile-drawer {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: min(86vw, 360px) !important;
+    max-width: 360px !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding: calc(14px + env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom)) !important;
+    z-index: 99995 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #050507 !important;
+    background-image: none !important;
+    border-right: 1px solid rgba(255, 0, 45, 0.25) !important;
+    box-shadow: 10px 0 34px rgba(0, 0, 0, .58) !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+  }
+
+  .mobile-drawer.open,
+  .mobile-drawer.active,
+  .side-drawer.mobile-drawer.open,
+  .side-drawer.mobile-drawer.active {
+    transform: translateX(0) !important;
+  }
+
+  .mobile-drawer .drawer-close,
+  .side-drawer.mobile-drawer .drawer-close {
+    display: flex !important;
+    position: sticky !important;
+    top: calc(12px + env(safe-area-inset-top)) !important;
+    right: auto !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    margin-bottom: 12px !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    z-index: 100000 !important;
+  }
+
+  .drawer-overlay,
+  .drawer-overlay.drawer-backdrop,
+  .drawer-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99990 !important;
+    background: rgba(0, 0, 0, .68) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .drawer-overlay.active,
+  .drawer-overlay.open,
+  .drawer-overlay.drawer-backdrop.active,
+  .drawer-overlay.drawer-backdrop.open,
+  .drawer-backdrop.active,
+  .drawer-backdrop.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
