@@ -66,29 +66,13 @@ window.setAppMode = setAppMode;
 
 /* ── MOBILE DRAWER ─────────────────────────────── */
 (function() {
-  console.log('[MAKIMA] app init');
-  console.log('[MAKIMA] page:', location.pathname);
-  try {
-    window.localStorage.setItem('__makima_storage_probe', '1');
-    window.localStorage.removeItem('__makima_storage_probe');
-    console.log('[MAKIMA] localStorage ready');
-  } catch (e) {
-    console.warn('[MAKIMA] localStorage unavailable:', e);
-  }
-
-  resetDashboardDrawerState();
-  setAppMode('dashboard');
-
   var hamburger = document.querySelector('.hamburger-btn');
   var drawer = document.querySelector('.mobile-drawer');
   var closeBtn = document.getElementById('drawerClose');
 
-  if (!hamburger || !drawer) return;
-
-  function openDrawer() {
-    if (document.body.classList.contains('makima-mode')) return;
+  function openMobileDrawer() {
+    if (!drawer) return;
     drawer.classList.add('open');
-    drawer.classList.remove('active', 'show');
     drawer.setAttribute('aria-hidden', 'false');
     document.body.classList.add('drawer-open');
     document.body.style.overflow = 'hidden';
@@ -96,14 +80,14 @@ window.setAppMode = setAppMode;
     if (!document.querySelector('.drawer-backdrop')) {
       var backdrop = document.createElement('div');
       backdrop.className = 'drawer-backdrop';
-      backdrop.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeMobileDrawer);
       document.body.appendChild(backdrop);
     }
   }
 
-  function closeDrawer() {
+  function closeMobileDrawer() {
     if (drawer) {
-      drawer.classList.remove('open', 'active', 'show');
+      drawer.classList.remove('open');
       drawer.setAttribute('aria-hidden', 'true');
     }
     document.body.classList.remove('drawer-open', 'menu-open');
@@ -111,43 +95,35 @@ window.setAppMode = setAppMode;
     document.body.style.overflow = '';
   }
 
-  function toggleDrawer() {
-    if (drawer.classList.contains('open')) closeDrawer();
-    else openDrawer();
+  window.openMobileDrawer = openMobileDrawer;
+  window.closeMobileDrawer = closeMobileDrawer;
+  window._closeDrawer = closeMobileDrawer;
+
+  if (hamburger) {
+    hamburger.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (drawer && drawer.classList.contains('open')) {
+        closeMobileDrawer();
+      } else {
+        openMobileDrawer();
+      }
+    });
   }
-
-  window._closeDrawer = closeDrawer;
-
-  hamburger.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleDrawer();
-  });
 
   if (closeBtn) {
     closeBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      closeDrawer();
+      closeMobileDrawer();
     });
   }
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) closeMobileDrawer();
   });
 
-  // Update downloads counters in both desktop sidebar and mobile drawer.
-  var statDl = document.getElementById('statDownloads');
-  var drawerDls = document.querySelectorAll('.drawerDownloads');
-  function syncDownloads() {
-    drawerDls.forEach(function(el) {
-      el.textContent = 'DOWNLOADS: ' + ((statDl && statDl.textContent) || '0');
-    });
-  }
-  if (statDl && drawerDls.length) {
-    syncDownloads();
-    var observer = new MutationObserver(syncDownloads);
-    observer.observe(statDl, { childList: true, characterData: true, subtree: true });
-  }
+  resetDashboardDrawerState();
+  setAppMode('dashboard');
 })();
 
 /* -- VIEW NAVIGATION SYSTEM -- */

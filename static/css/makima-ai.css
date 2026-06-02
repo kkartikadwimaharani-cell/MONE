@@ -1364,3 +1364,117 @@ body.dashboard-mode {
     filter: none !important;
   }
 }
+
+/* ── MOBILE SIMPLE LAYOUT RESET (<= 900px)
+   Stable homepage: no permanent mobile sidebar, one drawer only. */
+.mobile-drawer {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar,
+  .desktop-sidebar,
+  .sidebar-permanent,
+  .main-sidebar {
+    display: none !important;
+  }
+
+  .app,
+  .main-content,
+  .dashboard-content,
+  .page-content,
+  .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    transform: none !important;
+  }
+
+  .top-nav.dashboard-header,
+  .main-dashboard.dashboard-header {
+    z-index: 850 !important;
+  }
+
+  .mobile-drawer {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 84vw !important;
+    max-width: 340px !important;
+    height: 100dvh !important;
+    z-index: 1000 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: #050507 !important;
+    background-image: none !important;
+    border-right: 1px solid rgba(255, 0, 45, 0.25) !important;
+    box-shadow: none !important;
+    transition: left .22s ease !important;
+    transform: none !important;
+    padding: 56px 0 24px !important;
+  }
+
+  .mobile-drawer.open {
+    left: 0 !important;
+    transform: none !important;
+  }
+
+  .mobile-drawer.active:not(.open),
+  .mobile-drawer.show:not(.open) {
+    left: -100% !important;
+    transform: none !important;
+  }
+
+  .mobile-drawer .drawer-close {
+    display: flex !important;
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+  }
+
+  .mobile-drawer .drawer-header,
+  .mobile-drawer .drawer-promo-card,
+  .mobile-drawer .drawer-hud-card,
+  .mobile-drawer .drawer-footer,
+  .mobile-drawer .drawer-separator {
+    display: none !important;
+  }
+
+  .mobile-drawer .drawer-section.mobile-nav-only {
+    padding: 0 14px 18px !important;
+  }
+
+  .mobile-drawer .drawer-item {
+    min-height: 46px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .drawer-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, .65) !important;
+    z-index: 900 !important;
+  }
+
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .big-glow,
+  .blur-layer,
+  .animated-bg,
+  .orb-container,
+  .bg-overlay {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-drawer {
+    display: none !important;
+  }
+}
