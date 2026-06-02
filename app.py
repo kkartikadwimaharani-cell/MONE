@@ -1707,63 +1707,60 @@ def test_env():
 
 @app.route('/api/tts', methods=['POST'])
 def tts():
-    """ElevenLabs Text-to-Speech — dipanggil saat user klik tombol speaker."""
+    """ElevenLabs Text-to-Speech — returns raw MP3 audio on click only."""
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
 
     if not text:
-        return jsonify({'error': 'Teks kosong.'}), 400
+        return jsonify({'error': 'Text is required'}), 400
 
     api_key = os.environ.get('ELEVENLABS_API_KEY')
     voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
+
     if not api_key or not voice_id:
-        return jsonify({'error': 'TTS belum dikonfigurasi.'}), 503
+        return jsonify({'error': 'ElevenLabs env missing'}), 500
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     if not _check_rate_limit(ip, _rate_store_tts, 5):
-        return jsonify({'error': 'Terlalu banyak permintaan.'}), 429
+        return jsonify({'error': 'Too many requests'}), 429
 
-    # Batasi panjang teks agar hemat kredit ElevenLabs
-    if len(text) > 1000:
-        text = text[:1000]
+    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128'
+    payload = {
+        'text': text[:2500],
+        'model_id': 'eleven_multilingual_v2',
+        'voice_settings': {
+            'stability': 0.45,
+            'similarity_boost': 0.8,
+            'style': 0.35,
+            'use_speaker_boost': True
+        }
+    }
 
     try:
         resp = requests_lib.post(
-            f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}',
+            url,
             headers={
                 'xi-api-key': api_key,
                 'Content-Type': 'application/json',
                 'Accept': 'audio/mpeg'
             },
-            json={
-                'text': text,
-                'model_id': 'eleven_multilingual_v2',
-                'voice_settings': {
-                    'stability': 0.45,
-                    'similarity_boost': 0.8,
-                    'style': 0.35,
-                    'use_speaker_boost': True
-                }
-            },
+            json=payload,
             timeout=30
         )
 
-        if resp.status_code == 429:
-            return jsonify({'error': 'Kredit ElevenLabs habis.'}), 429
+        if not resp.ok:
+            app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:300])
+            return jsonify({
+                'error': 'ElevenLabs failed',
+                'status': resp.status_code,
+                'detail': resp.text[:300]
+            }), 502
 
-        if resp.status_code != 200:
-            app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:200])
-            return jsonify({'error': 'TTS gagal.'}), 500
-
-        return Response(
-            resp.content,
-            mimetype='audio/mpeg',
-            headers={'Content-Disposition': 'inline; filename=makima.mp3'}
-        )
+        return Response(resp.content, mimetype='audio/mpeg')
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
-        return jsonify({'error': 'TTS error.'}), 500
+        return jsonify({'error': 'ElevenLabs failed', 'detail': str(e)[:300]}), 502
 
 
 if __name__ == '__main__':

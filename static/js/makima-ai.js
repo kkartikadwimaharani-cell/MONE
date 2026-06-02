@@ -30,6 +30,7 @@
   let currentAudio = null;
   let currentAudioUrl = null;
   let currentSpeakerBtn = null;
+  let thinkingBubble = null;
   let storageReady = false;
 
   // Temporary cache reset/versioning hotfix.
@@ -231,6 +232,7 @@
     const wrap = document.getElementById('viewMakimaAI');
     if (!wrap) return;
     setMakimaMode();
+    document.getElementById('mkaiModelPopover')?.remove();
     ensureStorageDefaults();
 
     const selectedModel = readStorage(STORAGE_KEYS.model, DEFAULT_MODEL) || DEFAULT_MODEL;
@@ -339,6 +341,7 @@
     });
     document.querySelectorAll('.mkai-model-option').forEach(btn => btn.addEventListener('click', selectModel));
     document.addEventListener('click', closeModelPopover);
+    window.addEventListener('resize', closeModelPopover);
 
     const ta = document.getElementById('mkaiInput');
     if (ta) {
@@ -442,7 +445,8 @@
     persistActiveChat();
 
     isTyping = true;
-    setTyping(true);
+    thinkingBubble = appendThinkingBubble();
+    setTyping(false);
     setSendDisabled(true);
 
     const model = readStorage(STORAGE_KEYS.model, DEFAULT_MODEL) || DEFAULT_MODEL;
@@ -462,6 +466,7 @@
     })
       .then(r => r.json())
       .then(data => {
+        removeThinkingBubble();
         setTyping(false);
         isTyping = false;
         setSendDisabled(false);
@@ -472,6 +477,7 @@
         appendAI(reply, isErr);
       })
       .catch(() => {
+        removeThinkingBubble();
         setTyping(false);
         isTyping = false;
         setSendDisabled(false);
@@ -480,6 +486,37 @@
         persistActiveChat();
         appendAI(reply, true);
       });
+  }
+
+  function appendThinkingBubble() {
+    removeWelcome();
+    removeThinkingBubble();
+    const container = msgs();
+    if (!container) return null;
+    const el = document.createElement('div');
+    el.className = 'mkai-msg mkai-msg-ai mkai-thinking-message';
+    el.innerHTML = `
+      <div class="mkai-ai-row">
+        <img class="mkai-ai-avatar" src="/static/img/makima-ai-profile.png" alt="" draggable="false" oncontextmenu="return false">
+        <div class="mkai-ai-body">
+          <div class="mkai-ai-sender">MAKIMA AI</div>
+          <div class="thinking-bubble" aria-live="polite">
+            <span>Makima sedang berpikir</span>
+            <i></i><i></i><i></i>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(el);
+    scrollDown();
+    return el;
+  }
+
+  function removeThinkingBubble() {
+    if (thinkingBubble && thinkingBubble.parentNode) {
+      thinkingBubble.parentNode.removeChild(thinkingBubble);
+    }
+    document.querySelectorAll('.mkai-thinking-message').forEach(el => el.remove());
+    thinkingBubble = null;
   }
 
   function appendUser(text, shouldScroll = true) {
@@ -520,10 +557,10 @@
     if (shouldScroll) scrollDown();
   }
 
-  function handleSpeak(e) {
+  async function handleSpeak(e) {
     const btn = e.currentTarget;
     const text = decodeURIComponent(btn.dataset.msg || '');
-    if (!text) return;
+    if (!text || !text.trim()) return;
 
     if (currentSpeakerBtn === btn && currentAudio) {
       stopAudio();
@@ -532,37 +569,44 @@
 
     stopAudio();
     currentSpeakerBtn = btn;
+    btn.disabled = true;
     btn.classList.add('loading');
     setButtonLabel(btn, 'Memuat...');
 
-    fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    })
-      .then(r => {
-        if (!r.ok) throw new Error('tts-unavailable');
-        return r.blob();
-      })
-      .then(blob => {
-        currentAudioUrl = URL.createObjectURL(blob);
-        currentAudio = new Audio(currentAudioUrl);
-        btn.classList.remove('loading');
-        btn.classList.add('playing');
-        setButtonLabel(btn, 'Berhenti');
-        currentAudio.onended = resetAudioButton;
-        currentAudio.onerror = () => fallbackSpeak(text, btn);
-        const playPromise = currentAudio.play();
-        if (playPromise && typeof playPromise.catch === 'function') {
-          playPromise.catch(() => fallbackSpeak(text, btn));
-        }
-      })
-      .catch(() => fallbackSpeak(text, btn));
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!res.ok) throw new Error('TTS failed ' + res.status);
+
+      const blob = await res.blob();
+      if (!blob || blob.size === 0) throw new Error('TTS returned empty audio');
+
+      currentAudioUrl = URL.createObjectURL(blob);
+      currentAudio = new Audio(currentAudioUrl);
+
+      currentAudio.onended = resetAudioButton;
+      currentAudio.onerror = () => fallbackSpeak(text, btn);
+
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.classList.add('playing');
+      setButtonLabel(btn, 'Berhenti');
+
+      await currentAudio.play();
+    } catch (err) {
+      console.warn('[TTS] ElevenLabs failed, fallback browser:', err);
+      fallbackSpeak(text, btn);
+    }
   }
 
   function fallbackSpeak(text, btn) {
     revokeAudioUrl();
     currentAudio = null;
+    btn.disabled = false;
     btn.classList.remove('loading');
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
       setButtonLabel(btn, 'Gagal');
@@ -573,8 +617,8 @@
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = 0.88;
+    utterance.pitch = 0.85;
     currentAudio = { pause: () => window.speechSynthesis.cancel() };
     btn.classList.add('playing');
     setButtonLabel(btn, 'Berhenti');
@@ -592,6 +636,7 @@
   function resetAudioButton() {
     revokeAudioUrl();
     if (currentSpeakerBtn) {
+      currentSpeakerBtn.disabled = false;
       currentSpeakerBtn.classList.remove('playing', 'loading');
       setButtonLabel(currentSpeakerBtn, 'Dengarkan');
     }
@@ -630,16 +675,42 @@
     }
   }
 
+  function placeModelPopover(popover, btn) {
+    if (!popover || !btn) return;
+    if (popover.parentNode !== document.body) document.body.appendChild(popover);
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+
+    if (isMobile) {
+      popover.style.top = 'auto';
+      popover.style.left = '12px';
+      popover.style.right = '12px';
+      popover.style.bottom = 'calc(92px + env(safe-area-inset-bottom))';
+      popover.style.width = 'auto';
+    } else {
+      popover.style.top = Math.max(12, rect.bottom + 10) + 'px';
+      popover.style.left = 'auto';
+      popover.style.right = Math.max(16, window.innerWidth - rect.right) + 'px';
+      popover.style.bottom = 'auto';
+      popover.style.width = 'min(92vw, 320px)';
+    }
+  }
+
   function toggleModelPopover() {
     const picker = document.getElementById('mkaiModelPicker');
     const btn = document.getElementById('mkaiModelBtn');
-    const open = picker?.classList.toggle('open');
+    const popover = document.getElementById('mkaiModelPopover');
+    const open = !(popover?.classList.contains('open'));
+    picker?.classList.toggle('open', open);
+    popover?.classList.toggle('open', open);
     btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) placeModelPopover(popover, btn);
   }
 
   function closeModelPopover(e) {
-    if (e && e.target.closest && e.target.closest('#mkaiModelPicker')) return;
+    if (e && e.target.closest && (e.target.closest('#mkaiModelPicker') || e.target.closest('#mkaiModelPopover'))) return;
     document.getElementById('mkaiModelPicker')?.classList.remove('open');
+    document.getElementById('mkaiModelPopover')?.classList.remove('open');
     document.getElementById('mkaiModelBtn')?.setAttribute('aria-expanded', 'false');
   }
 
