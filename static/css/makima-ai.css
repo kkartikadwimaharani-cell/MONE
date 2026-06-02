@@ -889,8 +889,7 @@ body.dashboard-mode #viewMakimaAI {
 /* Keep dashboard drawer solid and readable on mobile. */
 .dashboard-drawer,
 .side-drawer.dashboard-drawer {
-  background: #050508 !important;
-  background-image: linear-gradient(180deg, rgba(12, 0, 0, 0.98), rgba(5, 5, 8, 0.99)) !important;
+  background: rgba(5, 5, 8, 0.96) !important;
   color: rgba(255, 255, 255, 0.94) !important;
   border-right: 1px solid rgba(255, 0, 45, 0.38) !important;
   box-shadow: 8px 0 42px rgba(0, 0, 0, 0.88), 0 0 22px rgba(180, 0, 0, 0.16) !important;
@@ -1116,16 +1115,9 @@ body.dashboard-mode {
 .dashboard-drawer::before,
 .mobile-menu::before,
 .main-sidebar::before {
-  content: "" !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background-image: var(--makima-bg) !important;
-  background-size: cover !important;
-  background-position: center !important;
-  opacity: 0.08 !important;
-  filter: brightness(0.35) !important;
-  pointer-events: none !important;
-  z-index: -1 !important;
+  content: none !important;
+  display: none !important;
+  background: none !important;
 }
 
 .dashboard-drawer > *,
@@ -1177,4 +1169,56 @@ body.dashboard-mode {
   position: relative !important;
   z-index: 1001 !important;
   pointer-events: auto !important;
+}
+
+
+/* ── MAKIMA AVATAR FIX: no large Makima backgrounds in menus ── */
+.sidebar,
+.mobile-menu,
+.dashboard-drawer,
+.side-drawer,
+.side-drawer.dashboard-drawer {
+  background: rgba(5, 5, 8, 0.96) !important;
+  background-image: none !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.sidebar::before,
+.mobile-menu::before,
+.dashboard-drawer::before,
+.side-drawer::before,
+.side-drawer.dashboard-drawer::before,
+.main-sidebar::before {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+.makima-ai-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.makima-menu-avatar,
+.makima-sidebar-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  object-fit: cover !important;
+  border: 1px solid rgba(255, 0, 45, 0.55) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 45, 0.35) !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
+.mkai-access-avatar,
+.makima-access-avatar {
+  width: 88px !important;
+  height: 88px !important;
+  border-radius: 999px !important;
+  object-fit: cover !important;
+  border: 1px solid rgba(255, 0, 45, 0.5) !important;
+  box-shadow: 0 0 24px rgba(255, 0, 45, 0.28) !important;
 }
