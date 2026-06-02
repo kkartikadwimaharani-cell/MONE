@@ -84,6 +84,8 @@ def _get_gemini_model(model_name=None):
 
 print("[startup] Gemini model cache ready")
 print("GROQ_API_KEY exists:", bool(os.environ.get("GROQ_API_KEY")))
+print("[TTS] ELEVENLABS_API_KEY exists:", bool(os.getenv("ELEVENLABS_API_KEY")))
+print("[TTS] ELEVENLABS_VOICE_ID exists:", bool(os.getenv("ELEVENLABS_VOICE_ID")))
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -1705,17 +1707,32 @@ def test_env():
     })
 
 
+@app.route('/api/tts-status', methods=['GET'])
+def tts_status():
+    """Health/debug status for backend ElevenLabs TTS wiring."""
+    return jsonify({
+        'tts_route_ready': True,
+        'elevenlabs_key_exists': bool(os.getenv('ELEVENLABS_API_KEY')),
+        'elevenlabs_voice_id_exists': bool(os.getenv('ELEVENLABS_VOICE_ID'))
+    })
+
+
 @app.route('/api/tts', methods=['POST'])
 def tts():
     """ElevenLabs Text-to-Speech — returns raw MP3 audio on click only."""
+    print("[TTS] /api/tts called")
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
 
-    if not text:
-        return jsonify({'error': 'Text is required'}), 400
-
     api_key = os.environ.get('ELEVENLABS_API_KEY')
     voice_id = os.environ.get('ELEVENLABS_VOICE_ID')
+
+    print("[TTS] text exists:", bool(text))
+    print("[TTS] key exists:", bool(api_key))
+    print("[TTS] voice exists:", bool(voice_id))
+
+    if not text:
+        return jsonify({'error': 'Text is required'}), 400
 
     if not api_key or not voice_id:
         return jsonify({'error': 'ElevenLabs env missing'}), 500
@@ -1747,6 +1764,9 @@ def tts():
             json=payload,
             timeout=30
         )
+
+        print("[TTS] elevenlabs status:", resp.status_code)
+        print("[TTS] elevenlabs content-type:", resp.headers.get("content-type"))
 
         if not resp.ok:
             app.logger.error('ElevenLabs TTS error: status=%d body=%s', resp.status_code, resp.text[:300])

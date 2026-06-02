@@ -560,6 +560,8 @@
   async function handleSpeak(e) {
     const btn = e.currentTarget;
     const text = decodeURIComponent(btn.dataset.msg || '');
+    console.log('[TTS] Dengarkan clicked');
+    console.log('[TTS] text length:', text.length);
     if (!text || !text.trim()) return;
 
     if (currentSpeakerBtn === btn && currentAudio) {
@@ -574,13 +576,18 @@
     setButtonLabel(btn, 'Memuat...');
 
     try {
+      const assistantText = text;
+      console.log('[TTS] calling /api/tts');
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: assistantText })
       });
 
-      if (!res.ok) throw new Error('TTS failed ' + res.status);
+      if (!res.ok) {
+        console.error('[TTS] failed:', res.status);
+        throw new Error('TTS failed ' + res.status);
+      }
 
       const blob = await res.blob();
       if (!blob || blob.size === 0) throw new Error('TTS returned empty audio');
