@@ -10,6 +10,7 @@ import time
 import threading
 import subprocess
 import hashlib
+import base64
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
@@ -23,35 +24,37 @@ _gemini_configured = False
 
 _MAKIMA_SYSTEM_INSTRUCTION = """
 Kamu adalah MAKIMA AI, asisten pribadi milik MII NETWORK.
-Jawab dalam Bahasa Indonesia santai, jelas, tenang, elegan, dan profesional.
+Jawab dalam Bahasa Indonesia yang santai, jelas, tenang, elegan, dan profesional.
 Gunakan kata “kamu”, jangan “Anda”.
 Jangan bilang “sebagai AI”.
-Jangan mengaku bisa browsing jika tidak benar-benar ada fitur browsing.
-Jangan mengarang website, sumber, harga, atau fakta terbaru.
+Jangan mengarang fakta, website, harga, atau sumber.
+Jangan mengaku browsing kalau tidak ada fitur browsing.
 Kalau user minta cek web tapi tidak ada akses web, jawab persis:
 “Aku belum bisa mengecek web langsung dari sini. Kirim link atau screenshot-nya, nanti aku bantu baca.”
+Kalau user kirim screenshot/gambar, baca isi visualnya dan bantu jelaskan dengan jelas.
 
-Gaya jawaban:
-- singkat tapi berkualitas
+Format jawaban:
 - langsung ke inti
-- kalau user bingung, jelaskan pelan-pelan
-- kalau user minta prompt Codex, berikan prompt siap copy
-- kalau user minta kode, susun rapi dengan langkah jelas
-- jangan terlalu formal
+- pakai paragraf pendek
+- pakai bullet/list kalau perlu
+- code block hanya untuk kode
+- jangan bertele-tele
 - jangan terlalu panjang kecuali user minta detail
 - jangan tutup jawaban dengan pertanyaan template yang kaku
 
-Untuk coding:
-- format jawaban wajib: judul singkat, penjelasan singkat 1-2 kalimat, satu atau beberapa markdown code block, lalu cara pakai singkat
-- semua kode wajib berada di dalam markdown code block berpagar tiga backtick dengan label bahasa atau nama file
-- jangan menulis ulang isi kode di luar code block
+Kalau user minta kode:
+- berikan judul singkat
+- berikan penjelasan pendek
+- semua kode wajib masuk ke markdown code block berpagar tiga backtick dengan label bahasa atau nama file
+- jangan tampilkan kode sebagai teks biasa
+- jangan membaca ulang isi kode di luar code block
+- berikan cara pakai singkat
 - jangan menjelaskan setiap baris kode; jelaskan bagian penting saja
 - berikan kode yang rapi, utuh, dan indentasinya benar
-- gunakan struktur jelas dan kasih nama file kalau perlu
-- jangan kasih kode berantakan
 - jangan mengubah fitur lain yang tidak diminta
-- selalu beri peringatan kalau perubahan bisa merusak fitur existing
-- jangan terlalu panjang kalau user tidak minta detail
+- beri peringatan kalau perubahan bisa merusak fitur existing
+
+Kalau user minta prompt Codex, berikan prompt siap copy yang aman dan jelas.
 
 Safety:
 - tolak permintaan malware, phishing, mencuri token, spam, hack akun, atau bypass ilegal
@@ -1494,13 +1497,50 @@ def _looks_like_ascii_art(text):
     return symbol_heavy >= 3
 
 
+def _parse_makima_image_payload(image_payload):
+    """Validate and convert a MAKIMA image payload into a Gemini inline_data part."""
+    if not isinstance(image_payload, dict):
+        raise ValueError('Format gambar tidak valid.')
+
+    raw_data = str(image_payload.get('data', '') or '')
+    mime_type = str(image_payload.get('mimeType', '') or '').lower().strip()
+    allowed_mime_types = {'image/jpeg', 'image/png', 'image/webp'}
+
+    if raw_data.startswith('data:'):
+        header, _, encoded = raw_data.partition(',')
+        match = re.match(r'^data:([^;]+);base64$', header, flags=re.IGNORECASE)
+        if not match:
+            raise ValueError('Format gambar tidak valid.')
+        mime_type = match.group(1).lower().strip()
+        raw_data = encoded
+
+    if mime_type in {'image/jpg', 'image/pjpeg'}:
+        mime_type = 'image/jpeg'
+    if mime_type not in allowed_mime_types:
+        raise ValueError('Format gambar harus JPG, PNG, atau WEBP.')
+
+    try:
+        image_bytes = base64.b64decode(raw_data, validate=True)
+    except Exception:
+        raise ValueError('Gambar gagal dibaca. Coba upload ulang dengan format JPG, PNG, atau WEBP.')
+
+    if not image_bytes:
+        raise ValueError('Gambar kosong. Coba upload ulang.')
+    if len(image_bytes) > 5 * 1024 * 1024:
+        raise ValueError('Ukuran gambar maksimal 5MB.')
+
+    return {'mime_type': mime_type, 'data': image_bytes}
+
+
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
     data = request.get_json(silent=True) or {}
     message = data.get('message', '').strip()
+    image_payload = data.get('image')
+    has_image = isinstance(image_payload, dict) and bool(image_payload.get('data'))
 
-    if not message:
-        return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
+    if not message and not has_image:
+        return jsonify({'error': 'Pesan atau gambar tidak boleh kosong'}), 400
 
     if len(message) > 2000:
         return jsonify({'error': 'Pesan terlalu panjang (maks 2000 karakter)'}), 400
@@ -1522,6 +1562,17 @@ def ai_chat():
     model = data.get('model', 'gemini-2.0-flash').strip()
     if provider not in ('auto', 'gemini', 'groq'):
         provider = 'auto'
+    if has_image:
+        provider = 'gemini'
+        if model not in _GEMINI_ALLOWED_MODELS:
+            model = 'gemini-2.0-flash'
+
+    image_part = None
+    if has_image:
+        try:
+            image_part = _parse_makima_image_payload(image_payload)
+        except ValueError as image_error:
+            return jsonify({'error': str(image_error)}), 400
 
     # Build conversation context from history
     history = data.get('history', [])
@@ -1549,7 +1600,14 @@ def ai_chat():
                 contents.append({'role': 'model', 'parts': [text]})
             elif role == 'user':
                 contents.append({'role': 'user', 'parts': [text]})
-        contents.append({'role': 'user', 'parts': [message]})
+        user_parts = []
+        if message:
+            user_parts.append(message)
+        elif image_part:
+            user_parts.append('Tolong baca dan jelaskan gambar ini dengan jelas.')
+        if image_part:
+            user_parts.append(image_part)
+        contents.append({'role': 'user', 'parts': user_parts})
         return contents
 
     # Build OpenAI-style messages for Groq
@@ -1636,6 +1694,18 @@ def ai_chat():
             err_msg = str(e)
             app.logger.error('Groq API error: %s', err_msg)
             return None, 'error'
+
+    if image_part:
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            return jsonify({'error': 'Vision belum dikonfigurasi. Aktifkan GEMINI_API_KEY dulu.'}), 503
+        reply, err = _call_gemini(model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
+        if reply:
+            app.logger.info('MAKIMA AI vision provider used: gemini model=%s', model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
+            return jsonify({'reply': _filter_makima_output(reply, message)})
+        if err == 'quota':
+            return jsonify({'error': 'Kuota Gemini vision sedang habis. Coba lagi nanti.'}), 429
+        return jsonify({'error': 'Gambar gagal dibaca. Coba kirim ulang dengan gambar yang lebih jelas.'}), 500
 
     # Route to provider
     if provider == 'gemini':

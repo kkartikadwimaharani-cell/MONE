@@ -6,16 +6,6 @@
   'use strict';
 
   try {
-    const oldTtsStorageKeys = [
-      "elevenlabs_disabled",
-      "tts_disabled",
-      "old_tts_error",
-      "tts_cache",
-      "tts_voice_id",
-      "elevenlabs_voice_id",
-      "makima_tts_voice_id",
-      "makima_ai_tts_cache"
-    ];
     const oldUiStorageKeys = [
       "old_chat_ui",
       "old_code_renderer",
@@ -23,40 +13,10 @@
       "ai_ui_cache"
     ];
 
-    oldTtsStorageKeys.concat(oldUiStorageKeys).forEach(key => {
+    oldUiStorageKeys.forEach(key => {
       try { sessionStorage.removeItem(key); } catch (e) {}
       try { localStorage.removeItem(key); } catch (e) {}
     });
-
-    [sessionStorage, localStorage].forEach(storage => {
-      try {
-        Object.keys(storage).forEach(key => {
-          if (key.toLowerCase().includes("tts") || key.toLowerCase().includes("elevenlabs")) {
-            storage.removeItem(key);
-          }
-        });
-      } catch (e) {}
-    });
-
-    if ("caches" in window) {
-      caches.keys().then(keys => {
-        keys.forEach(key => {
-          if (
-            key.toLowerCase().includes("makima") ||
-            key.toLowerCase().includes("ai") ||
-            key.toLowerCase().includes("tts")
-          ) {
-            caches.delete(key);
-          }
-        });
-      });
-    }
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(reg => reg.unregister());
-      });
-    }
   } catch (e) {
     console.warn("[CACHE] clear skipped:", e);
   }
@@ -88,6 +48,8 @@
   let currentSpeakerBtn = null;
   let thinkingBubble = null;
   let storageReady = false;
+  let selectedImage = null;
+  let selectedImageUrl = null;
 
   function safeJsonParse(value, fallback) {
     try {
@@ -145,7 +107,8 @@
       role,
       text,
       createdAt: typeof msg.createdAt === 'string' && msg.createdAt ? msg.createdAt : nowIso(),
-      ...(msg.error ? { error: true } : {})
+      ...(msg.error ? { error: true } : {}),
+      ...(msg.imagePreview ? { imagePreview: msg.imagePreview } : {})
     };
   }
 
@@ -326,7 +289,14 @@
           </div>
 
           <div class="mkai-input-area makima-input-bar">
+            <div class="mkai-image-preview" id="mkaiImagePreview" hidden></div>
             <div class="mkai-input-inner">
+              <input id="mkaiImageInput" class="mkai-image-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <button class="mkai-image-btn" id="mkaiImageBtn" title="Upload gambar" type="button" aria-label="Upload gambar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+                  <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                </svg>
+              </button>
               <textarea id="mkaiInput" class="mkai-textarea" rows="1" placeholder="Ketik pesan..." maxlength="4000"></textarea>
               <button class="mkai-send-btn" id="mkaiSend" title="Kirim" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
@@ -340,7 +310,7 @@
       </div>`;
 
     chatHistory.forEach(msg => {
-      if (msg.role === 'user') appendUser(msg.text, false);
+      if (msg.role === 'user') appendUser(msg.text, msg.imagePreview || null, false);
       if (msg.role === 'assistant') appendAI(msg.text, !!msg.error, false);
     });
 
@@ -371,6 +341,8 @@
 
   function bindUI() {
     document.getElementById('mkaiSend')?.addEventListener('click', send);
+    document.getElementById('mkaiImageBtn')?.addEventListener('click', () => document.getElementById('mkaiImageInput')?.click());
+    document.getElementById('mkaiImageInput')?.addEventListener('change', handleImageSelect);
     document.getElementById('mkaiBack')?.addEventListener('click', goBackToDashboard);
     document.getElementById('mkaiHistoryToggle')?.addEventListener('click', openHistoryDrawer);
     document.getElementById('mkaiDrawerBackdrop')?.addEventListener('click', closeHistoryDrawer);
@@ -418,7 +390,7 @@
     stopAudio();
     container.innerHTML = chatHistory.length ? '' : welcomeHTML();
     chatHistory.forEach(msg => {
-      if (msg.role === 'user') appendUser(msg.text, false);
+      if (msg.role === 'user') appendUser(msg.text, msg.imagePreview || null, false);
       if (msg.role === 'assistant') appendAI(msg.text, !!msg.error, false);
     });
     scrollDown();
@@ -478,13 +450,21 @@
     const ta = document.getElementById('mkaiInput');
     if (!ta) return;
     const text = ta.value.trim();
-    if (!text) return;
+    const image = selectedImage;
+    if (!text && !image) return;
 
     ta.value = '';
     ta.style.height = 'auto';
+    clearSelectedImage();
 
-    const userMsg = { role: 'user', text, createdAt: nowIso() };
-    appendUser(text);
+    const displayText = text || 'Gambar dikirim';
+    const userMsg = {
+      role: 'user',
+      text: displayText,
+      createdAt: nowIso(),
+      ...(image ? { imagePreview: image.preview } : {})
+    };
+    appendUser(displayText, image ? image.preview : null);
     chatHistory.push(userMsg);
     persistActiveChat();
 
@@ -505,7 +485,8 @@
         history: chatHistory.slice(0, -1).slice(-MAX_API_HISTORY),
         model,
         provider,
-        password: getAccessPassword()
+        password: getAccessPassword(),
+        ...(image ? { image: { data: image.data, mimeType: image.mimeType, name: image.name } } : {})
       })
     })
       .then(r => r.json())
@@ -530,6 +511,118 @@
         persistActiveChat();
         appendAI(reply, true);
       });
+  }
+
+
+  async function handleImageSelect(e) {
+    const input = e.currentTarget;
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    const extAllowed = /\.(jpe?g|png|webp)$/i.test(file.name || '');
+    if (!allowed.includes(file.type) || !extAllowed) {
+      showImageError('Format gambar harus JPG, PNG, atau WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showImageError('Ukuran gambar maksimal 5MB.');
+      return;
+    }
+
+    try {
+      const image = await prepareImage(file);
+      clearSelectedImage();
+      selectedImage = image;
+      selectedImageUrl = image.preview;
+      renderImagePreview();
+    } catch (err) {
+      console.warn('[MAKIMA] image prepare failed:', err);
+      showImageError('Gambar gagal diproses. Coba upload ulang.');
+    }
+  }
+
+  function prepareImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const originalDataUrl = String(reader.result || '');
+        resizeImageDataUrl(originalDataUrl, file.type)
+          .then(dataUrl => resolve({
+            name: file.name || 'image',
+            mimeType: dataUrl.slice(5, dataUrl.indexOf(';')) || file.type,
+            data: dataUrl,
+            preview: dataUrl
+          }))
+          .catch(reject);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resizeImageDataUrl(dataUrl, mimeType) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const maxSide = 1600;
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        if (!scale || scale >= 1 || !document.createElement('canvas').getContext) {
+          resolve(dataUrl);
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL(mimeType === 'image/png' ? 'image/png' : 'image/jpeg', 0.86));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  function renderImagePreview() {
+    const wrap = document.getElementById('mkaiImagePreview');
+    if (!wrap) return;
+    if (!selectedImage) {
+      wrap.hidden = true;
+      wrap.innerHTML = '';
+      return;
+    }
+    wrap.hidden = false;
+    wrap.innerHTML = `
+      <div class="mkai-image-chip">
+        <img src="${escAttr(selectedImage.preview)}" alt="Preview gambar">
+        <span>${escHtml(selectedImage.name || 'Gambar')}</span>
+        <button type="button" id="mkaiRemoveImage" aria-label="Hapus gambar">×</button>
+      </div>`;
+    document.getElementById('mkaiRemoveImage')?.addEventListener('click', clearSelectedImage);
+  }
+
+  function clearSelectedImage() {
+    selectedImage = null;
+    selectedImageUrl = null;
+    renderImagePreview();
+  }
+
+  function showImageError(message) {
+    const wrap = document.getElementById('mkaiImagePreview');
+    if (!wrap) return;
+    wrap.hidden = false;
+    wrap.innerHTML = `<div class="mkai-image-error">${escHtml(message)}</div>`;
+    setTimeout(() => {
+      if (!selectedImage && wrap.querySelector('.mkai-image-error')) {
+        wrap.hidden = true;
+        wrap.innerHTML = '';
+      }
+    }, 2200);
   }
 
   function appendThinkingBubble() {
@@ -563,13 +656,16 @@
     thinkingBubble = null;
   }
 
-  function appendUser(text, shouldScroll = true) {
+  function appendUser(text, imagePreview = null, shouldScroll = true) {
     removeWelcome();
     const container = msgs();
     if (!container) return;
     const el = document.createElement('div');
     el.className = 'mkai-msg mkai-msg-user';
-    el.innerHTML = `<div class="mkai-bubble-user">${escHtml(text)}</div>`;
+    el.innerHTML = `<div class="mkai-bubble-user">
+      ${imagePreview ? `<img class="mkai-user-image" src="${escAttr(imagePreview)}" alt="Gambar yang dikirim">` : ''}
+      ${text ? `<span>${escHtml(text)}</span>` : ''}
+    </div>`;
     container.appendChild(el);
     if (shouldScroll) scrollDown();
   }
@@ -850,7 +946,12 @@
   }
   function removeWelcome() { document.querySelector('.mkai-welcome')?.remove(); }
   function setTyping(v) { const t = document.getElementById('mkaiTyping'); if (t) t.classList.toggle('visible', v); if (v) scrollDown(); }
-  function setSendDisabled(v) { const b = document.getElementById('mkaiSend'); if (b) b.disabled = v; }
+  function setSendDisabled(v) {
+    const b = document.getElementById('mkaiSend');
+    const imageBtn = document.getElementById('mkaiImageBtn');
+    if (b) b.disabled = v;
+    if (imageBtn) imageBtn.disabled = v;
+  }
   function setButtonLabel(btn, label) { const span = btn?.querySelector('span'); if (span) span.textContent = label; }
 
   function escHtml(s) {

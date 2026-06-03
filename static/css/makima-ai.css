@@ -3488,3 +3488,203 @@ pre {
     padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
   }
 }
+
+/* ============================================================
+   MAKIMA AI pro chat vision — upload image, premium bubbles
+   ============================================================ */
+#viewMakimaAI .mkai-input-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: 10px;
+  background: rgba(14, 14, 20, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34), 0 0 24px rgba(255, 0, 45, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+#viewMakimaAI .mkai-image-btn,
+#viewMakimaAI .mkai-send-btn {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+#viewMakimaAI .mkai-image-btn {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.74);
+}
+
+#viewMakimaAI .mkai-image-btn:hover {
+  border-color: rgba(255, 74, 94, 0.34);
+  background: rgba(160, 24, 38, 0.16);
+  color: #fff;
+}
+
+#viewMakimaAI .mkai-image-btn:active,
+#viewMakimaAI .mkai-send-btn:active {
+  transform: scale(0.96);
+}
+
+#viewMakimaAI .mkai-textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 160px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  resize: none;
+}
+
+#viewMakimaAI .mkai-image-preview {
+  width: min(100%, 820px);
+  margin: 0 auto 8px;
+}
+
+#viewMakimaAI .mkai-image-chip,
+#viewMakimaAI .mkai-image-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border-radius: 14px;
+  background: rgba(14, 14, 20, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+}
+
+#viewMakimaAI .mkai-image-chip img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#viewMakimaAI .mkai-image-chip span {
+  min-width: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#viewMakimaAI .mkai-image-chip button {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.76);
+  cursor: pointer;
+}
+
+#viewMakimaAI .mkai-image-error {
+  border-color: rgba(255, 74, 94, 0.24);
+  color: rgba(255, 190, 198, 0.92);
+}
+
+#viewMakimaAI .mkai-bubble-user,
+#viewMakimaAI .mkai-ai-text,
+#viewMakimaAI .thinking-bubble {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24), 0 0 24px rgba(255, 0, 45, 0.045);
+}
+
+#viewMakimaAI .mkai-bubble-user {
+  display: grid;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(122, 12, 28, 0.72), rgba(42, 12, 18, 0.82));
+  border-color: rgba(255, 74, 94, 0.18);
+}
+
+#viewMakimaAI .mkai-user-image {
+  display: block;
+  max-width: min(320px, 100%);
+  max-height: 260px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#viewMakimaAI .mkai-ai-text {
+  padding: 13px 15px;
+  background: rgba(15, 15, 20, 0.70);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#viewMakimaAI .mkai-msg-actions {
+  width: min(100%, 820px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 901px) {
+  #viewMakimaAI .mkai-input-area {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    padding: 12px 20px calc(14px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 900px) {
+  #viewMakimaAI .mkai-messages {
+    padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  }
+
+  #viewMakimaAI .mkai-input-area {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(5,5,8,0), rgba(5,5,8,0.98) 20%);
+  }
+
+  #viewMakimaAI .mkai-input-inner {
+    width: 100%;
+    gap: 8px;
+    border-radius: 18px;
+    padding: 8px;
+  }
+
+  #viewMakimaAI .mkai-image-btn,
+  #viewMakimaAI .mkai-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
+  #viewMakimaAI .mkai-image-preview {
+    width: 100%;
+    margin-bottom: 7px;
+  }
+
+  #viewMakimaAI .mkai-image-chip span {
+    max-width: 170px;
+  }
+
+  #viewMakimaAI .mkai-user-image {
+    max-width: 100%;
+    max-height: 220px;
+  }
+}
