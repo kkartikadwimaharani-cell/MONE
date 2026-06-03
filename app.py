@@ -1706,6 +1706,11 @@ def test_env():
     })
 
 
+def _get_elevenlabs_voice_id():
+    """Prefer Railway env voice ID, then fall back to the backend default voice."""
+    return os.getenv("ELEVENLABS_VOICE_ID") or "RLVsInf0aNHKSyUwmVHP"
+
+
 def _add_no_store_headers(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -1789,14 +1794,16 @@ def _elevenlabs_headers(api_key):
 def tts_status():
     """Safe ElevenLabs TTS env fingerprint without exposing full secrets."""
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    voice_id = _get_elevenlabs_voice_id()
     response = jsonify({
         'elevenlabs_key_exists': bool(api_key),
         'elevenlabs_voice_id_exists': bool(voice_id),
+        'elevenlabs_voice_id_from_env': bool(os.getenv("ELEVENLABS_VOICE_ID")),
         'key_prefix': _mask_prefix(api_key),
         'key_suffix': _mask_suffix(api_key),
         'voice_prefix': _mask_prefix(voice_id),
-        'voice_suffix': _mask_suffix(voice_id)
+        'voice_suffix': _mask_suffix(voice_id),
+        'voice_fingerprint': _safe_secret_fingerprint(voice_id)
     })
     return _add_no_store_headers(response)
 
@@ -1809,7 +1816,7 @@ def tts_diagnose():
         return _add_no_store_headers(response)
 
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    voice_id = _get_elevenlabs_voice_id()
     outbound_ip = _fetch_outbound_ip()
     note = 'Enable Static Outbound IP in Railway service settings if available. This cannot be changed from app code.'
 
@@ -1820,6 +1827,7 @@ def tts_diagnose():
         'key_suffix': _mask_suffix(api_key),
         'voice_prefix': _mask_prefix(voice_id),
         'voice_suffix': _mask_suffix(voice_id),
+        'voice_fingerprint': _safe_secret_fingerprint(voice_id),
         'elevenlabs_status': None,
         'elevenlabs_content_type': None,
         'body_preview': None,
@@ -1829,8 +1837,8 @@ def tts_diagnose():
     if outbound_ip:
         result['outbound_ip'] = outbound_ip
 
-    if not api_key or not voice_id:
-        result['body_preview'] = 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+    if not api_key:
+        result['body_preview'] = 'ELEVENLABS_API_KEY is missing from the current environment.'
         return jsonify(result), 200
 
     try:
@@ -1869,7 +1877,7 @@ def tts_direct_test():
         return _add_no_store_headers(response)
 
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    voice_id = _get_elevenlabs_voice_id()
     result = {
         'key_exists': bool(api_key),
         'voice_exists': bool(voice_id),
@@ -1877,14 +1885,15 @@ def tts_direct_test():
         'key_suffix': _mask_suffix(api_key),
         'voice_prefix': _mask_prefix(voice_id),
         'voice_suffix': _mask_suffix(voice_id),
+        'voice_fingerprint': _safe_secret_fingerprint(voice_id),
         'elevenlabs_status': None,
         'elevenlabs_content_type': None,
         'audio_ok': False,
         'body_preview': ''
     }
 
-    if not api_key or not voice_id:
-        result['body_preview'] = 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+    if not api_key:
+        result['body_preview'] = 'ELEVENLABS_API_KEY is missing from the current environment.'
         return jsonify(result), 200
 
     try:
@@ -1918,7 +1927,7 @@ def tts():
     print("[TTS] /api/tts called")
 
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    voice_id = _get_elevenlabs_voice_id()
 
     print("[TTS] key exists:", bool(api_key))
     print("[TTS] voice exists:", bool(voice_id))
@@ -1931,11 +1940,11 @@ def tts():
     if not text:
         return jsonify({'error': 'Text is required'}), 400
 
-    if not api_key or not voice_id:
+    if not api_key:
         return jsonify({
             'error': 'ELEVENLABS_FAILED',
             'status': 500,
-            'detail': 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+            'detail': 'ELEVENLABS_API_KEY is missing from the current environment.'
         }), 500
 
     try:
