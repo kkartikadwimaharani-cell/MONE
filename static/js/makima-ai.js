@@ -6,9 +6,30 @@
   'use strict';
 
   try {
-    ["elevenlabs_disabled", "tts_disabled", "old_tts_error", "tts_cache"].forEach(key => {
+    const oldTtsStorageKeys = [
+      "elevenlabs_disabled",
+      "tts_disabled",
+      "old_tts_error",
+      "tts_cache",
+      "tts_voice_id",
+      "elevenlabs_voice_id",
+      "makima_tts_voice_id",
+      "makima_ai_tts_cache"
+    ];
+
+    oldTtsStorageKeys.forEach(key => {
       try { sessionStorage.removeItem(key); } catch (e) {}
       try { localStorage.removeItem(key); } catch (e) {}
+    });
+
+    [sessionStorage, localStorage].forEach(storage => {
+      try {
+        Object.keys(storage).forEach(key => {
+          if (key.toLowerCase().includes("tts") || key.toLowerCase().includes("elevenlabs")) {
+            storage.removeItem(key);
+          }
+        });
+      } catch (e) {}
     });
 
     if ("caches" in window) {
