@@ -84,8 +84,6 @@ def _get_gemini_model(model_name=None):
 
 print("[startup] Gemini model cache ready")
 print("GROQ_API_KEY exists:", bool(os.environ.get("GROQ_API_KEY")))
-print("[TTS] ELEVENLABS_API_KEY exists:", bool(os.getenv("ELEVENLABS_API_KEY")))
-print("[TTS] ELEVENLABS_VOICE_ID exists:", bool(os.getenv("ELEVENLABS_VOICE_ID")))
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -1766,9 +1764,8 @@ def _fetch_outbound_ip():
     return None
 
 
-def _call_elevenlabs_tts(api_key, voice_id, text, timeout=30):
-    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128'
-    payload = {
+def _build_elevenlabs_payload(text):
+    return {
         'text': (text or '')[:300],
         'model_id': 'eleven_multilingual_v2',
         'voice_settings': {
@@ -1778,16 +1775,14 @@ def _call_elevenlabs_tts(api_key, voice_id, text, timeout=30):
             'use_speaker_boost': True
         }
     }
-    return requests_lib.post(
-        url,
-        headers={
-            'xi-api-key': api_key,
-            'Content-Type': 'application/json',
-            'Accept': 'audio/mpeg'
-        },
-        json=payload,
-        timeout=timeout
-    )
+
+
+def _elevenlabs_headers(api_key):
+    return {
+        'xi-api-key': api_key,
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json'
+    }
 
 
 @app.route('/api/tts-status', methods=['GET'])
@@ -1839,7 +1834,12 @@ def tts_diagnose():
         return jsonify(result), 200
 
     try:
-        response = _call_elevenlabs_tts(api_key, voice_id, 'Halo', timeout=30)
+        response = requests_lib.post(
+            f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128',
+            headers=_elevenlabs_headers(api_key),
+            json=_build_elevenlabs_payload('Halo'),
+            timeout=30
+        )
         content_type = response.headers.get('content-type') or ''
         result['elevenlabs_status'] = response.status_code
         result['elevenlabs_content_type'] = content_type
@@ -1861,68 +1861,127 @@ def tts_diagnose():
     return jsonify(result), 200
 
 
+@app.route('/api/tts-direct-test', methods=['GET'])
+def tts_direct_test():
+    """Direct ElevenLabs smoke test using the current request-time env."""
+    @after_this_request
+    def add_tts_direct_test_no_store_headers(response):
+        return _add_no_store_headers(response)
+
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    result = {
+        'key_exists': bool(api_key),
+        'voice_exists': bool(voice_id),
+        'key_prefix': _mask_prefix(api_key),
+        'key_suffix': _mask_suffix(api_key),
+        'voice_prefix': _mask_prefix(voice_id),
+        'voice_suffix': _mask_suffix(voice_id),
+        'elevenlabs_status': None,
+        'elevenlabs_content_type': None,
+        'audio_ok': False,
+        'body_preview': ''
+    }
+
+    if not api_key or not voice_id:
+        result['body_preview'] = 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+        return jsonify(result), 200
+
+    try:
+        r = requests_lib.post(
+            f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128',
+            headers=_elevenlabs_headers(api_key),
+            json=_build_elevenlabs_payload('Halo, ini tes suara Makima.'),
+            timeout=30
+        )
+        content_type = r.headers.get('content-type') or ''
+        audio_ok = bool(r.ok and 'audio' in content_type.lower() and r.content)
+        result.update({
+            'elevenlabs_status': r.status_code,
+            'elevenlabs_content_type': content_type,
+            'audio_ok': audio_ok,
+            'body_preview': f'audio bytes: {len(r.content)}' if audio_ok else r.text[:500]
+        })
+    except Exception as exc:
+        result['body_preview'] = str(exc)[:500]
+
+    return jsonify(result), 200
+
+
 @app.route('/api/tts', methods=['POST'])
 def tts():
-    """ElevenLabs Text-to-Speech — returns raw MP3 audio on click only."""
+    """Direct ElevenLabs Text-to-Speech route that returns raw MP3 audio."""
     @after_this_request
     def add_tts_no_store_headers(response):
         return _add_no_store_headers(response)
 
     print("[TTS] /api/tts called")
-    data = request.get_json(silent=True) or {}
-    text = (data.get('text') or '').strip()
 
-    # Railway injects ElevenLabs credentials through env vars; read them per request with no cached fallback.
     api_key = os.getenv("ELEVENLABS_API_KEY")
     voice_id = os.getenv("ELEVENLABS_VOICE_ID")
 
     print("[TTS] key exists:", bool(api_key))
     print("[TTS] voice exists:", bool(voice_id))
-    print("[TTS] key safe:", _mask_prefix(api_key), _mask_suffix(api_key))
-    print("[TTS] voice safe:", _mask_prefix(voice_id), _mask_suffix(voice_id))
+    print("[TTS] key safe:", api_key[:6] if api_key else None, api_key[-6:] if api_key else None)
+    print("[TTS] voice safe:", voice_id[:6] if voice_id else None, voice_id[-6:] if voice_id else None)
+
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or '').strip()
 
     if not text:
         return jsonify({'error': 'Text is required'}), 400
 
     if not api_key or not voice_id:
-        return jsonify({'error': 'ElevenLabs env missing'}), 500
-
-    outbound_ip = _fetch_outbound_ip()
-    if outbound_ip:
-        print("[TTS] outbound public IP:", outbound_ip)
+        return jsonify({
+            'error': 'ELEVENLABS_FAILED',
+            'status': 500,
+            'detail': 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+        }), 500
 
     try:
-        r = _call_elevenlabs_tts(api_key, voice_id, text, timeout=30)
+        print("[TTS] sending request to ElevenLabs")
+        r = requests_lib.post(
+            f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128',
+            headers={
+                'xi-api-key': api_key,
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'text': text[:300],
+                'model_id': 'eleven_multilingual_v2',
+                'voice_settings': {
+                    'stability': 0.45,
+                    'similarity_boost': 0.8,
+                    'style': 0.25,
+                    'use_speaker_boost': True
+                }
+            },
+            timeout=30
+        )
 
         print("[TTS] elevenlabs status:", r.status_code)
-        print("[TTS] content-type:", r.headers.get("content-type"))
+        print("[TTS] elevenlabs content-type:", r.headers.get("content-type"))
+        print("[TTS] elevenlabs body preview:", r.text[:500] if not r.ok else "AUDIO_OK")
 
         if not r.ok:
-            body_preview = r.text[:300]
-            block_detail = _elevenlabs_block_detail(r.text)
-            app.logger.error('ElevenLabs TTS error: status=%d body=%s', r.status_code, body_preview)
-            if r.status_code == 401 and block_detail:
-                return jsonify({
-                    'error': 'ELEVENLABS_BLOCKED',
-                    'detail': block_detail
-                }), 401
             return jsonify({
                 'error': 'ELEVENLABS_FAILED',
                 'status': r.status_code,
-                'detail': body_preview
-            }), 502
+                'detail': r.text[:500]
+            }), r.status_code
 
-        audio_response = make_response(r.content)
-        audio_response.mimetype = 'audio/mpeg'
+        audio_response = make_response(r.content, 200)
+        audio_response.headers['Content-Type'] = 'audio/mpeg'
         return audio_response
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
         return jsonify({
             'error': 'ELEVENLABS_FAILED',
-            'status': 502,
-            'detail': str(e)[:300]
-        }), 502
+            'status': 500,
+            'detail': str(e)[:500]
+        }), 500
 
 
 if __name__ == '__main__':
