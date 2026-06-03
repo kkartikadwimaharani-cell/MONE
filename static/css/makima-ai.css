@@ -3014,3 +3014,188 @@ pre {
     flex-shrink: 0;
   }
 }
+
+/* ============================================================
+   MAKIMA AI polish — readable answers, code blocks, thinking bubble
+   ============================================================ */
+.mkai-messages {
+  padding-bottom: calc(170px + env(safe-area-inset-bottom)) !important;
+  scroll-padding-bottom: calc(170px + env(safe-area-inset-bottom));
+}
+
+.mkai-ai-text {
+  display: block;
+  max-width: 100%;
+  color: rgba(255,255,255,0.86);
+  white-space: normal;
+}
+
+.mkai-ai-text p,
+.mkai-ai-text ul,
+.mkai-ai-text ol,
+.mkai-ai-text h3,
+.mkai-ai-text h4 {
+  margin: 0 0 12px;
+}
+
+.mkai-ai-text p:last-child,
+.mkai-ai-text ul:last-child,
+.mkai-ai-text ol:last-child,
+.mkai-ai-text h3:last-child,
+.mkai-ai-text h4:last-child,
+.mkai-code-block:last-child {
+  margin-bottom: 0;
+}
+
+.mkai-ai-text ul,
+.mkai-ai-text ol {
+  padding-left: 20px;
+}
+
+.mkai-ai-text li {
+  margin: 5px 0;
+  padding-left: 2px;
+}
+
+.mkai-ai-text h3,
+.mkai-ai-text h4 {
+  color: rgba(255,255,255,0.92);
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.mkai-ai-text code:not(.mkai-code-block code) {
+  display: inline;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  color: #ffb4bd;
+  background: rgba(255,255,255,0.075);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.mkai-code-block {
+  width: 100%;
+  max-width: 100%;
+  margin: 12px 0 14px;
+  overflow: hidden;
+  background: #09090d;
+  border: 1px solid rgba(255, 62, 86, 0.22);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+}
+
+.mkai-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  background: rgba(255,255,255,0.035);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.mkai-code-lang {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 112, 128, 0.88);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
+.mkai-code-copy {
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.045);
+  color: rgba(255,255,255,0.72);
+  font-size: 11px;
+}
+
+.mkai-code-copy:hover {
+  border-color: rgba(255, 82, 100, 0.44);
+  color: #fff;
+  background: rgba(180, 24, 38, 0.18);
+}
+
+.mkai-code-block pre {
+  max-width: 100%;
+  margin: 0;
+  padding: 14px 15px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.mkai-code-block pre code {
+  display: block;
+  min-width: max-content;
+  padding: 0;
+  color: rgba(245,245,247,0.88);
+  background: transparent;
+  border: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+.mkai-thinking-message {
+  align-self: center;
+}
+
+.thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 2px 0 0;
+  padding: 11px 13px;
+  background: rgba(15, 10, 13, 0.76);
+  border: 1px solid rgba(255, 58, 78, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.thinking-bubble i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(232, 46, 64, 0.9);
+  animation: mkaiThinkingDot 1.15s ease-in-out infinite;
+}
+
+.thinking-bubble i:nth-of-type(2) { animation-delay: .16s; }
+.thinking-bubble i:nth-of-type(3) { animation-delay: .32s; }
+
+@keyframes mkaiThinkingDot {
+  0%, 78%, 100% { opacity: .32; transform: translateY(0); }
+  38% { opacity: 1; transform: translateY(-4px); }
+}
+
+@media (max-width: 900px) {
+  .mkai-messages {
+    padding-bottom: calc(170px + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(170px + env(safe-area-inset-bottom));
+  }
+
+  .mkai-code-block pre code {
+    font-size: 12.5px;
+  }
+}
