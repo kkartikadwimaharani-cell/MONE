@@ -21,43 +21,41 @@ import google.generativeai as genai
 _gemini_model_cache = {}  # {model_name: GenerativeModel}
 _gemini_configured = False
 
-_MAKIMA_SYSTEM_INSTRUCTION = (
-    'Kamu adalah MAKIMA AI, asisten pribadi pemilik MII NETWORK. '
-    'Jawab dengan bahasa Indonesia santai, tenang, elegan, sedikit dingin, dan personal. '
-    'Gunakan "kamu", bukan "Anda". '
-    'Jawaban pendek, jelas, tidak kaku. Maksimal 1-4 kalimat kecuali user minta teknis. '
-    'Jangan terdengar seperti chatbot customer service. '
-    'Jangan mengaku sudah browsing atau mengakses web. '
-    'Kamu TIDAK punya kemampuan browsing real-time. '
-    'Kalau user minta cek web/link terbaru, jawab: '
-    '"Aku belum bisa mengecek web langsung dari sini. Tapi aku bisa bantu beri arahan umum atau susun langkah ceknya." '
-    'Jangan mengarang link atau URL. '
-    'Jangan memberi rekomendasi website spesifik kalau tidak yakin URL-nya benar. '
-    'Jangan pura-pura bisa membuat gambar atau video. '
-    'Kalau user minta buat gambar, jawab: "Aku belum bisa membuat gambar langsung di sini. Tapi aku bisa buatkan prompt gambarnya." '
-    'Jangan tutup jawaban dengan pertanyaan template seperti "Apakah kamu ingin saya membantu..." atau "Ada yang bisa saya bantu lagi?". '
-    'Kalau tidak tahu, katakan dengan tenang. '
-    'Kalau user minta sesuatu yang belum bisa dilakukan, tawarkan alternatif berupa prompt, langkah, atau ide. '
-    'Jangan membahas API key atau sistem internal. '
-    'Jangan mengaku manusia. '
-    'Ingat informasi penting yang user berikan selama percakapan. '
-    '\n\n'
-    '== KEMAMPUAN CODING ==\n'
-    'Kamu bisa membantu coding: HTML, CSS, JavaScript, Python, Flask, Node.js, UI/UX design, bug fixing, deploy ke Railway/GitHub, integrasi API, frontend dan backend. '
-    '\n\n'
-    '== GAYA CODING ==\n'
-    'Berikan solusi langsung tanpa basa-basi. '
-    'Kode harus rapi dan siap pakai. '
-    'Penjelasan cukup 1-2 kalimat sebelum kode. '
-    'Tulis kode dalam markdown code block. '
-    'Kalau ada banyak file, pisahkan dan beri label nama file. '
-    'Gunakan bahasa Indonesia natural, panggil user dengan "kamu". '
-    '\n\n'
-    '== KEAMANAN ==\n'
-    'Tolak permintaan membuat: malware, phishing, token stealing, hack, spam, bypass payment, pencurian data, atau kerusakan sistem. '
-    'Kalau user minta hal berbahaya, jawab: "Aku tidak bisa bantu membuat itu. Tapi aku bisa bantu buat versi aman, edukasi, atau proteksinya." '
-    'Lalu tawarkan alternatif aman: versi edukasi, proteksi, atau penjelasan defensif.'
-)
+_MAKIMA_SYSTEM_INSTRUCTION = """
+Kamu adalah MAKIMA AI, asisten pribadi milik MII NETWORK.
+Jawab dalam Bahasa Indonesia santai, jelas, tenang, elegan, dan profesional.
+Gunakan kata “kamu”, jangan “Anda”.
+Jangan bilang “sebagai AI”.
+Jangan mengaku bisa browsing jika tidak benar-benar ada fitur browsing.
+Jangan mengarang website, sumber, harga, atau fakta terbaru.
+Kalau user minta cek web tapi tidak ada akses web, jawab persis:
+“Aku belum bisa mengecek web langsung dari sini. Kirim link atau screenshot-nya, nanti aku bantu baca.”
+
+Gaya jawaban:
+- singkat tapi berkualitas
+- langsung ke inti
+- kalau user bingung, jelaskan pelan-pelan
+- kalau user minta prompt Codex, berikan prompt siap copy
+- kalau user minta kode, susun rapi dengan langkah jelas
+- jangan terlalu formal
+- jangan terlalu panjang kecuali user minta detail
+- jangan tutup jawaban dengan pertanyaan template yang kaku
+
+Untuk coding:
+- berikan kode yang rapi
+- gunakan struktur jelas
+- kasih nama file kalau perlu
+- jelaskan bagian penting secukupnya
+- jangan kasih kode berantakan
+- jangan mengubah fitur lain yang tidak diminta
+- selalu beri peringatan kalau perubahan bisa merusak fitur existing
+- gunakan markdown code block dengan bahasa jika relevan
+
+Safety:
+- tolak permintaan malware, phishing, mencuri token, spam, hack akun, atau bypass ilegal
+- boleh bantu debugging, UI, backend, deploy, API, dan automation yang aman
+- kalau user meminta hal berbahaya, jawab singkat bahwa kamu tidak bisa membantu itu, lalu tawarkan alternatif aman seperti debugging, edukasi defensif, atau proteksi.
+"""
 
 _GEMINI_ALLOWED_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash']
 
@@ -1413,78 +1411,85 @@ def test_gemini():
         })
 
 
-def _filter_makima_output(text):
-    """Filter AI output to remove forbidden phrases and patterns."""
+def _filter_makima_output(text, user_message=''):
+    """Filter AI output to keep Makima honest, readable, and safe."""
     if not text:
         return text
 
-    # Forbidden phrases that indicate fake browsing
-    _forbidden_phrases = [
-        'setelah mencari',
-        'saya menemukan',
-        'berikut sumber web',
-        'saya mengakses web',
-        'setelah saya telusuri',
-        'berdasarkan pencarian',
+    safe_web_reply = 'Aku belum bisa mengecek web langsung dari sini. Kirim link atau screenshot-nya, nanti aku bantu baca.'
+    original = str(text).strip()
+    text_lower = original.lower()
+
+    # If the model falsely claims browsing/search/link access, replace the whole reply.
+    forbidden_browsing_claims = [
+        'setelah mencari di web',
+        'setelah saya mencari di web',
+        'saya menemukan sumber',
+        'berikut hasil pencarian',
+        'saya membuka website',
+        'saya sudah mengakses link',
+        'saya mengakses link',
+        'saya sudah membuka link',
+        'saya membuka link',
+        'setelah browsing',
         'saya browsing',
-        'saya cari di web',
-        'setelah menelusuri',
-        'hasil pencarian',
-        'saya temukan di web',
+        'berdasarkan hasil pencarian',
         'menurut hasil pencarian',
+        'hasil penelusuran web',
+        'setelah menelusuri web',
     ]
+    if any(phrase in text_lower for phrase in forbidden_browsing_claims):
+        return safe_web_reply
 
-    # Check and replace sentences containing forbidden phrases
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-    filtered_sentences = []
-    has_forbidden = False
+    user_lower = str(user_message or '').lower()
+    user_requested_ascii = any(word in user_lower for word in ('ascii', 'gambar teks', 'text art', 'ascii art'))
+    has_ascii_art = _looks_like_ascii_art(original)
+    if has_ascii_art and not user_requested_ascii:
+        return 'Aku tidak akan membuat gambar palsu dari teks kalau kamu tidak memintanya. Kalau kamu butuh, aku bisa bantu buat prompt atau struktur desainnya.'
 
-    for sentence in sentences:
-        sentence_lower = sentence.lower()
-        contains_forbidden = False
-        for phrase in _forbidden_phrases:
-            if phrase in sentence_lower:
-                contains_forbidden = True
-                has_forbidden = True
-                break
-        if not contains_forbidden:
-            filtered_sentences.append(sentence)
+    # Remove fabricated URLs, while preserving markdown/newlines/code blocks.
+    original = re.sub(r'https?://[^\s\)\]]+', '', original)
 
-    if has_forbidden:
-        # Prepend the standard disclaimer if we removed browsing claims
-        disclaimer = 'Aku belum bisa mengecek web langsung dari sini.'
-        if filtered_sentences:
-            text = disclaimer + ' ' + ' '.join(filtered_sentences)
-        else:
-            text = disclaimer
-    else:
-        text = ' '.join(filtered_sentences) if filtered_sentences else text
+    # Replace Anda safely without flattening markdown formatting.
+    original = original.replace('Anda', 'kamu')
+    original = re.sub(r'\banda\b', 'kamu', original, flags=re.IGNORECASE)
 
-    # Remove fabricated URLs (any http/https links)
-    text = re.sub(r'https?://[^\s\)]+', '', text)
-    # Clean up extra spaces from removed URLs
-    text = re.sub(r'  +', ' ', text).strip()
-
-    # Replace "Anda" with "kamu" (capital Anda is always the pronoun, safe to replace directly)
-    text = text.replace('Anda', 'kamu')
-    # Use word-boundary regex for lowercase to avoid corrupting words like "tanda", "menandaskan"
-    text = re.sub(r'\banda\b', 'kamu', text, flags=re.IGNORECASE)
-
-    # Remove template closing questions
-    _template_patterns = [
-        r'Apakah kamu ingin saya membantu[^.?!]*[.?!]?',
-        r'Ada yang bisa saya bantu[^.?!]*[.?!]?',
-        r'Apakah ada yang ingin[^.?!]*[.?!]?',
-        r'Mau saya bantu[^.?!]*[.?!]?',
+    # Remove stiff template closing questions.
+    template_patterns = [
+        r'Apakah kamu ingin saya membantu[^.?!\n]*[.?!]?',
+        r'Ada yang bisa saya bantu[^.?!\n]*[.?!]?',
+        r'Apakah ada yang ingin[^.?!\n]*[.?!]?',
+        r'Mau saya bantu[^.?!\n]*[.?!]?',
     ]
-    for pattern in _template_patterns:
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    for pattern in template_patterns:
+        original = re.sub(pattern, '', original, flags=re.IGNORECASE)
 
-    # Final cleanup
-    text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s+([.!?,])', r'\1', text)
+    # Clean spacing per line without destroying paragraphs or code blocks.
+    lines = [re.sub(r'[ \t]{2,}', ' ', line).rstrip() for line in original.splitlines()]
+    cleaned = '\n'.join(lines).strip()
+    cleaned = re.sub(r'\n{4,}', '\n\n\n', cleaned)
+    cleaned = re.sub(r'\s+([.!?,])', r'\1', cleaned)
+    return cleaned or safe_web_reply
 
-    return text
+
+def _looks_like_ascii_art(text):
+    """Detect obvious non-code ASCII/text drawings in model output."""
+    if '```' in text:
+        # Code examples often contain symbols; do not treat fenced code as fake art.
+        return False
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 4:
+        return False
+    art_chars = set('/\\|_-=+*#~`^<>[]{}().,:;\'"')
+    symbol_heavy = 0
+    for line in lines:
+        stripped = line.strip()
+        if len(stripped) < 6:
+            continue
+        symbol_count = sum(1 for ch in stripped if ch in art_chars)
+        if symbol_count / max(len(stripped), 1) >= 0.55:
+            symbol_heavy += 1
+    return symbol_heavy >= 3
 
 
 @app.route('/api/ai-chat', methods=['POST'])
@@ -1637,7 +1642,8 @@ def ai_chat():
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_gemini(model)
         if reply:
-            return jsonify({'reply': _filter_makima_output(reply)})
+            app.logger.info('MAKIMA AI provider used: gemini model=%s', model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
+            return jsonify({'reply': _filter_makima_output(reply, message)})
         if err == 'not_configured':
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         if err == 'quota':
@@ -1650,7 +1656,8 @@ def ai_chat():
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_groq(model)
         if reply:
-            return jsonify({'reply': _filter_makima_output(reply)})
+            app.logger.info('MAKIMA AI provider used: groq model=%s', model)
+            return jsonify({'reply': _filter_makima_output(reply, message)})
         if err == 'not_configured':
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         if err == 'quota':
@@ -1667,7 +1674,8 @@ def ai_chat():
         if gemini_key:
             reply, err = _call_gemini(model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
             if reply:
-                return jsonify({'reply': _filter_makima_output(reply)})
+                app.logger.info('MAKIMA AI provider used: gemini model=%s', model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
+                return jsonify({'reply': _filter_makima_output(reply, message)})
             if err != 'quota':
                 # Non-quota error from Gemini: return the error, do not fall through to Groq
                 if err == 'not_configured':
@@ -1681,7 +1689,8 @@ def ai_chat():
             groq_model = model if model in groq_allowed else 'llama-3.1-8b-instant'
             reply, err = _call_groq(groq_model)
             if reply:
-                return jsonify({'reply': _filter_makima_output(reply)})
+                app.logger.info('MAKIMA AI provider used: groq model=%s', groq_model)
+                return jsonify({'reply': _filter_makima_output(reply, message)})
             if err == 'quota':
                 return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 429
             return jsonify({'error': 'SEMUA PROVIDER AI SEDANG TIDAK TERSEDIA. COBA LAGI NANTI.'}), 500

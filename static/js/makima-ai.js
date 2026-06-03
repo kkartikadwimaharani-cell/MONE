@@ -822,7 +822,14 @@
   }
 
   function msgs() { return document.getElementById('mkaiMessages'); }
-  function scrollDown() { const m = msgs(); if (m) setTimeout(() => { m.scrollTop = m.scrollHeight; }, 40); }
+  function scrollDown() {
+    const m = msgs();
+    if (!m) return;
+    const run = () => { m.scrollTop = m.scrollHeight; };
+    run();
+    requestAnimationFrame(run);
+    setTimeout(run, 60);
+  }
   function removeWelcome() { document.querySelector('.mkai-welcome')?.remove(); }
   function setTyping(v) { const t = document.getElementById('mkaiTyping'); if (t) t.classList.toggle('visible', v); if (v) scrollDown(); }
   function setSendDisabled(v) { const b = document.getElementById('mkaiSend'); if (b) b.disabled = v; }
@@ -837,19 +844,65 @@
   }
 
   function renderMarkdown(text) {
-    text = escHtml(text);
-    text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-      const cleanCode = code.trim();
-      const encoded = encodeURIComponent(cleanCode);
-      return `<div class="mkai-code-block">
-        <div class="mkai-code-header"><span class="mkai-code-lang">${lang || 'code'}</span><button class="mkai-code-copy" data-code="${encoded}" type="button">Copy</button></div>
-        <pre><code>${cleanCode}</code></pre>
-      </div>`;
-    });
-    text = text.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    return text.replace(/\n/g, '<br>');
+    const source = String(text || '').replace(/\r\n/g, '\n');
+    const parts = [];
+    const fenceRe = /```([^\n`]*)\n?([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = fenceRe.exec(source)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(renderTextMarkdown(source.slice(lastIndex, match.index)));
+      }
+      const lang = (match[1] || '').trim();
+      const code = (match[2] || '').replace(/^\n|\n$/g, '');
+      const encoded = encodeURIComponent(code);
+      parts.push(`<div class="mkai-code-block">
+        <div class="mkai-code-header"><span class="mkai-code-lang">${escHtml(lang || 'code')}</span><button class="mkai-code-copy" data-code="${escAttr(encoded)}" type="button">Copy</button></div>
+        <pre><code>${escHtml(code)}</code></pre>
+      </div>`);
+      lastIndex = fenceRe.lastIndex;
+    }
+
+    if (lastIndex < source.length) {
+      parts.push(renderTextMarkdown(source.slice(lastIndex)));
+    }
+
+    return parts.join('').trim();
+  }
+
+  function renderTextMarkdown(chunk) {
+    const blocks = String(chunk || '').split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+    return blocks.map(block => {
+      const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+      if (!lines.length) return '';
+
+      const unordered = lines.every(line => /^[-*+]\s+/.test(line));
+      if (unordered) {
+        return `<ul>${lines.map(line => `<li>${renderInlineMarkdown(line.replace(/^[-*+]\s+/, ''))}</li>`).join('')}</ul>`;
+      }
+
+      const ordered = lines.every(line => /^\d+[.)]\s+/.test(line));
+      if (ordered) {
+        return `<ol>${lines.map(line => `<li>${renderInlineMarkdown(line.replace(/^\d+[.)]\s+/, ''))}</li>`).join('')}</ol>`;
+      }
+
+      const heading = block.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        const level = Math.min(heading[1].length + 2, 4);
+        return `<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`;
+      }
+
+      return `<p>${lines.map(renderInlineMarkdown).join('<br>')}</p>`;
+    }).join('');
+  }
+
+  function renderInlineMarkdown(value) {
+    let html = escHtml(value);
+    html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/(^|\s)\*([^*]+)\*(?=\s|$|[.,!?])/g, '$1<em>$2</em>');
+    return html;
   }
 
   function tryRender() {
