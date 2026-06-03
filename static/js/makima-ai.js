@@ -16,8 +16,14 @@
       "makima_tts_voice_id",
       "makima_ai_tts_cache"
     ];
+    const oldUiStorageKeys = [
+      "old_chat_ui",
+      "old_code_renderer",
+      "makima_thinking_old",
+      "ai_ui_cache"
+    ];
 
-    oldTtsStorageKeys.forEach(key => {
+    oldTtsStorageKeys.concat(oldUiStorageKeys).forEach(key => {
       try { sessionStorage.removeItem(key); } catch (e) {}
       try { localStorage.removeItem(key); } catch (e) {}
     });
@@ -574,7 +580,10 @@
     if (!container) return;
     const el = document.createElement('div');
     el.className = 'mkai-msg mkai-msg-ai';
-    const bodyHTML = isErr ? `<div class="mkai-ai-text error">${escHtml(text)}</div>` : `<div class="mkai-ai-text">${renderMarkdown(text)}</div>`;
+    const codeBlocks = [];
+    const bodyHTML = isErr
+      ? `<div class="mkai-ai-text error">${escHtml(text)}</div>`
+      : `<div class="mkai-ai-text">${renderMarkdown(text, codeBlocks)}</div>`;
     el.innerHTML = `
       <div class="mkai-ai-row">
         <img class="mkai-ai-avatar" src="/static/img/makima-ai-profile.png" alt="" draggable="false" oncontextmenu="return false">
@@ -589,9 +598,9 @@
         <button class="mkai-action-btn copy" data-msg="${encodeURIComponent(text)}" type="button"><span>Salin</span></button>
       </div>` : ''}`;
     container.appendChild(el);
+    hydrateCodeBlocks(el, codeBlocks);
     el.querySelector('.mkai-action-btn.speaker')?.addEventListener('click', handleSpeak);
     el.querySelector('.mkai-action-btn.copy')?.addEventListener('click', handleCopy);
-    el.querySelectorAll('.mkai-code-copy').forEach(btn => btn.addEventListener('click', handleCodeCopy));
     if (shouldScroll) scrollDown();
   }
 
@@ -730,11 +739,20 @@
 
   function handleCodeCopy(e) {
     const btn = e.currentTarget;
-    const code = decodeURIComponent(btn.dataset.code || '');
+    const block = btn.closest('.mkai-code-block');
+    const code = block?.querySelector('code')?.textContent || '';
     copyText(code, () => {
-      btn.textContent = 'Disalin!';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      btn.textContent = 'Disalin';
+      setTimeout(() => { btn.textContent = 'Salin'; }, 1500);
     });
+  }
+
+  function handleCodeExpand(e) {
+    const btn = e.currentTarget;
+    const block = btn.closest('.mkai-code-block');
+    if (!block) return;
+    const expanded = block.classList.toggle('expanded');
+    btn.textContent = expanded ? 'Tutup' : 'Lihat penuh';
   }
 
   function copyText(text, done) {
@@ -843,7 +861,7 @@
     return escHtml(s).replace(/'/g, '&#39;');
   }
 
-  function renderMarkdown(text) {
+  function renderMarkdown(text, codeBlocks = []) {
     const source = String(text || '').replace(/\r\n/g, '\n');
     const parts = [];
     const fenceRe = /```([^\n`]*)\n?([\s\S]*?)```/g;
@@ -854,13 +872,10 @@
       if (match.index > lastIndex) {
         parts.push(renderTextMarkdown(source.slice(lastIndex, match.index)));
       }
-      const lang = (match[1] || '').trim();
+      const lang = (match[1] || '').trim() || 'CODE';
       const code = (match[2] || '').replace(/^\n|\n$/g, '');
-      const encoded = encodeURIComponent(code);
-      parts.push(`<div class="mkai-code-block">
-        <div class="mkai-code-header"><span class="mkai-code-lang">${escHtml(lang || 'code')}</span><button class="mkai-code-copy" data-code="${escAttr(encoded)}" type="button">Copy</button></div>
-        <pre><code>${escHtml(code)}</code></pre>
-      </div>`);
+      const index = codeBlocks.push({ lang, code }) - 1;
+      parts.push(`<div class="mkai-code-placeholder" data-code-index="${index}"></div>`);
       lastIndex = fenceRe.lastIndex;
     }
 
@@ -869,6 +884,57 @@
     }
 
     return parts.join('').trim();
+  }
+
+  function hydrateCodeBlocks(root, codeBlocks) {
+    root.querySelectorAll('.mkai-code-placeholder').forEach(placeholder => {
+      const index = Number(placeholder.dataset.codeIndex || 0);
+      const item = codeBlocks[index] || { lang: 'CODE', code: '' };
+      const block = document.createElement('div');
+      block.className = 'mkai-code-block compact';
+
+      const header = document.createElement('div');
+      header.className = 'mkai-code-header';
+
+      const lang = document.createElement('span');
+      lang.className = 'mkai-code-lang';
+      lang.textContent = normalizeCodeLabel(item.lang);
+
+      const controls = document.createElement('div');
+      controls.className = 'mkai-code-controls';
+
+      const expand = document.createElement('button');
+      expand.className = 'mkai-code-expand';
+      expand.type = 'button';
+      expand.textContent = 'Lihat penuh';
+      expand.addEventListener('click', handleCodeExpand);
+
+      const copy = document.createElement('button');
+      copy.className = 'mkai-code-copy';
+      copy.type = 'button';
+      copy.textContent = 'Salin';
+      copy.addEventListener('click', handleCodeCopy);
+
+      controls.append(expand, copy);
+      header.append(lang, controls);
+
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.textContent = item.code || '';
+      pre.appendChild(code);
+      block.append(header, pre);
+      placeholder.replaceWith(block);
+
+      requestAnimationFrame(() => {
+        const longCode = pre.scrollHeight > pre.clientHeight + 8 || code.textContent.split('\n').length > 18;
+        block.classList.toggle('is-long', longCode);
+      });
+    });
+  }
+
+  function normalizeCodeLabel(label) {
+    const clean = String(label || 'CODE').trim();
+    return /[./\\]/.test(clean) ? clean : clean.toUpperCase();
   }
 
   function renderTextMarkdown(chunk) {
