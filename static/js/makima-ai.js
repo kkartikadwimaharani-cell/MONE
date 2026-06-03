@@ -6,10 +6,10 @@
   'use strict';
 
   try {
-    sessionStorage.removeItem("elevenlabs_disabled");
-    sessionStorage.removeItem("tts_disabled");
-    sessionStorage.removeItem("old_tts_error");
-    localStorage.removeItem("tts_cache");
+    ["elevenlabs_disabled", "tts_disabled", "old_tts_error", "tts_cache"].forEach(key => {
+      try { sessionStorage.removeItem(key); } catch (e) {}
+      try { localStorage.removeItem(key); } catch (e) {}
+    });
 
     if ("caches" in window) {
       caches.keys().then(keys => {

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request, make_response
 import yt_dlp
 import os
 import uuid
@@ -1722,6 +1722,74 @@ def _safe_secret_fingerprint(value):
     return hashlib.sha256(value.encode('utf-8')).hexdigest()[:12]
 
 
+def _mask_prefix(value, size=6):
+    return value[:size] if value else None
+
+
+def _mask_suffix(value, size=6):
+    return value[-size:] if value else None
+
+
+def _elevenlabs_block_detail(response_text):
+    preview = (response_text or '')[:500]
+    try:
+        parsed = json.loads(response_text or '{}')
+    except Exception:
+        parsed = {}
+
+    detail = parsed.get('detail') if isinstance(parsed, dict) else None
+    status = None
+    message = None
+    if isinstance(detail, dict):
+        status = detail.get('status')
+        message = detail.get('message')
+    elif isinstance(detail, str):
+        message = detail
+
+    combined = ' '.join(str(part or '') for part in (status, message, preview)).lower()
+    if 'detected_unusual_activity' in combined:
+        return 'detected_unusual_activity'
+    return None
+
+
+def _fetch_outbound_ip():
+    try:
+        response = requests_lib.get('https://api.ipify.org?format=json', timeout=5)
+        if response.ok:
+            outbound_ip = (response.json() or {}).get('ip')
+            if outbound_ip:
+                app.logger.info('[TTS] outbound public IP: %s', outbound_ip)
+                return outbound_ip
+        app.logger.warning('[TTS] outbound IP checker status=%s body=%s', response.status_code, response.text[:120])
+    except Exception as exc:
+        app.logger.warning('[TTS] outbound IP checker failed: %s', str(exc))
+    return None
+
+
+def _call_elevenlabs_tts(api_key, voice_id, text, timeout=30):
+    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128'
+    payload = {
+        'text': (text or '')[:300],
+        'model_id': 'eleven_multilingual_v2',
+        'voice_settings': {
+            'stability': 0.45,
+            'similarity_boost': 0.8,
+            'style': 0.25,
+            'use_speaker_boost': True
+        }
+    }
+    return requests_lib.post(
+        url,
+        headers={
+            'xi-api-key': api_key,
+            'Content-Type': 'application/json',
+            'Accept': 'audio/mpeg'
+        },
+        json=payload,
+        timeout=timeout
+    )
+
+
 @app.route('/api/tts-status', methods=['GET'])
 def tts_status():
     """Safe ElevenLabs TTS env fingerprint without exposing full secrets."""
@@ -1730,12 +1798,67 @@ def tts_status():
     response = jsonify({
         'elevenlabs_key_exists': bool(api_key),
         'elevenlabs_voice_id_exists': bool(voice_id),
-        'key_prefix': api_key[:6] if api_key else None,
-        'key_suffix': api_key[-6:] if api_key else None,
-        'voice_prefix': voice_id[:6] if voice_id else None,
-        'voice_suffix': voice_id[-6:] if voice_id else None
+        'key_prefix': _mask_prefix(api_key),
+        'key_suffix': _mask_suffix(api_key),
+        'voice_prefix': _mask_prefix(voice_id),
+        'voice_suffix': _mask_suffix(voice_id)
     })
     return _add_no_store_headers(response)
+
+
+@app.route('/api/tts-diagnose', methods=['GET'])
+def tts_diagnose():
+    """Call ElevenLabs with current Railway env and return safe diagnostics."""
+    @after_this_request
+    def add_tts_diagnose_no_store_headers(response):
+        return _add_no_store_headers(response)
+
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID")
+    outbound_ip = _fetch_outbound_ip()
+    note = 'Enable Static Outbound IP in Railway service settings if available. This cannot be changed from app code.'
+
+    result = {
+        'key_exists': bool(api_key),
+        'voice_exists': bool(voice_id),
+        'key_prefix': _mask_prefix(api_key),
+        'key_suffix': _mask_suffix(api_key),
+        'voice_prefix': _mask_prefix(voice_id),
+        'voice_suffix': _mask_suffix(voice_id),
+        'elevenlabs_status': None,
+        'elevenlabs_content_type': None,
+        'body_preview': None,
+        'audio_ok': False,
+        'note': note
+    }
+    if outbound_ip:
+        result['outbound_ip'] = outbound_ip
+
+    if not api_key or not voice_id:
+        result['body_preview'] = 'ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is missing from the current environment.'
+        return jsonify(result), 200
+
+    try:
+        response = _call_elevenlabs_tts(api_key, voice_id, 'Halo', timeout=30)
+        content_type = response.headers.get('content-type') or ''
+        result['elevenlabs_status'] = response.status_code
+        result['elevenlabs_content_type'] = content_type
+        result['audio_ok'] = bool(response.ok and 'audio' in content_type.lower() and response.content)
+
+        if result['audio_ok']:
+            result['body_preview'] = f'audio bytes: {len(response.content)}'
+        else:
+            result['body_preview'] = response.text[:300]
+
+        block_detail = _elevenlabs_block_detail(response.text if not result['audio_ok'] else '')
+        if response.status_code == 401 and block_detail:
+            result['error'] = 'ELEVENLABS_BLOCKED'
+            result['detail'] = block_detail
+    except Exception as exc:
+        result['body_preview'] = str(exc)[:300]
+        result['note'] = f'{note} ElevenLabs diagnose request failed before a response was received.'
+
+    return jsonify(result), 200
 
 
 @app.route('/api/tts', methods=['POST'])
@@ -1755,8 +1878,8 @@ def tts():
 
     print("[TTS] key exists:", bool(api_key))
     print("[TTS] voice exists:", bool(voice_id))
-    print("[TTS] key safe:", api_key[:6] if api_key else None, api_key[-6:] if api_key else None)
-    print("[TTS] voice safe:", voice_id[:6] if voice_id else None, voice_id[-6:] if voice_id else None)
+    print("[TTS] key safe:", _mask_prefix(api_key), _mask_suffix(api_key))
+    print("[TTS] voice safe:", _mask_prefix(voice_id), _mask_suffix(voice_id))
 
     if not text:
         return jsonify({'error': 'Text is required'}), 400
@@ -1764,47 +1887,34 @@ def tts():
     if not api_key or not voice_id:
         return jsonify({'error': 'ElevenLabs env missing'}), 500
 
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(ip, _rate_store_tts, 5):
-        return jsonify({'error': 'Too many requests'}), 429
-
-    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128'
-    payload = {
-        'text': text[:300],
-        'model_id': 'eleven_multilingual_v2',
-        'voice_settings': {
-            'stability': 0.45,
-            'similarity_boost': 0.8,
-            'style': 0.25,
-            'use_speaker_boost': True
-        }
-    }
+    outbound_ip = _fetch_outbound_ip()
+    if outbound_ip:
+        print("[TTS] outbound public IP:", outbound_ip)
 
     try:
-        r = requests_lib.post(
-            url,
-            headers={
-                'xi-api-key': api_key,
-                'Content-Type': 'application/json',
-                'Accept': 'audio/mpeg'
-            },
-            json=payload,
-            timeout=30
-        )
+        r = _call_elevenlabs_tts(api_key, voice_id, text, timeout=30)
 
         print("[TTS] elevenlabs status:", r.status_code)
         print("[TTS] content-type:", r.headers.get("content-type"))
 
         if not r.ok:
             body_preview = r.text[:300]
+            block_detail = _elevenlabs_block_detail(r.text)
             app.logger.error('ElevenLabs TTS error: status=%d body=%s', r.status_code, body_preview)
+            if r.status_code == 401 and block_detail:
+                return jsonify({
+                    'error': 'ELEVENLABS_BLOCKED',
+                    'detail': block_detail
+                }), 401
             return jsonify({
                 'error': 'ELEVENLABS_FAILED',
                 'status': r.status_code,
                 'detail': body_preview
             }), 502
 
-        return Response(r.content, mimetype='audio/mpeg')
+        audio_response = make_response(r.content)
+        audio_response.mimetype = 'audio/mpeg'
+        return audio_response
 
     except Exception as e:
         app.logger.error('TTS exception: %s', str(e))
