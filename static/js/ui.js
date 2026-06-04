@@ -236,62 +236,59 @@ window.setAppMode = setAppMode;
     if (!container) return;
 
     var tools = [
-      'Auto Hitter Lab',
-      'CC Research',
-      'BIN Vault',
-      'Password Audit',
-      'License Vault',
-      'Carding Notes',
-      'Mobile Toolkit',
-      'VIP Methods'
+      { name: 'Auto Hitter Lab', description: 'Automation risk preview.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><path d="M12 13l4-5"/><path d="M6.5 18h11"/></svg>' },
+      { name: 'CC Research', description: 'Payment security awareness.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>' },
+      { name: 'BIN Vault', description: 'Issuer data education.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg>' },
+      { name: 'Password Audit', description: 'Password strength awareness.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg>' },
+      { name: 'License Vault', description: 'Premium access notes.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7a4 4 0 1 1-3-3.87"/><path d="M14 14l7 7"/><path d="M19 19l-2 2"/><path d="M17 17l-2 2"/></svg>' },
+      { name: 'Carding Notes', description: 'Anti-fraud awareness.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>' },
+      { name: 'Mobile Toolkit', description: 'Mobile privacy utilities.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/><path d="M10 6h4"/></svg>' },
+      { name: 'VIP Methods', description: 'Private workflow notes.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6-4.36-4.25 6.03-.88z"/></svg>' }
     ];
 
     var cards = tools.map(function(tool) {
-      return '<button type="button" class="vault-tool-card vault-flip-card" aria-label="Locked preview: ' + tool + '">' +
-        '<span class="vault-flip-inner">' +
-          '<span class="vault-face vault-tool-front">' +
-            '<span class="vault-lock-mark">LOCKED</span>' +
-            '<span class="vault-tool-name">' + tool + '</span>' +
-            '<span class="vault-tool-line"></span>' +
-          '</span>' +
-          '<span class="vault-face vault-tool-back">' +
-            '<span class="vault-preview-text">Private preview.<br>Contact admin for access.</span>' +
-            '<span class="vault-tool-actions">' +
-              '<span class="vault-action-btn">Request Access</span>' +
-              '<span class="vault-action-btn">Contact Admin</span>' +
-            '</span>' +
-          '</span>' +
-        '</span>' +
-      '</button>';
+      return '<article class="vault-tool-card" aria-label="Locked preview: ' + tool.name + '">' +
+        '<div class="vault-tool-top">' +
+          '<span class="vault-tool-icon" aria-hidden="true">' + tool.icon + '</span>' +
+          '<span class="vault-lock-mark">LOCKED</span>' +
+        '</div>' +
+        '<h4 class="vault-tool-name">' + tool.name + '</h4>' +
+        '<p class="vault-tool-desc">' + tool.description + '</p>' +
+        '<button type="button" class="vault-action-btn">Request Access / Contact Admin</button>' +
+      '</article>';
     }).join('');
 
     container.innerHTML = '<section class="private-vault-page" aria-label="Private Vault">' +
       '<div class="vault-bg-grid"></div>' +
+      '<div class="vault-bg-noise"></div>' +
       '<header class="vault-hero">' +
-        '<span class="vault-kicker">ACTIVE</span>' +
+        '<span class="vault-kicker">LOCKED SHOWCASE</span>' +
         '<h2 class="vault-title">PRIVATE VAULT</h2>' +
-        '<p class="vault-subtitle">Restricted access area for selected MII NETWORK modules.</p>' +
+        '<p class="vault-subtitle">Premium restricted preview for selected MII NETWORK modules.</p>' +
       '</header>' +
       '<div class="vault-main-layout">' +
         '<button type="button" class="vault-admin-card vault-flip-card" aria-label="Flip admin profile card">' +
           '<span class="vault-flip-inner">' +
             '<span class="vault-face vault-admin-front">' +
               '<span class="vault-scanline"></span>' +
-              '<span class="vault-admin-photo-wrap"><img class="vault-admin-photo" src="/static/img/Admin.png" alt="NO NAME admin profile" draggable="false" oncontextmenu="return false" ondragstart="return false"></span>' +
+              '<span class="vault-card-badge vault-card-badge-left">LV.99999</span>' +
+              '<span class="vault-card-badge vault-card-badge-right">ONLINE</span>' +
+              '<span class="vault-admin-photo-wrap"><span class="vault-avatar-scan"></span><img class="vault-admin-photo" src="/static/img/Admin.png" alt="NO NAME admin profile" draggable="false" oncontextmenu="return false" ondragstart="return false"></span>' +
               '<span class="vault-admin-name">NO NAME</span>' +
-              '<span class="vault-admin-title vault-glitch-text">UNKNOWN ENTITY</span>' +
-              '<span class="vault-admin-meta"><span>LEVEL: LV.99999</span><span>STATUS: ONLINE</span><span>ROLE: OWNER</span></span>' +
+              '<span class="vault-admin-title">UNKNOWN ENTITY</span>' +
+              '<span class="vault-admin-meta"><span>CLEARANCE: UNKNOWN</span><span>POLICY: RESTRICTED</span><span>PROTOCOL: CONTROL MODE</span></span>' +
+              '<span class="vault-tap-hint">TAP TO REVEAL</span>' +
             '</span>' +
             '<span class="vault-face vault-admin-back">' +
-              '<span class="vault-scanline"></span>' +
+              '<span class="vault-scanline vault-scanline-once"></span>' +
               '<span class="vault-reveal vault-reveal-1">IDENTITY UNSEALED</span>' +
               '<span class="vault-reveal vault-reveal-2">NO NAME</span>' +
-              '<span class="vault-reveal vault-reveal-3">LV.99999</span>' +
-              '<span class="vault-reveal vault-reveal-4">POLICY: RESTRICTED</span>' +
-              '<span class="vault-reveal vault-reveal-5">PROTOCOL: CONTROL MODE</span>' +
-              '<span class="vault-reveal vault-reveal-6">CLEARANCE: OWNER</span>' +
-              '<span class="vault-reveal vault-reveal-7">ACCESS: ADMIN ONLY</span>' +
-              '<span class="vault-reveal vault-reveal-final vault-glitch-text">UNKNOWN ENTITY</span>' +
+              '<span class="vault-reveal vault-reveal-final vault-reveal-3">UNKNOWN ENTITY</span>' +
+              '<span class="vault-reveal vault-reveal-4">LV.99999</span>' +
+              '<span class="vault-reveal vault-reveal-5">OWNER ACCESS</span>' +
+              '<span class="vault-reveal vault-reveal-6">PRIVATE VAULT</span>' +
+              '<span class="vault-reveal vault-reveal-7">POLICY: RESTRICTED</span>' +
+              '<span class="vault-reveal vault-reveal-8">PROTOCOL: CONTROL MODE</span>' +
             '</span>' +
           '</span>' +
         '</button>' +
@@ -299,12 +296,13 @@ window.setAppMode = setAppMode;
           '<div class="vault-panel-label">ACCESS PANEL</div>' +
           '<div class="vault-panel-row"><span>Vault State</span><strong>LOCKED SHOWCASE</strong></div>' +
           '<div class="vault-panel-row"><span>Policy</span><strong>RESTRICTED</strong></div>' +
+          '<div class="vault-panel-row"><span>Protocol</span><strong>CONTROL MODE</strong></div>' +
           '<div class="vault-panel-row"><span>Execution</span><strong>DISABLED</strong></div>' +
-          '<p class="vault-panel-note">Private Vault is a visual preview only. No checker, hitter, cracking, abuse, or automation functions are enabled.</p>' +
+          '<p class="vault-panel-note">Private Vault is a visual showcase only. No checker, hitter, cracking, abuse, automation, or backend tools are enabled.</p>' +
         '</aside>' +
       '</div>' +
       '<section class="vault-tools-section">' +
-        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Preview cards only. Access requires admin approval.</p></div>' +
+        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Compact previews only. Access requires admin approval.</p></div>' +
         '<div class="vault-tools-grid">' + cards + '</div>' +
       '</section>' +
     '</section>';
