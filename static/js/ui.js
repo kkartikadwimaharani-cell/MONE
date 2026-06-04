@@ -304,7 +304,7 @@ window.setAppMode = setAppMode;
         '<p class="vault-gate-subtitle">' + uiText('type_confirm') + '</p>' +
         '<label class="vault-gate-label" for="vaultConfirmInput">' + uiText('verification_token') + '</label>' +
         '<div class="vault-gate-input-wrap">' +
-          '<input id="vaultConfirmInput" class="vault-gate-input" type="text" inputmode="latin" autocapitalize="characters" spellcheck="false" aria-describedby="vaultGateMessage" placeholder="CONFIRM">' +
+          '<input id="vaultConfirmInput" class="vault-gate-input" type="text" inputmode="latin" autocapitalize="characters" spellcheck="false" aria-describedby="vaultGateMessage" data-i18n-placeholder="type_confirm_placeholder" placeholder="' + uiText('type_confirm_placeholder') + '">' +
           '<span class="vault-gate-cursor" aria-hidden="true"></span>' +
         '</div>' +
         '<button type="submit" class="vault-gate-button">' + uiText('confirm_access') + '</button>' +

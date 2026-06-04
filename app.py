@@ -11,6 +11,7 @@ import threading
 import subprocess
 import hashlib
 import base64
+import hmac
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
@@ -1532,6 +1533,26 @@ def _parse_makima_image_payload(image_payload):
     return {'mime_type': mime_type, 'data': image_bytes}
 
 
+
+def _get_makima_access_password():
+    return os.environ.get('MAKIMA_ADMIN_PASSWORD', '') or 'MYBINI02'
+
+
+def _is_valid_makima_access_key(provided_password):
+    expected_password = _get_makima_access_password()
+    if not isinstance(provided_password, str) or not provided_password:
+        return False
+    return hmac.compare_digest(provided_password, expected_password)
+
+
+@app.route('/api/makima-access', methods=['POST'])
+def makima_access():
+    data = request.get_json(silent=True) or {}
+    if _is_valid_makima_access_key(data.get('password', '')):
+        return jsonify({'ok': True})
+    return jsonify({'error': 'ACCESS DENIED'}), 403
+
+
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
     data = request.get_json(silent=True) or {}
@@ -1545,12 +1566,9 @@ def ai_chat():
     if len(message) > 2000:
         return jsonify({'error': 'Pesan terlalu panjang (maks 2000 karakter)'}), 400
 
-    # Password protection
-    admin_password = os.environ.get('MAKIMA_ADMIN_PASSWORD', '')
-    if admin_password:
-        provided_password = data.get('password', '')
-        if not provided_password or provided_password != admin_password:
-            return jsonify({'error': 'MAKIMA AI KHUSUS ADMIN.'}), 403
+    # Password protection: always require the access gate key for MAKIMA AI.
+    if not _is_valid_makima_access_key(data.get('password', '')):
+        return jsonify({'error': 'ACCESS DENIED'}), 403
 
     # Rate limiting
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()

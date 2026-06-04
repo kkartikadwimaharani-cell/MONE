@@ -814,6 +814,31 @@ body {
   outline: none;
 }
 
+
+
+.mkai-access-message {
+  min-height: 20px;
+  margin-top: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mkai-access-message.is-success {
+  color: #8fffd2;
+}
+
+.mkai-access-message.is-denied {
+  color: #ff6b7a;
+}
+
+.mkai-access-submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .mkai-access-submit {
   min-height: 46px;
   border: 0;
@@ -993,6 +1018,31 @@ body.dashboard-mode #viewMakimaAI {
   background: rgba(0, 0, 0, 0.48) !important;
   border-color: rgba(255, 0, 45, 0.30) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+
+
+.mkai-access-message {
+  min-height: 20px;
+  margin-top: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mkai-access-message.is-success {
+  color: #8fffd2;
+}
+
+.mkai-access-message.is-denied {
+  color: #ff6b7a;
+}
+
+.mkai-access-submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .mkai-access-submit {

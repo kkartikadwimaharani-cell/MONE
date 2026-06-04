@@ -195,16 +195,21 @@
     return found ? found.label : 'Auto';
   }
 
+  const ACCESS_UNLOCK_KEY = 'makima_ai_access_unlocked';
+
   function getAccessPassword() {
     try { return window.sessionStorage.getItem('makima_ai_access_password') || ''; } catch (e) { return ''; }
   }
 
   function setAccessPassword(value) {
-    try { window.sessionStorage.setItem('makima_ai_access_password', value || ''); } catch (e) {}
+    try {
+      window.sessionStorage.setItem('makima_ai_access_password', value || '');
+      window.sessionStorage.setItem(ACCESS_UNLOCK_KEY, value ? 'true' : 'false');
+    } catch (e) {}
   }
 
   function hasAccess() {
-    return !!getAccessPassword();
+    try { return window.sessionStorage.getItem(ACCESS_UNLOCK_KEY) === 'true' && !!getAccessPassword(); } catch (e) { return false; }
   }
 
   function renderAccess() {
@@ -214,24 +219,60 @@
     wrap.innerHTML = `
       <div class="mkai-access-wrap makima-access-page">
         <div class="mkai-access-card">
-          <button class="mkai-back-btn mkai-access-back" id="mkaiAccessBack" type="button">← KEMBALI</button>
+          <button class="mkai-back-btn mkai-access-back" id="mkaiAccessBack" type="button" data-i18n="back_to_downloader">${window.i18nText ? window.i18nText('back_to_downloader') : 'BACK'}</button>
           <img class="mkai-access-avatar makima-access-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
-          <div class="mkai-access-title">MAKIMA AI ACCESS</div>
-          <div class="mkai-access-sub">Masukkan password untuk membuka ruang chat.</div>
+          <div class="mkai-access-title" data-i18n="makima_access_title">${window.i18nText ? window.i18nText('makima_access_title') : 'PRIVATE ACCESS'}</div>
+          <div class="mkai-access-sub" data-i18n="makima_access_subtitle">${window.i18nText ? window.i18nText('makima_access_subtitle') : 'Enter access key to continue.'}</div>
           <form class="mkai-access-form" id="mkaiAccessForm">
-            <input class="mkai-access-input" id="mkaiAccessPassword" type="password" autocomplete="current-password" placeholder="Password" required>
-            <button class="mkai-access-submit" type="submit">BUKA MAKIMA AI</button>
+            <input class="mkai-access-input" id="mkaiAccessPassword" type="password" autocomplete="current-password" data-i18n-placeholder="makima_access_placeholder" placeholder="${window.i18nText ? window.i18nText('makima_access_placeholder') : 'Access Key'}" required>
+            <button class="mkai-access-submit" id="mkaiAccessSubmit" type="submit" data-i18n="makima_access_button">${window.i18nText ? window.i18nText('makima_access_button') : 'UNLOCK MAKIMA AI'}</button>
           </form>
+          <div class="mkai-access-message" id="mkaiAccessMessage" role="status" aria-live="polite"></div>
         </div>
       </div>`;
 
+    if (window.refreshLanguage) window.refreshLanguage();
     document.getElementById('mkaiAccessBack')?.addEventListener('click', goBackToDashboard);
     document.getElementById('mkaiAccessForm')?.addEventListener('submit', function (e) {
       e.preventDefault();
-      const password = document.getElementById('mkaiAccessPassword')?.value.trim() || '';
+      const passwordInput = document.getElementById('mkaiAccessPassword');
+      const submit = document.getElementById('mkaiAccessSubmit');
+      const message = document.getElementById('mkaiAccessMessage');
+      const password = passwordInput?.value.trim() || '';
       if (!password) return;
-      setAccessPassword(password);
-      renderUI();
+      if (submit) submit.disabled = true;
+      if (message) {
+        message.className = 'mkai-access-message';
+        message.textContent = '';
+      }
+      fetch('/api/makima-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r))
+        .then(() => {
+          setAccessPassword(password);
+          if (message) {
+            message.className = 'mkai-access-message is-success';
+            message.textContent = window.i18nText ? window.i18nText('makima_access_success') : 'ACCESS GRANTED';
+          }
+          window.setTimeout(renderUI, 260);
+        })
+        .catch(() => {
+          setAccessPassword('');
+          if (message) {
+            message.className = 'mkai-access-message is-denied';
+            message.textContent = window.i18nText ? window.i18nText('makima_access_error') : 'ACCESS DENIED';
+          }
+          if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
+          }
+        })
+        .finally(() => {
+          if (submit) submit.disabled = false;
+        });
     });
   }
 
