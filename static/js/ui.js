@@ -1,5 +1,5 @@
-function uiText(key) {
-  return (window.t && window.t(key)) || key;
+function uiText(key, vars) {
+  return (window.t && window.t(key, vars)) || key;
 }
 
 /* ── UI HELPERS ────────────────────────────────── */
@@ -106,7 +106,9 @@ window.setAppMode = setAppMode;
   var drawerDl = document.getElementById('drawerDownloads');
   if (statDl && drawerDl) {
     var observer = new MutationObserver(function() {
-      drawerDl.textContent = 'DOWNLOADS: ' + (statDl.textContent || '0');
+      var count = statDl.textContent || '0';
+      drawerDl.setAttribute('data-download-count', count);
+      drawerDl.textContent = uiText('drawer_downloads', { count: count });
     });
     observer.observe(statDl, { childList: true, characterData: true, subtree: true });
   }
@@ -534,6 +536,11 @@ window.setAppMode = setAppMode;
     navigateTo('downloader');
   }
 
+
+  document.addEventListener('mii:languagechange', function() {
+    if (currentView && currentView !== 'downloader' && viewConfig[currentView]) navigateTo(currentView, true);
+  });
+
   // Expose globally
   window.showMainView = showMainView;
   window.navigateTo = navigateTo;
@@ -649,7 +656,7 @@ window.setAppMode = setAppMode;
 
     if (message) {
       message.className = 'vault-gate-message is-denied';
-      message.textContent = 'ACCESS DENIED';
+      message.textContent = uiText('access_denied');
     }
     form.classList.remove('is-unlocking');
     if (input) {

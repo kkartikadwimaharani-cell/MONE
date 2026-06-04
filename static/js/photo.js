@@ -1,128 +1,172 @@
 /* ── PHOTO MODE ───────────────────────────────── */
 
+function flattenPhotoItems(value, output) {
+  if (!value) return output;
+  if (typeof value === 'string') {
+    output.push(value);
+    return output;
+  }
+  if (Array.isArray(value)) {
+    value.forEach(function(item) { flattenPhotoItems(item, output); });
+    return output;
+  }
+  if (typeof value === 'object') {
+    ['url', 'src', 'image', 'image_url', 'download_url', 'display_url', 'thumbnail'].forEach(function(key) {
+      if (typeof value[key] === 'string') output.push(value[key]);
+    });
+    ['images', 'photos', 'image_urls', 'entries', 'media'].forEach(function(key) {
+      if (value[key]) flattenPhotoItems(value[key], output);
+    });
+  }
+  return output;
+}
+
+function extractPhotoUrls(data) {
+  var photos = [];
+  ['images', 'photos', 'image_urls', 'entries', 'media'].forEach(function(key) {
+    if (data && data[key]) flattenPhotoItems(data[key], photos);
+  });
+  return photos.filter(function(url, index, arr) {
+    return /^https?:\/\//i.test(url) && arr.indexOf(url) === index;
+  });
+}
+
 async function fetchPhotos(url) {
   if (isDownloading) return;
   isDownloading = true;
-  document.getElementById('spinnerWrap').classList.add('show');
-  document.getElementById('photoSection').style.display = 'none';
-  setStatus('', '');
+  var spinner = document.getElementById('spinnerWrap');
+  if (spinner) spinner.classList.add('show');
+  var section = document.getElementById('photoSection');
+  if (section) section.style.display = 'none';
+  setStatus(i18nText('processing') + '...', 'ok');
   try {
     const fd = new FormData();
     fd.append('url', url);
     const res = await fetch('/photos', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.error || data.success === false) {
-      setStatus(data.error || 'Gagal mengambil foto.', 'err');
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok || data.error || data.success === false) {
+      setStatus(i18nText('no_photos_found'), 'err');
       return;
     }
-    const photos = (data.images || []).map(function(item) { return typeof item === 'string' ? item : item.url; });
+    const photos = extractPhotoUrls(data);
     renderCarousel(photos, data.count || photos.length);
-    // Show preview card with photo metadata if available
+    if (photos.length) setStatus(i18nText('download_ready'), 'ok');
+
     if (data.title || data.uploader || data.thumbnail) {
-      previewData = {
-        title: data.title || '',
-        uploader: data.uploader || '',
-        thumbnail: data.thumbnail || null,
-      };
+      previewData = { title: data.title || '', uploader: data.uploader || '', thumbnail: data.thumbnail || null };
       document.getElementById('previewTitle').textContent = previewData.title;
       document.getElementById('previewUploader').textContent = previewData.uploader ? '@' + previewData.uploader : '';
       document.getElementById('previewDuration').textContent = '';
-      if (previewData.thumbnail) {
-        document.getElementById('previewThumb').src = previewData.thumbnail;
-      }
+      if (previewData.thumbnail) document.getElementById('previewThumb').src = previewData.thumbnail;
       document.getElementById('previewCard').classList.add('show');
     }
   } catch(e) {
-    setStatus('Terjadi kesalahan saat mengambil foto.', 'err');
+    setStatus(i18nText('generic_error'), 'err');
   } finally {
     isDownloading = false;
-    document.getElementById('spinnerWrap').classList.remove('show');
+    if (spinner) spinner.classList.remove('show');
   }
+}
+
+function updatePhotoCount(count) {
+  const countEl = document.getElementById('photoCount');
+  if (!countEl) return;
+  countEl.textContent = count > 0 ? i18nText('photos_found', { count: count }) : '';
 }
 
 function renderCarousel(photos, count) {
   if (!isPhotoMode) return;
   const carousel  = document.getElementById('photoCarousel');
-  const countEl   = document.getElementById('photoCount');
   const dlAllBtn  = document.getElementById('downloadAllBtn');
   const section   = document.getElementById('photoSection');
+  if (!carousel || !dlAllBtn || !section) return;
   carousel.innerHTML = '';
   if (!photos || !photos.length) {
-    setStatus('Tidak ada foto ditemukan. Link ini mungkin video, bukan slideshow.', 'err');
-    countEl.textContent = '';
+    photoUrls = [];
+    setStatus(i18nText('no_photos_found'), 'err');
+    updatePhotoCount(0);
     dlAllBtn.style.display = 'none';
     section.style.display = 'none';
     return;
   }
   photoUrls = photos;
   var hiddenCount = 0;
-  countEl.textContent = 'Photos found: ' + count;
-  countEl.style.color = 'rgba(204,0,0,0.8)';
+  updatePhotoCount(count || photos.length);
   photos.forEach(function(url, i) {
     const card = document.createElement('div');
     card.className = 'photo-card';
+
+    const badge = document.createElement('div');
+    badge.className = 'photo-number';
+    badge.textContent = String(i + 1);
+
     const img = document.createElement('img');
     img.src     = '/photo-proxy?url=' + encodeURIComponent(url);
-    img.alt     = 'Photo ' + (i + 1);
+    img.alt     = i18nText('photo_number', { number: i + 1 });
     img.loading = 'lazy';
     img.onerror = function() {
       card.style.display = 'none';
       hiddenCount++;
       var visibleCount = photos.length - hiddenCount;
-      countEl.textContent = visibleCount > 0 ? 'Photos found: ' + visibleCount : '';
+      updatePhotoCount(visibleCount);
       if (visibleCount === 0) {
-        setStatus('Tidak ada foto yang bisa ditampilkan.', 'err');
-        document.getElementById('downloadAllBtn').style.display = 'none';
+        setStatus(i18nText('no_photos_found'), 'err');
+        dlAllBtn.style.display = 'none';
+        section.style.display = 'none';
       }
     };
     const footer = document.createElement('div');
     footer.className = 'photo-card-footer';
     const btn = document.createElement('button');
-    btn.className   = 'photo-dl-btn';
-    btn.textContent = 'DOWNLOAD PHOTO';
-    btn.onclick     = (function(u, idx) { return function() { downloadPhoto(u, idx); }; })(url, i + 1);
+    btn.className = 'photo-dl-btn';
+    btn.setAttribute('data-i18n', 'download_photo');
+    btn.textContent = i18nText('download_photo');
+    btn.onclick = (function(u, idx) { return function() { downloadPhoto(u, idx); }; })(url, i + 1);
     footer.appendChild(btn);
+    card.appendChild(badge);
     card.appendChild(img);
     card.appendChild(footer);
     carousel.appendChild(card);
   });
-  dlAllBtn.style.display = 'inline-block';
+  dlAllBtn.style.display = photos.length > 1 ? 'inline-block' : 'none';
   section.style.display  = 'block';
+  if (window.refreshLanguage) window.refreshLanguage();
 }
 
 async function downloadPhoto(url, index) {
   try {
     const filename = 'miitok_photo_' + index + '.jpg';
     const res = await fetch('/download-photo?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename));
-    if (!res.ok) { setStatus('Gagal mengunduh foto ' + index, 'err'); return; }
-    const blob    = await res.blob();
+    if (!res.ok) { setStatus(i18nText('photo_download_failed', { number: index }), 'err'); return; }
+    const blob = await res.blob();
+    if (!blob || blob.size <= 0) { setStatus(i18nText('photo_download_failed', { number: index }), 'err'); return; }
     const blobUrl = URL.createObjectURL(blob);
-    const a       = document.createElement('a');
-    a.href        = blobUrl;
-    a.download    = filename;
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 1000);
   } catch(e) {
-    setStatus('Gagal mengunduh foto ' + index, 'err');
+    setStatus(i18nText('photo_download_failed', { number: index }), 'err');
   }
 }
 
 async function downloadAllPhotos() {
   if (!photoUrls.length) return;
-  setStatus('Mengunduh ' + photoUrls.length + ' foto...', 'ok');
+  setStatus(i18nText('downloading_photos', { count: photoUrls.length }), 'ok');
   for (let i = 0; i < photoUrls.length; i++) {
     await downloadPhoto(photoUrls[i], i + 1);
-    if (i < photoUrls.length - 1) {
-      await new Promise(function(resolve) { setTimeout(resolve, 350); });
-    }
+    if (i < photoUrls.length - 1) await new Promise(function(resolve) { setTimeout(resolve, 350); });
   }
-  setStatus('Semua foto berhasil diunduh!', 'ok');
+  setStatus(i18nText('all_photos_downloaded'), 'ok');
 }
 
 function carouselScroll(direction) {
   const carousel = document.getElementById('photoCarousel');
-  const card     = carousel.querySelector('.photo-card');
+  if (!carousel) return;
+  const card = carousel.querySelector('.photo-card');
   const cardWidth = card ? (card.offsetWidth + 12) : 280;
   carousel.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
 }

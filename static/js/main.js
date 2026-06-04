@@ -1,6 +1,6 @@
 
-function i18nText(key) {
-  return (window.t && window.t(key)) || key;
+function i18nText(key, vars) {
+  return (window.t && window.t(key, vars)) || key;
 }
 
 function extractTikTokUrl(text) {
@@ -60,6 +60,22 @@ async function pasteTikTokFromClipboard() {
   }
 }
 
+
+function downloadButtonHtml(key) {
+  var icon = key === 'fetch_photos'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  return icon + '<span data-i18n="' + key + '">' + i18nText(key) + '</span>';
+}
+
+function refreshDownloaderLanguage() {
+  var dlBtn = document.getElementById('dlBtn');
+  if (dlBtn) dlBtn.innerHTML = downloadButtonHtml(isPhotoMode ? 'fetch_photos' : 'download');
+  var qualityBadge = document.getElementById('qualityBadge');
+  if (qualityBadge && selectedQuality === 'best' && !previewData) qualityBadge.textContent = 'BEST';
+  if (typeof updatePhotoCount === 'function' && photoUrls && photoUrls.length) updatePhotoCount(photoUrls.length);
+}
+
 /* ── MAIN ORCHESTRATION ────────────────────────── */
 
 function setQuality(el, q) {
@@ -85,7 +101,7 @@ function setQuality(el, q) {
     dlWrap.style.display = '';
     if (qualityBadge) qualityBadge.style.display = 'none';
     // Change button to FETCH PHOTOS mode
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span data-i18n="fetch_photos">' + i18nText('fetch_photos') + '</span>';
+    dlBtn.innerHTML = downloadButtonHtml('fetch_photos');
     dlBtn.onclick = function() {
       var url = normalizeTikTokInput(true);
       if (!url) return;
@@ -104,7 +120,7 @@ function setQuality(el, q) {
       }
     }
     // Restore button to DOWNLOAD mode
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="download">' + i18nText('download') + '</span>';
+    dlBtn.innerHTML = downloadButtonHtml('download');
     dlBtn.onclick = function() { handleVideoDownload(); };
   }
 }
@@ -154,7 +170,7 @@ function clearUrl() {
   // Restore download button (in case it was in photo mode)
   isPhotoMode = false;
   var dlBtn = document.getElementById('dlBtn');
-  dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="download">' + i18nText('download') + '</span>';
+  dlBtn.innerHTML = downloadButtonHtml('download');
   dlBtn.onclick = function() { handleVideoDownload(); };
   dlBtn.disabled = false;
   // Hide preview and progress
@@ -169,3 +185,8 @@ function clearUrl() {
   document.getElementById('downloadAllBtn').style.display = 'none';
   photoUrls = [];
 }
+
+
+document.addEventListener('mii:languagechange', function() {
+  refreshDownloaderLanguage();
+});

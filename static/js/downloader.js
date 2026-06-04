@@ -242,7 +242,7 @@ async function confirmDownload() {
       let errMsg = i18nText('download_failed');
       try {
         const errData = await response.json();
-        if (errData.error) errMsg = errData.error;
+        if (errData.error) errMsg = i18nText('failed_to_download');
       } catch(e) {}
       setStatus(errMsg, 'err');
       hideProgress();
