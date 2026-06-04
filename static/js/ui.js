@@ -112,6 +112,54 @@ window.setAppMode = setAppMode;
 (function() {
   'use strict';
 
+  // Private Vault gate and scoped audio state
+  var vaultSessionKey = 'mii_private_vault_human_confirmed';
+  var vaultAudio = null;
+
+  function isPrivateVaultVerified() {
+    try {
+      return window.sessionStorage.getItem(vaultSessionKey) === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setPrivateVaultVerified() {
+    try {
+      window.sessionStorage.setItem(vaultSessionKey, 'true');
+    } catch (e) {
+      // Session storage can be unavailable in strict privacy modes; keep the gate locked for safety.
+    }
+  }
+
+  function getVaultAudio() {
+    if (!vaultAudio) {
+      vaultAudio = new Audio('/static/audio/vault-theme.mp3');
+      vaultAudio.volume = 0.25;
+      vaultAudio.loop = true;
+      vaultAudio.preload = 'none';
+    }
+    vaultAudio.volume = 0.25;
+    vaultAudio.loop = true;
+    return vaultAudio;
+  }
+
+  function startVaultMusic() {
+    var audio = getVaultAudio();
+    if (!audio.paused) return;
+    var playAttempt = audio.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(function() {
+        // Browser autoplay policy may block resume without a fresh gesture; verification click still unlocks normally.
+      });
+    }
+  }
+
+  function pauseVaultMusic() {
+    if (!vaultAudio) return;
+    vaultAudio.pause();
+  }
+
   // View configuration
   var viewConfig = {
     'downloader': { type: 'main' },
@@ -156,6 +204,10 @@ window.setAppMode = setAppMode;
     // Remove makima-ai-body class when navigating away from makima-ai
     if (previousView === 'makima-ai') {
       document.body.classList.remove('makima-ai-body');
+    }
+
+    if (previousView === 'hinter-mt' && view !== 'hinter-mt') {
+      pauseVaultMusic();
     }
 
     var config = viewConfig[view];
@@ -231,7 +283,59 @@ window.setAppMode = setAppMode;
   }
 
 
+  function renderPrivateVaultGate() {
+    var container = document.getElementById('viewPrivateVault');
+    if (!container) return;
+    pauseVaultMusic();
+    container.innerHTML = '<section class="vault-human-gate" aria-label="Private Vault human verification">' +
+      '<div class="vault-gate-grid"></div>' +
+      '<div class="vault-gate-noise"></div>' +
+      '<form class="vault-gate-card" id="vaultGateForm" autocomplete="off">' +
+        '<span class="vault-gate-scanline"></span>' +
+        '<div class="vault-gate-kicker">PREMIUM ACCESS TERMINAL</div>' +
+        '<h2 class="vault-gate-title">ARE YOU HUMAN?</h2>' +
+        '<p class="vault-gate-subtitle">Type CONFIRM to unlock Private Vault.</p>' +
+        '<label class="vault-gate-label" for="vaultConfirmInput">VERIFICATION TOKEN</label>' +
+        '<div class="vault-gate-input-wrap">' +
+          '<input id="vaultConfirmInput" class="vault-gate-input" type="text" inputmode="latin" autocapitalize="characters" spellcheck="false" aria-describedby="vaultGateMessage" placeholder="CONFIRM">' +
+          '<span class="vault-gate-cursor" aria-hidden="true"></span>' +
+        '</div>' +
+        '<button type="submit" class="vault-gate-button">CONFIRM ACCESS</button>' +
+        '<div id="vaultGateMessage" class="vault-gate-message" role="status" aria-live="polite"></div>' +
+      '</form>' +
+    '</section>';
+
+    var input = container.querySelector('#vaultConfirmInput');
+    if (input) input.focus({ preventScroll: true });
+  }
+
+  function revealPrivateVaultFromGate() {
+    var container = document.getElementById('viewPrivateVault');
+    if (!container) return;
+    setPrivateVaultVerified();
+    startVaultMusic();
+    container.innerHTML = '<section class="vault-init-screen" aria-label="Private Vault initialization">' +
+      '<div class="vault-gate-grid"></div>' +
+      '<div class="vault-init-lines">' +
+        '<span>HUMAN SIGNAL CONFIRMED</span>' +
+        '<span>PRIVATE VAULT INITIALIZED</span>' +
+      '</div>' +
+    '</section>';
+    window.setTimeout(function() {
+      renderPrivateVaultContent();
+    }, 980);
+  }
+
   function renderPrivateVault() {
+    if (isPrivateVaultVerified()) {
+      renderPrivateVaultContent();
+      startVaultMusic();
+      return;
+    }
+    renderPrivateVaultGate();
+  }
+
+  function renderPrivateVaultContent() {
     var container = document.getElementById('viewPrivateVault');
     if (!container) return;
 
@@ -264,12 +368,13 @@ window.setAppMode = setAppMode;
       '<header class="vault-hero">' +
         '<span class="vault-kicker">LOCKED SHOWCASE</span>' +
         '<h2 class="vault-title">PRIVATE VAULT</h2>' +
-        '<p class="vault-subtitle">Premium restricted preview for selected MII NETWORK modules.</p>' +
+        '<p class="vault-subtitle">Classified showcase for restricted MII NETWORK modules.</p>' +
       '</header>' +
       '<div class="vault-main-layout">' +
         '<button type="button" class="vault-admin-card vault-flip-card" aria-label="Flip admin profile card">' +
           '<span class="vault-flip-inner">' +
             '<span class="vault-face vault-admin-front">' +
+              '<span class="vault-code-crawler" aria-hidden="true"><span>LV.99999 // RESTRICTED // CONTROL MODE // OWNER ACCESS // PRIVATE VAULT // UNKNOWN ENTITY // </span></span>' +
               '<span class="vault-scanline"></span>' +
               '<span class="vault-card-badge vault-card-badge-left">LV.99999</span>' +
               '<span class="vault-card-badge vault-card-badge-right">ONLINE</span>' +
@@ -280,6 +385,7 @@ window.setAppMode = setAppMode;
               '<span class="vault-tap-hint">TAP TO REVEAL</span>' +
             '</span>' +
             '<span class="vault-face vault-admin-back">' +
+              '<span class="vault-code-crawler" aria-hidden="true"><span>IDENTITY TRACE // OWNER ACCESS // VAULT POLICY // CONTROL MODE // </span></span>' +
               '<span class="vault-scanline vault-scanline-once"></span>' +
               '<span class="vault-reveal vault-reveal-1">IDENTITY UNSEALED</span>' +
               '<span class="vault-reveal vault-reveal-2">NO NAME</span>' +
@@ -298,11 +404,11 @@ window.setAppMode = setAppMode;
           '<div class="vault-panel-row"><span>Policy</span><strong>RESTRICTED</strong></div>' +
           '<div class="vault-panel-row"><span>Protocol</span><strong>CONTROL MODE</strong></div>' +
           '<div class="vault-panel-row"><span>Execution</span><strong>DISABLED</strong></div>' +
-          '<p class="vault-panel-note">Private Vault is a visual showcase only. No checker, hitter, cracking, abuse, automation, or backend tools are enabled.</p>' +
+          '<p class="vault-panel-note">Visual showcase only. No backend tools enabled.</p>' +
         '</aside>' +
       '</div>' +
       '<section class="vault-tools-section">' +
-        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Compact previews only. Access requires admin approval.</p></div>' +
+        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Compact locked previews for visual review.</p></div>' +
         '<div class="vault-tools-grid">' + cards + '</div>' +
       '</section>' +
     '</section>';
@@ -479,6 +585,8 @@ window.setAppMode = setAppMode;
         var viewControl = document.getElementById('viewControl');
         var viewMakimaAI = document.getElementById('viewMakimaAI');
 
+        if (currentView === 'hinter-mt' && view !== 'hinter-mt') pauseVaultMusic();
+
         if (viewDownloader) viewDownloader.style.display = 'none';
         if (viewComingSoon) viewComingSoon.style.display = 'none';
         if (viewPrivateVault) viewPrivateVault.style.display = 'none';
@@ -511,6 +619,45 @@ window.setAppMode = setAppMode;
     });
   }
 
+
+  document.addEventListener('submit', function(e) {
+    var form = e.target.closest('#vaultGateForm');
+    if (!form) return;
+    e.preventDefault();
+    var input = form.querySelector('#vaultConfirmInput');
+    var message = form.querySelector('#vaultGateMessage');
+    var token = input ? input.value.trim() : '';
+
+    if (token === 'CONFIRM') {
+      if (message) {
+        message.className = 'vault-gate-message is-success';
+        message.innerHTML = '<span>HUMAN SIGNAL CONFIRMED</span><span>PRIVATE VAULT INITIALIZED</span>';
+      }
+      form.classList.add('is-unlocking');
+      revealPrivateVaultFromGate();
+      return;
+    }
+
+    if (message) {
+      message.className = 'vault-gate-message is-denied';
+      message.textContent = 'ACCESS DENIED';
+    }
+    form.classList.remove('is-unlocking');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  });
+
+  document.addEventListener('input', function(e) {
+    if (!e.target.matches('#vaultConfirmInput')) return;
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) pauseVaultMusic();
+    else if (currentView === 'hinter-mt' && isPrivateVaultVerified()) startVaultMusic();
+  });
 
   document.addEventListener('click', function(e) {
     var flipCard = e.target.closest('.vault-flip-card');
