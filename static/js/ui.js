@@ -1,3 +1,7 @@
+function uiText(key) {
+  return (window.t && window.t(key)) || key;
+}
+
 /* ── UI HELPERS ────────────────────────────────── */
 
 function setStatus(msg, type) {
@@ -164,15 +168,15 @@ window.setAppMode = setAppMode;
   var viewConfig = {
     'downloader': { type: 'main' },
     'makima-ai': { type: 'makima-ai' },
-    'hinter-mt': { type: 'private-vault', title: 'PRIVATE VAULT', badge: 'ACTIVE', description: 'Restricted access area for selected MII NETWORK modules.' },
-    'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
-    'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
-    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
+    'hinter-mt': { type: 'private-vault', titleKey: 'private_vault', badgeKey: 'active', descriptionKey: 'classified_showcase' },
+    'wa-status': { type: 'coming-soon', titleKey: 'wa_status_converter', badgeKey: 'coming_soon', descriptionKey: 'wa_status_desc' },
+    'status-splitter': { type: 'coming-soon', titleKey: 'status_splitter', badgeKey: 'coming_soon', descriptionKey: 'status_splitter_desc' },
+    'caption': { type: 'coming-soon', titleKey: 'caption_copier', badgeKey: 'coming_soon', descriptionKey: 'caption_desc' },
     'store': { type: 'store' },
     'control': { type: 'control' },
-    'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'SERVER MONITORING DASHBOARD IS UNDER DEVELOPMENT.' },
-    'howto': { type: 'coming-soon', title: 'HOW TO USE', badge: 'COMING SOON', description: 'USAGE GUIDE IS UNDER DEVELOPMENT.' },
-    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'BUG REPORTING SYSTEM IS UNDER DEVELOPMENT.' }
+    'server': { type: 'coming-soon', titleKey: 'server_status', badgeKey: 'coming_soon', descriptionKey: 'server_desc' },
+    'howto': { type: 'coming-soon', titleKey: 'how_to_use', badgeKey: 'coming_soon', descriptionKey: 'howto_desc' },
+    'report': { type: 'coming-soon', titleKey: 'report_bug', badgeKey: 'coming_soon', descriptionKey: 'report_desc' }
   };
 
   function navigateTo(view, skipPush) {
@@ -218,7 +222,7 @@ window.setAppMode = setAppMode;
       if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'coming-soon') {
       setAppMode('dashboard');
-      renderComingSoon(config.title, config.badge, config.description);
+      renderComingSoon(uiText(config.titleKey) || config.title, uiText(config.badgeKey) || config.badge, uiText(config.descriptionKey) || config.description);
       if (viewComingSoon) viewComingSoon.style.display = '';
       if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'private-vault') {
@@ -271,7 +275,7 @@ window.setAppMode = setAppMode;
       '<h2 class="coming-soon-title"></h2>' +
       '<span class="coming-soon-badge"></span>' +
       '<p class="coming-soon-subtitle"></p>' +
-      '<button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>' +
+      '<button class="coming-soon-btn" onclick="showMainView()" data-i18n="back_to_downloader">' + uiText('back_to_downloader') + '</button>' +
       '</div>';
     // Use textContent to avoid XSS from any future dynamic values
     var titleEl = container.querySelector('.coming-soon-title');
@@ -280,6 +284,7 @@ window.setAppMode = setAppMode;
     if (titleEl) titleEl.textContent = title;
     if (badgeEl) badgeEl.textContent = badge;
     if (subtitleEl) subtitleEl.textContent = description;
+    if (window.refreshLanguage) window.refreshLanguage();
   }
 
 
@@ -292,20 +297,21 @@ window.setAppMode = setAppMode;
       '<div class="vault-gate-noise"></div>' +
       '<form class="vault-gate-card" id="vaultGateForm" autocomplete="off">' +
         '<span class="vault-gate-scanline"></span>' +
-        '<div class="vault-gate-kicker">PREMIUM ACCESS TERMINAL</div>' +
-        '<h2 class="vault-gate-title">ARE YOU HUMAN?</h2>' +
-        '<p class="vault-gate-subtitle">Type CONFIRM to unlock Private Vault.</p>' +
-        '<label class="vault-gate-label" for="vaultConfirmInput">VERIFICATION TOKEN</label>' +
+        '<div class="vault-gate-kicker">' + uiText('premium_access_terminal') + '</div>' +
+        '<h2 class="vault-gate-title">' + uiText('are_you_human') + '</h2>' +
+        '<p class="vault-gate-subtitle">' + uiText('type_confirm') + '</p>' +
+        '<label class="vault-gate-label" for="vaultConfirmInput">' + uiText('verification_token') + '</label>' +
         '<div class="vault-gate-input-wrap">' +
           '<input id="vaultConfirmInput" class="vault-gate-input" type="text" inputmode="latin" autocapitalize="characters" spellcheck="false" aria-describedby="vaultGateMessage" placeholder="CONFIRM">' +
           '<span class="vault-gate-cursor" aria-hidden="true"></span>' +
         '</div>' +
-        '<button type="submit" class="vault-gate-button">CONFIRM ACCESS</button>' +
+        '<button type="submit" class="vault-gate-button">' + uiText('confirm_access') + '</button>' +
         '<div id="vaultGateMessage" class="vault-gate-message" role="status" aria-live="polite"></div>' +
       '</form>' +
     '</section>';
 
     var input = container.querySelector('#vaultConfirmInput');
+    if (window.refreshLanguage) window.refreshLanguage();
     if (input) input.focus({ preventScroll: true });
   }
 
@@ -317,8 +323,8 @@ window.setAppMode = setAppMode;
     container.innerHTML = '<section class="vault-init-screen" aria-label="Private Vault initialization">' +
       '<div class="vault-gate-grid"></div>' +
       '<div class="vault-init-lines">' +
-        '<span>HUMAN SIGNAL CONFIRMED</span>' +
-        '<span>PRIVATE VAULT INITIALIZED</span>' +
+        '<span>' + uiText('human_signal_confirmed') + '</span>' +
+        '<span>' + uiText('private_vault_initialized') + '</span>' +
       '</div>' +
     '</section>';
     window.setTimeout(function() {
@@ -354,11 +360,11 @@ window.setAppMode = setAppMode;
       return '<article class="vault-tool-card" aria-label="Locked preview: ' + tool.name + '">' +
         '<div class="vault-tool-top">' +
           '<span class="vault-tool-icon" aria-hidden="true">' + tool.icon + '</span>' +
-          '<span class="vault-lock-mark">LOCKED</span>' +
+          '<span class="vault-lock-mark">' + uiText('locked') + '</span>' +
         '</div>' +
         '<h4 class="vault-tool-name">' + tool.name + '</h4>' +
         '<p class="vault-tool-desc">' + tool.description + '</p>' +
-        '<button type="button" class="vault-action-btn">Request Access / Contact Admin</button>' +
+        '<button type="button" class="vault-action-btn">' + uiText('request_access_contact_admin') + '</button>' +
       '</article>';
     }).join('');
 
@@ -366,9 +372,9 @@ window.setAppMode = setAppMode;
       '<div class="vault-bg-grid"></div>' +
       '<div class="vault-bg-noise"></div>' +
       '<header class="vault-hero">' +
-        '<span class="vault-kicker">LOCKED SHOWCASE</span>' +
+        '<span class="vault-kicker">' + uiText('locked_showcase') + '</span>' +
         '<h2 class="vault-title">PRIVATE VAULT</h2>' +
-        '<p class="vault-subtitle">Classified showcase for restricted MII NETWORK modules.</p>' +
+        '<p class="vault-subtitle">' + uiText('classified_showcase') + '</p>' +
       '</header>' +
       '<div class="vault-main-layout">' +
         '<button type="button" class="vault-admin-card vault-flip-card" aria-label="Flip admin profile card">' +
@@ -382,7 +388,7 @@ window.setAppMode = setAppMode;
               '<span class="vault-admin-name">NO NAME</span>' +
               '<span class="vault-admin-title">UNKNOWN ENTITY</span>' +
               '<span class="vault-admin-meta"><span>CLEARANCE: UNKNOWN</span><span>POLICY: RESTRICTED</span><span>PROTOCOL: CONTROL MODE</span></span>' +
-              '<span class="vault-tap-hint">TAP TO REVEAL</span>' +
+              '<span class="vault-tap-hint">' + uiText('tap_to_reveal') + '</span>' +
             '</span>' +
             '<span class="vault-face vault-admin-back">' +
               '<span class="vault-code-crawler" aria-hidden="true"><span>IDENTITY TRACE // OWNER ACCESS // VAULT POLICY // CONTROL MODE // </span></span>' +
@@ -399,19 +405,20 @@ window.setAppMode = setAppMode;
           '</span>' +
         '</button>' +
         '<aside class="vault-access-panel">' +
-          '<div class="vault-panel-label">ACCESS PANEL</div>' +
-          '<div class="vault-panel-row"><span>Vault State</span><strong>LOCKED SHOWCASE</strong></div>' +
-          '<div class="vault-panel-row"><span>Policy</span><strong>RESTRICTED</strong></div>' +
-          '<div class="vault-panel-row"><span>Protocol</span><strong>CONTROL MODE</strong></div>' +
-          '<div class="vault-panel-row"><span>Execution</span><strong>DISABLED</strong></div>' +
-          '<p class="vault-panel-note">Visual showcase only. No backend tools enabled.</p>' +
+          '<div class="vault-panel-label">' + uiText('access_panel') + '</div>' +
+          '<div class="vault-panel-row"><span>' + uiText('vault_state') + '</span><strong>' + uiText('locked_showcase') + '</strong></div>' +
+          '<div class="vault-panel-row"><span>' + uiText('policy') + '</span><strong>' + uiText('restricted') + '</strong></div>' +
+          '<div class="vault-panel-row"><span>' + uiText('protocol') + '</span><strong>CONTROL MODE</strong></div>' +
+          '<div class="vault-panel-row"><span>' + uiText('execution') + '</span><strong>' + uiText('disabled') + '</strong></div>' +
+          '<p class="vault-panel-note">' + uiText('visual_showcase_only') + '</p>' +
         '</aside>' +
       '</div>' +
       '<section class="vault-tools-section">' +
-        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Compact locked previews for visual review.</p></div>' +
+        '<div class="vault-tools-head"><h3>' + uiText('locked_modules') + '</h3><p>' + uiText('compact_locked_previews') + '</p></div>' +
         '<div class="vault-tools-grid">' + cards + '</div>' +
       '</section>' +
     '</section>';
+    if (window.refreshLanguage) window.refreshLanguage();
   }
 
   function renderStore() {
@@ -419,33 +426,34 @@ window.setAppMode = setAppMode;
     if (!container) return;
     container.innerHTML = '<div class="store-page">' +
       '<div class="store-header">' +
-        '<h2 class="store-title">PREMIUM APPS STORE</h2>' +
-        '<p class="store-subtitle">MII NETWORK DIGITAL PRODUCTS</p>' +
+        '<h2 class="store-title">' + uiText('premium_apps_store') + '</h2>' +
+        '<p class="store-subtitle">' + uiText('digital_products') + '</p>' +
       '</div>' +
       '<div class="store-grid">' +
         '<a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></div>' +
           '<div class="store-card-title">INSTAGRAM</div>' +
-          '<div class="store-card-desc">FOLLOW FOR UPDATES</div>' +
+          '<div class="store-card-desc">' + uiText('follow_updates') + '</div>' +
         '</a>' +
         '<a href="https://t.me/asami_am0" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>' +
           '<div class="store-card-title">TELEGRAM</div>' +
-          '<div class="store-card-desc">JOIN OUR CHANNEL</div>' +
+          '<div class="store-card-desc">' + uiText('join_telegram') + '</div>' +
         '</a>' +
         '<a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>' +
           '<div class="store-card-title">WHATSAPP</div>' +
-          '<div class="store-card-desc">CHAT WITH US</div>' +
+          '<div class="store-card-desc">' + uiText('chat_with_us') + '</div>' +
         '</a>' +
         '<a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>' +
           '<div class="store-card-title">LYNK.ID STORE</div>' +
-          '<div class="store-card-desc">BROWSE ALL PRODUCTS</div>' +
+          '<div class="store-card-desc">' + uiText('browse_products') + '</div>' +
         '</a>' +
       '</div>' +
-      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
+      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">' + uiText('back_to_downloader') + '</button>' +
     '</div>';
+    if (window.refreshLanguage) window.refreshLanguage();
   }
 
   // Track control panel MutationObservers for cleanup
@@ -461,22 +469,23 @@ window.setAppMode = setAppMode;
     if (!container) return;
     container.innerHTML = '<div class="control-page">' +
       '<div class="control-header">' +
-        '<h2 class="control-title">CONTROL PANEL</h2>' +
-        '<p class="control-subtitle">MII NETWORK SYSTEM</p>' +
+        '<h2 class="control-title">' + uiText('control_panel') + '</h2>' +
+        '<p class="control-subtitle">' + uiText('mii_network_system') + '</p>' +
       '</div>' +
       '<div class="control-grid">' +
-        '<div class="control-status-card"><span class="control-dot green"></span><span>SERVER ONLINE</span></div>' +
-        '<div class="control-status-card"><span class="control-dot green"></span><span>VIDEO READY</span></div>' +
-        '<div class="control-status-card"><span class="control-dot yellow"></span><span>STATUS TOOLS SOON</span></div>' +
-        '<div class="control-status-card"><span class="control-dot green"></span><span>DOWNLOADS ACTIVE</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>' + uiText('server_online') + '</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>' + uiText('video_ready') + '</span></div>' +
+        '<div class="control-status-card"><span class="control-dot yellow"></span><span>' + uiText('status_tools_soon') + '</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>' + uiText('downloads_active') + '</span></div>' +
       '</div>' +
       '<div class="control-stats">' +
-        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlViews">0</div><div class="control-stat-label">VIEWS</div></div>' +
-        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlDownloads">0</div><div class="control-stat-label">DOWNLOADS</div></div>' +
-        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlVisitors">0</div><div class="control-stat-label">VISITORS</div></div>' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlViews">0</div><div class="control-stat-label">' + uiText('views') + '</div></div>' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlDownloads">0</div><div class="control-stat-label">' + uiText('downloads') + '</div></div>' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlVisitors">0</div><div class="control-stat-label">' + uiText('visitors') + '</div></div>' +
       '</div>' +
-      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
+      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">' + uiText('back_to_downloader') + '</button>' +
     '</div>';
+    if (window.refreshLanguage) window.refreshLanguage();
 
     // Copy stats from main page if available
     var sv = document.getElementById('statViews');
@@ -557,10 +566,10 @@ window.setAppMode = setAppMode;
 
   // Feature mapping for Coming Soon items
   var featureMap = {
-    'wa-status': { title: 'WA STATUS CONVERTER', description: 'Convert video to WhatsApp Status ready format.' },
-    'status-splitter': { title: 'STATUS SPLITTER', description: 'Split long videos into WhatsApp Status parts.' },
-    'caption-copier': { title: 'CAPTION COPIER', description: 'Caption copy tool is under development.' },
-    'hinter-mt': { title: 'PRIVATE VAULT', description: 'Restricted access area for selected MII NETWORK modules.' }
+    'wa-status': { titleKey: 'wa_status_converter', descriptionKey: 'wa_status_desc' },
+    'status-splitter': { titleKey: 'status_splitter', descriptionKey: 'status_splitter_desc' },
+    'caption-copier': { titleKey: 'caption_copier', descriptionKey: 'caption_desc' },
+    'hinter-mt': { titleKey: 'private_vault', descriptionKey: 'classified_showcase' }
   };
 
   // Wire up drawer items using event delegation on the drawer (robust on mobile)
@@ -601,7 +610,7 @@ window.setAppMode = setAppMode;
         if (headerEl) headerEl.style.display = '';
 
         var fm = featureMap[feature];
-        renderComingSoon(fm.title, 'COMING SOON', fm.description);
+        renderComingSoon(uiText(fm.titleKey), uiText('coming_soon'), uiText(fm.descriptionKey));
         if (viewComingSoon) viewComingSoon.style.display = '';
 
         currentView = view;
@@ -631,7 +640,7 @@ window.setAppMode = setAppMode;
     if (token === 'CONFIRM') {
       if (message) {
         message.className = 'vault-gate-message is-success';
-        message.innerHTML = '<span>HUMAN SIGNAL CONFIRMED</span><span>PRIVATE VAULT INITIALIZED</span>';
+        message.innerHTML = '<span>' + uiText('human_signal_confirmed') + '</span><span>' + uiText('private_vault_initialized') + '</span>';
       }
       form.classList.add('is-unlocking');
       revealPrivateVaultFromGate();
