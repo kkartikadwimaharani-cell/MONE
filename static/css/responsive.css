@@ -40,7 +40,6 @@
   .feature-icon svg { width: 24px; height: 24px; }
   .stats-section { max-width: 680px; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .ghost-scanner-section { max-width: 680px; }
   .footer-wrap { max-width: 680px; }
   .section-divider-line { max-width: 680px; }
   .modal-backdrop.show { align-items: center; }
@@ -65,7 +64,6 @@
   .features-grid { gap: 14px; }
   .feature-card { padding: 16px 14px; }
   .stats-section { max-width: 800px; }
-  .ghost-scanner-section { max-width: 800px; }
   .footer-wrap { max-width: 800px; }
   .section-divider-line { max-width: 800px; }
   .view-container { max-width: 800px; }
@@ -81,7 +79,6 @@
   .card { max-width: 560px; padding: 44px 56px 52px; }
   .features-section { max-width: 1000px; }
   .stats-section { max-width: 1000px; }
-  .ghost-scanner-section { max-width: 1000px; }
   .footer-wrap { max-width: 1000px; }
   .section-divider-line { max-width: 1000px; }
   .view-container { max-width: 1000px; }
@@ -185,7 +182,6 @@ html, body {
 .stats-section,
 .control-panel,
 .control-grid,
-.ghost-scanner-section,
 .connect-section,
 .footer-wrap,
 .view-container {
@@ -398,5 +394,77 @@ html, body {
   .private-vault-container {
     width: min(94vw, 560px) !important;
     max-width: 560px !important;
+  }
+}
+
+/* ── LANGUAGE/PASTE MOBILE SAFETY OVERRIDES ───── */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .language-toggle {
+    height: 34px;
+    padding: 0 9px;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .language-menu {
+    right: -44px;
+    width: min(210px, calc(100vw - 18px));
+  }
+
+  .url-input {
+    padding-left: 84px !important;
+    padding-right: 48px !important;
+  }
+
+  .paste-btn {
+    left: 42px;
+    width: 29px;
+    height: 29px;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-brand {
+    font-size: 1rem;
+    letter-spacing: 0.13em;
+  }
+
+  .nav-left {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .nav-logo-img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .language-toggle span {
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.url-input {
+  padding-left: 88px !important;
+}
+
+@media (max-width: 768px) {
+  .url-input {
+    padding-left: 84px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .language-menu {
+    right: 0;
   }
 }

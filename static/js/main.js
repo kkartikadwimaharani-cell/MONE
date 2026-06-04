@@ -1,3 +1,65 @@
+
+function i18nText(key) {
+  return (window.t && window.t(key)) || key;
+}
+
+function extractTikTokUrl(text) {
+  if (!text) return '';
+  var matches = String(text).match(/https?:\/\/[^\s<>()"']+/gi) || [];
+  for (var i = 0; i < matches.length; i++) {
+    var url = matches[i].replace(/[\]\),.;!?]+$/g, '');
+    if (/(^|\.)((www|m)\.)?tiktok\.com/i.test(new URLSafeHost(url)) || /(^|\.)(vt|vm)\.tiktok\.com/i.test(new URLSafeHost(url))) {
+      return url;
+    }
+    if (/tiktok\.com/i.test(url) || /https?:\/\/(vt|vm)\.tiktok\.com/i.test(url)) return url;
+  }
+  return '';
+}
+
+function URLSafeHost(url) {
+  try { return new URL(url).hostname; } catch (e) { return ''; }
+}
+
+function normalizeTikTokInput(showError) {
+  var input = document.getElementById('urlInput');
+  if (!input) return '';
+  var raw = input.value.trim();
+  if (!raw) {
+    if (showError) setStatus(i18nText('paste_tiktok_link_first'), 'err');
+    return '';
+  }
+  var extracted = extractTikTokUrl(raw);
+  if (!extracted) {
+    if (showError) setStatus(i18nText('paste_valid_tiktok_link'), 'err');
+    return '';
+  }
+  if (raw !== extracted) input.value = extracted;
+  var clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.classList.toggle('visible', extracted.length > 0);
+  return extracted;
+}
+
+async function pasteTikTokFromClipboard() {
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      setStatus(i18nText('clipboard_unavailable'), 'err');
+      return;
+    }
+    var text = await navigator.clipboard.readText();
+    var url = extractTikTokUrl(text);
+    if (!url) {
+      setStatus(i18nText('clipboard_empty'), 'err');
+      return;
+    }
+    var input = document.getElementById('urlInput');
+    if (input) input.value = url;
+    setStatus('', '');
+    onUrlInput();
+  } catch (e) {
+    setStatus(i18nText('clipboard_unavailable'), 'err');
+  }
+}
+
 /* ── MAIN ORCHESTRATION ────────────────────────── */
 
 function setQuality(el, q) {
@@ -23,10 +85,10 @@ function setQuality(el, q) {
     dlWrap.style.display = '';
     if (qualityBadge) qualityBadge.style.display = 'none';
     // Change button to FETCH PHOTOS mode
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>FETCH PHOTOS';
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span data-i18n="fetch_photos">' + i18nText('fetch_photos') + '</span>';
     dlBtn.onclick = function() {
-      var url = document.getElementById('urlInput').value.trim();
-      if (!url) { setStatus('Paste TikTok link first.', 'err'); return; }
+      var url = normalizeTikTokInput(true);
+      if (!url) return;
       fetchPhotos(url);
     };
   } else {
@@ -42,20 +104,26 @@ function setQuality(el, q) {
       }
     }
     // Restore button to DOWNLOAD mode
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>DOWNLOAD';
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="download">' + i18nText('download') + '</span>';
     dlBtn.onclick = function() { handleVideoDownload(); };
   }
 }
 
 function onUrlInput() {
-  const val = document.getElementById('urlInput').value.trim();
+  const input = document.getElementById('urlInput');
+  var val = input.value.trim();
+  var extracted = extractTikTokUrl(val);
+  if (extracted && val !== extracted) {
+    input.value = extracted;
+    val = extracted;
+  }
   const clearBtn = document.getElementById('clearBtn');
   clearBtn.classList.toggle('visible', val.length > 0);
 
   clearTimeout(previewTimer);
   setStatus('', '');
 
-  if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok'))) {
+  if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok') || val.includes('vm.tiktok'))) {
     if (!isPhotoMode && val !== lastPreviewUrl) {
       hidePreview();
       previewTimer = setTimeout(() => fetchPreview(val), 900);
@@ -86,7 +154,7 @@ function clearUrl() {
   // Restore download button (in case it was in photo mode)
   isPhotoMode = false;
   var dlBtn = document.getElementById('dlBtn');
-  dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>DOWNLOAD';
+  dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="download">' + i18nText('download') + '</span>';
   dlBtn.onclick = function() { handleVideoDownload(); };
   dlBtn.disabled = false;
   // Hide preview and progress

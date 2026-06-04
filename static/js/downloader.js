@@ -86,11 +86,8 @@ function handleAudioDownload(event) {
     event.preventDefault();
   }
   if (isDownloadingAudio) return;
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) {
-    setStatus('Paste TikTok link first.', 'err');
-    return;
-  }
+  const url = normalizeTikTokInput(true);
+  if (!url) return;
   isDownloadingAudio = true;
   var mp3Btn = document.getElementById('mp3Btn');
   if (mp3Btn) mp3Btn.classList.add('loading');
@@ -113,10 +110,10 @@ function handleAudioDownload(event) {
   }).then(function(response) {
     if (!response.ok) {
       return response.json().then(function(errData) {
-        throw new Error(errData.error || 'Audio belum bisa diproses. Coba video lain.');
+        throw new Error(errData.error || i18nText('audio_failed'))
       }).catch(function(e) {
         if (e.message) throw e;
-        throw new Error('Audio belum bisa diproses. Coba video lain.');
+        throw new Error(i18nText('audio_failed'))
       });
     }
     return response.blob();
@@ -132,9 +129,9 @@ function handleAudioDownload(event) {
       URL.revokeObjectURL(blobUrl);
     }, 1000);
     if (mp3Btn) mp3Btn.textContent = '100%';
-    setStatus('Audio download berhasil!', 'ok');
+    setStatus(i18nText('audio_success'), 'ok');
   }).catch(function(e) {
-    setStatus(e.message || 'Audio belum bisa diproses. Coba video lain.', 'err');
+    setStatus(e.message || i18nText('audio_failed'), 'err');
   }).finally(function() {
     isDownloadingAudio = false;
     clearInterval(audioProgressInterval);
@@ -154,11 +151,8 @@ function handleVideoDownload() {
 }
 
 function openModal() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) {
-    setStatus('Paste TikTok link first.', 'err');
-    return;
-  }
+  const url = normalizeTikTokInput(true);
+  if (!url) return;
   // Populate modal info
   if (previewData) {
     document.getElementById('modalTitle').textContent = previewData.title || 'TikTok Video';
@@ -210,9 +204,8 @@ function copyLink() {
 
 async function confirmDownload() {
   if (isDownloading) return;
-  const url = document.getElementById('urlInput').value.trim();
+  const url = normalizeTikTokInput(true);
   if (!url) {
-    setStatus('Paste TikTok link first.', 'err');
     closeModal();
     return;
   }
@@ -246,7 +239,7 @@ async function confirmDownload() {
     });
 
     if (!response.ok) {
-      let errMsg = 'Download gagal.';
+      let errMsg = i18nText('download_failed');
       try {
         const errData = await response.json();
         if (errData.error) errMsg = errData.error;
@@ -259,7 +252,7 @@ async function confirmDownload() {
     // Trigger file download
     const blob = await response.blob();
     if (!blob || blob.size <= 0) {
-      setStatus('Download gagal, file kosong.', 'err');
+      setStatus(i18nText('empty_file'), 'err');
       hideProgress();
       return;
     }
@@ -278,11 +271,11 @@ async function confirmDownload() {
       URL.revokeObjectURL(blobUrl);
     }, 1000);
     showProgress(100);
-    setStatus('Download berhasil!', 'ok');
+    setStatus(i18nText('download_success'), 'ok');
     trackEvent('download_success');
 
   } catch(e) {
-    setStatus('Terjadi kesalahan, coba lagi.', 'err');
+    setStatus(i18nText('generic_error'), 'err');
   } finally {
     isDownloading = false;
     btn.disabled = false;

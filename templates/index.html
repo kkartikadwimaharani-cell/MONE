@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=20260602_ai_tts_ui_fix_1">
-  <link rel="stylesheet" href="/static/css/base.css?v=20260602_ai_tts_ui_fix_1">
-  <link rel="stylesheet" href="/static/css/layout.css?v=20260602_ai_tts_ui_fix_1">
-  <link rel="stylesheet" href="/static/css/components.css?v=private-vault-gate-music-v3">
-  <link rel="stylesheet" href="/static/css/animations.css?v=20260602_ai_tts_ui_fix_1">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=20260602_ai_tts_ui_fix_1">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=private-vault-gate-music-v3">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=makima-pro-chat-vision-20260603">
+  <link rel="stylesheet" href="/static/css/variables.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/base.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/layout.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/components.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/animations.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=language-paste-clean-v1">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=language-paste-clean-v1">
 </head>
 <body>
 
@@ -35,6 +35,13 @@
       <span class="nav-brand">MII NETWORK</span>
     </div>
     <div class="nav-right">
+      <div class="language-selector" id="languageSelector">
+        <button type="button" class="language-toggle" id="languageToggle" aria-haspopup="true" aria-expanded="false" data-i18n-aria="language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20"/><path d="M12 2a15.3 15.3 0 0 0 0 20"/></svg>
+          <span id="languageCurrent" data-i18n="language">Bahasa</span>
+        </button>
+        <div class="language-menu" id="languageMenu" role="menu" aria-label="Language"></div>
+      </div>
       <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sideDrawer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -49,7 +56,7 @@
         <img class="drawer-logo drawer-avatar" src="/static/img/owner.png" alt="MII NETWORK" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
           <div class="drawer-title drawer-brand-title">MII NETWORK</div>
-          <div class="drawer-subtitle drawer-brand-sub">DOWNLOADER &bull; STORE &bull; TOOLS</div>
+          <div class="drawer-subtitle drawer-brand-sub" data-i18n="downloader_store_tools">DOWNLOADER &bull; STORE &bull; TOOLS</div>
         </div>
       </div>
 
@@ -58,8 +65,8 @@
       </button>
 
       <div class="drawer-status drawer-badges">
-        <span class="drawer-badge-control">CONTROL MODE</span>
-        <span class="drawer-badge-online">SERVER ONLINE</span>
+        <span class="drawer-badge-control" data-i18n="control_mode">CONTROL MODE</span>
+        <span class="drawer-badge-online" data-i18n="server_online">SERVER ONLINE</span>
       </div>
     </div>
 
@@ -67,36 +74,36 @@
 
     <!-- Section: Main -->
     <div class="drawer-section drawer-section-main">
-      <div class="drawer-section-label">MAIN</div>
+      <div class="drawer-section-label" data-i18n="main">MAIN</div>
       <a href="#" class="drawer-item active" data-view="downloader">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.77a4.85 4.85 0 0 1-1.02-.08z"/></svg></span>
-        <span class="drawer-item-text">TIKTOK DOWNLOADER</span>
-        <span class="drawer-item-badge active-badge">ACTIVE</span>
+        <span class="drawer-item-text" data-i18n="tiktok_downloader">TIKTOK DOWNLOADER</span>
+        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
       </a>
       <a href="#" class="drawer-item" data-view="wa-status" data-feature="wa-status">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-        <span class="drawer-item-text">WA STATUS CONVERTER</span>
-        <span class="drawer-item-badge soon-badge">SOON</span>
+        <span class="drawer-item-text" data-i18n="wa_status_converter">WA STATUS CONVERTER</span>
+        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
       </a>
       <a href="#" class="drawer-item" data-view="status-splitter" data-feature="status-splitter">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="12" y1="3" x2="12" y2="17"/></svg></span>
-        <span class="drawer-item-text">STATUS SPLITTER</span>
-        <span class="drawer-item-badge soon-badge">SOON</span>
+        <span class="drawer-item-text" data-i18n="status_splitter">STATUS SPLITTER</span>
+        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
       </a>
       <a href="#" class="drawer-item" data-view="caption" data-feature="caption-copier">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>
-        <span class="drawer-item-text">CAPTION COPIER</span>
-        <span class="drawer-item-badge soon-badge">SOON</span>
+        <span class="drawer-item-text" data-i18n="caption_copier">CAPTION COPIER</span>
+        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
       </a>
       <a href="#" class="drawer-item" data-view="makima-ai">
         <span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span>
         <span class="drawer-item-text">MAKIMA AI</span>
-        <span class="drawer-item-badge active-badge">ACTIVE</span>
+        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
       </a>
       <a href="#" class="drawer-item" data-view="hinter-mt">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-        <span class="drawer-item-text">PRIVATE VAULT</span>
-        <span class="drawer-item-badge active-badge">ACTIVE</span>
+        <span class="drawer-item-text" data-i18n="private_vault">PRIVATE VAULT</span>
+        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
       </a>
     </div>
 
@@ -104,22 +111,22 @@
 
     <!-- Section: Promo -->
     <div class="drawer-section drawer-section-promo">
-      <div class="drawer-section-label">PROMO</div>
+      <div class="drawer-section-label" data-i18n="promo">PROMO</div>
       <a href="#" class="drawer-item" data-view="store">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><line x1="3" y1="7" x2="21" y2="7"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span>
-        <span class="drawer-item-text">PREMIUM APPS STORE</span>
+        <span class="drawer-item-text" data-i18n="premium_apps_store">PREMIUM APPS STORE</span>
       </a>
       <a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="drawer-item">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
-        <span class="drawer-item-text">LYNK.ID STORE</span>
+        <span class="drawer-item-text" data-i18n="lynk_store">LYNK.ID STORE</span>
       </a>
       <a href="https://t.me/asami_am0" target="_blank" rel="noopener noreferrer" class="drawer-item">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
-        <span class="drawer-item-text">JOIN TELEGRAM</span>
+        <span class="drawer-item-text" data-i18n="join_telegram">JOIN TELEGRAM</span>
       </a>
       <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-        <span class="drawer-item-text">CONTACT WHATSAPP</span>
+        <span class="drawer-item-text" data-i18n="contact_whatsapp">CONTACT WHATSAPP</span>
       </a>
       <a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="drawer-item">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span>
@@ -131,7 +138,7 @@
 
     <!-- Promo Card -->
     <div class="drawer-promo-card">
-      <div class="drawer-promo-title">PREMIUM APPS AVAILABLE</div>
+      <div class="drawer-promo-title" data-i18n="premium_apps_store">PREMIUM APPS AVAILABLE</div>
       <div class="drawer-promo-text">CANVA, CAPCUT, VPN, AI TOOLS</div>
       <a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="drawer-promo-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -144,11 +151,11 @@
       <div class="drawer-hud-grid">
         <div class="drawer-hud-item">
           <span class="drawer-hud-dot green"></span>
-          <span class="drawer-hud-label">VIDEO READY</span>
+          <span class="drawer-hud-label" data-i18n="video_ready">VIDEO READY</span>
         </div>
         <div class="drawer-hud-item">
           <span class="drawer-hud-dot yellow"></span>
-          <span class="drawer-hud-label">STATUS TOOLS SOON</span>
+          <span class="drawer-hud-label" data-i18n="status_tools_soon">STATUS TOOLS SOON</span>
         </div>
         <div class="drawer-hud-item">
           <span class="drawer-hud-dot green"></span>
@@ -156,7 +163,7 @@
         </div>
         <div class="drawer-hud-item">
           <span class="drawer-hud-dot green"></span>
-          <span class="drawer-hud-label">SERVER ONLINE</span>
+          <span class="drawer-hud-label" data-i18n="server_online">SERVER ONLINE</span>
         </div>
       </div>
     </div>
@@ -165,28 +172,28 @@
 
     <!-- Section: System -->
     <div class="drawer-section drawer-section-system">
-      <div class="drawer-section-label">SYSTEM</div>
+      <div class="drawer-section-label" data-i18n="system">SYSTEM</div>
       <a href="#" class="drawer-item" data-view="control">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-        <span class="drawer-item-text">CONTROL PANEL</span>
+        <span class="drawer-item-text" data-i18n="control_panel">CONTROL PANEL</span>
       </a>
       <a href="#" class="drawer-item" data-view="server">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-        <span class="drawer-item-text">SERVER STATUS</span>
+        <span class="drawer-item-text" data-i18n="server_status">SERVER STATUS</span>
       </a>
       <a href="#" class="drawer-item" data-view="howto">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-        <span class="drawer-item-text">HOW TO USE</span>
+        <span class="drawer-item-text" data-i18n="how_to_use">HOW TO USE</span>
       </a>
       <a href="#" class="drawer-item" data-view="report">
         <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-        <span class="drawer-item-text">REPORT BUG</span>
+        <span class="drawer-item-text" data-i18n="report_bug">REPORT BUG</span>
       </a>
     </div>
 
     <!-- Footer -->
     <div class="drawer-footer">
-      <div class="drawer-footer-sub">FREE &bull; FAST &bull; NO WATERMARK</div>
+      <div class="drawer-footer-sub" data-i18n="free_fast_no_watermark">FREE &bull; FAST &bull; NO WATERMARK</div>
     </div>
     </div>
   </aside>
@@ -196,9 +203,9 @@
 
     <!-- Header -->
     <header class="header">
-      <div class="hero-badge">NO WATERMARK</div>
+      <div class="hero-badge" data-i18n="no_watermark">NO WATERMARK</div>
       <h1 class="hero-title">MII NETWORK</h1>
-      <div class="hero-sub"><span class="sub-line sub-line-l"></span><span>TIKTOK DOWNLOADER</span><span class="sub-line sub-line-r"></span></div>
+      <div class="hero-sub"><span class="sub-line sub-line-l"></span><span data-i18n="tiktok_downloader">TIKTOK DOWNLOADER</span><span class="sub-line sub-line-r"></span></div>
       <div class="cyber-line-hero"></div>
     </header>
 
@@ -219,11 +226,14 @@
         <div class="input-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.77a4.85 4.85 0 0 1-1.02-.08z"/></svg>
         </div>
+        <button type="button" class="paste-btn" id="pasteBtn" onclick="pasteTikTokFromClipboard()" title="Paste" data-i18n-title="paste" aria-label="Paste TikTok link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </button>
         <input
           id="urlInput"
           class="url-input"
           type="text"
-          placeholder="Paste link TikTok di sini..."
+          placeholder="Tempel link TikTok di sini..." data-i18n-placeholder="paste_tiktok_link_here"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
@@ -257,7 +267,7 @@
       <div class="dl-wrap" id="dlWrap">
         <button class="dl-btn" id="dlBtn" onclick="handleVideoDownload()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          DOWNLOAD
+          <span data-i18n="download">DOWNLOAD</span>
         </button>
       </div>
 
@@ -283,7 +293,7 @@
           <div class="photo-carousel" id="photoCarousel"></div>
         </div>
         <div style="text-align:center; margin-top:14px;">
-          <button class="download-all-btn" id="downloadAllBtn" onclick="downloadAllPhotos()" style="display:none;">DOWNLOAD ALL</button>
+          <button class="download-all-btn" id="downloadAllBtn" onclick="downloadAllPhotos()" style="display:none;" data-i18n="download_all">DOWNLOAD ALL</button>
         </div>
       </div>
 
@@ -296,37 +306,37 @@
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
-          <div class="feature-title">CEPAT</div>
+          <div class="feature-title" data-i18n="fast">CEPAT</div>
         </div>
         <div class="feature-card cyber-badge">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
-          <div class="feature-title">AMAN</div>
+          <div class="feature-title" data-i18n="safe">AMAN</div>
         </div>
         <div class="feature-card cyber-badge">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polygon points="10 8 16 11 10 14 10 8" fill="currentColor" stroke="none"/></svg>
           </div>
-          <div class="feature-title">BERKUALITAS</div>
+          <div class="feature-title" data-i18n="high_quality">BERKUALITAS</div>
         </div>
         <div class="feature-card cyber-badge">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 3l1.5 4.5H18l-3.7 2.7 1.4 4.3L12 12l-3.7 2.5 1.4-4.3L6 7.5h4.5z"/><path d="M5 20l1-3"/><path d="M19 20l-1-3"/><path d="M12 17v4"/></svg>
           </div>
-          <div class="feature-title">NO WATERMARK</div>
+          <div class="feature-title" data-i18n="no_watermark">NO WATERMARK</div>
         </div>
       </div>
     </section>
 
     <section class="stats-section">
       <div class="stats-header">
-        <div class="stats-title-main">CONTROL PANEL</div>
-        <div class="stats-title-sub">MII NETWORK SYSTEM</div>
+        <div class="stats-title-main" data-i18n="control_panel">CONTROL PANEL</div>
+        <div class="stats-title-sub" data-i18n="mii_network_system">MII NETWORK SYSTEM</div>
       </div>
       <div class="control-badge">
         <span class="control-badge-dot"></span>
-        <span class="control-badge-text">CONTROL MODE ACTIVE</span>
+        <span class="control-badge-text" data-i18n="control_mode_active">CONTROL MODE ACTIVE</span>
       </div>
       <div class="stats-grid">
         <div class="stat-box hud-box">
@@ -334,53 +344,34 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
           <div class="stat-value" id="statViews">0</div>
-          <div class="stat-label">TOTAL VIEWS</div>
+          <div class="stat-label" data-i18n="total_views">TOTAL VIEWS</div>
         </div>
         <div class="stat-box hud-box">
           <div class="stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </div>
           <div class="stat-value" id="statDownloads">0</div>
-          <div class="stat-label">TOTAL DOWNLOADS</div>
+          <div class="stat-label" data-i18n="total_downloads">TOTAL DOWNLOADS</div>
         </div>
         <div class="stat-box hud-box">
           <div class="stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="stat-value" id="statVisitors">0</div>
-          <div class="stat-label">TOTAL VISITORS</div>
+          <div class="stat-label" data-i18n="total_visitors">TOTAL VISITORS</div>
         </div>
         <div class="stat-box hud-box">
           <div class="stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
-          <div class="stat-value"><span class="server-online-dot"></span>Active</div>
-          <div class="stat-label">SERVER ONLINE</div>
+          <div class="stat-value"><span class="server-online-dot"></span><span data-i18n="active_text">Active</span></div>
+          <div class="stat-label" data-i18n="server_online">SERVER ONLINE</div>
         </div>
       </div>
       <div class="hud-watermark">CONTROL DEVIL PROTOCOL</div>
       <div class="hud-watermark">MII NETWORK OBSERVATION</div>
     </section>
 
-    <section class="ghost-scanner-section">
-      <div class="ghost-scanner-title">GHOST ID SCANNER</div>
-      <div class="ghost-scanner-subtitle">REAL-TIME PRIVACY OBSERVATION</div>
-      <div class="ghost-scanner-card">
-        <div class="ghost-scanner-loading" id="ghostScannerLoading">
-          <span class="ghost-loading-text" id="ghostLoadingText">Initializing scan<span class="ghost-blink-dots">...</span></span>
-        </div>
-        <div class="ghost-scanner-results" id="ghostScannerResults" style="display:none;">
-          <div class="ghost-scan-line"><span class="ghost-label">IP ADDRESS</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostIp">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">COUNTRY</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostCountry">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">BROWSER</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostBrowser">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">LANGUAGE</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostLanguage">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">VPN STATUS</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostVpn">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">RISK LEVEL</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostRisk">-</span></div>
-          <div class="ghost-scan-line"><span class="ghost-label">SCAN MODE</span><span class="ghost-separator">:&nbsp;</span><span class="ghost-value" id="ghostMode">-</span></div>
-        </div>
-        <div class="ghost-scanner-note">Data scan hanya ditampilkan secara real-time di halaman ini.</div>
-      </div>
-    </section>
 
     <div class="footer-wrap">
       <div class="footer-divider"></div>
@@ -401,7 +392,7 @@
   <div class="modal-backdrop" id="modalBackdrop" onclick="backdropClick(event)">
     <div class="modal" id="modal">
       <div class="modal-handle"></div>
-      <div class="modal-title">KONFIRMASI DOWNLOAD</div>
+      <div class="modal-title" data-i18n="confirmation_download">KONFIRMASI DOWNLOAD</div>
 
       <div class="modal-thumb-row">
         <img class="modal-thumb" id="modalThumb" src="" alt="" />
@@ -414,10 +405,10 @@
       <div class="modal-pills" id="modalPills"></div>
 
       <div class="modal-actions">
-        <button class="modal-dl-btn" onclick="confirmDownload()">DOWNLOAD NOW</button>
+        <button class="modal-dl-btn" onclick="confirmDownload()" data-i18n="download_now">DOWNLOAD NOW</button>
         <div class="modal-secondary-row">
-          <button class="modal-sec-btn cancel" onclick="closeModal()">CANCEL</button>
-          <button class="modal-sec-btn copy" onclick="copyLink()">COPY LINK</button>
+          <button class="modal-sec-btn cancel" onclick="closeModal()" data-i18n="cancel">CANCEL</button>
+          <button class="modal-sec-btn copy" onclick="copyLink()" data-i18n="copy_link">COPY LINK</button>
         </div>
       </div>
     </div>
@@ -439,15 +430,15 @@
     });
   }
   </script>
-  <script src="/static/js/config.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/ui.js?v=private-vault-gate-music-v3"></script>
-  <script src="/static/js/downloader.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/photo.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/effects.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/main.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/makima-ai.js?v=makima-pro-chat-vision-20260603"></script>
-  <script src="/static/js/analytics.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/ghost-scanner.js?v=20260602_ai_tts_ui_fix_1"></script>
-  <script src="/static/js/protection.js?v=20260602_ai_tts_ui_fix_1"></script>
+  <script src="/static/js/config.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/i18n.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/ui.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/downloader.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/photo.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/effects.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/main.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/makima-ai.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/analytics.js?v=language-paste-clean-v1"></script>
+  <script src="/static/js/protection.js?v=language-paste-clean-v1"></script>
 </body>
 </html>
