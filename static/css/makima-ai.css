@@ -3738,3 +3738,281 @@ pre {
     max-height: 220px;
   }
 }
+
+/* ── MAKIMA AI Artifacts: Claude-style file list and full-screen viewer ── */
+body.mkai-artifact-open {
+  overflow: hidden !important;
+}
+
+.mkai-artifacts {
+  margin: 14px 0 4px;
+  border: 1px solid rgba(255, 65, 65, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(28, 2, 4, 0.92), rgba(5, 0, 0, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 42px rgba(0, 0, 0, 0.26);
+  overflow: hidden;
+}
+
+.mkai-artifacts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mkai-artifacts-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.mkai-artifacts-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.mkai-artifact-all,
+.mkai-artifact-actions button,
+.mkai-artifact-viewer-actions button {
+  border: 1px solid rgba(255, 80, 80, 0.24);
+  border-radius: 999px;
+  background: rgba(130, 10, 20, 0.24);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.mkai-artifact-all {
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.mkai-artifact-all:hover,
+.mkai-artifact-actions button:hover,
+.mkai-artifact-viewer-actions button:hover {
+  background: rgba(190, 25, 35, 0.34);
+  border-color: rgba(255, 90, 90, 0.48);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.mkai-artifact-list {
+  display: grid;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mkai-artifact-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(7, 0, 0, 0.88);
+}
+
+.mkai-artifact-open {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mkai-artifact-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 30% 15%, rgba(255, 92, 92, 0.34), rgba(95, 0, 12, 0.72));
+  border: 1px solid rgba(255, 75, 75, 0.28);
+  color: #ffd1d1;
+  font-size: 14px;
+}
+
+.mkai-artifact-meta {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.mkai-artifact-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mkai-artifact-meta small {
+  color: rgba(255, 130, 130, 0.66);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.mkai-artifact-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mkai-artifact-actions button {
+  padding: 7px 10px;
+}
+
+.mkai-artifact-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  background: rgba(3, 0, 0, 0.96);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.mkai-artifact-viewer-shell {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 18% 0%, rgba(105, 0, 16, 0.32), transparent 36%), #080000;
+}
+
+.mkai-artifact-viewer-head {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: max(12px, env(safe-area-inset-top)) 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 0, 0, 0.96);
+}
+
+.mkai-artifact-viewer-title {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mkai-artifact-viewer-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  color: #fff;
+}
+
+.mkai-artifact-viewer-title span {
+  font-size: 11px;
+  color: rgba(255, 120, 120, 0.7);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mkai-artifact-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mkai-artifact-viewer-actions button {
+  min-height: 34px;
+  padding: 8px 12px;
+}
+
+.mkai-artifact-viewer-actions .mkai-artifact-viewer-close {
+  width: 38px;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 22px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mkai-artifact-code-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.mkai-artifact-code-wrap pre {
+  min-height: 100%;
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.48);
+  overflow: visible;
+  white-space: pre;
+}
+
+.mkai-artifact-code-wrap code {
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 13.5px;
+  line-height: 1.72;
+  color: rgba(255, 245, 245, 0.9);
+  tab-size: 2;
+}
+
+@media (max-width: 768px) {
+  .mkai-artifacts-head,
+  .mkai-artifact-item,
+  .mkai-artifact-viewer-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mkai-artifact-item {
+    grid-template-columns: 1fr;
+  }
+
+  .mkai-artifact-actions,
+  .mkai-artifact-viewer-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mkai-artifact-actions button,
+  .mkai-artifact-viewer-actions button,
+  .mkai-artifact-all {
+    flex: 1;
+  }
+
+  .mkai-artifact-viewer-head {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .mkai-artifact-code-wrap {
+    padding: 10px;
+  }
+
+  .mkai-artifact-code-wrap pre {
+    padding: 14px;
+    border-radius: 12px;
+  }
+}

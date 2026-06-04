@@ -38,6 +38,24 @@
 
   const DEFAULT_MODEL = 'auto';
   const MAX_API_HISTORY = 12;
+  const ARTIFACT_LANG_ALIASES = {
+    javascript: 'JS',
+    js: 'JS',
+    jsx: 'JSX',
+    typescript: 'TS',
+    ts: 'TS',
+    tsx: 'TSX',
+    python: 'PY',
+    py: 'PY',
+    css: 'CSS',
+    html: 'HTML',
+    json: 'JSON',
+    markdown: 'MD',
+    md: 'MD',
+    shell: 'SH',
+    bash: 'SH',
+    sh: 'SH'
+  };
 
   let chats = [];
   let activeChatId = null;
@@ -718,9 +736,10 @@
     const el = document.createElement('div');
     el.className = 'mkai-msg mkai-msg-ai';
     const codeBlocks = [];
+    const artifacts = isErr ? [] : detectArtifacts(text);
     const bodyHTML = isErr
       ? `<div class="mkai-ai-text error">${escHtml(text)}</div>`
-      : `<div class="mkai-ai-text">${renderMarkdown(text, codeBlocks)}</div>`;
+      : `<div class="mkai-ai-text">${renderMarkdown(text, codeBlocks)}</div>${renderArtifactPanelHTML(artifacts)}`;
     el.innerHTML = `
       <div class="mkai-ai-row">
         <img class="mkai-ai-avatar" src="/static/img/makima-ai-profile.png" alt="" draggable="false" oncontextmenu="return false">
@@ -736,9 +755,196 @@
       </div>` : ''}`;
     container.appendChild(el);
     hydrateCodeBlocks(el, codeBlocks);
+    hydrateArtifactPanel(el, artifacts);
     el.querySelector('.mkai-action-btn.speaker')?.addEventListener('click', handleSpeak);
     el.querySelector('.mkai-action-btn.copy')?.addEventListener('click', handleCopy);
     if (shouldScroll) scrollDown();
+  }
+
+
+  function detectArtifacts(text) {
+    const source = String(text || '').replace(/\r\n/g, '\n');
+    const artifacts = [];
+    const seen = new Set();
+    const addArtifact = (name, lang, code) => {
+      const fileName = normalizeArtifactFileName(name);
+      const body = String(code || '').replace(/^\n|\n$/g, '');
+      if (!fileName || !body.trim()) return;
+      const key = fileName + '\u0000' + body;
+      if (seen.has(key)) return;
+      seen.add(key);
+      artifacts.push({
+        id: 'artifact_' + artifacts.length,
+        name: fileName,
+        lang: normalizeArtifactLang(lang, fileName),
+        code: body
+      });
+    };
+
+    const fileBeforeFenceRe = /(?:^|\n)\s*(?:FILE|File|file)\s*:\s*([^\n]+?)\s*\n```([^\n`]*)\n?([\s\S]*?)```/g;
+    let match;
+    while ((match = fileBeforeFenceRe.exec(source)) !== null) {
+      addArtifact(match[1], match[2], match[3]);
+    }
+
+    const fenceWithFileAttrRe = /```([^\n`]*?)(?:\s+(?:file|filename|path)\s*=\s*(["']?)([^"'\n]+)\2)[^\n`]*\n?([\s\S]*?)```/gi;
+    while ((match = fenceWithFileAttrRe.exec(source)) !== null) {
+      addArtifact(match[3], match[1], match[4]);
+    }
+
+    const fileCommentRe = /```([^\n`]*)\n\s*(?:\/\/|#|<!--|\/\*)\s*(?:FILE|File|file)\s*:\s*([^\n*\-]+?)(?:\s*-->|\s*\*\/)?\s*\n([\s\S]*?)```/g;
+    while ((match = fileCommentRe.exec(source)) !== null) {
+      addArtifact(match[2], match[1], match[3]);
+    }
+
+    return artifacts;
+  }
+
+  function normalizeArtifactFileName(name) {
+    return String(name || '')
+      .trim()
+      .replace(/^['"`]+|['"`]+$/g, '')
+      .replace(/[\s:;,.]+$/g, '')
+      .replace(/^[\-•*]\s*/, '')
+      .slice(0, 180);
+  }
+
+  function normalizeArtifactLang(lang, fileName) {
+    const clean = String(lang || '').trim().split(/\s+/)[0].toLowerCase();
+    if (clean && ARTIFACT_LANG_ALIASES[clean]) return ARTIFACT_LANG_ALIASES[clean];
+    const extMatch = String(fileName || '').match(/\.([a-z0-9]+)$/i);
+    const ext = extMatch ? extMatch[1].toLowerCase() : clean;
+    return ARTIFACT_LANG_ALIASES[ext] || (ext ? ext.toUpperCase() : 'CODE');
+  }
+
+  function renderArtifactPanelHTML(artifacts) {
+    if (!artifacts.length) return '';
+    const allButton = artifacts.length > 1
+      ? `<button class="mkai-artifact-all" type="button" data-artifact-all>Unduh semua</button>`
+      : '';
+    return `<section class="mkai-artifacts" aria-label="Artefak kode MAKIMA AI">
+      <div class="mkai-artifacts-head">
+        <div>
+          <div class="mkai-artifacts-title">Artefak</div>
+          <div class="mkai-artifacts-sub">${artifacts.length} file terdeteksi</div>
+        </div>
+        ${allButton}
+      </div>
+      <div class="mkai-artifact-list">
+        ${artifacts.map(item => `<article class="mkai-artifact-item" data-artifact-id="${escAttr(item.id)}">
+          <button class="mkai-artifact-open" type="button" data-artifact-open="${escAttr(item.id)}">
+            <span class="mkai-artifact-icon">⌘</span>
+            <span class="mkai-artifact-meta">
+              <strong>${escHtml(item.name)}</strong>
+              <small>Kode · ${escHtml(item.lang)}</small>
+            </span>
+          </button>
+          <div class="mkai-artifact-actions">
+            <button type="button" data-artifact-copy="${escAttr(item.id)}">Copy</button>
+            <button type="button" data-artifact-download="${escAttr(item.id)}">Download</button>
+          </div>
+        </article>`).join('')}
+      </div>
+    </section>`;
+  }
+
+  function hydrateArtifactPanel(root, artifacts) {
+    if (!artifacts.length) return;
+    const byId = new Map(artifacts.map(item => [item.id, item]));
+    root.querySelectorAll('[data-artifact-open]').forEach(btn => {
+      btn.addEventListener('click', () => openArtifactViewer(byId.get(btn.dataset.artifactOpen), artifacts));
+    });
+    root.querySelectorAll('[data-artifact-copy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = byId.get(btn.dataset.artifactCopy);
+        if (!item) return;
+        copyText(item.code, () => {
+          btn.textContent = 'Disalin';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        });
+      });
+    });
+    root.querySelectorAll('[data-artifact-download]').forEach(btn => {
+      btn.addEventListener('click', () => downloadArtifact(byId.get(btn.dataset.artifactDownload)));
+    });
+    root.querySelector('[data-artifact-all]')?.addEventListener('click', () => downloadAllArtifacts(artifacts));
+  }
+
+  function openArtifactViewer(item, artifacts) {
+    if (!item) return;
+    closeArtifactViewer();
+    const overlay = document.createElement('div');
+    overlay.className = 'mkai-artifact-viewer';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = `<div class="mkai-artifact-viewer-shell">
+      <header class="mkai-artifact-viewer-head">
+        <div class="mkai-artifact-viewer-title">
+          <strong>${escHtml(item.name)}</strong>
+          <span>Kode · ${escHtml(item.lang)}</span>
+        </div>
+        <div class="mkai-artifact-viewer-actions">
+          <button type="button" data-viewer-copy>Copy</button>
+          <button type="button" data-viewer-download>Download</button>
+          ${artifacts.length > 1 ? '<button type="button" data-viewer-download-all>Unduh semua</button>' : ''}
+          <button class="mkai-artifact-viewer-close" type="button" data-viewer-close aria-label="Tutup viewer">×</button>
+        </div>
+      </header>
+      <main class="mkai-artifact-code-wrap">
+        <pre><code>${escHtml(item.code)}</code></pre>
+      </main>
+    </div>`;
+    document.body.appendChild(overlay);
+    document.body.classList.add('mkai-artifact-open');
+    overlay.querySelector('[data-viewer-close]')?.addEventListener('click', closeArtifactViewer);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeArtifactViewer(); });
+    overlay.querySelector('[data-viewer-copy]')?.addEventListener('click', e => {
+      const btn = e.currentTarget;
+      copyText(item.code, () => {
+        btn.textContent = 'Disalin';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    });
+    overlay.querySelector('[data-viewer-download]')?.addEventListener('click', () => downloadArtifact(item));
+    overlay.querySelector('[data-viewer-download-all]')?.addEventListener('click', () => downloadAllArtifacts(artifacts));
+    document.addEventListener('keydown', handleArtifactEsc);
+  }
+
+  function closeArtifactViewer() {
+    document.querySelector('.mkai-artifact-viewer')?.remove();
+    document.body.classList.remove('mkai-artifact-open');
+    document.removeEventListener('keydown', handleArtifactEsc);
+  }
+
+  function handleArtifactEsc(e) {
+    if (e.key === 'Escape') closeArtifactViewer();
+  }
+
+  function downloadArtifact(item) {
+    if (!item) return;
+    downloadBlob(item.code, artifactDownloadName(item.name), 'text/plain;charset=utf-8');
+  }
+
+  function downloadAllArtifacts(artifacts) {
+    artifacts.forEach((item, index) => {
+      setTimeout(() => downloadArtifact(item), index * 180);
+    });
+  }
+
+  function artifactDownloadName(name) {
+    return String(name || 'artifact.txt').split(/[\\/]/).filter(Boolean).pop() || 'artifact.txt';
+  }
+
+  function downloadBlob(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'artifact.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
   async function handleSpeak(e) {
