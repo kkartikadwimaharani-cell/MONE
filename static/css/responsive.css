@@ -468,3 +468,25 @@ html, body {
     right: 0;
   }
 }
+
+@media (max-width: 768px) {
+  .language-toggle {
+    min-width: 58px;
+    max-width: 68px;
+    padding: 0 8px;
+    gap: 5px;
+  }
+
+  .language-toggle svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+  }
+
+  .language-menu {
+    right: 0;
+    width: min(176px, calc(100vw - 18px));
+  }
+
+  .arrow-btn { display: none !important; }
+}
