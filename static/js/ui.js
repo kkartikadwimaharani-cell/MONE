@@ -116,7 +116,7 @@ window.setAppMode = setAppMode;
   var viewConfig = {
     'downloader': { type: 'main' },
     'makima-ai': { type: 'makima-ai' },
-    'hinter-mt': { type: 'coming-soon', title: 'HINTER MT', badge: 'SOON', description: 'HINTER MT belum tersedia.' },
+    'hinter-mt': { type: 'private-vault', title: 'PRIVATE VAULT', badge: 'ACTIVE', description: 'Restricted access area for selected MII NETWORK modules.' },
     'wa-status': { type: 'coming-soon', title: 'WA STATUS CONVERTER', badge: 'COMING SOON', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { type: 'coming-soon', title: 'STATUS SPLITTER', badge: 'COMING SOON', description: 'Split long videos into WhatsApp Status parts.' },
     'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
@@ -135,6 +135,7 @@ window.setAppMode = setAppMode;
     // Hide all views
     var viewDownloader = document.getElementById('viewDownloader');
     var viewComingSoon = document.getElementById('viewComingSoon');
+    var viewPrivateVault = document.getElementById('viewPrivateVault');
     var viewStore = document.getElementById('viewStore');
     var viewControl = document.getElementById('viewControl');
     var viewMakimaAI = document.getElementById('viewMakimaAI');
@@ -142,6 +143,7 @@ window.setAppMode = setAppMode;
 
     if (viewDownloader) viewDownloader.style.display = 'none';
     if (viewComingSoon) viewComingSoon.style.display = 'none';
+    if (viewPrivateVault) viewPrivateVault.style.display = 'none';
     if (viewStore) viewStore.style.display = 'none';
     if (viewControl) viewControl.style.display = 'none';
     if (viewMakimaAI) viewMakimaAI.style.display = 'none';
@@ -166,6 +168,11 @@ window.setAppMode = setAppMode;
       setAppMode('dashboard');
       renderComingSoon(config.title, config.badge, config.description);
       if (viewComingSoon) viewComingSoon.style.display = '';
+      if (headerEl) headerEl.style.display = '';
+    } else if (config.type === 'private-vault') {
+      setAppMode('dashboard');
+      renderPrivateVault();
+      if (viewPrivateVault) viewPrivateVault.style.display = '';
       if (headerEl) headerEl.style.display = '';
     } else if (config.type === 'store') {
       setAppMode('dashboard');
@@ -221,6 +228,86 @@ window.setAppMode = setAppMode;
     if (titleEl) titleEl.textContent = title;
     if (badgeEl) badgeEl.textContent = badge;
     if (subtitleEl) subtitleEl.textContent = description;
+  }
+
+
+  function renderPrivateVault() {
+    var container = document.getElementById('viewPrivateVault');
+    if (!container) return;
+
+    var tools = [
+      'Auto Hitter Lab',
+      'CC Research',
+      'BIN Vault',
+      'Password Audit',
+      'License Vault',
+      'Carding Notes',
+      'Mobile Toolkit',
+      'VIP Methods'
+    ];
+
+    var cards = tools.map(function(tool) {
+      return '<button type="button" class="vault-tool-card vault-flip-card" aria-label="Locked preview: ' + tool + '">' +
+        '<span class="vault-flip-inner">' +
+          '<span class="vault-face vault-tool-front">' +
+            '<span class="vault-lock-mark">LOCKED</span>' +
+            '<span class="vault-tool-name">' + tool + '</span>' +
+            '<span class="vault-tool-line"></span>' +
+          '</span>' +
+          '<span class="vault-face vault-tool-back">' +
+            '<span class="vault-preview-text">Private preview.<br>Contact admin for access.</span>' +
+            '<span class="vault-tool-actions">' +
+              '<span class="vault-action-btn">Request Access</span>' +
+              '<span class="vault-action-btn">Contact Admin</span>' +
+            '</span>' +
+          '</span>' +
+        '</span>' +
+      '</button>';
+    }).join('');
+
+    container.innerHTML = '<section class="private-vault-page" aria-label="Private Vault">' +
+      '<div class="vault-bg-grid"></div>' +
+      '<header class="vault-hero">' +
+        '<span class="vault-kicker">ACTIVE</span>' +
+        '<h2 class="vault-title">PRIVATE VAULT</h2>' +
+        '<p class="vault-subtitle">Restricted access area for selected MII NETWORK modules.</p>' +
+      '</header>' +
+      '<div class="vault-main-layout">' +
+        '<button type="button" class="vault-admin-card vault-flip-card" aria-label="Flip admin profile card">' +
+          '<span class="vault-flip-inner">' +
+            '<span class="vault-face vault-admin-front">' +
+              '<span class="vault-scanline"></span>' +
+              '<span class="vault-admin-photo-wrap"><img class="vault-admin-photo" src="/static/img/Admin.png" alt="NO NAME admin profile" draggable="false" oncontextmenu="return false" ondragstart="return false"></span>' +
+              '<span class="vault-admin-name">NO NAME</span>' +
+              '<span class="vault-admin-title vault-glitch-text">UNKNOWN ENTITY</span>' +
+              '<span class="vault-admin-meta"><span>LEVEL: LV.99999</span><span>STATUS: ONLINE</span><span>ROLE: OWNER</span></span>' +
+            '</span>' +
+            '<span class="vault-face vault-admin-back">' +
+              '<span class="vault-scanline"></span>' +
+              '<span class="vault-reveal vault-reveal-1">IDENTITY UNSEALED</span>' +
+              '<span class="vault-reveal vault-reveal-2">NO NAME</span>' +
+              '<span class="vault-reveal vault-reveal-3">LV.99999</span>' +
+              '<span class="vault-reveal vault-reveal-4">POLICY: RESTRICTED</span>' +
+              '<span class="vault-reveal vault-reveal-5">PROTOCOL: CONTROL MODE</span>' +
+              '<span class="vault-reveal vault-reveal-6">CLEARANCE: OWNER</span>' +
+              '<span class="vault-reveal vault-reveal-7">ACCESS: ADMIN ONLY</span>' +
+              '<span class="vault-reveal vault-reveal-final vault-glitch-text">UNKNOWN ENTITY</span>' +
+            '</span>' +
+          '</span>' +
+        '</button>' +
+        '<aside class="vault-access-panel">' +
+          '<div class="vault-panel-label">ACCESS PANEL</div>' +
+          '<div class="vault-panel-row"><span>Vault State</span><strong>LOCKED SHOWCASE</strong></div>' +
+          '<div class="vault-panel-row"><span>Policy</span><strong>RESTRICTED</strong></div>' +
+          '<div class="vault-panel-row"><span>Execution</span><strong>DISABLED</strong></div>' +
+          '<p class="vault-panel-note">Private Vault is a visual preview only. No checker, hitter, cracking, abuse, or automation functions are enabled.</p>' +
+        '</aside>' +
+      '</div>' +
+      '<section class="vault-tools-section">' +
+        '<div class="vault-tools-head"><h3>LOCKED MODULES</h3><p>Preview cards only. Access requires admin approval.</p></div>' +
+        '<div class="vault-tools-grid">' + cards + '</div>' +
+      '</section>' +
+    '</section>';
   }
 
   function renderStore() {
@@ -369,7 +456,7 @@ window.setAppMode = setAppMode;
     'wa-status': { title: 'WA STATUS CONVERTER', description: 'Convert video to WhatsApp Status ready format.' },
     'status-splitter': { title: 'STATUS SPLITTER', description: 'Split long videos into WhatsApp Status parts.' },
     'caption-copier': { title: 'CAPTION COPIER', description: 'Caption copy tool is under development.' },
-    'hinter-mt': { title: 'HINTER MT', description: 'HINTER MT belum tersedia.' }
+    'hinter-mt': { title: 'PRIVATE VAULT', description: 'Restricted access area for selected MII NETWORK modules.' }
   };
 
   // Wire up drawer items using event delegation on the drawer (robust on mobile)
@@ -387,19 +474,16 @@ window.setAppMode = setAppMode;
         e.preventDefault();
         if (window._closeDrawer) window._closeDrawer();
 
-        if (feature === 'hinter-mt') {
-          showDashboardToast('HINTER MT belum tersedia.');
-          return;
-        }
-
         var viewDownloader = document.getElementById('viewDownloader');
         var viewComingSoon = document.getElementById('viewComingSoon');
+        var viewPrivateVault = document.getElementById('viewPrivateVault');
         var viewStore = document.getElementById('viewStore');
         var viewControl = document.getElementById('viewControl');
         var viewMakimaAI = document.getElementById('viewMakimaAI');
 
         if (viewDownloader) viewDownloader.style.display = 'none';
         if (viewComingSoon) viewComingSoon.style.display = 'none';
+        if (viewPrivateVault) viewPrivateVault.style.display = 'none';
         if (viewStore) viewStore.style.display = 'none';
         if (viewControl) viewControl.style.display = 'none';
         if (viewMakimaAI) viewMakimaAI.style.display = 'none';
@@ -428,5 +512,13 @@ window.setAppMode = setAppMode;
       }
     });
   }
+
+
+  document.addEventListener('click', function(e) {
+    var flipCard = e.target.closest('.vault-flip-card');
+    if (!flipCard) return;
+    e.preventDefault();
+    flipCard.classList.toggle('is-flipped');
+  });
 
 })();
