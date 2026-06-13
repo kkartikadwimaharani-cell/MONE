@@ -1,5 +1,5 @@
 // ============================================================
-// MAKIMA AI — Final Chat UI + History + ElevenLabs click TTS
+// MAKIMA AI — Final Chat UI + History
 // ============================================================
 
 (function () {
@@ -61,9 +61,6 @@
   let activeChatId = null;
   let chatHistory = [];
   let isTyping = false;
-  let currentAudio = null;
-  let currentAudioUrl = null;
-  let currentSpeakerBtn = null;
   let thinkingBubble = null;
   let storageReady = false;
   let selectedImage = null;
@@ -446,7 +443,6 @@
   function renderMessages() {
     const container = msgs();
     if (!container) return;
-    stopAudio();
     container.innerHTML = chatHistory.length ? '' : welcomeHTML();
     chatHistory.forEach(msg => {
       if (msg.role === 'user') appendUser(msg.text, msg.imagePreview || null, false);
@@ -466,7 +462,6 @@
 
   function newChat() {
     if (!storageReady) ensureStorageDefaults();
-    stopAudio();
     const chat = createChat();
     chats.unshift(chat);
     activeChatId = chat.id;
@@ -481,7 +476,6 @@
     if (!chatId || chatId === activeChatId) { closeHistoryDrawer(); return; }
     const chat = chats.find(item => item.id === chatId);
     if (!chat) return;
-    stopAudio();
     activeChatId = chat.id;
     chatHistory = chat.messages.slice();
     persistAll();
@@ -491,7 +485,6 @@
   }
 
   function clearAllChats() {
-    stopAudio();
     const chat = createChat();
     chats = [chat];
     activeChatId = chat.id;
@@ -746,17 +739,11 @@
         <div class="mkai-ai-body"><div class="mkai-ai-sender">MAKIMA AI</div>${bodyHTML}</div>
       </div>
       ${!isErr ? `<div class="mkai-msg-actions">
-        <button class="mkai-action-btn speaker" data-msg="${encodeURIComponent(text)}" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-          </svg><span>Dengarkan</span>
-        </button>
         <button class="mkai-action-btn copy" data-msg="${encodeURIComponent(text)}" type="button"><span>Salin</span></button>
       </div>` : ''}`;
     container.appendChild(el);
     hydrateCodeBlocks(el, codeBlocks);
     hydrateArtifactPanel(el, artifacts);
-    el.querySelector('.mkai-action-btn.speaker')?.addEventListener('click', handleSpeak);
     el.querySelector('.mkai-action-btn.copy')?.addEventListener('click', handleCopy);
     if (shouldScroll) scrollDown();
   }
@@ -947,130 +934,6 @@
     setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
-  async function handleSpeak(e) {
-    const btn = e.currentTarget;
-    const text = decodeURIComponent(btn.dataset.msg || '');
-    console.log('[TTS] clicked');
-    console.log('[TTS] text length:', text.length);
-    if (!text || !text.trim()) return;
-
-    if (currentSpeakerBtn === btn && currentAudio) {
-      stopAudio();
-      return;
-    }
-
-    stopAudio();
-    currentSpeakerBtn = btn;
-    btn.disabled = true;
-    btn.classList.add('loading');
-    setButtonLabel(btn, 'Memuat...');
-
-    try {
-      const assistantText = text;
-
-      console.log('[TTS] calling /api/tts');
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        },
-        body: JSON.stringify({ text: assistantText })
-      });
-
-      console.log('[TTS] response status:', res.status);
-      console.log('[TTS] response content-type:', res.headers.get('content-type'));
-      const contentType = res.headers.get('content-type') || '';
-      if (!res.ok || !contentType.toLowerCase().includes('audio')) {
-        const errorPayload = await readTtsErrorPayload(res);
-        console.warn('[TTS] JSON error:', errorPayload || { status: res.status, contentType });
-        fallbackSpeak(text, btn);
-        return;
-      }
-
-      const blob = await res.blob();
-      if (!blob || blob.size === 0) throw new Error('TTS returned empty audio');
-
-      currentAudioUrl = URL.createObjectURL(blob);
-      currentAudio = new Audio(currentAudioUrl);
-
-      currentAudio.onended = resetAudioButton;
-      currentAudio.onerror = () => fallbackSpeak(text, btn);
-
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.classList.add('playing');
-      setButtonLabel(btn, 'Berhenti');
-
-      await currentAudio.play();
-    } catch (err) {
-      console.warn('[TTS] ElevenLabs failed, fallback browser:', err);
-      fallbackSpeak(text, btn);
-    }
-  }
-
-  async function readTtsErrorPayload(res) {
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      return { status: res.status, contentType };
-    }
-
-    try {
-      return await res.json();
-    } catch (err) {
-      return { status: res.status, contentType, detail: 'Unable to parse TTS error JSON' };
-    }
-  }
-
-  function fallbackSpeak(text, btn) {
-    revokeAudioUrl();
-    currentAudio = null;
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-      setButtonLabel(btn, 'Gagal');
-      currentSpeakerBtn = null;
-      setTimeout(() => setButtonLabel(btn, 'Dengarkan'), 1800);
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-    utterance.rate = 0.88;
-    utterance.pitch = 0.85;
-    currentAudio = { pause: () => window.speechSynthesis.cancel() };
-    btn.classList.add('playing');
-    setButtonLabel(btn, 'Berhenti');
-    utterance.onend = utterance.onerror = resetAudioButton;
-    window.speechSynthesis.speak(utterance);
-  }
-
-  function stopAudio() {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (currentAudio) currentAudio.pause();
-    currentAudio = null;
-    resetAudioButton();
-  }
-
-  function resetAudioButton() {
-    revokeAudioUrl();
-    if (currentSpeakerBtn) {
-      currentSpeakerBtn.disabled = false;
-      currentSpeakerBtn.classList.remove('playing', 'loading');
-      setButtonLabel(currentSpeakerBtn, 'Dengarkan');
-    }
-    currentSpeakerBtn = null;
-    currentAudio = null;
-  }
-
-  function revokeAudioUrl() {
-    if (currentAudioUrl) {
-      URL.revokeObjectURL(currentAudioUrl);
-      currentAudioUrl = null;
-    }
-  }
-
   function handleCopy(e) {
     const btn = e.currentTarget;
     const text = decodeURIComponent(btn.dataset.msg || '');
@@ -1166,7 +1029,6 @@
   }
 
   function goBackToDashboard() {
-    stopAudio();
     closeHistoryDrawer();
     if (typeof window.closeDashboardDrawer === 'function') window.closeDashboardDrawer();
     else if (typeof window.closeAllDrawers === 'function') window.closeAllDrawers();

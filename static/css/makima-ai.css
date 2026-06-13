@@ -295,28 +295,6 @@
   background: rgba(255,255,255,0.04);
 }
 
-.mkai-action-btn.speaker:hover {
-  border-color: rgba(200,30,30,0.4);
-  color: #e07070;
-  background: rgba(200,30,30,0.08);
-}
-
-.mkai-action-btn.playing {
-  border-color: rgba(200,30,30,0.5);
-  color: #e07070;
-  background: rgba(200,30,30,0.12);
-  animation: mkaiSpeakPulse 1.4s infinite;
-}
-
-@keyframes mkaiSpeakPulse {
-  0%,100% { opacity: 1; }
-  50% { opacity: 0.65; }
-}
-
-.mkai-action-btn.loading {
-  opacity: 0.5;
-  cursor: wait;
-}
 
 /* ── Typing ─────────────────────────────────────────────── */
 .mkai-typing-row {
@@ -2725,9 +2703,6 @@ body {
   font-size: 11px;
 }
 
-.mkai-action-btn.playing span {
-  color: #ff9aa8;
-}
 
 .mkai-ai-text,
 .mkai-bubble-user {
@@ -3022,10 +2997,6 @@ pre {
   display: none !important;
 }
 
-.mkai-action-btn.speaker:disabled {
-  opacity: .68;
-  cursor: wait;
-}
 
 @media (max-width: 900px) {
   .mkai-model-popover {
