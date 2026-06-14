@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/base.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/layout.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/components.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/animations.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=i18n-gate-always-on-v5">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=i18n-gate-always-on-v5">
+  <link rel="stylesheet" href="/static/css/variables.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/base.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/layout.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/components.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/animations.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/drawer.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=20260614-portfolio">
+  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260614-portfolio">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="/static/img/owner.png" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+      <img class="nav-logo-img" src="/static/img/owner.png?v=20260614-portfolio" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand">MII STORE</span>
     </div>
     <div class="nav-right">
@@ -52,10 +52,10 @@
   <aside class="app-drawer side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
     <div class="drawer-header">
       <div class="drawer-brand drawer-profile">
-        <img class="drawer-logo drawer-avatar" src="/static/img/owner.png" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+        <img class="drawer-logo drawer-avatar" src="/static/img/owner.png?v=20260614-portfolio" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
           <div class="drawer-title drawer-brand-title">MII STORE</div>
-          <div class="drawer-subtitle drawer-brand-sub">Digital Products • AI Tools</div>
+          <div class="drawer-subtitle drawer-brand-sub" data-i18n="drawer_subtitle">Digital Products • AI Tools</div>
         </div>
       </div>
       <button class="drawer-close" id="drawerClose" aria-label="Close menu" data-i18n-aria="close_menu">
@@ -64,13 +64,14 @@
     </div>
     <div class="drawer-menu-scroll">
       <div class="drawer-section drawer-section-main">
-        <div class="drawer-section-label">NAVIGATION</div>
-        <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon">⌂</span><span class="drawer-item-text">Home</span></a>
-        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text">Makima AI</span></a>
-        <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon">◆</span><span class="drawer-item-text">Private Vault</span></a>
-        <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text">Social Media</span></a>
-        <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text">Digital Products</span></a>
-        <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text">Contact</span></a>
+        <div class="drawer-section-label" data-i18n="navigation">NAVIGATION</div>
+        <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon">⌂</span><span class="drawer-item-text" data-i18n="home">Home</span></a>
+        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png?v=20260614-portfolio" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text" data-i18n="makima_ai_name">Makima AI</span></a>
+        <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon">◆</span><span class="drawer-item-text" data-i18n="private_vault_name">Private Vault</span></a>
+        <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
+        <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
+        <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text" data-i18n="contact">Contact</span></a>
+      <button class="drawer-cache-btn" id="clearCacheBtn" type="button" data-i18n="clear_cache">Clear Cache</button>
       </div>
     </div>
   </aside>
@@ -81,49 +82,51 @@
     <main id="viewDownloader" class="home-hub">
       <section id="home" class="home-hero" aria-label="MII STORE hero">
         <div class="hero-copy">
-          <div class="hero-badge">Premium Digital Brand</div>
-          <h1 class="hero-title">MII STORE</h1>
-          <p class="hero-subtitle">Digital Products • AI Tools • Creative Tech</p>
-          <p class="hero-description">MII STORE is a premium digital brand focused on digital products, AI tools, automation, and creative technology.</p>
+          <div class="hero-badge" data-i18n="hero_badge">Premium Digital Brand</div>
+          <h1 class="hero-title" data-i18n="brand_name">MII STORE</h1>
+          <p class="hero-subtitle" data-i18n="hero_subtitle">Digital Products • AI Tools • Creative Tech</p>
+          <p class="hero-description" data-i18n="hero_description">MII STORE is a premium digital brand focused on digital products, AI tools, automation, and creative technology.</p>
           <div class="hero-actions">
-            <button class="premium-btn primary" type="button" onclick="navigateTo('makima-ai')">Open Makima AI</button>
-            <a class="premium-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Contact WhatsApp</a>
-            <a class="premium-btn ghost" href="#social-media">Explore Socials</a>
+            <button class="premium-btn primary" type="button" onclick="navigateTo('makima-ai')" data-i18n="open_makima_ai">Open Makima AI</button>
+            <a class="premium-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact_whatsapp">Contact WhatsApp</a>
+            <a class="premium-btn ghost" href="#social-media" data-i18n="explore_socials">Explore Socials</a>
           </div>
         </div>
-        <div class="hero-character" aria-label="Swipe character reveal">
-          <div class="character-reveal" id="characterReveal">
-            <img class="character-img formal" src="/static/img/makima-formal.png" alt="Makima formal" draggable="false" />
-            <div class="cyborg-layer" id="cyborgLayer"><img class="character-img cyborg" src="/static/img/makima-cyborg.png" alt="Makima cyborg" draggable="false" /></div>
-            <div class="reveal-handle" id="revealHandle"><span></span></div>
-            <div class="swipe-hint">Swipe to reveal</div>
-          </div>
+        <div class="hero-character" aria-label="Character tap swap" data-i18n-aria="character_tap_swap">
+          <button class="character-swap" id="characterSwap" type="button" aria-pressed="false" data-i18n-aria="character_tap_swap">
+            <img class="character-img formal" src="/static/img/makima-formal.png?v=20260614-portfolio" alt="Makima formal" draggable="false" />
+            <img class="character-img cyborg" src="/static/img/makima-cyborg.png?v=20260614-portfolio" alt="Makima cyborg" draggable="false" />
+            <span class="swap-flash" aria-hidden="true"></span>
+            <span class="swap-hint" data-i18n="tap_swap_hint">Tap character to swap</span>
+          </button>
         </div>
       </section>
 
+      <section class="premium-marquee" aria-label="MII STORE premium marquee"><div class="marquee-track"><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECHNOLOGY • PREMIUM SERVICES •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECHNOLOGY • PREMIUM SERVICES •</span></div></section>
+
       <section id="social-media" class="hub-section">
-        <div class="section-heading"><span>Connect</span><h2>Social Media Cards</h2><p>All official MII STORE channels in one premium hub.</p></div>
+        <div class="section-heading"><span data-i18n="connect">Connect</span><h2 data-i18n="social_cards_title">Social Media Cards</h2><p data-i18n="social_cards_desc">All official MII STORE channels in one premium hub.</p></div>
         <div class="social-grid">
-          <article class="social-card"><img src="/static/img/owner.png" alt="Instagram avatar"><div><h3>Instagram</h3><p>@miistore.99</p><small>Followers: 12K+</small></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer">Visit</a></article>
-          <article class="social-card"><img src="/static/img/owner.png" alt="TikTok avatar"><div><h3>TikTok</h3><p>@mii._002</p><small>Followers: 25K+</small></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer">Open</a></article>
-          <article class="social-card"><img src="/static/img/owner.png" alt="YouTube avatar"><div><h3>YouTube</h3><p>@asami.0111</p><small>Subscribers: 5K+</small></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer">Visit</a></article>
-          <article class="social-card"><img src="/static/img/owner.png" alt="Facebook avatar"><div><h3>Facebook</h3><p>MII STORE</p><small>Community: 3K+</small></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer">Open</a></article>
-          <article class="social-card"><img src="/static/img/owner.png" alt="WhatsApp avatar"><div><h3>WhatsApp</h3><p>+62 821-9122-3912</p><small>Support: Online</small></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Open</a></article>
-          <article class="social-card"><img src="/static/img/makima-ai-profile.png" alt="Website avatar"><div><h3>Website</h3><p>makima.cloud</p><small>Status: Live</small></div><a href="https://makima.cloud/" target="_blank" rel="noopener noreferrer">Visit</a></article>
+          <article class="social-card"><img src="/static/img/owner.png?v=20260614-portfolio" alt="Instagram avatar"><div><h3>Instagram</h3><p>@miistore.99</p><small data-i18n="followers_12">Followers: 12K+</small></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><img src="/static/img/owner.png?v=20260614-portfolio" alt="TikTok avatar"><div><h3>TikTok</h3><p>@mii._002</p><small data-i18n="followers_25">Followers: 25K+</small></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><img src="/static/img/owner.png?v=20260614-portfolio" alt="YouTube avatar"><div><h3>YouTube</h3><p>@asami.0111</p><small data-i18n="subscribers_5">Subscribers: 5K+</small></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><img src="/static/img/owner.png?v=20260614-portfolio" alt="Facebook avatar"><div><h3>Facebook</h3><p>MII STORE</p><small data-i18n="community_3">Community: 3K+</small></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><img src="/static/img/owner.png?v=20260614-portfolio" alt="WhatsApp avatar"><div><h3>WhatsApp</h3><p>+62 821-9122-3912</p><small data-i18n="support_online">Support: Online</small></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><img src="/static/img/makima-ai-profile.png?v=20260614-portfolio" alt="Website avatar"><div><h3>Website</h3><p>makima.cloud</p><small data-i18n="status_live">Status: Live</small></div><a href="https://makima.cloud/" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
         </div>
       </section>
 
       <section id="projects" class="hub-section">
-        <div class="section-heading"><span>Portfolio</span><h2>Projects</h2><p>Featured digital products and premium community experiences.</p></div>
+        <div class="section-heading"><span data-i18n="portfolio">Portfolio</span><h2 data-i18n="projects_title">Projects</h2><p data-i18n="projects_desc">Featured digital products and premium community experiences.</p></div>
         <div class="project-grid">
-          <article class="project-card"><h3>Makima AI</h3><p>Personal AI assistant for creative and automation workflows.</p><button onclick="navigateTo('makima-ai')">Open Project</button></article>
-          <article class="project-card"><h3>Private Vault</h3><p>Restricted premium showcase for private modules and access notes.</p><button onclick="navigateTo('hinter-mt')">Open Vault</button></article>
-          <article class="project-card"><h3>Digital Products</h3><p>Curated apps, AI tools, templates, and digital service bundles.</p><a href="#social-media">View Links</a></article>
-          <article class="project-card"><h3>Community / Digital Community</h3><p>Updates, releases, support, and collaboration across social channels.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Contact</a></article>
+          <article class="project-card"><h3>Makima AI</h3><p data-i18n="project_makima_desc">Personal AI assistant for creative and automation workflows.</p><button onclick="navigateTo('makima-ai')" data-i18n="open_project">Open Project</button></article>
+          <article class="project-card"><h3>Private Vault</h3><p data-i18n="project_vault_desc">Restricted premium showcase for private modules and access notes.</p><button onclick="navigateTo('hinter-mt')" data-i18n="open_vault">Open Vault</button></article>
+          <article class="project-card"><h3>Digital Products</h3><p data-i18n="project_products_desc">Curated apps, AI tools, templates, and digital service bundles.</p><a href="#social-media" data-i18n="view_links">View Links</a></article>
+          <article class="project-card"><h3>Community / Digital Community</h3><p data-i18n="project_community_desc">Updates, releases, support, and collaboration across social channels.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact">Contact</a></article>
         </div>
       </section>
 
-      <div class="footer-wrap"><div class="footer-divider"></div><div class="footer">MII STORE © 2026 — Digital Products • AI Tools • Creative Tech</div></div>
+      <div class="footer-wrap"><div class="footer-divider"></div><div class="footer" data-i18n="footer_text">MII STORE © 2026 — Digital Products • AI Tools • Creative Tech</div></div>
     </main>
 
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
@@ -176,15 +179,15 @@
     });
   }
   </script>
-  <script src="/static/js/config.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/i18n.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/ui.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/downloader.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/photo.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/effects.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/main.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/makima-ai.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/analytics.js?v=i18n-gate-always-on-v5"></script>
-  <script src="/static/js/protection.js?v=i18n-gate-always-on-v5"></script>
+  <script src="/static/js/config.js?v=20260614-portfolio"></script>
+  <script src="/static/js/i18n.js?v=20260614-portfolio"></script>
+  <script src="/static/js/ui.js?v=20260614-portfolio"></script>
+  <script src="/static/js/downloader.js?v=20260614-portfolio"></script>
+  <script src="/static/js/photo.js?v=20260614-portfolio"></script>
+  <script src="/static/js/effects.js?v=20260614-portfolio"></script>
+  <script src="/static/js/main.js?v=20260614-portfolio"></script>
+  <script src="/static/js/makima-ai.js?v=20260614-portfolio"></script>
+  <script src="/static/js/analytics.js?v=20260614-portfolio"></script>
+  <script src="/static/js/protection.js?v=20260614-portfolio"></script>
 </body>
 </html>
