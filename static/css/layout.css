@@ -323,7 +323,7 @@ body { background: #030303; font-family: var(--font-body); }
   .social-card img { width: 56px; height: 56px; border-radius: 16px; }
 }
 
-/* ── 20260614 portfolio mobile fix + tap swap ─────────────── */
+/* ── 20260614 portfolio mobile fix superseded by final reveal ─────────────── */
 html, body { max-width: 100%; overflow-x: hidden; }
 .page { width: 100%; max-width: 100%; box-sizing: border-box; }
 .home-hub { max-width: min(1180px, calc(100vw - 40px)); padding: 0; overflow: visible; }
@@ -350,3 +350,48 @@ html, body { max-width: 100%; overflow-x: hidden; }
 @media (max-width: 900px) { .home-hub { max-width: calc(100vw - 40px); gap: 44px; } .home-hero { display: flex; flex-direction: column; align-items: stretch; gap: 30px; text-align: left; } .hero-character { width: 100%; justify-content: center; } }
 @media (max-width: 560px) { .page { padding-left: 20px; padding-right: 20px; padding-top: 82px; } .home-hub { max-width: 100%; gap: 38px; } .home-hero { gap: 26px; } .hero-title { font-size: clamp(42px, 12vw, 64px); letter-spacing: -0.035em; } .hero-actions { display: grid; grid-template-columns: 1fr; gap: 11px; } .character-swap { width: min(100%, 340px); border-radius: 24px; margin-inline: auto; } .character-swap .character-img { padding: 12px 12px 0; } .premium-marquee { margin-top: -16px; border-radius: 14px; } }
 @media (min-width: 561px) and (max-width: 760px) { .hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero-actions .premium-btn.primary { grid-column: 1 / -1; } }
+
+/* ── 20260614 final hero cyber reveal ─────────────────────── */
+html, body { max-width: 100%; overflow-x: hidden; }
+.home-hub { max-width: 1280px; gap: clamp(42px, 6vw, 70px); }
+.home-hero { grid-template-columns: minmax(0, 1fr) minmax(360px, .92fr); gap: clamp(24px, 4vw, 56px); min-height: calc(100svh - 118px); align-items: center; }
+.hero-copy { display: flex; flex-direction: column; align-items: flex-start; }
+.hero-title { font-size: clamp(3.8rem, 8.2vw, 7.8rem); line-height: .96; letter-spacing: -.045em; overflow: visible; }
+.hero-actions .premium-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; text-align: center; line-height: 1.1; }
+.hero-character { position: relative; align-items: center; justify-content: center; isolation: isolate; }
+.hero-character::before { content: ""; position: absolute; width: min(48vw, 560px); height: min(48vw, 560px); border-radius: 999px; background: radial-gradient(circle, rgba(255, 18, 44, .26), rgba(125, 0, 12, .12) 42%, transparent 70%); filter: blur(22px); z-index: -1; }
+.character-reveal, .cyborg-layer, .character-swap, .swap-hint, .swap-flash, .swipe-hint { display: none !important; }
+.character-stage { --mx: 50%; --my: 48%; --r: 0px; position: relative; width: min(43vw, 530px); height: min(72vh, 640px); min-height: 500px; overflow: visible; background: transparent; border: 0; box-shadow: none; touch-action: none; user-select: none; cursor: crosshair; }
+.character-stage .character-img { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; box-sizing: border-box; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 28px 32px rgba(0,0,0,.62)); pointer-events: none; }
+.character-stage .formal-img { opacity: 1; }
+.character-stage .cyborg-img { opacity: 0; filter: drop-shadow(0 28px 32px rgba(0,0,0,.62)) drop-shadow(0 0 22px rgba(255, 0, 40, .38)); -webkit-mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), #000 0 56%, rgba(0,0,0,.78) 66%, transparent 78%); mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), #000 0 56%, rgba(0,0,0,.78) 66%, transparent 78%); transition: opacity .55s ease, -webkit-mask-image .35s ease, mask-image .35s ease; }
+.character-stage.is-revealing .cyborg-img { opacity: 1; transition: opacity .12s ease; }
+.scan-glow { position: absolute; left: var(--mx); top: var(--my); width: calc(var(--r) * 2.05); height: calc(var(--r) * 2.05); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255,255,255,.10) 0 16%, rgba(255,0,38,.28) 38%, rgba(255,0,38,.12) 56%, transparent 72%); border: 1px solid rgba(255, 52, 72, .38); box-shadow: 0 0 22px rgba(255,0,36,.48), inset 0 0 22px rgba(255,50,70,.22); mix-blend-mode: screen; transition: opacity .38s ease, width .22s ease, height .22s ease; }
+.character-stage.is-revealing .scan-glow { opacity: 1; }
+.reveal-hint { position: absolute; left: 50%; bottom: clamp(8px, 1.7vw, 20px); transform: translateX(-50%); z-index: 3; white-space: nowrap; padding: 7px 12px; border-radius: 999px; background: rgba(0,0,0,.38); color: rgba(255,235,238,.82); border: 1px solid rgba(255,70,82,.18); font-size: .78rem; font-weight: 700; letter-spacing: .01em; backdrop-filter: blur(10px); }
+.premium-marquee { height: 42px; display: flex; align-items: center; border-radius: 999px; margin-top: 24px; border-block: 0; border: 1px solid rgba(255, 44, 60, .16); background: rgba(255,255,255,.028); box-shadow: inset 0 0 22px rgba(255,0,32,.035), 0 0 30px rgba(180,0,20,.07); }
+.marquee-track { animation-duration: 34s; }
+.marquee-track span { padding: 10px 26px; font-size: clamp(.72rem, 1.1vw, .86rem); letter-spacing: .08em; }
+.hub-section { scroll-margin-top: 96px; }
+#social-media { margin-top: clamp(6px, 2vw, 18px); }
+@media (max-width: 900px) {
+  .page { padding-top: 82px; }
+  .home-hub { max-width: min(100%, 720px); gap: 44px; }
+  .home-hero { display: flex; flex-direction: column; align-items: stretch; min-height: 0; gap: 22px; text-align: left; }
+  .hero-actions { width: 100%; display: grid; grid-template-columns: 1fr; gap: 11px; margin-top: 24px; }
+  .premium-marquee { width: 100%; margin-top: 18px; }
+  .hero-character { width: 100%; margin-top: 2px; }
+  .character-stage { width: min(88vw, 420px); height: clamp(420px, 92vw, 520px); min-height: 0; margin-inline: auto; }
+  .hero-character::before { width: min(90vw, 460px); height: min(90vw, 460px); }
+}
+@media (max-width: 560px) {
+  .page { padding-left: 16px; padding-right: 16px; padding-top: 78px; }
+  .home-hub { gap: 36px; }
+  .hero-title { font-size: clamp(48px, 17vw, 72px); line-height: .98; letter-spacing: -.04em; }
+  .hero-subtitle { font-size: clamp(1rem, 4.5vw, 1.22rem); margin-bottom: 14px; }
+  .hero-description { font-size: .98rem; line-height: 1.65; }
+  .character-stage { width: min(90vw, 390px); height: clamp(420px, 106vw, 510px); }
+  .reveal-hint { font-size: .72rem; bottom: 8px; }
+  .premium-marquee { height: 38px; margin-top: 16px; }
+  .marquee-track span { padding-inline: 20px; }
+}
