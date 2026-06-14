@@ -534,8 +534,9 @@ def _claim_reward(uid, reward_code):
         item['used'] = True; item['used_by'] = str(uid); item['used_at'] = _utc_timestamp(); reward['claimed_count'] = int(reward.get('claimed_count',0)) + 1; user['reward_status'] = 'claimed'; user['reward_claimed'] = True
         token_rec = data.get('event_tokens', {}).get(user.get('token'))
         if token_rec: token_rec['reward_claimed'] = True
+        reward_content = item.get('content', '')
         data['claims'].append({'telegram_user_id':str(uid),'username':user.get('username',''),'reward_code':code,'reward_item_id':item['id'],'token':user.get('token',''),'claimed_at':_utc_timestamp(),'status':'claimed'}); _save_event_data(data)
-        return f"🎉 Reward berhasil diklaim.\n\nKode:\n`{code}`\n\nHadiah kamu:\n`{item['content']}`\n\nSimpan data ini baik-baik dan jangan bagikan ke orang lain."
+        return f"🎉 Reward berhasil diklaim.\n\nKode:\n`{code}`\n\nHadiah kamu:\n`{reward_content}`\n\nSimpan data ini baik-baik dan jangan bagikan ke orang lain."
 
 
 
