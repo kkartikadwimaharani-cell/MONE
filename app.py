@@ -99,32 +99,7 @@ except Exception as e:
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-def _resolve_app_version():
-    """Return a deploy-specific version string for cache-busting static assets."""
-    env_version = os.environ.get('APP_VERSION')
-    if env_version:
-        return env_version
-
-    for env_name in ('RAILWAY_GIT_COMMIT_SHA', 'RAILWAY_GIT_COMMIT', 'GIT_COMMIT_SHA', 'SOURCE_VERSION'):
-        commit = os.environ.get(env_name)
-        if commit:
-            return commit[:12]
-
-    try:
-        commit = subprocess.check_output(
-            ['git', 'rev-parse', '--short=12', 'HEAD'],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        ).strip()
-        if commit:
-            return commit
-    except Exception:
-        pass
-
-    return datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
-
-
-APP_VERSION = _resolve_app_version()
+APP_VERSION = "20260614-mii-store-final-v2"
 
 
 def versioned_static(path):

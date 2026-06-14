@@ -71,6 +71,7 @@
         <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
         <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
         <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text" data-i18n="contact">Contact</span></a>
+        <button type="button" class="drawer-item drawer-cache-btn" id="clearCacheBtn"><span class="drawer-item-icon">↻</span><span class="drawer-item-text" data-i18n="clear_cache">Clear Cache</span></button>
       </div>
     </div>
   </aside>
@@ -79,7 +80,7 @@
   <div class="page">
 
     <main id="viewDownloader" class="home-hub">
-      <section class="premium-marquee hero-marquee" aria-label="MII STORE premium marquee"><div class="marquee-track"><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES •</span></div></section>
+      <section class="premium-marquee hero-marquee" aria-label="MII STORE premium marquee"><div class="marquee-track"><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES • TRUSTED DIGITAL BRAND • ESTABLISHED SINCE 2024 •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES • TRUSTED DIGITAL BRAND • ESTABLISHED SINCE 2024 •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES • TRUSTED DIGITAL BRAND • ESTABLISHED SINCE 2024 •</span></div></section>
 
       <section id="home" class="home-hero" aria-label="MII STORE hero">
         <div class="hero-copy">
@@ -93,30 +94,17 @@
             <a class="premium-btn ghost" href="#social-media" data-i18n="explore_socials">Explore Socials</a>
           </div>
         </div>
-        <div class="hero-character" aria-label="Swipe character to reveal cyber mode" data-i18n-aria="character_reveal_aria">
-          <div class="character-flip-card" id="characterFlipCard">
-            <div class="character-flip-inner">
-              <div class="character-card-face character-card-front">
-                <button class="character-flip-toggle" type="button" data-flip-card aria-label="Flip brand card">Brand Info</button>
-                <div class="character-stage" id="characterStage" data-i18n-aria="character_reveal_aria">
-                  <img class="character-img formal-img" src="{{ asset_url('img/makima-formal.png') }}" alt="Makima formal" draggable="false" />
-                  <img class="character-img cyborg-img" src="{{ asset_url('img/makima-cyborg.png') }}" alt="Makima cyborg" draggable="false" />
-                  <span class="scan-glow" aria-hidden="true"></span>
-                  <span class="reveal-hint" data-i18n="reveal_hint">Usap karakter untuk reveal mode cyber</span>
-                </div>
-                <div class="character-card-info" aria-label="MII STORE trust badges">
-                  <span>Trusted Digital Brand</span>
-                  <span>Established Since 2024</span>
-                  <span>Premium Digital Identity</span>
-                </div>
-              </div>
-              <div class="character-card-face character-card-back">
-                <button class="character-flip-toggle" type="button" data-flip-card aria-label="Back to character">Back</button>
-                <span class="back-kicker">Brand Profile</span>
-                <h2>MII STORE</h2>
-                <p>MII STORE adalah brand digital premium yang berfokus pada produk digital, AI tools, creative tech, dan layanan digital modern.</p>
-                <div class="back-tags"><span>AI Tools</span><span>Creative Tech</span><span>Premium Services</span></div>
-              </div>
+        <div class="hero-character" aria-label="MII STORE character reveal">
+          <div class="character-premium-card">
+            <div class="character-stage" id="characterStage" aria-label="MII STORE character reveal">
+              <img class="character-img formal-img" src="{{ asset_url('img/makima-formal.png') }}" alt="Makima formal" draggable="false" />
+              <img class="character-img cyborg-img" src="{{ asset_url('img/makima-cyborg.png') }}" alt="Makima cyborg" draggable="false" />
+              <span class="scan-glow" aria-hidden="true"></span>
+            </div>
+            <div class="character-card-info" aria-label="MII STORE trust badges">
+              <span>Trusted Digital Brand</span>
+              <span>Established Since 2024</span>
+              <span>Premium Digital Identity</span>
             </div>
           </div>
         </div>
@@ -125,12 +113,12 @@
       <section id="social-media" class="hub-section">
         <div class="section-heading"><span data-i18n="connect">Connect</span><h2 data-i18n="social_cards_title">Social Media Cards</h2><p data-i18n="social_cards_desc">All official MII STORE channels in one premium hub.</p></div>
         <div class="social-grid">
-          <article class="social-card"><span class="social-icon instagram" aria-hidden="true">◎</span><div><h3>Instagram</h3></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon instagram" aria-hidden="true">◎</span><div><h3>Instagram</h3></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon tiktok" aria-hidden="true">♪</span><div><h3>TikTok</h3></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><span class="social-icon youtube" aria-hidden="true">▶</span><div><h3>YouTube</h3></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon youtube" aria-hidden="true">▶</span><div><h3>YouTube</h3></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon facebook" aria-hidden="true">f</span><div><h3>Facebook</h3></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon whatsapp" aria-hidden="true">☏</span><div><h3>WhatsApp</h3></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><span class="social-icon lynk" aria-hidden="true">◫</span><div><h3>Lynk.id</h3></div><a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon lynk" aria-hidden="true">🛍</span><div><h3>Lynk.id</h3></div><a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
         </div>
       </section>
 
