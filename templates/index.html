@@ -65,13 +65,14 @@
     <div class="drawer-menu-scroll">
       <div class="drawer-section drawer-section-main">
         <div class="drawer-section-label" data-i18n="navigation">NAVIGATION</div>
-        <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon">⌂</span><span class="drawer-item-text" data-i18n="home">Home</span></a>
-        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="{{ asset_url('img/makima-ai-profile.png') }}" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text" data-i18n="makima_ai_name">Makima AI</span></a>
-        <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon">◆</span><span class="drawer-item-text" data-i18n="private_vault_name">Private Vault</span></a>
-        <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
-        <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
-        <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text" data-i18n="contact">Contact</span></a>
-        <button type="button" class="drawer-item drawer-cache-btn" id="clearCacheBtn"><span class="drawer-item-icon">↻</span><span class="drawer-item-text" data-i18n="clear_cache">Clear Cache</span></button>
+        <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon premium-menu-icon icon-home" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="home">Home</span></a>
+        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon premium-menu-icon icon-ai" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="makima_ai_name">Makima AI</span></a>
+        <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon premium-menu-icon icon-vault" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="private_vault_name">Private Vault</span></a>
+        <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon premium-menu-icon icon-social" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
+        <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon premium-menu-icon icon-products" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
+        <a href="/bounty" class="drawer-item"><span class="drawer-item-icon premium-menu-icon icon-bounty" aria-hidden="true"></span><span class="drawer-item-text">Bounty</span></a>
+        <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon premium-menu-icon icon-contact" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="contact">Contact</span></a>
+        <button type="button" class="drawer-item drawer-cache-btn" id="clearCacheBtn"><span class="drawer-item-icon premium-menu-icon icon-cache" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="clear_cache">Clear Cache</span></button>
       </div>
     </div>
   </aside>
@@ -92,6 +93,7 @@
             <button class="premium-btn primary" type="button" onclick="navigateTo('makima-ai')" data-i18n="open_makima_ai">Open Makima AI</button>
             <a class="premium-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact_whatsapp">Contact WhatsApp</a>
             <a class="premium-btn ghost" href="#social-media" data-i18n="explore_socials">Explore Socials</a>
+            <a class="premium-btn bounty" href="/bounty">Premium App Bounty</a>
           </div>
         </div>
         <div class="hero-globe" aria-label="Animated digital globe">
@@ -112,11 +114,11 @@
       <section id="social-media" class="hub-section">
         <div class="section-heading"><span data-i18n="connect">Connect</span><h2 data-i18n="social_cards_title">Social Media Cards</h2><p data-i18n="social_cards_desc">All official MII STORE channels in one premium hub.</p></div>
         <div class="social-grid">
-          <article class="social-card"><span class="social-icon instagram" aria-hidden="true">◎</span><div><h3>Instagram</h3></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><span class="social-icon instagram" aria-hidden="true">◉</span><div><h3>Instagram</h3></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon tiktok" aria-hidden="true">♪</span><div><h3>TikTok</h3></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon youtube" aria-hidden="true">▶</span><div><h3>YouTube</h3></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon facebook" aria-hidden="true">f</span><div><h3>Facebook</h3></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><span class="social-icon whatsapp" aria-hidden="true">☏</span><div><h3>WhatsApp</h3></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><span class="social-icon whatsapp" aria-hidden="true">☎</span><div><h3>WhatsApp</h3></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
           <article class="social-card"><span class="social-icon lynk" aria-hidden="true">🛍</span><div><h3>Lynk.id</h3></div><a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
         </div>
       </section>
@@ -127,6 +129,7 @@
           <article class="project-card"><h3>Makima AI</h3><p data-i18n="project_makima_desc">AI assistant premium untuk produktivitas, bantuan, dan pengalaman interaktif.</p><button onclick="navigateTo('makima-ai')" data-i18n="open_project">Open Project</button></article>
           <article class="project-card"><h3>Private Vault</h3><p data-i18n="project_vault_desc">Akses eksklusif untuk konten privat, catatan penting, dan modul khusus.</p><button onclick="navigateTo('hinter-mt')" data-i18n="open_vault">Open Vault</button></article>
           <article class="project-card"><h3>Digital Products</h3><p data-i18n="project_products_desc">Aplikasi, tools, dan layanan digital pilihan untuk kebutuhan modern.</p><a href="#social-media" data-i18n="view_links">View Links</a></article>
+          <article class="project-card bounty-card"><h3>MII Premium App Bounty</h3><p>Event access memakai Token Event dari bot Telegram MIIWEB setelah verifikasi join.</p><a href="/bounty">Open Bounty</a></article>
           <article class="project-card"><h3>Community / Digital Community</h3><p data-i18n="project_community_desc">Tempat update, koneksi, dan kolaborasi seputar digital products dan AI.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact">Contact</a></article>
         </div>
       </section>
