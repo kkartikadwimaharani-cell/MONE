@@ -80,7 +80,7 @@
   <div class="page">
 
     <main id="viewDownloader" class="home-hub">
-      <section class="premium-marquee hero-marquee" aria-label="MII STORE premium marquee"><div class="marquee-track"><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECHNOLOGY • PREMIUM SERVICES •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECHNOLOGY • PREMIUM SERVICES •</span></div></section>
+      <section class="premium-marquee hero-marquee" aria-label="MII STORE premium marquee"><div class="marquee-track"><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES •</span><span data-i18n="marquee_text">MII STORE • DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH • PREMIUM SERVICES •</span></div></section>
 
       <section id="home" class="home-hero" aria-label="MII STORE hero">
         <div class="hero-copy">
@@ -95,11 +95,30 @@
           </div>
         </div>
         <div class="hero-character" aria-label="Swipe character to reveal cyber mode" data-i18n-aria="character_reveal_aria">
-          <div class="character-stage" id="characterStage" data-i18n-aria="character_reveal_aria">
-            <img class="character-img formal-img" src="/static/img/makima-formal.png?v=20260614-final-hero" alt="Makima formal" draggable="false" />
-            <img class="character-img cyborg-img" src="/static/img/makima-cyborg.png?v=20260614-final-hero" alt="Makima cyborg" draggable="false" />
-            <span class="scan-glow" aria-hidden="true"></span>
-            <span class="reveal-hint" data-i18n="reveal_hint">Usap karakter untuk reveal mode cyber</span>
+          <div class="character-flip-card" id="characterFlipCard">
+            <div class="character-flip-inner">
+              <div class="character-card-face character-card-front">
+                <button class="character-flip-toggle" type="button" data-flip-card aria-label="Flip brand card">Brand Info</button>
+                <div class="character-stage" id="characterStage" data-i18n-aria="character_reveal_aria">
+                  <img class="character-img formal-img" src="/static/img/makima-formal.png?v=20260614-final-hero" alt="Makima formal" draggable="false" />
+                  <img class="character-img cyborg-img" src="/static/img/makima-cyborg.png?v=20260614-final-hero" alt="Makima cyborg" draggable="false" />
+                  <span class="scan-glow" aria-hidden="true"></span>
+                  <span class="reveal-hint" data-i18n="reveal_hint">Usap karakter untuk reveal mode cyber</span>
+                </div>
+                <div class="character-card-info" aria-label="MII STORE trust badges">
+                  <span>Trusted Digital Brand</span>
+                  <span>Established Since 2024</span>
+                  <span>Premium Digital Identity</span>
+                </div>
+              </div>
+              <div class="character-card-face character-card-back">
+                <button class="character-flip-toggle" type="button" data-flip-card aria-label="Back to character">Back</button>
+                <span class="back-kicker">Brand Profile</span>
+                <h2>MII STORE</h2>
+                <p>MII STORE adalah brand digital premium yang berfokus pada produk digital, AI tools, creative tech, dan layanan digital modern.</p>
+                <div class="back-tags"><span>AI Tools</span><span>Creative Tech</span><span>Premium Services</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -107,22 +126,22 @@
       <section id="social-media" class="hub-section">
         <div class="section-heading"><span data-i18n="connect">Connect</span><h2 data-i18n="social_cards_title">Social Media Cards</h2><p data-i18n="social_cards_desc">All official MII STORE channels in one premium hub.</p></div>
         <div class="social-grid">
-          <article class="social-card"><img src="/static/img/owner.png?v=20260614-final-hero" alt="Instagram avatar"><div><h3>Instagram</h3><p>@miistore.99</p></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
-          <article class="social-card"><img src="/static/img/owner.png?v=20260614-final-hero" alt="TikTok avatar"><div><h3>TikTok</h3><p>@mii._002</p></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><img src="/static/img/owner.png?v=20260614-final-hero" alt="YouTube avatar"><div><h3>YouTube</h3><p>@asami.0111</p></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
-          <article class="social-card"><img src="/static/img/owner.png?v=20260614-final-hero" alt="Facebook avatar"><div><h3>Facebook</h3><p>MII STORE</p></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><img src="/static/img/owner.png?v=20260614-final-hero" alt="WhatsApp avatar"><div><h3>WhatsApp</h3><p>+62 821-9122-3912</p></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
-          <article class="social-card"><img src="/static/img/makima-ai-profile.png?v=20260614-final-hero" alt="Website avatar"><div><h3>Website</h3><p>makima.cloud</p></div><a href="https://makima.cloud/" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon instagram" aria-hidden="true">◎</span><div><h3>Instagram</h3></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon tiktok" aria-hidden="true">♪</span><div><h3>TikTok</h3></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><span class="social-icon youtube" aria-hidden="true">▶</span><div><h3>YouTube</h3></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
+          <article class="social-card"><span class="social-icon facebook" aria-hidden="true">f</span><div><h3>Facebook</h3></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><span class="social-icon whatsapp" aria-hidden="true">☏</span><div><h3>WhatsApp</h3></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="open">Open</a></article>
+          <article class="social-card"><span class="social-icon lynk" aria-hidden="true">◫</span><div><h3>Lynk.id</h3></div><a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" data-i18n="visit">Visit</a></article>
         </div>
       </section>
 
       <section id="projects" class="hub-section">
         <div class="section-heading"><span data-i18n="portfolio">Portfolio</span><h2 data-i18n="projects_title">Projects</h2><p data-i18n="projects_desc">Featured digital products and premium community experiences.</p></div>
         <div class="project-grid">
-          <article class="project-card"><h3>Makima AI</h3><p data-i18n="project_makima_desc">Personal AI assistant for creative and automation workflows.</p><button onclick="navigateTo('makima-ai')" data-i18n="open_project">Open Project</button></article>
-          <article class="project-card"><h3>Private Vault</h3><p data-i18n="project_vault_desc">Restricted premium showcase for private modules and access notes.</p><button onclick="navigateTo('hinter-mt')" data-i18n="open_vault">Open Vault</button></article>
-          <article class="project-card"><h3>Digital Products</h3><p data-i18n="project_products_desc">Curated apps, AI tools, templates, and digital service bundles.</p><a href="#social-media" data-i18n="view_links">View Links</a></article>
-          <article class="project-card"><h3>Community / Digital Community</h3><p data-i18n="project_community_desc">Updates, releases, support, and collaboration across social channels.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact">Contact</a></article>
+          <article class="project-card"><h3>Makima AI</h3><p data-i18n="project_makima_desc">AI assistant premium untuk produktivitas, bantuan, dan pengalaman interaktif.</p><button onclick="navigateTo('makima-ai')" data-i18n="open_project">Open Project</button></article>
+          <article class="project-card"><h3>Private Vault</h3><p data-i18n="project_vault_desc">Akses eksklusif untuk konten privat, catatan penting, dan modul khusus.</p><button onclick="navigateTo('hinter-mt')" data-i18n="open_vault">Open Vault</button></article>
+          <article class="project-card"><h3>Digital Products</h3><p data-i18n="project_products_desc">Aplikasi, tools, dan layanan digital pilihan untuk kebutuhan modern.</p><a href="#social-media" data-i18n="view_links">View Links</a></article>
+          <article class="project-card"><h3>Community / Digital Community</h3><p data-i18n="project_community_desc">Tempat update, koneksi, dan kolaborasi seputar digital products dan AI.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact">Contact</a></article>
         </div>
       </section>
 
