@@ -686,20 +686,38 @@ window.setAppMode = setAppMode;
 
 /* MII STORE homepage social hub interactions */
 (function() {
-  function initCharacterSwap() {
-    var box = document.getElementById('characterSwap');
-    if (!box || box.dataset.bound === 'true') return;
-    box.dataset.bound = 'true';
-    box.addEventListener('click', function(e) {
-      e.preventDefault();
-      var active = !box.classList.contains('is-cyborg');
-      box.classList.toggle('is-cyborg', active);
-      box.setAttribute('aria-pressed', active ? 'true' : 'false');
-      box.classList.remove('is-flashing');
-      void box.offsetWidth;
-      box.classList.add('is-flashing');
-      window.setTimeout(function() { box.classList.remove('is-flashing'); }, 520);
-    });
+  function initCharacterReveal() {
+    var stage = document.getElementById('characterStage');
+    if (!stage || stage.dataset.bound === 'true') return;
+    stage.dataset.bound = 'true';
+    var hideTimer = null;
+
+    function setReveal(clientX, clientY, active) {
+      var rect = stage.getBoundingClientRect();
+      var x = ((clientX - rect.left) / rect.width) * 100;
+      var y = ((clientY - rect.top) / rect.height) * 100;
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
+      stage.style.setProperty('--mx', x + '%');
+      stage.style.setProperty('--my', y + '%');
+      stage.style.setProperty('--r', active ? (window.matchMedia('(max-width: 700px)').matches ? '92px' : '112px') : '0px');
+      stage.classList.toggle('is-revealing', !!active);
+    }
+
+    function endReveal() {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(function() {
+        stage.style.setProperty('--r', '0px');
+        stage.classList.remove('is-revealing');
+      }, 180);
+    }
+
+    stage.addEventListener('pointerenter', function(e) { setReveal(e.clientX, e.clientY, true); });
+    stage.addEventListener('pointermove', function(e) { setReveal(e.clientX, e.clientY, true); });
+    stage.addEventListener('pointerdown', function(e) { stage.setPointerCapture && stage.setPointerCapture(e.pointerId); setReveal(e.clientX, e.clientY, true); });
+    stage.addEventListener('pointerup', endReveal);
+    stage.addEventListener('pointercancel', endReveal);
+    stage.addEventListener('pointerleave', endReveal);
   }
 
   function clearUiCache() {
@@ -717,7 +735,7 @@ window.setAppMode = setAppMode;
     if ('caches' in window) jobs.push(caches.keys().then(function(keys) { return Promise.all(keys.map(function(key) { return caches.delete(key); })); }));
     Promise.allSettled(jobs).then(function() {
       var url = new URL(window.location.href);
-      url.searchParams.set('v', '20260614-portfolio-' + Date.now());
+      url.searchParams.set('v', '20260614-final-hero-' + Date.now());
       window.location.replace(url.toString());
     });
   }
@@ -733,7 +751,7 @@ window.setAppMode = setAppMode;
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    initCharacterSwap();
+    initCharacterReveal();
     var clearBtn = document.getElementById('clearCacheBtn');
     if (clearBtn && clearBtn.dataset.bound !== 'true') {
       clearBtn.dataset.bound = 'true';
@@ -758,5 +776,5 @@ window.setAppMode = setAppMode;
       goHomeSection(id);
     }
   });
-  initCharacterSwap();
+  initCharacterReveal();
 })();
