@@ -130,7 +130,7 @@ _BOT_LAST_PANEL_MESSAGES = {}
 _BOT_POLLING_STARTED = False
 _BOT_LAST_UPDATE_ID = None
 TELEGRAM_CHANNEL_LINK = 'https://t.me/+L0mZsWxq30cxZmM1'
-TELEGRAM_CHANNEL_CHAT_ID = os.environ.get('TELEGRAM_EVENT_CHANNEL_ID', TELEGRAM_CHANNEL_LINK).strip()
+TELEGRAM_CHANNEL_CHAT_ID = (os.environ.get('TELEGRAM_CHANNEL_ID') or os.environ.get('TELEGRAM_EVENT_CHANNEL_ID') or '').strip()
 WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl'
 TOKEN_TTL_SECONDS = 24 * 60 * 60
 
@@ -227,7 +227,7 @@ def _user_from_message(message):
         'username': u.get('username') or '', 'first_name': u.get('first_name') or '', 'last_name': u.get('last_name') or '',
         'started_at': now, 'whatsapp_clicked': False, 'telegram_join_verified': False, 'verified': False,
         'token': '', 'token_created_at': '', 'token_expired_at': '', 'token_used': False, 'game_attempts': 0,
-        'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'last_action_at': now,
+        'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'state': '', 'last_action_at': now,
     }
 
 
@@ -277,20 +277,20 @@ def validate_event_token(token):
 
 
 def _new_token():
-    return 'MII-' + base64.b32encode(os.urandom(6)).decode('ascii').rstrip('=')[:10]
+    return 'MII-BG-' + base64.b32encode(os.urandom(4)).decode('ascii').rstrip('=')[:6]
 
 
 def _claim_or_get_token(uid):
     with _EVENT_LOCK:
         data = _load_event_data(); user = data['users'].get(str(uid))
         if not user or not user.get('verified'):
-            return None, '❌ Selesaikan verifikasi terlebih dahulu.'
+            return None, '❌ Verifikasi join dulu sebelum claim token.'
         if _is_token_active(user):
-            return user, f"🎟 Token Event kamu masih aktif:\n{user['token']}\n\nExpired: {user['token_expired_at']}"
+            return user, f"🎟 Token kamu masih aktif:\n{user['token']}"
         user['token'] = _new_token(); user['token_created_at'] = _utc_timestamp()
         user['token_expired_at'] = datetime.fromtimestamp(time.time() + TOKEN_TTL_SECONDS, timezone.utc).isoformat()
         user['last_action_at'] = _utc_timestamp(); data['users'][str(uid)] = user; _save_event_data(data)
-        return user, f"🎟 Token Event kamu:\n{user['token']}\n\nGunakan token ini untuk login ke halaman event."
+        return user, f"🎟 Token BOUNTY GAME kamu:\n{user['token']}\n\nGunakan token ini di halaman Bounty Game."
 
 
 def _telegram_api_url(method):
@@ -343,7 +343,8 @@ def _telegram_answer_callback(callback_query_id):
 
 def _telegram_get_chat_member(user_id):
     url = _telegram_api_url('getChatMember')
-    if not url: return 'error'
+    if not url or not TELEGRAM_CHANNEL_CHAT_ID:
+        return 'error'
     try:
         resp = requests_lib.post(url, json={'chat_id': TELEGRAM_CHANNEL_CHAT_ID, 'user_id': user_id}, timeout=10)
         data = resp.json() if resp.ok else {}
@@ -362,36 +363,62 @@ def _is_logged_in(chat_id):
     with _BOT_SESSION_LOCK: return str(chat_id) in _BOT_AUTHENTICATED_CHATS
 
 
+def _reply_keyboard(rows):
+    return {'keyboard': [[{'text': item} for item in row] for row in rows], 'resize_keyboard': True, 'one_time_keyboard': False}
+
+
+def _inline_url_keyboard(text, url):
+    return {'inline_keyboard': [[{'text': text, 'url': url}]]}
+
+
 def _user_keyboard():
-    return {'inline_keyboard': [[{'text':'Join WhatsApp','url':WHATSAPP_GROUP_LINK},{'text':'Join Channel Telegram','url':TELEGRAM_CHANNEL_LINK}], [{'text':'✅ Saya Sudah Join WhatsApp','callback_data':'event_join_wa'}], [{'text':'✅ Verifikasi Join','callback_data':'event_verify'}], [{'text':'🎟 Claim Token Event','callback_data':'event_claim_token'}], [{'text':'🏆 Claim Reward','callback_data':'event_claim_reward'},{'text':'📦 Reward Saya','callback_data':'event_myreward'}]]}
+    return _reply_keyboard([
+        ['🎮 BOUNTY GAME'],
+        ['🔗 JOIN WHATSAPP', '📢 JOIN CHANNEL TELEGRAM'],
+        ['✅ SAYA SUDAH JOIN WHATSAPP', '✅ VERIFIKASI JOIN'],
+        ['🎟 CLAIM TOKEN EVENT', '🏆 CLAIM REWARD'],
+        ['📦 REWARD SAYA', '🌐 BUKA HALAMAN BOUNTY'],
+        ['🏠 MENU UTAMA'],
+    ])
+
+
+def _claim_keyboard():
+    return _reply_keyboard([['❌ BATAL', '🏠 MENU UTAMA']])
 
 
 def _admin_keyboard():
-    return {'inline_keyboard': [[{'text':'📊 Statistik Event','callback_data':'event_stats'},{'text':'👥 Lihat User Event','callback_data':'event_users'}], [{'text':'🎟 Token Event','callback_data':'event_manual_token'},{'text':'🎁 Reward Codes','callback_data':'reward_codes'}], [{'text':'🎁 Generate Reward Code','callback_data':'reward_generate'},{'text':'📦 Reward Stock','callback_data':'reward_stock'}], [{'text':'📜 Claim History','callback_data':'claim_history'}], [{'text':'🔴 Aktifkan Maintenance','callback_data':'maintenance_on'},{'text':'🟢 Matikan Maintenance','callback_data':'maintenance_off'}], [{'text':'🔐 Logout','callback_data':'logout'}]]}
+    return _reply_keyboard([
+        ['📊 STATISTIK EVENT', '👥 USER EVENT'],
+        ['🎟 TOKEN EVENT', '🎁 REWARD CODES'],
+        ['➕ GENERATE REWARD CODE', '📦 REWARD STOCK'],
+        ['📜 CLAIM HISTORY'],
+        ['🔴 MAINTENANCE ON', '🟢 MAINTENANCE OFF'],
+        ['🏠 MENU UTAMA', '🔐 LOGOUT'],
+    ])
 
 
 def _event_menu_text():
-    return 'MII STORE EVENT ACCESS\n\nSelesaikan syarat berikut untuk mendapatkan Token Event:\n1. Join Grup WhatsApp\n2. Join Channel Telegram\n3. Tekan Verifikasi\n4. Claim Token Event'
+    return '✨ SELAMAT DATANG DI BOUNTY GAME MII STORE ✨\n\nDapatkan token event dan klaim hadiah app premium melalui bot ini.\n\nSyarat:\n1. Join Grup WhatsApp\n2. Join Channel Telegram\n3. Verifikasi Join\n4. Claim Token Event\n5. Gunakan token di halaman Bounty Game'
 
 
 def _admin_text():
     status = 'MAINTENANCE' if get_site_status().get('maintenance') else 'ONLINE'
-    return f'MII STORE EVENT ADMIN PANEL\nStatus Website: {status}\nPilih aksi di bawah.'
+    return f'MII STORE ADMIN PANEL\nMode: BOUNTY GAME\nStatus Website: {status}\n\nPilih menu di bawah.'
 
 
 def _show_login_prompt(chat_id):
     with _BOT_SESSION_LOCK: _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
-    _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII STORE Event Admin Panel.')
+    _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII STORE ADMIN PANEL.')
 
 
 def _format_stats():
     st = _event_stats()
-    return '\n'.join(['📊 Statistik Event', f"Total user start: {st['total_user_start']}", f"Total verified: {st['total_verified']}", f"Total token issued: {st['total_token_issued']}", f"Total token used: {st['total_token_used']}", f"Total reward pending: {st['total_reward_pending']}", f"Total reward claimed: {st['total_reward_claimed']}"])
+    return '\n'.join(['📊 Statistik BOUNTY GAME', f"Total user start: {st['total_user_start']}", f"Total verified: {st['total_verified']}", f"Total token issued: {st['total_token_issued']}", f"Total token used: {st['total_token_used']}", f"Total reward pending: {st['total_reward_pending']}", f"Total reward claimed: {st['total_reward_claimed']}"])
 
 
 def _format_users():
     data = _load_event_data(); users = sorted(data['users'].values(), key=lambda u: u.get('last_action_at',''), reverse=True)[:10]
-    lines = ['👥 10 User Event Terbaru']
+    lines = ['👥 10 User BOUNTY GAME Terbaru']
     for u in users: lines.append(f"- {u.get('telegram_user_id')} @{u.get('username','-')} verified={u.get('verified')} token={bool(u.get('token'))}")
     return '\n'.join(lines) if len(lines)>1 else 'Belum ada user.'
 
@@ -412,11 +439,13 @@ def _handle_admin_text(chat_id, text):
     state = _BOT_USER_STATES.get(str(chat_id))
     if state == 'add_reward':
         parts = [p.strip() for p in text.split('|')]
-        if len(parts) < 5: _telegram_send_message(chat_id, 'Format: CODE | Nama Reward | type | max_claim | YYYY-MM-DD atau kosong'); return
-        code = parts[0].upper(); now = _utc_timestamp()
+        if len(parts) < 4: _telegram_send_message(chat_id, 'Format: CODE | Nama Reward | type | max_claim | expired_date'); return
+        code = parts[0].upper(); now = _utc_timestamp(); expires = parts[4] if len(parts) > 4 else ''
+        try: max_claim = int(parts[3])
+        except ValueError: _telegram_send_message(chat_id, '❌ max_claim harus angka.'); return
         with _EVENT_LOCK:
-            data = _load_event_data(); data['reward_codes'][code] = {'code':code,'name':parts[1],'type':parts[2],'max_claim':int(parts[3]),'claimed_count':0,'is_active':True,'expires_at':parts[4],'created_at':now,'created_by':str(chat_id)}; _save_event_data(data)
-        _BOT_USER_STATES.pop(str(chat_id), None); _telegram_send_message(chat_id, f'✅ Reward code tersimpan: {code}', _admin_keyboard()); return
+            data = _load_event_data(); data['reward_codes'][code] = {'code':code,'name':parts[1],'type':parts[2],'max_claim':max_claim,'claimed_count':0,'is_active':True,'expires_at':expires,'created_at':now,'created_by':str(chat_id)}; _save_event_data(data)
+        _clear_bot_state(chat_id); _telegram_send_message(chat_id, '✅ Reward code berhasil dibuat.', _admin_keyboard()); return
     if state == 'add_stock':
         parts = [p.strip() for p in text.split('|', 1)]
         if len(parts) < 2: _telegram_send_message(chat_id, 'Format: REWARD_CODE | detail hadiah'); return
@@ -425,7 +454,7 @@ def _handle_admin_text(chat_id, text):
             data = _load_event_data()
             if code not in data['reward_codes']: _telegram_send_message(chat_id, '❌ Reward code tidak ditemukan.'); return
             item_id = str(uuid.uuid4()); data['reward_items'].append({'id':item_id,'reward_code':code,'content':parts[1],'used':False,'used_by':'','used_at':'','created_at':_utc_timestamp()}); _save_event_data(data)
-        _BOT_USER_STATES.pop(str(chat_id), None); _telegram_send_message(chat_id, f'✅ Stock hadiah ditambahkan untuk {code}', _admin_keyboard()); return
+        _telegram_send_message(chat_id, f'✅ Stock hadiah ditambahkan untuk {code}', _admin_keyboard()); return
     _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
 
 
@@ -433,8 +462,8 @@ def _claim_reward(uid, reward_code):
     code = (reward_code or '').strip().upper(); nowdt = datetime.now(timezone.utc)
     with _EVENT_LOCK:
         data = _load_event_data(); user = data['users'].get(str(uid))
-        if not user or not user.get('verified'): return '❌ Kamu belum menyelesaikan verifikasi event.'
-        if not (_is_token_active(user) or user.get('token_used')): return '❌ Token event kamu belum aktif atau belum pernah dipakai untuk event.'
+        if not user or not user.get('verified'): return '❌ Kamu belum menyelesaikan verifikasi BOUNTY GAME.'
+        if not (_is_token_active(user) or user.get('token_used')): return '❌ Token event kamu belum aktif atau belum dipakai di halaman Bounty Game.'
         reward = data['reward_codes'].get(code)
         if not reward or not reward.get('is_active'): return '❌ Kode tidak valid.'
         exp = _parse_ts(reward.get('expires_at')) if reward.get('expires_at') else None
@@ -448,68 +477,113 @@ def _claim_reward(uid, reward_code):
         return f"🎉 Reward berhasil diklaim!\n\nBerikut hadiah kamu:\n{item['content']}\n\nSimpan data ini baik-baik. Jangan bagikan ke orang lain."
 
 
+
+def _set_bot_state(chat_id, state):
+    _BOT_USER_STATES[str(chat_id)] = state
+    with _EVENT_LOCK:
+        data = _load_event_data(); user = data['users'].get(str(chat_id))
+        if user:
+            user['state'] = state; user['last_action_at'] = _utc_timestamp(); data['users'][str(chat_id)] = user; _save_event_data(data)
+
+
+def _clear_bot_state(chat_id):
+    _BOT_USER_STATES.pop(str(chat_id), None)
+    with _EVENT_LOCK:
+        data = _load_event_data(); user = data['users'].get(str(chat_id))
+        if user:
+            user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][str(chat_id)] = user; _save_event_data(data)
+
+def _normalize_bot_action(data):
+    mapping = {
+        '/menu': 'menu', '/bounty': 'open_bounty', '🎮 BOUNTY GAME': 'menu', '🏠 MENU UTAMA': 'menu',
+        '🔗 JOIN WHATSAPP': 'join_wa_link', '📢 JOIN CHANNEL TELEGRAM': 'join_tg_link',
+        '✅ SAYA SUDAH JOIN WHATSAPP': 'event_join_wa', '✅ VERIFIKASI JOIN': 'event_verify', '/verify': 'event_verify',
+        '🎟 CLAIM TOKEN EVENT': 'event_claim_token', '/token': 'event_claim_token',
+        '🏆 CLAIM REWARD': 'event_claim_reward', '/claim': 'event_claim_reward',
+        '📦 REWARD SAYA': 'event_myreward', '/myreward': 'event_myreward',
+        '🌐 BUKA HALAMAN BOUNTY': 'open_bounty', '❌ BATAL': 'cancel',
+        '📊 STATISTIK EVENT': 'event_stats', '/event_stats': 'event_stats',
+        '👥 USER EVENT': 'event_users', '/users': 'event_users',
+        '🎟 TOKEN EVENT': 'event_manual_token', '🎁 REWARD CODES': 'reward_codes', '/reward_codes': 'reward_codes',
+        '➕ GENERATE REWARD CODE': 'reward_generate', '📦 REWARD STOCK': 'reward_stock',
+        '📜 CLAIM HISTORY': 'claim_history', '/claim_history': 'claim_history',
+        '🔴 MAINTENANCE ON': 'maintenance_on', '/maintenance_on': 'maintenance_on',
+        '🟢 MAINTENANCE OFF': 'maintenance_off', '/maintenance_off': 'maintenance_off',
+        '🔐 LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
+    }
+    return mapping.get(data, data)
+
+
 def process_telegram_update(update):
     callback = update.get('callback_query') or {}; message = (callback.get('message') if callback else update.get('message')) or {}; chat = message.get('chat') or {}; chat_id = chat.get('id')
     if not chat_id: return
-    if callback: _telegram_answer_callback(callback.get('id')); data = callback.get('data','')
-    else: data = (message.get('text') or '').strip()
-    user = _upsert_event_user(message)
-    uid = user['telegram_user_id']
+    if callback: _telegram_answer_callback(callback.get('id')); raw_data = callback.get('data','')
+    else: raw_data = (message.get('text') or '').strip()
+    user = _upsert_event_user(message); uid = user['telegram_user_id']; data = _normalize_bot_action(raw_data)
+    state = _BOT_USER_STATES.get(str(chat_id))
+    if data in ('menu','cancel'):
+        _clear_bot_state(chat_id)
+        kb = _admin_keyboard() if _is_admin_chat(chat_id) and _is_logged_in(chat_id) else _user_keyboard()
+        _telegram_send_message(chat_id, _admin_text() if kb == _admin_keyboard() else _event_menu_text(), kb); return
     with _BOT_SESSION_LOCK: pending = str(chat_id) in _BOT_LOGIN_PENDING_CHATS
     if pending:
         expected = os.environ.get('BOT_ADMIN_PASSWORD','')
-        if _is_admin_chat(chat_id) and expected and hmac.compare_digest(data, expected):
+        if _is_admin_chat(chat_id) and expected and hmac.compare_digest(raw_data, expected):
             with _BOT_SESSION_LOCK: _BOT_AUTHENTICATED_CHATS.add(str(chat_id)); _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
         else: _telegram_send_message(chat_id, '❌ Password salah.')
         return
-    if data in ('/start','/login'):
-        if _is_admin_chat(chat_id): _show_login_prompt(chat_id)
-        else: _telegram_show_panel(chat_id, _event_menu_text(), _user_keyboard(), message.get('message_id'))
+    if raw_data in ('/start','/login') or data == 'admin_login':
+        if _is_admin_chat(chat_id) and not _is_logged_in(chat_id): _show_login_prompt(chat_id)
+        elif _is_admin_chat(chat_id): _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+        else: _telegram_send_message(chat_id, _event_menu_text(), _user_keyboard())
         return
-    if data in ('/verify',):
-        data = 'event_verify'
-    if data in ('/logout','logout'):
+    if data == 'logout':
         with _BOT_SESSION_LOCK: _BOT_AUTHENTICATED_CHATS.discard(str(chat_id)); _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
-        _telegram_send_message(chat_id, '🔐 Logout berhasil.'); return
-    if _is_admin_chat(chat_id) and data in ('event_stats','/event_stats','/status') and _is_logged_in(chat_id): _telegram_show_panel(chat_id, _format_stats(), _admin_keyboard(), message.get('message_id')); return
-    if _is_admin_chat(chat_id) and data in ('event_users','/users') and _is_logged_in(chat_id): _telegram_show_panel(chat_id, _format_users(), _admin_keyboard(), message.get('message_id')); return
-    if _is_admin_chat(chat_id) and data in ('reward_codes','/reward_codes') and _is_logged_in(chat_id): _telegram_show_panel(chat_id, _format_reward_codes(), _admin_keyboard(), message.get('message_id')); return
-    if _is_admin_chat(chat_id) and data in ('claim_history','/claim_history') and _is_logged_in(chat_id): _telegram_show_panel(chat_id, _format_claim_history(), _admin_keyboard(), message.get('message_id')); return
-    if _is_admin_chat(chat_id) and data == 'reward_generate': _BOT_USER_STATES[str(chat_id)]='add_reward'; _telegram_send_message(chat_id, 'Kirim: CODE | Nama Reward | type | max_claim | YYYY-MM-DD atau kosong'); return
-    if _is_admin_chat(chat_id) and data == 'reward_stock': _BOT_USER_STATES[str(chat_id)]='add_stock'; _telegram_send_message(chat_id, 'Kirim: REWARD_CODE | detail hadiah'); return
-    if _is_admin_chat(chat_id) and data in ('maintenance_on','maintenance_off','/maintenance_on','/maintenance_off') and _is_logged_in(chat_id): set_maintenance_status(data in ('maintenance_on','/maintenance_on')); _telegram_show_panel(chat_id, ('🔴 Maintenance aktif.\n\n' if data in ('maintenance_on','/maintenance_on') else '🟢 Maintenance nonaktif.\n\n') + _admin_text(), _admin_keyboard(), message.get('message_id')); return
+        _clear_bot_state(chat_id); _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard()); return
     admin_actions = {'event_stats','event_users','reward_codes','claim_history','reward_generate','reward_stock','maintenance_on','maintenance_off','event_manual_token'}
-    if _is_admin_chat(chat_id) and not _is_logged_in(chat_id) and (data.startswith('/') or data in admin_actions):
-        _show_login_prompt(chat_id); return
+    if data in admin_actions and not _is_admin_chat(chat_id): _telegram_send_message(chat_id, '⛔ Access denied.'); return
+    if _is_admin_chat(chat_id) and data in admin_actions and not _is_logged_in(chat_id): _show_login_prompt(chat_id); return
+    if _is_admin_chat(chat_id) and _is_logged_in(chat_id):
+        if data == 'event_stats': _telegram_send_message(chat_id, _format_stats(), _admin_keyboard()); return
+        if data == 'event_users': _telegram_send_message(chat_id, _format_users(), _admin_keyboard()); return
+        if data == 'reward_codes': _telegram_send_message(chat_id, _format_reward_codes(), _admin_keyboard()); return
+        if data == 'claim_history': _telegram_send_message(chat_id, _format_claim_history(), _admin_keyboard()); return
+        if data == 'reward_generate': _set_bot_state(chat_id, 'add_reward'); _telegram_send_message(chat_id, 'Kirim reward code dengan format:\nCODE | Nama Reward | type | max_claim | expired_date\n\nContoh:\nMII-WIN-2024 | Premium App Random | account | 3 | 2026-06-30', _claim_keyboard()); return
+        if data == 'reward_stock': _set_bot_state(chat_id, 'add_stock'); _telegram_send_message(chat_id, 'Kirim stok hadiah dengan format:\nREWARD_CODE | detail hadiah\n\nContoh:\nMII-WIN-2024 | email: akun1@example.com | password: xxxx', _claim_keyboard()); return
+        if data in ('maintenance_on','maintenance_off'): set_maintenance_status(data == 'maintenance_on'); _telegram_send_message(chat_id, ('🔴 Maintenance aktif.\n\n' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.\n\n') + _admin_text(), _admin_keyboard()); return
+        if state in ('add_reward','add_stock'): _handle_admin_text(chat_id, raw_data); return
+    if data == 'join_wa_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Grup WhatsApp.', _inline_url_keyboard('Join WhatsApp', WHATSAPP_GROUP_LINK)); return
+    if data == 'join_tg_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Channel Telegram.', _inline_url_keyboard('Join Channel Telegram', TELEGRAM_CHANNEL_LINK)); return
+    if data == 'open_bounty': _telegram_send_message(chat_id, 'Buka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty')); return
     if data == 'event_join_wa':
         with _EVENT_LOCK:
             d=_load_event_data(); u=d['users'][uid]; u['whatsapp_clicked']=True; u['last_action_at']=_utc_timestamp(); d['users'][uid]=u; _save_event_data(d)
-        _telegram_show_panel(chat_id, '✅ Klik Join WhatsApp sudah dicatat. Jika URL button gagal, buka:\n' + WHATSAPP_GROUP_LINK, _user_keyboard(), message.get('message_id')); return
+        _telegram_send_message(chat_id, '✅ Status join WhatsApp sudah dicatat.', _user_keyboard()); return
     if data == 'event_verify':
         with _EVENT_LOCK:
             d=_load_event_data(); u=d['users'][uid]
             if not u.get('whatsapp_clicked'):
-                _save_event_data(d)
-                _telegram_send_message(chat_id, '❌ Silakan klik dan join Grup WhatsApp terlebih dahulu.', _user_keyboard()); return
+                _save_event_data(d); _telegram_send_message(chat_id, '❌ Tekan tombol JOIN WHATSAPP dan klik SAYA SUDAH JOIN WHATSAPP terlebih dahulu.', _user_keyboard()); return
         tg_status = _telegram_get_chat_member(uid)
-        if tg_status == 'error': _telegram_show_panel(chat_id, '❌ Bot belum bisa memverifikasi channel. Pastikan bot sudah menjadi admin channel Telegram.', _user_keyboard(), message.get('message_id')); return
-        if tg_status != 'joined': _telegram_show_panel(chat_id, '❌ Kamu belum join Channel Telegram. Join dulu lalu tekan Verifikasi lagi.', _user_keyboard(), message.get('message_id')); return
+        if tg_status == 'error': _telegram_send_message(chat_id, '⚠️ Bot belum bisa mengecek channel. Pastikan bot sudah admin channel dan TELEGRAM_CHANNEL_ID benar.', _user_keyboard()); return
+        if tg_status != 'joined': _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram. Join dulu lalu tekan VERIFIKASI JOIN.', _user_keyboard()); return
         with _EVENT_LOCK:
             d=_load_event_data(); u=d['users'][uid]; u['telegram_join_verified']=True; u['verified']=True; u['last_action_at']=_utc_timestamp(); d['users'][uid]=u; _save_event_data(d)
-        _telegram_show_panel(chat_id, '✅ Channel Telegram terverifikasi.\n✅ Verifikasi berhasil. Kamu sekarang bisa claim Token Event.', _user_keyboard(), message.get('message_id')); return
-    if data in ('event_claim_token','/token','/event'): _u, msg = _claim_or_get_token(uid); _telegram_show_panel(chat_id, msg, _user_keyboard(), message.get('message_id')); return
-    if data in ('event_claim_reward','/claim'): _BOT_USER_STATES[str(chat_id)]='claim_reward'; _telegram_send_message(chat_id, 'Kirim kode reward/kode kemenangan kamu.'); return
-    if data in ('event_myreward','/myreward'):
+        _telegram_send_message(chat_id, '✅ Verifikasi berhasil. Kamu bisa claim Token Event sekarang.', _user_keyboard()); return
+    if data == 'event_claim_token': _u, msg = _claim_or_get_token(uid); _telegram_send_message(chat_id, msg, _user_keyboard()); return
+    if data == 'event_claim_reward': _set_bot_state(chat_id, 'claim_reward'); _telegram_send_message(chat_id, 'Kirim kode reward/kode kemenangan kamu.', _claim_keyboard()); return
+    if data == 'event_myreward':
         d=_load_event_data(); claims=[c for c in d['claims'] if c.get('telegram_user_id')==uid]
-        _telegram_show_panel(chat_id, '📦 Reward Saya\n' + ('\n'.join(f"- {c['reward_code']} pada {c['claimed_at']}" for c in claims) if claims else 'Belum ada reward.'), _user_keyboard(), message.get('message_id')); return
-    if _BOT_USER_STATES.get(str(chat_id)) == 'claim_reward':
-        _BOT_USER_STATES.pop(str(chat_id), None); _telegram_send_message(chat_id, _claim_reward(uid, data), _user_keyboard()); return
+        _telegram_send_message(chat_id, '📦 Reward Saya\n' + ('\n'.join(f"- {c['reward_code']} pada {c['claimed_at']}" for c in claims) if claims else 'Belum ada reward.'), _user_keyboard()); return
+    if state == 'claim_reward':
+        msg = _claim_reward(uid, raw_data)
+        if msg.startswith('🎉'): _clear_bot_state(chat_id); _telegram_send_message(chat_id, msg, _user_keyboard())
+        else: _telegram_send_message(chat_id, msg, _claim_keyboard())
+        return
     admin_commands = {'/status','/users','/event_stats','/reward_codes','/claim_history','/maintenance_on','/maintenance_off'}
-    if data in admin_commands and not _is_admin_chat(chat_id): _telegram_send_message(chat_id, '⛔ Access denied.'); return
-    if _is_admin_chat(chat_id) and _is_logged_in(chat_id): _handle_admin_text(chat_id, data); return
-    _telegram_show_panel(chat_id, _event_menu_text(), _user_keyboard(), message.get('message_id'))
-
+    if raw_data in admin_commands and not _is_admin_chat(chat_id): _telegram_send_message(chat_id, '⛔ Access denied.'); return
+    _telegram_send_message(chat_id, _event_menu_text(), _user_keyboard())
 
 def _telegram_polling_loop():
     global _BOT_LAST_UPDATE_ID
@@ -735,7 +809,7 @@ def event_validate_token():
     token = (request.get_json(silent=True) or {}).get('token', '')
     ok, user = validate_event_token(token)
     if not ok:
-        return jsonify({'valid': False, 'error': 'Token tidak valid atau sudah expired'}), 400
+        return jsonify({'valid': False, 'error': 'Token tidak valid atau sudah expired.'}), 400
     with _EVENT_LOCK:
         data = _load_event_data()
         stored = data['users'].get(str(user['telegram_user_id']))
@@ -744,7 +818,7 @@ def event_validate_token():
             stored['last_action_at'] = _utc_timestamp()
             data['users'][str(user['telegram_user_id'])] = stored
             _save_event_data(data)
-    return jsonify({'valid': True, 'message': 'Token valid, event access granted'})
+    return jsonify({'valid': True, 'message': 'Token valid. Akses BOUNTY GAME berhasil.'})
 
 
 def _admin_web_authed():
