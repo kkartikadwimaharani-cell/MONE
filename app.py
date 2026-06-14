@@ -99,7 +99,7 @@ except Exception as e:
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-APP_VERSION = "20260614-mii-store-final-v2"
+APP_VERSION = "20260614-globe-final-v1"
 
 
 def versioned_static(path):
@@ -204,6 +204,23 @@ def _telegram_send_message(chat_id, text, reply_markup=None):
         return None
 
 
+def _telegram_edit_message(chat_id, message_id, text, reply_markup=None):
+    url = _telegram_api_url('editMessageText')
+    if not url or not message_id:
+        return None
+    payload = {'chat_id': chat_id, 'message_id': message_id, 'text': text}
+    if reply_markup is not None:
+        payload['reply_markup'] = reply_markup
+    try:
+        response = requests_lib.post(url, json=payload, timeout=10)
+        if response.ok:
+            return response
+        app.logger.info('Telegram editMessageText fallback: %s', response.text[:160])
+    except Exception as exc:
+        app.logger.warning('Telegram editMessageText failed: %s', exc)
+    return None
+
+
 def _telegram_answer_callback(callback_query_id):
     url = _telegram_api_url('answerCallbackQuery')
     if not url or not callback_query_id:
@@ -236,7 +253,7 @@ def _control_panel_keyboard():
 def _control_panel_text():
     status = get_site_status()
     website_status = 'MAINTENANCE' if status.get('maintenance') else 'ONLINE'
-    return f'MII STORE CONTROL PANEL\nStatus Website: {website_status}\nPilih aksi di bawah.'
+    return f'MII STORE CONTROL PANEL\nStatus: {website_status}\nPilih aksi di bawah.'
 
 
 def _is_logged_in(chat_id):
@@ -250,7 +267,7 @@ def _show_login_prompt(chat_id):
     _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII STORE Control Panel.')
 
 
-def _handle_bot_action(chat_id, action):
+def _handle_bot_action(chat_id, action, message_id=None):
     if action in ('/start', '/login'):
         _show_login_prompt(chat_id)
         return
@@ -265,16 +282,13 @@ def _handle_bot_action(chat_id, action):
         return
     if action == '/maintenance_on' or action == 'maintenance_on':
         set_maintenance_status(True)
-        _telegram_send_message(chat_id, '🔴 Maintenance Mode aktif. Website sekarang menampilkan halaman maintenance.')
-        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+        _telegram_edit_message(chat_id, message_id, _control_panel_text(), _control_panel_keyboard()) or _telegram_send_message(chat_id, '🔴 Maintenance aktif')
     elif action == '/maintenance_off' or action == 'maintenance_off':
         set_maintenance_status(False)
-        _telegram_send_message(chat_id, '🟢 Maintenance Mode dimatikan. Website kembali normal.')
-        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+        _telegram_edit_message(chat_id, message_id, _control_panel_text(), _control_panel_keyboard()) or _telegram_send_message(chat_id, '🟢 Maintenance nonaktif')
     elif action == '/status' or action == 'status':
-        status_text = 'Status Website: 🔴 MAINTENANCE' if get_site_status().get('maintenance') else 'Status Website: 🟢 ONLINE'
-        _telegram_send_message(chat_id, status_text)
-        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+        status_text = '📊 Status: MAINTENANCE' if get_site_status().get('maintenance') else '📊 Status: ONLINE'
+        _telegram_edit_message(chat_id, message_id, _control_panel_text(), _control_panel_keyboard()) or _telegram_send_message(chat_id, status_text)
 
 
 def process_telegram_update(update):
@@ -298,7 +312,7 @@ def process_telegram_update(update):
         return
 
     if data in ('/start', '/login', '/logout', '/status', '/maintenance_on', '/maintenance_off', 'maintenance_on', 'maintenance_off', 'status', 'logout'):
-        _handle_bot_action(chat_id, data)
+        _handle_bot_action(chat_id, data, (message.get('message_id') if callback else None))
         return
 
     with _BOT_SESSION_LOCK:
@@ -309,7 +323,6 @@ def process_telegram_update(update):
             with _BOT_SESSION_LOCK:
                 _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
                 _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
-            _telegram_send_message(chat_id, '✅ Login berhasil. Control panel dibuka.')
             _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
         else:
             _telegram_send_message(chat_id, '❌ Password salah.')

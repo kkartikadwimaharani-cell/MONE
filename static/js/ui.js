@@ -690,41 +690,6 @@ window.setAppMode = setAppMode;
 
 /* MII STORE homepage social hub interactions */
 (function() {
-  function initCharacterReveal() {
-    var stage = document.getElementById('characterStage');
-    if (!stage || stage.dataset.bound === 'true') return;
-    stage.dataset.bound = 'true';
-    var hideTimer = null;
-
-    function setReveal(clientX, clientY, active) {
-      var rect = stage.getBoundingClientRect();
-      var x = ((clientX - rect.left) / rect.width) * 100;
-      var y = ((clientY - rect.top) / rect.height) * 100;
-      x = Math.max(0, Math.min(100, x));
-      y = Math.max(0, Math.min(100, y));
-      stage.style.setProperty('--mx', x + '%');
-      stage.style.setProperty('--my', y + '%');
-      if (hideTimer) clearTimeout(hideTimer);
-      stage.style.setProperty('--r', active ? (window.matchMedia('(max-width: 700px)').matches ? '96px' : '126px') : '0px');
-      stage.classList.toggle('is-revealing', !!active);
-    }
-
-    function endReveal() {
-      if (hideTimer) clearTimeout(hideTimer);
-      hideTimer = window.setTimeout(function() {
-        stage.style.setProperty('--r', '0px');
-        stage.classList.remove('is-revealing');
-      }, 180);
-    }
-
-    stage.addEventListener('pointerenter', function(e) { setReveal(e.clientX, e.clientY, true); });
-    stage.addEventListener('pointermove', function(e) { setReveal(e.clientX, e.clientY, true); });
-    stage.addEventListener('pointerdown', function(e) { stage.setPointerCapture && stage.setPointerCapture(e.pointerId); setReveal(e.clientX, e.clientY, true); });
-    stage.addEventListener('pointerup', endReveal);
-    stage.addEventListener('pointercancel', endReveal);
-    stage.addEventListener('pointerleave', endReveal);
-  }
-
   function goHomeSection(id) {
     if (typeof window.navigateTo === 'function' && window.currentView !== 'downloader') {
       window.navigateTo('downloader', true);
@@ -735,23 +700,6 @@ window.setAppMode = setAppMode;
     }, 40);
   }
 
-  function initHomepageCharacterFlip() {
-    var card = document.getElementById('characterFlipCard');
-    if (!card || card.dataset.flipBound === 'true') return;
-    card.dataset.flipBound = 'true';
-    card.addEventListener('click', function(e) {
-      var toggle = e.target.closest('[data-flip-card]');
-      if (!toggle) return;
-      e.preventDefault();
-      e.stopPropagation();
-      card.classList.toggle('is-flipped');
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    initCharacterReveal();
-    initHomepageCharacterFlip();
-  });
   document.addEventListener('click', function(e) {
     var scrollItem = e.target.closest('[data-scroll-target]');
     if (scrollItem) {
@@ -770,13 +718,11 @@ window.setAppMode = setAppMode;
       goHomeSection(id);
     }
   });
-  initCharacterReveal();
-  initHomepageCharacterFlip();
 })();
 
-/* 20260614-mii-store-final-v2 cache controls */
+/* 20260614-globe-final-v1 cache controls */
 (function() {
-  var APP_VERSION = window.APP_VERSION || '20260614-mii-store-final-v2';
+  var APP_VERSION = window.APP_VERSION || '20260614-globe-final-v1';
   var versionKey = 'appVersion';
   var safeKeys = ['mii_ui_cache', 'mii_home_cache', 'mii_network_view', 'mii_drawer_state'];
 

@@ -94,18 +94,17 @@
             <a class="premium-btn ghost" href="#social-media" data-i18n="explore_socials">Explore Socials</a>
           </div>
         </div>
-        <div class="hero-character" aria-label="MII STORE character reveal">
-          <div class="character-premium-card">
-            <div class="character-stage" id="characterStage" aria-label="MII STORE character reveal">
-              <img class="character-img formal-img" src="{{ asset_url('img/makima-formal.png') }}" alt="Makima formal" draggable="false" />
-              <img class="character-img cyborg-img" src="{{ asset_url('img/makima-cyborg.png') }}" alt="Makima cyborg" draggable="false" />
-              <span class="scan-glow" aria-hidden="true"></span>
+        <div class="hero-globe" aria-label="Animated digital globe">
+          <div class="globe-wrap">
+            <div class="globe-orbit orbit-one"></div>
+            <div class="globe-orbit orbit-two"></div>
+            <div class="digital-globe">
+              <span class="globe-shade"></span>
+              <span class="globe-grid latitude"></span>
+              <span class="globe-grid longitude"></span>
+              <span class="globe-pulse"></span>
             </div>
-            <div class="character-card-info" aria-label="MII STORE trust badges">
-              <span>Trusted Digital Brand</span>
-              <span>Established Since 2024</span>
-              <span>Premium Digital Identity</span>
-            </div>
+            <span class="globe-particle p1"></span><span class="globe-particle p2"></span><span class="globe-particle p3"></span><span class="globe-particle p4"></span>
           </div>
         </div>
       </section>
@@ -176,20 +175,23 @@
     return '/static/' + cleanPath + '?v=' + encodeURIComponent(window.APP_VERSION);
   };
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-      .then(registrations => {
-        registrations.forEach(reg => reg.unregister());
-        console.log('[CACHE] Service workers unregistered');
-      });
-  }
-
-  if ('caches' in window) {
-    caches.keys().then(keys => {
-      keys.forEach(key => caches.delete(key));
-      console.log('[CACHE] Cache storage cleared');
-    });
-  }
+  window.clearMiiUiCache = function() {
+    try { sessionStorage.clear(); } catch (e) {}
+    try { localStorage.removeItem('mii_ui_cache'); localStorage.removeItem('mii_home_cache'); } catch (e) {}
+    var sw = ('serviceWorker' in navigator) ? navigator.serviceWorker.getRegistrations().then(function(regs){ regs.forEach(function(reg){ reg.unregister(); }); }) : Promise.resolve();
+    var cacheClear = ('caches' in window) ? caches.keys().then(function(keys){ return Promise.all(keys.map(function(key){ return caches.delete(key); })); }) : Promise.resolve();
+    return Promise.all([sw, cacheClear]);
+  };
+  (function enforceAppVersion(){
+    try {
+      if (localStorage.getItem('appVersion') !== window.APP_VERSION) {
+        localStorage.setItem('appVersion', window.APP_VERSION);
+        window.clearMiiUiCache().then(function(){
+          if (!new URLSearchParams(location.search).has('v')) location.replace(location.pathname + '?v=' + encodeURIComponent(window.APP_VERSION));
+        });
+      }
+    } catch (e) {}
+  })();
   </script>
   <script src="{{ asset_url('js/config.js') }}"></script>
   <script src="{{ asset_url('js/i18n.js') }}"></script>
