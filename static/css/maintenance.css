@@ -97,7 +97,7 @@ animation:sheen 5.5s ease-in-out infinite;
 pointer-events:none}
 .cyber-eye-wrap{
 position:relative;
-width:min(300px,84vw);
+width:min(280px,84vw);
 margin:2px auto 22px;
 display:grid;
 place-items:center}
@@ -115,7 +115,7 @@ z-index:6}
 .cyber-eye{
 position:relative;
 width:100%;
-height:78px;
+height:88px;
 border-radius:48% 48% 50% 50%/56% 56% 44% 44%;
 display:grid;
 place-items:center;
@@ -142,8 +142,8 @@ border-radius:50%;
 filter:drop-shadow(0 0 12px rgba(255,0,42,.35))}
 .iris{
 position:relative;
-width:52px;
-height:52px;
+width:50px;
+height:50px;
 border-radius:50%;
 background:repeating-radial-gradient(circle,rgba(255,75,95,.95) 0 2px,rgba(70,0,12,.9) 3px 7px);
 border:1px solid rgba(255,115,130,.6);
@@ -303,15 +303,15 @@ background-position:0 42px}
 0%,100%{
 transform:translateX(0)}
 25%{
-transform:translateX(-9px)}
+transform:translateX(-6px)}
 65%{
-transform:translateX(9px)}
+transform:translateX(6px)}
 }
 @keyframes blink{
 0%,82%,100%{
 transform:translateY(0)}
-88%,93%{
-transform:translateY(55%)}
+88%,92%{
+transform:translateY(52%)}
 }
 @keyframes eyeGlow{
 50%{
@@ -337,7 +337,7 @@ background-size:34px 34px}
 .cyber-eye-wrap{
 width:min(220px,86vw)}
 .cyber-eye{
-height:78px}
+height:76px}
 .iris{
 width:44px;
 height:44px}
@@ -345,4 +345,4 @@ height:44px}
 inset:14px}
 }
 
-@media(max-width:520px){.cyber-eye-wrap{width:min(230px,82vw)}.cyber-eye{height:68px}.iris{width:44px;height:44px}.pupil{inset:14px}.eye-shine{top:25px}}
+@media(max-width:520px){.cyber-eye-wrap{width:min(220px,82vw)}.cyber-eye{height:76px}.iris{width:44px;height:44px}.pupil{inset:14px}.eye-shine{top:25px}}

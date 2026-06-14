@@ -397,7 +397,7 @@ def _claim_or_get_token(uid):
         data = _load_event_data()
         user = data['users'].get(uid)
         if not user or not user.get('verified'):
-            return None, '❌ Kamu belum verifikasi channel Telegram.'
+            return None, '❌ Kamu belum verifikasi Channel Telegram.'
         if _is_token_active(user):
             rec = data.get('event_tokens', {}).get(user.get('token'), {})
             if rec.get('status') == 'active' and not rec.get('used_for_event'):
@@ -882,9 +882,12 @@ def process_telegram_update(update):
     data = _normalize_bot_action(raw_data)
     state = _BOT_USER_STATES.get(str(chat_id))
 
-    if data in ('menu', 'cancel') and state != 'claim_reward':
+    if data in ('menu', 'cancel') and state != 'awaiting_reward_code':
+        was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info')
         _clear_bot_state(chat_id, uid)
         if _is_admin_chat(uid) and _is_logged_in(chat_id):
+            if data == 'cancel' and was_admin_input:
+                _telegram_send_message(chat_id, '❌ Dibatalkan.')
             show_admin_panel(chat_id, user)
         else:
             show_user_home(chat_id, user)
@@ -989,9 +992,29 @@ def process_telegram_update(update):
             _handle_admin_text(chat_id, raw_data)
             return
 
+    if state == 'awaiting_reward_code':
+        if data == 'cancel':
+            _clear_bot_state(chat_id, uid)
+            if user.get('verified'):
+                _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.', _user_keyboard())
+            else:
+                show_unverified_start(chat_id, user)
+            return
+        if data == 'menu':
+            _clear_bot_state(chat_id, uid)
+            show_user_home(chat_id, user)
+            return
+        msg = _claim_reward(uid, raw_data)
+        if msg.startswith('🎉 Reward berhasil'):
+            _clear_bot_state(chat_id, uid)
+            _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
+        else:
+            _telegram_send_message(chat_id, msg, _claim_keyboard())
+        return
+
     if data == 'open_bounty':
         if user.get('verified'):
-            _telegram_send_message(chat_id, '🌐 Buka BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
+            _telegram_send_message(chat_id, '🌐 Buka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
         else:
             show_unverified_start(chat_id, user)
         return
@@ -1029,9 +1052,9 @@ def process_telegram_update(update):
         return
     if data == 'event_claim_reward':
         if not user.get('verified'):
-            _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nJoin dulu, lalu tekan Verifikasi Join lagi.')
+            _telegram_send_message(chat_id, '❌ Kamu belum verifikasi Channel Telegram.')
             return
-        _set_bot_state(chat_id, 'claim_reward', uid)
+        _set_bot_state(chat_id, 'awaiting_reward_code', uid)
         text = (
             '🏆 Kirim kode kemenangan kamu.\n\n'
             'Contoh:\n'
@@ -1044,25 +1067,6 @@ def process_telegram_update(update):
         claims = [c for c in d['claims'] if c.get('telegram_user_id') == uid]
         lines = '\n'.join(f"- {c['reward_code']} pada {c['claimed_at']}" for c in claims) if claims else 'Belum ada reward.'
         _telegram_send_message(chat_id, '📦 Reward Saya\n' + lines, _user_keyboard())
-        return
-    if state == 'claim_reward':
-        if data == 'cancel':
-            _clear_bot_state(chat_id, uid)
-            if user.get('verified'):
-                _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.', _user_keyboard())
-            else:
-                show_unverified_start(chat_id, user)
-            return
-        if data == 'menu':
-            _clear_bot_state(chat_id, uid)
-            show_user_home(chat_id, user)
-            return
-        msg = _claim_reward(uid, raw_data)
-        if msg.startswith('🎉 Reward berhasil'):
-            _clear_bot_state(chat_id, uid)
-            _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
-        else:
-            _telegram_send_message(chat_id, msg, _claim_keyboard())
         return
     admin_commands = {'/status', '/users', '/event_stats', '/reward_codes', '/claim_history', '/maintenance_on', '/maintenance_off'}
     if raw_data in admin_commands and not _is_admin_chat(uid):
