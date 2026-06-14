@@ -192,7 +192,17 @@ def set_maintenance_status(enabled):
 
 
 def _default_event_data():
-    return {'users': {}, 'event_tokens': {}, 'reward_codes': {}, 'reward_items': [], 'claims': []}
+    return {
+        'users': {},
+        'event_tokens': {},
+        'reward_codes': {},
+        'reward_items': [],
+        'claims': [],
+        'event_settings': {
+            'bounty_event_status': 'locked',
+            'reward_info': 'Premium App Random | 3 Winner | Claim via Bot MIIWEB',
+        },
+    }
 
 
 def _load_event_data():
@@ -209,6 +219,9 @@ def _load_event_data():
     data.setdefault('reward_codes', {})
     data.setdefault('reward_items', [])
     data.setdefault('claims', [])
+    data.setdefault('event_settings', {})
+    data['event_settings'].setdefault('bounty_event_status', 'locked')
+    data['event_settings'].setdefault('reward_info', 'Premium App Random | 3 Winner | Claim via Bot MIIWEB')
     return data
 
 
@@ -252,6 +265,61 @@ def _upsert_event_user(message):
         return user
 
 
+
+
+def _event_settings(data=None):
+    data = data or _load_event_data()
+    settings = data.setdefault('event_settings', {})
+    settings.setdefault('bounty_event_status', 'locked')
+    settings.setdefault('reward_info', 'Premium App Random | 3 Winner | Claim via Bot MIIWEB')
+    return settings
+
+
+def _bounty_event_status(data=None):
+    status = (_event_settings(data).get('bounty_event_status') or 'locked').strip().lower()
+    return 'active' if status == 'active' else 'locked'
+
+
+def _set_bounty_event_status(status):
+    clean = 'active' if status == 'active' else 'locked'
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        data.setdefault('event_settings', {})['bounty_event_status'] = clean
+        data['event_settings']['updated_at'] = _utc_timestamp()
+        _save_event_data(data)
+    return clean
+
+
+def _reward_info_text(data=None):
+    return (_event_settings(data).get('reward_info') or '').strip()
+
+
+def _set_reward_info(text):
+    clean = (text or '').strip()[:1200]
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        data.setdefault('event_settings', {})['reward_info'] = clean
+        data['event_settings']['reward_info_updated_at'] = _utc_timestamp()
+        _save_event_data(data)
+    return clean
+
+
+def _format_reward_info(data=None):
+    info = _reward_info_text(data)
+    if not info:
+        return '🎁 Info Hadiah:\n`Premium App Random`'
+    parts = [part.strip() for part in info.split('|') if part.strip()]
+    if len(parts) >= 3:
+        return (
+            '🎁 Info Hadiah:\n'
+            f'{_md_code(parts[0])}\n'
+            'Slot:\n'
+            f'{_md_code(parts[1])}\n'
+            'Claim:\n'
+            f'{_md_code(parts[2])}'
+        )
+    return '🎁 Info Hadiah:\n' + _md_code(info)
+
 def _event_stats(data=None):
     data = data or _load_event_data()
     users = list(data['users'].values())
@@ -288,6 +356,8 @@ def _normalize_reward_expires(value):
 
 def validate_event_token(token):
     token = (token or '').strip().upper()
+    if _bounty_event_status() != 'active':
+        return False, None, 'Event belum dibuka.'
     with _EVENT_LOCK:
         data = _load_event_data()
         rec = data.get('event_tokens', {}).get(token)
@@ -309,6 +379,11 @@ def _new_token():
 
 def _claim_or_get_token(uid):
     uid = str(uid)
+    if _bounty_event_status() != 'active':
+        return None, (
+            '🔒 Event belum dibuka.\n'
+            'Token belum bisa diklaim saat ini. Silakan tunggu pengumuman dari admin.'
+        )
     with _EVENT_LOCK:
         data = _load_event_data()
         user = data['users'].get(uid)
@@ -434,10 +509,10 @@ def _inline_url_keyboard(text, url):
 
 def _user_keyboard():
     return _reply_keyboard([
-        ['📢 JOIN CHANNEL TELEGRAM', '✅ VERIFIKASI JOIN'],
-        ['🎟 CLAIM TOKEN', '🏆 CLAIM REWARD'],
-        ['📦 REWARD SAYA', '🌐 BUKA BOUNTY GAME'],
-        ['🏠 MENU UTAMA'],
+        ['📢 JOIN CHANNEL TELEGRAM', '💬 JOIN GRUP WHATSAPP'],
+        ['✅ VERIFIKASI JOIN', '🎟 CLAIM TOKEN'],
+        ['🏆 CLAIM REWARD', '📦 REWARD SAYA'],
+        ['🌐 BUKA BOUNTY GAME', '🏠 MENU UTAMA'],
     ])
 
 
@@ -450,31 +525,41 @@ def _admin_keyboard():
         ['📊 STATISTIK EVENT', '👥 USER EVENT'],
         ['🎁 REWARD CODES', '➕ GENERATE REWARD'],
         ['📦 REWARD STOCK', '📜 CLAIM HISTORY'],
+        ['🔒 LOCK EVENT', '🟢 ACTIVE EVENT'],
         ['🔴 MAINTENANCE ON', '🟢 MAINTENANCE OFF'],
-        ['🏠 MENU UTAMA', '🔐 LOGOUT'],
+        ['🎁 INFO HADIAH', '🏠 MENU UTAMA'],
+        ['🔐 LOGOUT'],
     ])
 
 
 def _event_menu_text():
     return (
         '🎮 SELAMAT DATANG DI BOUNTY GAME MII STORE\n\n'
-        'Event game hadiah app premium untuk player yang berhasil menyelesaikan challenge.\n\n'
-        'Langkah:\n\n'
-        '1. 📢 Join Channel Telegram\n'
-        '2. ✅ Verifikasi Join\n'
-        '3. 🎟 Claim Token Event\n'
-        '4. 🌐 Login ke halaman Bounty Game\n'
-        '5. 🏆 Claim reward jika punya kode kemenangan\n\n'
+        'Ikuti event challenge digital dari MII STORE.\n\n'
+        'Benefit event:\n'
+        '📢 Join channel Telegram untuk update event dan method gratis.\n'
+        '🎟 Claim token event lewat bot MIIWEB.\n'
+        '🧩 Selesaikan challenge di halaman Bounty Game.\n'
+        '🏆 Klaim hadiah app premium jika berhasil mendapatkan kode kemenangan.\n\n'
+        f'{_format_reward_info()}\n\n'
+        'Langkah mulai:\n'
+        '1. Join Channel Telegram\n'
+        '2. Join Grup WhatsApp\n'
+        '3. Verifikasi Join Telegram\n'
+        '4. Claim Token Event\n'
+        '5. Login ke halaman Bounty Game\n\n'
         'Pilih tombol di bawah untuk mulai.'
     )
 
 
 def _admin_text():
     status = 'MAINTENANCE' if get_site_status().get('maintenance') else 'ONLINE'
+    event_status = _bounty_event_status().upper()
     return (
         '🛡 MII STORE ADMIN PANEL\n'
         '🎮 Mode: BOUNTY GAME\n'
-        f'🌐 Website: {status}\n\n'
+        f'🌐 Website: {status}\n'
+        f'🎯 Event: {event_status}\n\n'
         'Pilih menu admin di bawah.'
     )
 
@@ -542,6 +627,11 @@ def _handle_admin_text(chat_id, text):
             f'{_md_code(expires)}'
         )
         _telegram_send_message(chat_id, text, _admin_keyboard(), parse_mode='Markdown'); return
+    if state == 'set_reward_info':
+        saved = _set_reward_info(text)
+        _clear_bot_state(chat_id)
+        _telegram_send_message(chat_id, '✅ Info hadiah berhasil disimpan.\n\n' + _format_reward_info(), _admin_keyboard(), parse_mode='Markdown')
+        return
     if state == 'add_stock':
         parts = [p.strip() for p in text.split('|', 1)]
         if len(parts) < 2: _telegram_send_message(chat_id, 'Format: `REWARD_CODE | detail hadiah`', parse_mode='Markdown'); return
@@ -617,6 +707,7 @@ def _normalize_bot_action(data):
         'REWARD CODES': 'reward_codes', '/reward_codes': 'reward_codes',
         'GENERATE REWARD': 'reward_generate', 'REWARD STOCK': 'reward_stock',
         'CLAIM HISTORY': 'claim_history', '/claim_history': 'claim_history',
+        'LOCK EVENT': 'event_lock', 'ACTIVE EVENT': 'event_active', 'INFO HADIAH': 'reward_info',
         'MAINTENANCE ON': 'maintenance_on', '/maintenance_on': 'maintenance_on',
         'MAINTENANCE OFF': 'maintenance_off', '/maintenance_off': 'maintenance_off',
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
@@ -653,7 +744,7 @@ def process_telegram_update(update):
     if data == 'logout':
         with _BOT_SESSION_LOCK: _BOT_AUTHENTICATED_CHATS.discard(str(chat_id)); _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
         _clear_bot_state(chat_id); _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard()); return
-    admin_actions = {'event_stats','event_users','reward_codes','claim_history','reward_generate','reward_stock','maintenance_on','maintenance_off','event_manual_token'}
+    admin_actions = {'event_stats','event_users','reward_codes','claim_history','reward_generate','reward_stock','maintenance_on','maintenance_off','event_manual_token','event_lock','event_active','reward_info'}
     if data in admin_actions and not _is_admin_chat(chat_id): _telegram_send_message(chat_id, '⛔ Access denied.'); return
     if _is_admin_chat(chat_id) and data in admin_actions and not _is_logged_in(chat_id): _show_login_prompt(chat_id); return
     if _is_admin_chat(chat_id) and _is_logged_in(chat_id):
@@ -661,6 +752,14 @@ def process_telegram_update(update):
         if data == 'event_users': _telegram_send_message(chat_id, _format_users(), _admin_keyboard()); return
         if data == 'reward_codes': _telegram_send_message(chat_id, _format_reward_codes(), _admin_keyboard()); return
         if data == 'claim_history': _telegram_send_message(chat_id, _format_claim_history(), _admin_keyboard()); return
+        if data in ('event_lock','event_active'):
+            new_status = _set_bounty_event_status('active' if data == 'event_active' else 'locked')
+            _telegram_send_message(chat_id, ('🟢 Event aktif.\n\n' if new_status == 'active' else '🔒 Event locked.\n\n') + _admin_text(), _admin_keyboard())
+            return
+        if data == 'reward_info':
+            _set_bot_state(chat_id, 'set_reward_info')
+            _telegram_send_message(chat_id, '🎁 Kirim info hadiah event.\n\nContoh:\n`Premium App Random | 3 Winner | Claim via Bot MIIWEB`', _claim_keyboard(), parse_mode='Markdown')
+            return
         if data == 'reward_generate':
             _set_bot_state(chat_id, 'add_reward')
             text = (
@@ -690,17 +789,17 @@ def process_telegram_update(update):
             )
             _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown'); return
         if data in ('maintenance_on','maintenance_off'): set_maintenance_status(data == 'maintenance_on'); _telegram_send_message(chat_id, ('🔴 Maintenance aktif.\n\n' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.\n\n') + _admin_text(), _admin_keyboard()); return
-        if state in ('add_reward','add_stock'): _handle_admin_text(chat_id, raw_data); return
-    if data == 'join_wa_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Grup WhatsApp.', _inline_url_keyboard('Join WhatsApp', WHATSAPP_GROUP_LINK)); return
-    if data == 'join_tg_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Channel Telegram.', _inline_url_keyboard('Join Channel Telegram', TELEGRAM_CHANNEL_LINK)); return
-    if data == 'open_bounty': _telegram_send_message(chat_id, 'Buka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty')); return
+        if state in ('add_reward','add_stock','set_reward_info'): _handle_admin_text(chat_id, raw_data); return
+    if data == 'join_wa_link': _telegram_send_message(chat_id, '💬 Join Grup WhatsApp MII STORE untuk update cepat, info produk, dan pengumuman event.', _inline_url_keyboard('Join Grup WhatsApp', WHATSAPP_GROUP_LINK)); return
+    if data == 'join_tg_link': _telegram_send_message(chat_id, '📢 Join Channel Telegram MII STORE untuk mendapatkan update event, method gratis, dan info reward.', _inline_url_keyboard('Join Channel Telegram', TELEGRAM_CHANNEL_LINK)); return
+    if data == 'open_bounty': _telegram_send_message(chat_id, _format_reward_info() + '\n\nBuka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'), parse_mode='Markdown'); return
     if data == 'event_verify':
         tg_status = _telegram_get_chat_member(uid)
-        if tg_status == 'error': _telegram_send_message(chat_id, 'Bot belum bisa mengecek channel. Pastikan TELEGRAM_CHANNEL_ID benar dan bot sudah menjadi admin channel.', _user_keyboard()); return
-        if tg_status != 'joined': _telegram_send_message(chat_id, 'Kamu belum join Channel Telegram. Join dulu lalu tekan VERIFIKASI JOIN.', _user_keyboard()); return
+        if tg_status == 'error': _telegram_send_message(chat_id, '⚠️ Sistem belum bisa mengecek channel.\nPastikan bot sudah menjadi admin channel dan TELEGRAM_CHANNEL_ID benar.', _user_keyboard()); return
+        if tg_status != 'joined': _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nJoin dulu, lalu tekan VERIFIKASI JOIN lagi.', _user_keyboard()); return
         with _EVENT_LOCK:
             d=_load_event_data(); u=d['users'][uid]; u['telegram_join_verified']=True; u['verified']=True; u['last_action_at']=_utc_timestamp(); d['users'][uid]=u; _save_event_data(d)
-        _telegram_send_message(chat_id, 'Verifikasi berhasil. Kamu sekarang bisa claim token BOUNTY GAME.', _user_keyboard()); return
+        _telegram_send_message(chat_id, '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.', _user_keyboard()); return
     if data == 'event_claim_token': _u, msg = _claim_or_get_token(uid); _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown'); return
     if data == 'event_claim_reward':
         _set_bot_state(chat_id, 'claim_reward')
@@ -939,7 +1038,8 @@ def ai_view():
 @app.route('/event')
 @app.route('/bounty')
 def event_page():
-    return render_template('event.html')
+    data = _load_event_data()
+    return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_reward_info_text(data), maintenance=get_site_status().get('maintenance'))
 
 
 @app.route('/api/event/validate-token', methods=['POST'])
@@ -989,7 +1089,25 @@ def admin_panel():
     stats = json.dumps(_event_stats(data), ensure_ascii=False, indent=2)
     reward_codes = json.dumps(list(data['reward_codes'].values()), ensure_ascii=False, indent=2)
     claims = json.dumps(data['claims'][-50:], ensure_ascii=False, indent=2)
-    return render_template('event_admin.html', authed=authed, stats=stats, reward_codes=reward_codes, claims=claims)
+    return render_template('event_admin.html', authed=authed, stats=stats, reward_codes=reward_codes, claims=claims, event_status=_bounty_event_status(data), reward_info=_reward_info_text(data))
+
+
+@app.route('/admin-panel/event-status', methods=['POST'])
+def admin_panel_event_status():
+    if not _admin_web_authed():
+        return jsonify({'error': 'Forbidden'}), 403
+    _set_bounty_event_status(request.form.get('status'))
+    from flask import redirect
+    return redirect('/admin-panel')
+
+
+@app.route('/admin-panel/reward-info', methods=['POST'])
+def admin_panel_reward_info():
+    if not _admin_web_authed():
+        return jsonify({'error': 'Forbidden'}), 403
+    _set_reward_info(request.form.get('reward_info', ''))
+    from flask import redirect
+    return redirect('/admin-panel')
 
 
 @app.route('/admin-panel/reward', methods=['POST'])
