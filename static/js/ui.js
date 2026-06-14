@@ -700,7 +700,8 @@ window.setAppMode = setAppMode;
       y = Math.max(0, Math.min(100, y));
       stage.style.setProperty('--mx', x + '%');
       stage.style.setProperty('--my', y + '%');
-      stage.style.setProperty('--r', active ? (window.matchMedia('(max-width: 700px)').matches ? '92px' : '112px') : '0px');
+      if (hideTimer) clearTimeout(hideTimer);
+      stage.style.setProperty('--r', active ? (window.matchMedia('(max-width: 700px)').matches ? '96px' : '126px') : '0px');
       stage.classList.toggle('is-revealing', !!active);
     }
 
