@@ -111,6 +111,248 @@ def versioned_static(path):
 
 analytics.init_db()
 
+
+# ---------------------------------------------------------------------------
+# Maintenance status storage and Telegram bot control panel
+# ---------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+SITE_STATUS_FILE = os.path.join(DATA_DIR, 'site_status.json')
+_STATUS_LOCK = threading.Lock()
+_BOT_SESSION_LOCK = threading.Lock()
+_BOT_AUTHENTICATED_CHATS = set()
+_BOT_LOGIN_PENDING_CHATS = set()
+_BOT_POLLING_STARTED = False
+_BOT_LAST_UPDATE_ID = None
+
+
+def _utc_timestamp():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _default_site_status():
+    return {
+        'maintenance': False,
+        'message': 'Kami sedang melakukan pembaruan sistem.',
+        'updated_at': _utc_timestamp(),
+    }
+
+
+def _ensure_status_file():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(SITE_STATUS_FILE):
+        with open(SITE_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_default_site_status(), f, ensure_ascii=False, indent=2)
+
+
+def get_site_status():
+    with _STATUS_LOCK:
+        _ensure_status_file()
+        try:
+            with open(SITE_STATUS_FILE, 'r', encoding='utf-8') as f:
+                status = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            status = _default_site_status()
+            with open(SITE_STATUS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(status, f, ensure_ascii=False, indent=2)
+        if 'maintenance' not in status:
+            status['maintenance'] = False
+        if 'message' not in status:
+            status['message'] = 'Kami sedang melakukan pembaruan sistem.'
+        if 'updated_at' not in status:
+            status['updated_at'] = _utc_timestamp()
+        return status
+
+
+def set_maintenance_status(enabled):
+    with _STATUS_LOCK:
+        _ensure_status_file()
+        status = _default_site_status()
+        try:
+            with open(SITE_STATUS_FILE, 'r', encoding='utf-8') as f:
+                existing = json.load(f)
+                if isinstance(existing, dict):
+                    status.update(existing)
+        except (OSError, json.JSONDecodeError):
+            pass
+        status['maintenance'] = bool(enabled)
+        status['updated_at'] = _utc_timestamp()
+        with open(SITE_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(status, f, ensure_ascii=False, indent=2)
+        return status
+
+
+def _telegram_api_url(method):
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
+    if not token:
+        return None
+    return f'https://api.telegram.org/bot{token}/{method}'
+
+
+def _telegram_send_message(chat_id, text, reply_markup=None):
+    url = _telegram_api_url('sendMessage')
+    if not url:
+        app.logger.warning('Telegram bot token is not configured.')
+        return None
+    payload = {'chat_id': chat_id, 'text': text}
+    if reply_markup is not None:
+        payload['reply_markup'] = reply_markup
+    try:
+        return requests_lib.post(url, json=payload, timeout=10)
+    except Exception as exc:
+        app.logger.warning('Telegram sendMessage failed: %s', exc)
+        return None
+
+
+def _telegram_answer_callback(callback_query_id):
+    url = _telegram_api_url('answerCallbackQuery')
+    if not url or not callback_query_id:
+        return
+    try:
+        requests_lib.post(url, json={'callback_query_id': callback_query_id}, timeout=10)
+    except Exception as exc:
+        app.logger.warning('Telegram answerCallbackQuery failed: %s', exc)
+
+
+def _admin_chat_id():
+    return os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '').strip()
+
+
+def _is_admin_chat(chat_id):
+    return str(chat_id) == _admin_chat_id()
+
+
+def _control_panel_keyboard():
+    return {
+        'inline_keyboard': [
+            [{'text': '🔴 Aktifkan Maintenance', 'callback_data': 'maintenance_on'}],
+            [{'text': '🟢 Matikan Maintenance', 'callback_data': 'maintenance_off'}],
+            [{'text': '📊 Cek Status', 'callback_data': 'status'}],
+            [{'text': '🔐 Logout', 'callback_data': 'logout'}],
+        ]
+    }
+
+
+def _control_panel_text():
+    status = get_site_status()
+    website_status = 'MAINTENANCE' if status.get('maintenance') else 'ONLINE'
+    return f'MII STORE CONTROL PANEL\nStatus Website: {website_status}\nPilih aksi di bawah.'
+
+
+def _is_logged_in(chat_id):
+    with _BOT_SESSION_LOCK:
+        return str(chat_id) in _BOT_AUTHENTICATED_CHATS
+
+
+def _show_login_prompt(chat_id):
+    with _BOT_SESSION_LOCK:
+        _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
+    _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII STORE Control Panel.')
+
+
+def _handle_bot_action(chat_id, action):
+    if action in ('/start', '/login'):
+        _show_login_prompt(chat_id)
+        return
+    if action == '/logout' or action == 'logout':
+        with _BOT_SESSION_LOCK:
+            _BOT_AUTHENTICATED_CHATS.discard(str(chat_id))
+            _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
+        _telegram_send_message(chat_id, '🔐 Logout berhasil.')
+        return
+    if not _is_logged_in(chat_id):
+        _show_login_prompt(chat_id)
+        return
+    if action == '/maintenance_on' or action == 'maintenance_on':
+        set_maintenance_status(True)
+        _telegram_send_message(chat_id, '🔴 Maintenance Mode aktif. Website sekarang menampilkan halaman maintenance.')
+        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+    elif action == '/maintenance_off' or action == 'maintenance_off':
+        set_maintenance_status(False)
+        _telegram_send_message(chat_id, '🟢 Maintenance Mode dimatikan. Website kembali normal.')
+        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+    elif action == '/status' or action == 'status':
+        status_text = 'Status Website: 🔴 MAINTENANCE' if get_site_status().get('maintenance') else 'Status Website: 🟢 ONLINE'
+        _telegram_send_message(chat_id, status_text)
+        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+
+
+def process_telegram_update(update):
+    callback = update.get('callback_query') or {}
+    if callback:
+        _telegram_answer_callback(callback.get('id'))
+        message = callback.get('message') or {}
+        chat = message.get('chat') or {}
+        chat_id = chat.get('id')
+        data = callback.get('data', '')
+    else:
+        message = update.get('message') or {}
+        chat = message.get('chat') or {}
+        chat_id = chat.get('id')
+        data = (message.get('text') or '').strip()
+
+    if not chat_id:
+        return
+    if not _is_admin_chat(chat_id):
+        _telegram_send_message(chat_id, '⛔ Access denied.')
+        return
+
+    if data in ('/start', '/login', '/logout', '/status', '/maintenance_on', '/maintenance_off', 'maintenance_on', 'maintenance_off', 'status', 'logout'):
+        _handle_bot_action(chat_id, data)
+        return
+
+    with _BOT_SESSION_LOCK:
+        pending = str(chat_id) in _BOT_LOGIN_PENDING_CHATS
+    if pending:
+        expected = os.environ.get('BOT_ADMIN_PASSWORD', '')
+        if expected and hmac.compare_digest(data, expected):
+            with _BOT_SESSION_LOCK:
+                _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
+                _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
+            _telegram_send_message(chat_id, '✅ Login berhasil. Control panel dibuka.')
+            _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+        else:
+            _telegram_send_message(chat_id, '❌ Password salah.')
+        return
+
+    if _is_logged_in(chat_id):
+        _telegram_send_message(chat_id, _control_panel_text(), _control_panel_keyboard())
+    else:
+        _show_login_prompt(chat_id)
+
+
+def _telegram_polling_loop():
+    global _BOT_LAST_UPDATE_ID
+    while True:
+        url = _telegram_api_url('getUpdates')
+        if not url:
+            time.sleep(30)
+            continue
+        params = {'timeout': 25}
+        if _BOT_LAST_UPDATE_ID is not None:
+            params['offset'] = _BOT_LAST_UPDATE_ID + 1
+        try:
+            resp = requests_lib.get(url, params=params, timeout=35)
+            data = resp.json() if resp.ok else {}
+            for update in data.get('result', []):
+                _BOT_LAST_UPDATE_ID = update.get('update_id', _BOT_LAST_UPDATE_ID)
+                process_telegram_update(update)
+        except Exception as exc:
+            app.logger.warning('Telegram polling failed: %s', exc)
+            time.sleep(5)
+
+
+def start_telegram_bot():
+    global _BOT_POLLING_STARTED
+    if _BOT_POLLING_STARTED or not os.environ.get('TELEGRAM_BOT_TOKEN'):
+        return
+    _BOT_POLLING_STARTED = True
+    thread = threading.Thread(target=_telegram_polling_loop, name='telegram-bot-polling', daemon=True)
+    thread.start()
+
+_ensure_status_file()
+start_telegram_bot()
+
 # ---------------------------------------------------------------------------
 # Rate limiting
 # ---------------------------------------------------------------------------
@@ -256,6 +498,37 @@ def inject_asset_helpers():
         'APP_VERSION': APP_VERSION,
         'asset_url': versioned_static,
     }
+
+
+# ---------------------------------------------------------------------------
+# Maintenance request guard
+# ---------------------------------------------------------------------------
+_MAINTENANCE_ALLOWED_ENDPOINTS = {
+    'telegram_webhook', 'telegram_status', 'static'
+}
+
+
+@app.before_request
+def maintenance_guard():
+    if request.endpoint in _MAINTENANCE_ALLOWED_ENDPOINTS:
+        return None
+    if request.path.startswith('/static/'):
+        return None
+    if get_site_status().get('maintenance'):
+        return render_template('maintenance.html', status=get_site_status()), 503
+    return None
+
+
+@app.route('/telegram/webhook', methods=['POST'])
+def telegram_webhook():
+    update = request.get_json(silent=True) or {}
+    process_telegram_update(update)
+    return jsonify({'ok': True})
+
+
+@app.route('/api/site-status')
+def telegram_status():
+    return jsonify(get_site_status())
 
 
 # ---------------------------------------------------------------------------
