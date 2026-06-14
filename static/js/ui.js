@@ -751,8 +751,22 @@ window.setAppMode = setAppMode;
     }, 40);
   }
 
+  function initHomepageCharacterFlip() {
+    var card = document.getElementById('characterFlipCard');
+    if (!card || card.dataset.flipBound === 'true') return;
+    card.dataset.flipBound = 'true';
+    card.addEventListener('click', function(e) {
+      var toggle = e.target.closest('[data-flip-card]');
+      if (!toggle) return;
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.toggle('is-flipped');
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     initCharacterReveal();
+    initHomepageCharacterFlip();
     var clearBtn = document.getElementById('clearCacheBtn');
     if (clearBtn && clearBtn.dataset.bound !== 'true') {
       clearBtn.dataset.bound = 'true';
@@ -778,4 +792,5 @@ window.setAppMode = setAppMode;
     }
   });
   initCharacterReveal();
+  initHomepageCharacterFlip();
 })();
