@@ -638,10 +638,18 @@ def _clear_user_inline_join_buttons(chat_id, user, current_message_id=None):
     _save_user_message_ids(user['telegram_user_id'], inline_message_id=0, last_inline_message_id=0)
 
 def show_unverified_start(chat_id, user=None):
+    existing_id = None
     if user:
-        old_ids = [user.get('inline_message_id'), user.get('last_inline_message_id'), user.get('start_message_id')]
-        for old_id in dict.fromkeys(mid for mid in old_ids if mid):
-            _telegram_delete_message(chat_id, old_id)
+        existing_id = user.get('start_message_id') or user.get('inline_message_id') or user.get('last_inline_message_id')
+    if existing_id and _telegram_edit_message(chat_id, existing_id, _unverified_start_text(), _start_inline_keyboard()):
+        if user:
+            _save_user_message_ids(
+                user['telegram_user_id'],
+                start_message_id=existing_id,
+                inline_message_id=existing_id,
+                last_inline_message_id=existing_id,
+            )
+        return
     response = _telegram_send_message(chat_id, _unverified_start_text(), _start_inline_keyboard())
     message_id = _response_message_id(response)
     if user and message_id:
@@ -921,16 +929,16 @@ def process_telegram_update(update):
         return
     if _is_admin_chat(uid) and _is_logged_in(chat_id):
         if data == 'event_stats':
-            _telegram_send_message(chat_id, _format_stats(), _admin_keyboard())
+            _telegram_send_message(chat_id, _format_stats())
             return
         if data == 'event_users':
-            _telegram_send_message(chat_id, _format_users(), _admin_keyboard())
+            _telegram_send_message(chat_id, _format_users())
             return
         if data == 'reward_codes':
-            _telegram_send_message(chat_id, _format_reward_codes(), _admin_keyboard())
+            _telegram_send_message(chat_id, _format_reward_codes())
             return
         if data == 'claim_history':
-            _telegram_send_message(chat_id, _format_claim_history(), _admin_keyboard())
+            _telegram_send_message(chat_id, _format_claim_history())
             return
         if data in ('event_lock', 'event_active'):
             new_status = _set_bounty_event_status('active' if data == 'event_active' else 'locked')
@@ -1041,7 +1049,7 @@ def process_telegram_update(update):
         if data == 'cancel':
             _clear_bot_state(chat_id, uid)
             if user.get('verified'):
-                _telegram_send_message(chat_id, _verified_menu_text(), _user_keyboard())
+                _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.', _user_keyboard())
             else:
                 show_unverified_start(chat_id, user)
             return
