@@ -38,6 +38,10 @@
 
   const DEFAULT_MODEL = 'auto';
   const MAX_API_HISTORY = 12;
+
+  function assetPath(path) {
+    return window.assetUrl ? window.assetUrl(path) : '/static/' + String(path || '').replace(/^\//, '');
+  }
   const ARTIFACT_LANG_ALIASES = {
     javascript: 'JS',
     js: 'JS',
@@ -235,7 +239,7 @@
       <div class="mkai-access-wrap makima-access-page">
         <div class="mkai-access-card">
           <button class="mkai-back-btn mkai-access-back" id="mkaiAccessBack" type="button" data-i18n="back_to_downloader">${window.i18nText ? window.i18nText('back_to_downloader') : 'BACK'}</button>
-          <img class="mkai-access-avatar makima-access-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
+          <img class="mkai-access-avatar makima-access-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
           <div class="mkai-access-title" data-i18n="makima_access_title">${window.i18nText ? window.i18nText('makima_access_title') : 'PRIVATE ACCESS'}</div>
           <div class="mkai-access-sub" data-i18n="makima_access_subtitle">${window.i18nText ? window.i18nText('makima_access_subtitle') : 'Enter access key to continue.'}</div>
           <form class="mkai-access-form" id="mkaiAccessForm">
@@ -315,7 +319,7 @@
               <button class="mkai-history-toggle" id="mkaiHistoryToggle" type="button" title="History">☰</button>
               <button class="mkai-back-btn" id="mkaiBack" type="button" title="Kembali ke dashboard">← KEMBALI</button>
               <div class="mkai-avatar-wrap">
-                <img class="mkai-avatar makima-avatar" src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
+                <img class="mkai-avatar makima-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
                 <span class="mkai-online-dot"></span>
               </div>
               <div class="mkai-title-wrap">
@@ -340,7 +344,7 @@
           </section>
 
           <div class="mkai-typing-row" id="mkaiTyping">
-            <img class="mkai-typing-avatar" src="/static/img/makima-ai-profile.png" alt="">
+            <img class="mkai-typing-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="">
             <div class="mkai-dots"><span class="mkai-dot"></span><span class="mkai-dot"></span><span class="mkai-dot"></span></div>
           </div>
 
@@ -454,7 +458,7 @@
   function welcomeHTML() {
     return `
       <div class="mkai-welcome">
-        <img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
+        <img src="${assetPath('img/makima-ai-profile.png')}" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
         <div class="mkai-welcome-title">Tanyakan apapun.</div>
         <div class="mkai-welcome-hint">Aku siap bantu coding, UI, bug fixing, dan ide.</div>
       </div>`;
@@ -686,7 +690,7 @@
     el.className = 'mkai-msg mkai-msg-ai mkai-thinking-message';
     el.innerHTML = `
       <div class="mkai-ai-row">
-        <img class="mkai-ai-avatar" src="/static/img/makima-ai-profile.png" alt="" draggable="false" oncontextmenu="return false">
+        <img class="mkai-ai-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="" draggable="false" oncontextmenu="return false">
         <div class="mkai-ai-body">
           <div class="mkai-ai-sender">MAKIMA AI</div>
           <div class="thinking-bubble" aria-live="polite">
@@ -735,7 +739,7 @@
       : `<div class="mkai-ai-text">${renderMarkdown(text, codeBlocks)}</div>${renderArtifactPanelHTML(artifacts)}`;
     el.innerHTML = `
       <div class="mkai-ai-row">
-        <img class="mkai-ai-avatar" src="/static/img/makima-ai-profile.png" alt="" draggable="false" oncontextmenu="return false">
+        <img class="mkai-ai-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="" draggable="false" oncontextmenu="return false">
         <div class="mkai-ai-body"><div class="mkai-ai-sender">MAKIMA AI</div>${bodyHTML}</div>
       </div>
       ${!isErr ? `<div class="mkai-msg-actions">

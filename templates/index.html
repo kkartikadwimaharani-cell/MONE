@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="/static/css/variables.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/base.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/layout.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/components.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/animations.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/drawer.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/responsive.css?v=20260614-final-hero">
-  <link rel="stylesheet" href="/static/css/makima-ai.css?v=20260614-final-hero">
+  <link rel="stylesheet" href="{{ asset_url('css/variables.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/layout.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/components.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/animations.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/drawer.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/responsive.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/makima-ai.css') }}">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="/static/img/owner.png?v=20260614-final-hero" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+      <img class="nav-logo-img" src="{{ asset_url('img/owner.png') }}" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand">MII STORE</span>
     </div>
     <div class="nav-right">
@@ -52,7 +52,7 @@
   <aside class="app-drawer side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
     <div class="drawer-header">
       <div class="drawer-brand drawer-profile">
-        <img class="drawer-logo drawer-avatar" src="/static/img/owner.png?v=20260614-final-hero" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+        <img class="drawer-logo drawer-avatar" src="{{ asset_url('img/owner.png') }}" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
           <div class="drawer-title drawer-brand-title">MII STORE</div>
           <div class="drawer-subtitle drawer-brand-sub" data-i18n="drawer_subtitle">Digital Products • AI Tools</div>
@@ -66,12 +66,11 @@
       <div class="drawer-section drawer-section-main">
         <div class="drawer-section-label" data-i18n="navigation">NAVIGATION</div>
         <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon">⌂</span><span class="drawer-item-text" data-i18n="home">Home</span></a>
-        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png?v=20260614-final-hero" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text" data-i18n="makima_ai_name">Makima AI</span></a>
+        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="{{ asset_url('img/makima-ai-profile.png') }}" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text" data-i18n="makima_ai_name">Makima AI</span></a>
         <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon">◆</span><span class="drawer-item-text" data-i18n="private_vault_name">Private Vault</span></a>
         <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
         <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
         <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text" data-i18n="contact">Contact</span></a>
-      <button class="drawer-cache-btn" id="clearCacheBtn" type="button" data-i18n="clear_cache">Clear Cache</button>
       </div>
     </div>
   </aside>
@@ -100,8 +99,8 @@
               <div class="character-card-face character-card-front">
                 <button class="character-flip-toggle" type="button" data-flip-card aria-label="Flip brand card">Brand Info</button>
                 <div class="character-stage" id="characterStage" data-i18n-aria="character_reveal_aria">
-                  <img class="character-img formal-img" src="/static/img/makima-formal.png?v=20260614-final-hero" alt="Makima formal" draggable="false" />
-                  <img class="character-img cyborg-img" src="/static/img/makima-cyborg.png?v=20260614-final-hero" alt="Makima cyborg" draggable="false" />
+                  <img class="character-img formal-img" src="{{ asset_url('img/makima-formal.png') }}" alt="Makima formal" draggable="false" />
+                  <img class="character-img cyborg-img" src="{{ asset_url('img/makima-cyborg.png') }}" alt="Makima cyborg" draggable="false" />
                   <span class="scan-glow" aria-hidden="true"></span>
                   <span class="reveal-hint" data-i18n="reveal_hint">Usap karakter untuk reveal mode cyber</span>
                 </div>
@@ -183,6 +182,12 @@
   </div>
 
   <script>
+  window.APP_VERSION = {{ APP_VERSION|tojson }};
+  window.assetUrl = function(path) {
+    var cleanPath = String(path || '').replace(/^\/?static\//, '').replace(/^\//, '');
+    return '/static/' + cleanPath + '?v=' + encodeURIComponent(window.APP_VERSION);
+  };
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(registrations => {
@@ -198,15 +203,15 @@
     });
   }
   </script>
-  <script src="/static/js/config.js?v=20260614-final-hero"></script>
-  <script src="/static/js/i18n.js?v=20260614-final-hero"></script>
-  <script src="/static/js/ui.js?v=20260614-final-hero"></script>
-  <script src="/static/js/downloader.js?v=20260614-final-hero"></script>
-  <script src="/static/js/photo.js?v=20260614-final-hero"></script>
-  <script src="/static/js/effects.js?v=20260614-final-hero"></script>
-  <script src="/static/js/main.js?v=20260614-final-hero"></script>
-  <script src="/static/js/makima-ai.js?v=20260614-final-hero"></script>
-  <script src="/static/js/analytics.js?v=20260614-final-hero"></script>
-  <script src="/static/js/protection.js?v=20260614-final-hero"></script>
+  <script src="{{ asset_url('js/config.js') }}"></script>
+  <script src="{{ asset_url('js/i18n.js') }}"></script>
+  <script src="{{ asset_url('js/ui.js') }}"></script>
+  <script src="{{ asset_url('js/downloader.js') }}"></script>
+  <script src="{{ asset_url('js/photo.js') }}"></script>
+  <script src="{{ asset_url('js/effects.js') }}"></script>
+  <script src="{{ asset_url('js/main.js') }}"></script>
+  <script src="{{ asset_url('js/makima-ai.js') }}"></script>
+  <script src="{{ asset_url('js/analytics.js') }}"></script>
+  <script src="{{ asset_url('js/protection.js') }}"></script>
 </body>
 </html>

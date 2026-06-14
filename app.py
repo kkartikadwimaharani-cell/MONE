@@ -12,6 +12,7 @@ import subprocess
 import hashlib
 import base64
 import hmac
+from datetime import datetime, timezone
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
@@ -97,6 +98,42 @@ except Exception as e:
     print("[startup] FFMPEG ERROR:", e)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+def _resolve_app_version():
+    """Return a deploy-specific version string for cache-busting static assets."""
+    env_version = os.environ.get('APP_VERSION')
+    if env_version:
+        return env_version
+
+    for env_name in ('RAILWAY_GIT_COMMIT_SHA', 'RAILWAY_GIT_COMMIT', 'GIT_COMMIT_SHA', 'SOURCE_VERSION'):
+        commit = os.environ.get(env_name)
+        if commit:
+            return commit[:12]
+
+    try:
+        commit = subprocess.check_output(
+            ['git', 'rev-parse', '--short=12', 'HEAD'],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        if commit:
+            return commit
+    except Exception:
+        pass
+
+    return datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+
+
+APP_VERSION = _resolve_app_version()
+
+
+def versioned_static(path):
+    """Build a /static URL with the current deploy version query string."""
+    clean_path = path.lstrip('/')
+    if clean_path.startswith('static/'):
+        clean_path = clean_path[len('static/'):]
+    return f"{app.static_url_path}/{clean_path}?v={APP_VERSION}"
+
 analytics.init_db()
 
 # ---------------------------------------------------------------------------
@@ -236,6 +273,14 @@ def set_security_headers(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
+
+
+@app.context_processor
+def inject_asset_helpers():
+    return {
+        'APP_VERSION': APP_VERSION,
+        'asset_url': versioned_static,
+    }
 
 
 # ---------------------------------------------------------------------------
