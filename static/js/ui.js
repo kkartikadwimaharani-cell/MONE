@@ -686,24 +686,40 @@ window.setAppMode = setAppMode;
 
 /* MII STORE homepage social hub interactions */
 (function() {
-  function initCharacterReveal() {
-    var box = document.getElementById('characterReveal');
+  function initCharacterSwap() {
+    var box = document.getElementById('characterSwap');
     if (!box || box.dataset.bound === 'true') return;
     box.dataset.bound = 'true';
-    function setReveal(clientX) {
-      var rect = box.getBoundingClientRect();
-      var pct = ((clientX - rect.left) / rect.width) * 100;
-      pct = Math.max(0, Math.min(100, pct));
-      box.style.setProperty('--reveal', pct.toFixed(2) + '%');
-    }
-    box.addEventListener('pointerdown', function(e) {
-      box.setPointerCapture(e.pointerId);
-      setReveal(e.clientX);
+    box.addEventListener('click', function(e) {
+      e.preventDefault();
+      var active = !box.classList.contains('is-cyborg');
+      box.classList.toggle('is-cyborg', active);
+      box.setAttribute('aria-pressed', active ? 'true' : 'false');
+      box.classList.remove('is-flashing');
+      void box.offsetWidth;
+      box.classList.add('is-flashing');
+      window.setTimeout(function() { box.classList.remove('is-flashing'); }, 520);
     });
-    box.addEventListener('pointermove', function(e) {
-      if (e.buttons || e.pointerType === 'touch') setReveal(e.clientX);
+  }
+
+  function clearUiCache() {
+    try {
+      var keep = {};
+      Object.keys(localStorage).forEach(function(k) {
+        if (/vault|private/i.test(k)) keep[k] = localStorage.getItem(k);
+      });
+      localStorage.clear();
+      Object.keys(keep).forEach(function(k) { localStorage.setItem(k, keep[k]); });
+    } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    var jobs = [];
+    if ('serviceWorker' in navigator) jobs.push(navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(reg) { reg.unregister(); }); }));
+    if ('caches' in window) jobs.push(caches.keys().then(function(keys) { return Promise.all(keys.map(function(key) { return caches.delete(key); })); }));
+    Promise.allSettled(jobs).then(function() {
+      var url = new URL(window.location.href);
+      url.searchParams.set('v', '20260614-portfolio-' + Date.now());
+      window.location.replace(url.toString());
     });
-    box.addEventListener('click', function(e) { setReveal(e.clientX); });
   }
 
   function goHomeSection(id) {
@@ -716,7 +732,14 @@ window.setAppMode = setAppMode;
     }, 40);
   }
 
-  document.addEventListener('DOMContentLoaded', initCharacterReveal);
+  document.addEventListener('DOMContentLoaded', function() {
+    initCharacterSwap();
+    var clearBtn = document.getElementById('clearCacheBtn');
+    if (clearBtn && clearBtn.dataset.bound !== 'true') {
+      clearBtn.dataset.bound = 'true';
+      clearBtn.addEventListener('click', clearUiCache);
+    }
+  });
   document.addEventListener('click', function(e) {
     var scrollItem = e.target.closest('[data-scroll-target]');
     if (scrollItem) {
@@ -735,5 +758,5 @@ window.setAppMode = setAppMode;
       goHomeSection(id);
     }
   });
-  initCharacterReveal();
+  initCharacterSwap();
 })();
