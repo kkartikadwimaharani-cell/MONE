@@ -243,7 +243,8 @@ def _user_from_message(message):
         'started_at': now, 'telegram_join_verified': False, 'verified': False,
         'token_active': False, 'token': '', 'token_created_at': '', 'token_expired_at': '',
         'token_used_for_event': False, 'reward_claimed': False, 'game_attempts': 0,
-        'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'state': '', 'last_action_at': now,
+        'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'state': '',
+        'start_message_id': None, 'last_inline_message_id': None, 'last_action_at': now,
     }
 
 
@@ -462,6 +463,32 @@ def _telegram_edit_message(chat_id, message_id, text, reply_markup=None):
     except Exception as exc: app.logger.warning('Telegram editMessageText failed: %s', exc); return None
 
 
+
+
+def _telegram_edit_reply_markup(chat_id, message_id, reply_markup=None):
+    url = _telegram_api_url('editMessageReplyMarkup')
+    if not url or not message_id:
+        return None
+    payload = {'chat_id': chat_id, 'message_id': message_id, 'reply_markup': reply_markup}
+    try:
+        response = requests_lib.post(url, json=payload, timeout=10)
+        return response if response.ok else None
+    except Exception as exc:
+        app.logger.warning('Telegram editMessageReplyMarkup failed: %s', exc)
+        return None
+
+
+def _telegram_delete_message(chat_id, message_id):
+    url = _telegram_api_url('deleteMessage')
+    if not url or not message_id:
+        return None
+    try:
+        response = requests_lib.post(url, json={'chat_id': chat_id, 'message_id': message_id}, timeout=10)
+        return response if response.ok else None
+    except Exception as exc:
+        app.logger.warning('Telegram deleteMessage failed: %s', exc)
+        return None
+
 def _telegram_show_panel(chat_id, text, reply_markup, message_id=None):
     mid = message_id or _BOT_LAST_PANEL_MESSAGES.get(str(chat_id))
     if mid and _telegram_edit_message(chat_id, mid, text, reply_markup):
@@ -555,12 +582,53 @@ def _verified_menu_text():
     return (
         '🎮 BOUNTY GAME MII STORE\n\n'
         'Kamu sudah terverifikasi.\n'
-        'Gunakan menu di bawah untuk claim token, reward, atau buka halaman event.'
+        'Gunakan menu di bawah.'
     )
 
 
-def show_unverified_start(chat_id):
-    _telegram_send_message(chat_id, _unverified_start_text(), _start_inline_keyboard())
+def _response_message_id(response):
+    if not response:
+        return None
+    try:
+        if not response.ok:
+            return None
+        return (response.json().get('result') or {}).get('message_id')
+    except Exception:
+        return None
+
+
+def _save_user_message_ids(uid, **message_ids):
+    clean_ids = {k: v for k, v in message_ids.items() if v is not None}
+    if not clean_ids:
+        return
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        user = data['users'].get(str(uid))
+        if not user:
+            return
+        user.update(clean_ids)
+        user['last_action_at'] = _utc_timestamp()
+        data['users'][str(uid)] = user
+        _save_event_data(data)
+
+
+
+def _clear_user_inline_join_buttons(chat_id, user, current_message_id=None):
+    message_ids = []
+    for message_id in (current_message_id, user.get('last_inline_message_id'), user.get('start_message_id')):
+        if message_id and message_id not in message_ids:
+            message_ids.append(message_id)
+    for message_id in message_ids:
+        if _telegram_edit_reply_markup(chat_id, message_id, None):
+            continue
+        _telegram_delete_message(chat_id, message_id)
+    _save_user_message_ids(user['telegram_user_id'], last_inline_message_id=0)
+
+def show_unverified_start(chat_id, user=None):
+    response = _telegram_send_message(chat_id, _unverified_start_text(), _start_inline_keyboard())
+    message_id = _response_message_id(response)
+    if user and message_id:
+        _save_user_message_ids(user['telegram_user_id'], start_message_id=message_id, last_inline_message_id=message_id)
 
 
 def show_verified_menu(chat_id):
@@ -571,7 +639,7 @@ def show_user_home(chat_id, user):
     if user.get('verified'):
         show_verified_menu(chat_id)
     else:
-        show_unverified_start(chat_id)
+        show_unverified_start(chat_id, user)
 
 
 def _admin_text():
@@ -877,12 +945,12 @@ def process_telegram_update(update):
         if user.get('verified'):
             _telegram_send_message(chat_id, '🌐 Buka BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
         else:
-            show_unverified_start(chat_id)
+            show_unverified_start(chat_id, user)
         return
     if data == 'event_verify':
+        callback_message_id = message.get('message_id') if callback else None
         if user.get('verified'):
-            if callback and message.get('message_id'):
-                _telegram_edit_message(chat_id, message.get('message_id'), '✅ Kamu sudah terverifikasi.')
+            _clear_user_inline_join_buttons(chat_id, user, callback_message_id)
             _telegram_send_message(chat_id, '✅ Kamu sudah terverifikasi.\nGunakan menu di bawah.', _user_keyboard())
             return
         tg_status = _telegram_get_chat_member(uid)
@@ -900,8 +968,7 @@ def process_telegram_update(update):
             u['last_action_at'] = _utc_timestamp()
             d['users'][uid] = u
             _save_event_data(d)
-        if callback and message.get('message_id'):
-            _telegram_edit_message(chat_id, message.get('message_id'), '✅ Verifikasi berhasil.')
+        _clear_user_inline_join_buttons(chat_id, u, callback_message_id)
         _telegram_send_message(
             chat_id,
             '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.',
@@ -914,7 +981,7 @@ def process_telegram_update(update):
         return
     if data == 'event_claim_reward':
         if not user.get('verified'):
-            show_unverified_start(chat_id)
+            show_unverified_start(chat_id, user)
             return
         _set_bot_state(chat_id, 'claim_reward')
         text = (
@@ -934,7 +1001,7 @@ def process_telegram_update(update):
         if data == 'cancel':
             _clear_bot_state(chat_id)
             _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.')
-            show_verified_menu(chat_id) if user.get('verified') else show_unverified_start(chat_id)
+            show_verified_menu(chat_id) if user.get('verified') else show_unverified_start(chat_id, user)
             return
         if data == 'menu':
             _clear_bot_state(chat_id)
