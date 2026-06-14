@@ -97,15 +97,15 @@ animation:sheen 5.5s ease-in-out infinite;
 pointer-events:none}
 .cyber-eye-wrap{
 position:relative;
-width:min(280px,84vw);
+width:min(300px,84vw);
 margin:2px auto 22px;
 display:grid;
 place-items:center}
 .cyber-eye-wrap:after{
 content:"";
 position:absolute;
-left:-14px;
-right:-14px;
+left:18px;
+right:18px;
 top:50%;
 height:1px;
 background:linear-gradient(90deg,transparent,rgba(255,60,84,.92),transparent);
@@ -115,7 +115,7 @@ z-index:6}
 .cyber-eye{
 position:relative;
 width:100%;
-height:88px;
+height:78px;
 border-radius:48% 48% 50% 50%/56% 56% 44% 44%;
 display:grid;
 place-items:center;
@@ -344,3 +344,5 @@ height:44px}
 .pupil{
 inset:14px}
 }
+
+@media(max-width:520px){.cyber-eye-wrap{width:min(230px,82vw)}.cyber-eye{height:68px}.iris{width:44px;height:44px}.pupil{inset:14px}.eye-shine{top:25px}}
