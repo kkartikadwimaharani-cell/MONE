@@ -127,6 +127,7 @@ _BOT_AUTHENTICATED_CHATS = set()
 _BOT_LOGIN_PENDING_CHATS = set()
 _BOT_USER_STATES = {}
 _BOT_LAST_PANEL_MESSAGES = {}
+_BOT_PROCESSED_UPDATE_IDS = set()
 _BOT_POLLING_STARTED = False
 _BOT_LAST_UPDATE_ID = None
 TELEGRAM_CHANNEL_LINK = 'https://t.me/+L0mZsWxq30cxZmM1'
@@ -380,7 +381,7 @@ def _claim_or_get_token(uid):
     if _bounty_event_status() != 'active':
         return None, (
             '🔒 Event belum dibuka.\n'
-            'Token belum bisa diklaim saat ini. Tunggu pengumuman admin.'
+            'Token belum bisa diklaim saat ini.'
         )
     with _EVENT_LOCK:
         data = _load_event_data()
@@ -524,7 +525,7 @@ def _user_keyboard():
 
 
 def _claim_keyboard():
-    return _reply_keyboard([['BATAL', 'MENU UTAMA']])
+    return _reply_keyboard([['❌ Batal'], ['🏠 Menu Utama']])
 
 
 def _admin_keyboard():
@@ -539,22 +540,39 @@ def _admin_keyboard():
     ])
 
 
-def _event_menu_text():
+def _unverified_start_text():
     return (
-        '🎮 SELAMAT DATANG DI BOUNTY GAME MII STORE\n\n'
+        '🎮 BOUNTY GAME MII STORE\n\n'
         'Ikuti event challenge digital dari MII STORE.\n\n'
-        '📢 Join Channel Telegram untuk update event, method gratis, dan info reward.\n'
-        '💬 Join Grup WhatsApp untuk update cepat dan info produk.\n'
-        '🎟 Claim token event setelah verifikasi channel.\n'
-        '🏆 Klaim hadiah app premium jika berhasil mendapatkan kode kemenangan.\n\n'
-        'Langkah mulai:\n\n'
-        '1. Join Channel Telegram\n'
-        '2. Join Grup WhatsApp\n'
-        '3. Tekan Verifikasi Join\n'
-        '4. Claim Token Event\n'
-        '5. Login ke halaman Bounty Game\n\n'
+        '📢 Join Channel Telegram untuk update event dan method gratis.\n'
+        '💬 Join Grup WhatsApp untuk info cepat.\n'
+        '🎟 Token bisa diklaim setelah verifikasi channel.\n\n'
         'Tekan tombol di bawah untuk mulai.'
     )
+
+
+def _verified_menu_text():
+    return (
+        '🎮 BOUNTY GAME MII STORE\n\n'
+        'Kamu sudah terverifikasi.\n'
+        'Gunakan menu di bawah untuk claim token, reward, atau buka halaman event.'
+    )
+
+
+def show_unverified_start(chat_id):
+    _telegram_send_message(chat_id, _unverified_start_text(), _start_inline_keyboard())
+
+
+def show_verified_menu(chat_id):
+    _telegram_send_message(chat_id, _verified_menu_text(), _user_keyboard())
+
+
+def show_user_home(chat_id, user):
+    if user.get('verified'):
+        show_verified_menu(chat_id)
+    else:
+        show_unverified_start(chat_id)
+
 
 def _admin_text():
     status = 'MAINTENANCE' if get_site_status().get('maintenance') else 'ONLINE'
@@ -676,7 +694,7 @@ def _claim_reward(uid, reward_code):
             'Kode:\n'
             f'{_md_code(code)}\n\n'
             'Hadiah kamu:\n'
-            f'{_md_code(item["content"])}\n\n'
+            f"{_md_code(item['content'])}\n\n"
             'Simpan baik-baik dan jangan bagikan ke orang lain.'
         )
 
@@ -723,6 +741,15 @@ def _normalize_bot_action(data):
 
 
 def process_telegram_update(update):
+    update_id = update.get('update_id')
+    if update_id is not None:
+        with _BOT_SESSION_LOCK:
+            if update_id in _BOT_PROCESSED_UPDATE_IDS:
+                return
+            _BOT_PROCESSED_UPDATE_IDS.add(update_id)
+            if len(_BOT_PROCESSED_UPDATE_IDS) > 500:
+                for old in sorted(_BOT_PROCESSED_UPDATE_IDS)[:250]:
+                    _BOT_PROCESSED_UPDATE_IDS.discard(old)
     callback = update.get('callback_query') or {}
     message = (callback.get('message') if callback else update.get('message')) or {}
     chat = message.get('chat') or {}
@@ -739,18 +766,12 @@ def process_telegram_update(update):
     data = _normalize_bot_action(raw_data)
     state = _BOT_USER_STATES.get(str(chat_id))
 
-    def send_user_menu():
-        if user.get('verified'):
-            _telegram_send_message(chat_id, _event_menu_text(), _user_keyboard())
-        else:
-            _telegram_send_message(chat_id, _event_menu_text(), _start_inline_keyboard())
-
-    if data in ('menu', 'cancel'):
+    if data in ('menu', 'cancel') and state != 'claim_reward':
         _clear_bot_state(chat_id)
         if _is_admin_chat(chat_id) and _is_logged_in(chat_id):
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
         else:
-            send_user_menu()
+            show_user_home(chat_id, user)
         return
 
     with _BOT_SESSION_LOCK:
@@ -772,7 +793,7 @@ def process_telegram_update(update):
         elif _is_admin_chat(chat_id):
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
         else:
-            send_user_menu()
+            show_user_home(chat_id, user)
         return
 
     if data == 'logout':
@@ -805,8 +826,9 @@ def process_telegram_update(update):
             return
         if data in ('event_lock', 'event_active'):
             new_status = _set_bounty_event_status('active' if data == 'event_active' else 'locked')
-            prefix = '🟢 BOUNTY GAME sekarang aktif.\n\n' if new_status == 'active' else '🔒 BOUNTY GAME sekarang dikunci.\n\n'
-            _telegram_send_message(chat_id, prefix + _admin_text(), _admin_keyboard())
+            prefix = '🟢 BOUNTY GAME sekarang aktif.' if new_status == 'active' else '🔒 BOUNTY GAME sekarang dikunci.'
+            _telegram_send_message(chat_id, prefix)
+            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
             return
         if data == 'reward_info':
             _set_bot_state(chat_id, 'set_reward_info')
@@ -844,20 +866,24 @@ def process_telegram_update(update):
             return
         if data in ('maintenance_on', 'maintenance_off'):
             set_maintenance_status(data == 'maintenance_on')
-            _telegram_send_message(chat_id, ('🔴 Maintenance aktif.\n\n' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.\n\n') + _admin_text(), _admin_keyboard())
+            _telegram_send_message(chat_id, '🔴 Maintenance aktif.' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.')
+            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
             return
         if state in ('add_reward', 'add_stock', 'set_reward_info'):
             _handle_admin_text(chat_id, raw_data)
             return
 
     if data == 'open_bounty':
-        _telegram_send_message(chat_id, _format_reward_info() + '\n\nBuka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
+        if user.get('verified'):
+            _telegram_send_message(chat_id, '🌐 Buka BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
+        else:
+            show_unverified_start(chat_id)
         return
     if data == 'event_verify':
         if user.get('verified'):
             if callback and message.get('message_id'):
-                _telegram_edit_message(chat_id, message.get('message_id'), _event_menu_text())
-            _telegram_send_message(chat_id, '✅ Kamu sudah terverifikasi.', _user_keyboard())
+                _telegram_edit_message(chat_id, message.get('message_id'), '✅ Kamu sudah terverifikasi.')
+            _telegram_send_message(chat_id, '✅ Kamu sudah terverifikasi.\nGunakan menu di bawah.', _user_keyboard())
             return
         tg_status = _telegram_get_chat_member(uid)
         if tg_status == 'error':
@@ -875,7 +901,7 @@ def process_telegram_update(update):
             d['users'][uid] = u
             _save_event_data(d)
         if callback and message.get('message_id'):
-            _telegram_edit_message(chat_id, message.get('message_id'), _event_menu_text())
+            _telegram_edit_message(chat_id, message.get('message_id'), '✅ Verifikasi berhasil.')
         _telegram_send_message(
             chat_id,
             '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.',
@@ -887,6 +913,9 @@ def process_telegram_update(update):
         _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
         return
     if data == 'event_claim_reward':
+        if not user.get('verified'):
+            show_unverified_start(chat_id)
+            return
         _set_bot_state(chat_id, 'claim_reward')
         text = (
             '🏆 Kirim kode kemenangan kamu.\n\n'
@@ -902,6 +931,15 @@ def process_telegram_update(update):
         _telegram_send_message(chat_id, '📦 Reward Saya\n' + lines, _user_keyboard())
         return
     if state == 'claim_reward':
+        if data == 'cancel':
+            _clear_bot_state(chat_id)
+            _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.')
+            show_verified_menu(chat_id) if user.get('verified') else show_unverified_start(chat_id)
+            return
+        if data == 'menu':
+            _clear_bot_state(chat_id)
+            show_user_home(chat_id, user)
+            return
         msg = _claim_reward(uid, raw_data)
         if msg.startswith('🎉 Reward berhasil'):
             _clear_bot_state(chat_id)
@@ -913,7 +951,7 @@ def process_telegram_update(update):
     if raw_data in admin_commands and not _is_admin_chat(chat_id):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
-    send_user_menu()
+    show_user_home(chat_id, user)
 
 def _telegram_polling_loop():
     global _BOT_LAST_UPDATE_ID
