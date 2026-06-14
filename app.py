@@ -293,18 +293,23 @@ def validate_event_token(token):
         rec = data.get('event_tokens', {}).get(token)
         user = data['users'].get(str(rec.get('telegram_user_id'))) if rec else None
         if not rec or not user or not user.get('verified'):
-            return False, None, 'Token tidak valid atau sudah expired.'
+            return False, None, 'Token tidak valid, sudah digunakan, atau expired.'
         if rec.get('status') == 'used' or rec.get('used_for_event'):
             return False, None, 'Token sudah digunakan.'
         exp = _parse_ts(rec.get('expired_at'))
         if not exp or exp <= datetime.now(timezone.utc):
             rec['status'] = 'expired'; user['token_active'] = False; _save_event_data(data)
-            return False, None, 'Token tidak valid atau sudah expired.'
+            return False, None, 'Token tidak valid, sudah digunakan, atau expired.'
         return True, user, ''
 
 
 def _new_token():
     return 'MII-BG-2026-' + base64.b32encode(os.urandom(4)).decode('ascii').rstrip('=')[:6]
+
+
+def _format_expiry(value):
+    dt = _parse_ts(value)
+    return dt.strftime('%Y-%m-%d %H:%M') if dt else '-'
 
 
 def _claim_or_get_token(uid):
@@ -317,7 +322,7 @@ def _claim_or_get_token(uid):
         if _is_token_active(user):
             rec = data.get('event_tokens', {}).get(user.get('token'), {})
             if rec.get('status') == 'active' and not rec.get('used_for_event'):
-                return user, f"Token kamu masih aktif:\n{user['token']}"
+                return user, f"🎟 Token kamu masih aktif:\n\n`{user['token']}`\n\nExpired:\n`{_format_expiry(user.get('token_expired_at'))}`"
         if user.get('token'):
             _expire_token_record(data, user['token'])
         token = _new_token()
@@ -329,7 +334,7 @@ def _claim_or_get_token(uid):
         data['event_tokens'][token] = {'token': token, 'telegram_user_id': uid, 'created_at': now, 'expired_at': exp, 'used_for_event': False, 'reward_claimed': False, 'status': 'active', 'used_at': ''}
         data['users'][uid] = user
         _save_event_data(data)
-        return user, f"Token BOUNTY GAME kamu:\n{token}\n\nToken berlaku 24 jam."
+        return user, f"🎟 Token BOUNTY GAME kamu:\n\n`{token}`\n\nGunakan token ini di halaman Bounty Game:\nhttps://makima.cloud/bounty"
 
 def _telegram_api_url(method):
     token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
@@ -340,7 +345,7 @@ def _telegram_send_message(chat_id, text, reply_markup=None):
     url = _telegram_api_url('sendMessage')
     if not url:
         app.logger.warning('Telegram bot token is not configured.'); return None
-    payload = {'chat_id': chat_id, 'text': text}
+    payload = {'chat_id': chat_id, 'text': text, 'parse_mode': 'Markdown'}
     if reply_markup is not None: payload['reply_markup'] = reply_markup
     try:
         response = requests_lib.post(url, json=payload, timeout=10)
@@ -411,43 +416,45 @@ def _inline_url_keyboard(text, url):
 
 def _user_keyboard():
     return _reply_keyboard([
-        ['JOIN CHANNEL TELEGRAM', 'VERIFIKASI JOIN'],
-        ['CLAIM TOKEN', 'CLAIM REWARD'],
-        ['REWARD SAYA', 'BUKA BOUNTY GAME'],
-        ['MENU UTAMA'],
+        ['🎮 BOUNTY GAME'],
+        ['📢 JOIN CHANNEL TELEGRAM'],
+        ['✅ VERIFIKASI JOIN'],
+        ['🎟 CLAIM TOKEN', '🏆 CLAIM REWARD'],
+        ['📦 REWARD SAYA', '🌐 BUKA BOUNTY GAME'],
+        ['🏠 MENU UTAMA'],
     ])
 
 
 def _claim_keyboard():
-    return _reply_keyboard([['BATAL', 'MENU UTAMA']])
+    return _reply_keyboard([['❌ BATAL', '🏠 MENU UTAMA']])
 
 
 def _admin_keyboard():
     return _reply_keyboard([
-        ['STATISTIK EVENT', 'USER EVENT'],
-        ['REWARD CODES', 'GENERATE REWARD'],
-        ['REWARD STOCK', 'CLAIM HISTORY'],
-        ['MAINTENANCE ON', 'MAINTENANCE OFF'],
-        ['LOGOUT'],
+        ['📊 STATISTIK EVENT', '👥 USER EVENT'],
+        ['🎁 REWARD CODES', '➕ GENERATE REWARD'],
+        ['📦 REWARD STOCK', '📜 CLAIM HISTORY'],
+        ['🔴 MAINTENANCE ON', '🟢 MAINTENANCE OFF'],
+        ['🏠 MENU UTAMA', '🔐 LOGOUT'],
     ])
 
 
 def _event_menu_text():
     return (
-        'SELAMAT DATANG DI BOUNTY GAME MII STORE\n\n'
-        'Event hadiah app premium untuk member yang berhasil menyelesaikan challenge.\n\n'
+        '🎮 SELAMAT DATANG DI BOUNTY GAME MII STORE\n\n'
+        'Event game hadiah app premium untuk peserta yang berhasil menyelesaikan challenge.\n\n'
         'Langkah:\n'
         '1. Join Channel Telegram\n'
         '2. Verifikasi Join\n'
-        '3. Claim Token\n'
+        '3. Claim Token Event\n'
         '4. Login ke halaman Bounty Game\n'
-        '5. Claim reward jika punya kode kemenangan'
+        '5. Klaim reward jika punya kode kemenangan\n\nPilih tombol di bawah untuk mulai.'
     )
 
 
 def _admin_text():
     status = 'MAINTENANCE' if get_site_status().get('maintenance') else 'ONLINE'
-    return f'MII STORE ADMIN PANEL\nMode: BOUNTY GAME\nStatus: {status}\n\nPilih menu.'
+    return f'🛡 MII STORE ADMIN PANEL\n🎮 Mode: BOUNTY GAME\n🌐 Website: {status}\n\nPilih menu admin di bawah.'
 
 
 def _show_login_prompt(chat_id):
@@ -457,13 +464,17 @@ def _show_login_prompt(chat_id):
 
 def _format_stats():
     st = _event_stats()
-    return '\n'.join(['📊 Statistik BOUNTY GAME', f"Total user start: {st['total_user_start']}", f"Total verified: {st['total_verified']}", f"Total token issued: {st['total_token_issued']}", f"Total token used: {st['total_token_used']}", f"Total reward pending: {st['total_reward_pending']}", f"Total reward claimed: {st['total_reward_claimed']}"])
+    return '\n'.join(['📊 Statistik BOUNTY GAME', '', f"Total user start: `{st['total_user_start']}`", f"Total verified: `{st['total_verified']}`", f"Total token issued: `{st['total_token_issued']}`", f"Total token used: `{st['total_token_used']}`", f"Total reward claimed: `{st['total_reward_claimed']}`"])
 
 
 def _format_users():
     data = _load_event_data(); users = sorted(data['users'].values(), key=lambda u: u.get('last_action_at',''), reverse=True)[:10]
     lines = ['👥 10 User BOUNTY GAME Terbaru']
-    for u in users: lines.append(f"- {u.get('telegram_user_id')} @{u.get('username','-')} verified={u.get('verified')} token={bool(u.get('token'))}")
+    for idx, u in enumerate(users, 1):
+        display = ('@' + u.get('username')) if u.get('username') else (u.get('first_name') or '-')
+        verified = '✅' if u.get('verified') else '❌'
+        token = '✅' if u.get('token') else '❌'
+        lines.append(f"{idx}. `{u.get('telegram_user_id')}` {display}\nVerified: {verified}\nToken: {token}")
     return '\n'.join(lines) if len(lines)>1 else 'Belum ada user.'
 
 
@@ -488,21 +499,21 @@ def _handle_admin_text(chat_id, text):
         elif len(parts) >= 5:
             code, name, rtype, max_claim_raw, expires = parts[0].upper(), parts[1], parts[2], parts[3], parts[4]
         else:
-            _telegram_send_message(chat_id, 'Format: Nama Reward | type | max_claim | expired_date\nAtau: CODE | Nama Reward | type | max_claim | expired_date'); return
+            _telegram_send_message(chat_id, '❌ Format tidak valid.\n\nKirim format:\n`Nama Reward | type | max_claim | expired_date`\n\nAtau manual:\n`CODE | Nama Reward | type | max_claim | expired_date`'); return
         try: max_claim = int(max_claim_raw)
         except ValueError: _telegram_send_message(chat_id, 'max_claim harus angka.'); return
         with _EVENT_LOCK:
             data = _load_event_data(); data['reward_codes'][code] = {'code':code,'name':name,'type':rtype,'max_claim':max_claim,'claimed_count':0,'is_active':True,'expires_at':_normalize_reward_expires(expires),'created_at':_utc_timestamp(),'created_by':str(chat_id)}; _save_event_data(data)
-        _clear_bot_state(chat_id); _telegram_send_message(chat_id, f'Reward code berhasil dibuat:\n{code}', _admin_keyboard()); return
+        _clear_bot_state(chat_id); _telegram_send_message(chat_id, f'✅ Reward code berhasil dibuat.\n\nKode:\n`{code}`\n\nMax claim:\n`{max_claim}`\n\nExpired:\n`{expires or '-'}`', _admin_keyboard()); return
     if state == 'add_stock':
         parts = [p.strip() for p in text.split('|', 1)]
-        if len(parts) < 2: _telegram_send_message(chat_id, 'Format: REWARD_CODE | detail hadiah'); return
+        if len(parts) < 2: _telegram_send_message(chat_id, '❌ Format tidak valid.\n\nKirim format:\n`REWARD_CODE | detail hadiah`'); return
         code = parts[0].upper()
         with _EVENT_LOCK:
             data = _load_event_data()
             if code not in data['reward_codes']: _telegram_send_message(chat_id, '❌ Reward code tidak ditemukan.'); return
             item_id = str(uuid.uuid4()); data['reward_items'].append({'id':item_id,'reward_code':code,'content':parts[1],'used':False,'used_by':'','used_at':'','created_at':_utc_timestamp()}); _save_event_data(data)
-        _telegram_send_message(chat_id, f'✅ Stock hadiah ditambahkan untuk {code}', _admin_keyboard()); return
+        _telegram_send_message(chat_id, f'✅ Stok hadiah berhasil ditambahkan.\n\nReward Code:\n`{code}`', _admin_keyboard()); return
     _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
 
 
@@ -510,21 +521,21 @@ def _claim_reward(uid, reward_code):
     code = (reward_code or '').strip().upper(); nowdt = datetime.now(timezone.utc)
     with _EVENT_LOCK:
         data = _load_event_data(); user = data['users'].get(str(uid))
-        if not user or not user.get('verified'): return 'Kamu belum menyelesaikan verifikasi BOUNTY GAME.'
-        if not (user.get('token_used_for_event') or user.get('token_used')): return 'Token event kamu belum dipakai di halaman Bounty Game.'
+        if not user or not user.get('verified'): return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
+        if not (user.get('token_used_for_event') or user.get('token_used')): return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
         reward = data['reward_codes'].get(code)
-        if not reward or not reward.get('is_active'): return 'Kode tidak valid.'
+        if not reward or not reward.get('is_active'): return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
         exp = _parse_ts(reward.get('expires_at')) if reward.get('expires_at') else None
-        if exp and exp < nowdt: return 'Reward sudah expired.'
-        if any(c.get('telegram_user_id') == str(uid) and c.get('reward_code') == code and c.get('status') == 'claimed' for c in data['claims']): return 'Kamu sudah pernah claim reward ini.'
-        if int(reward.get('claimed_count',0)) >= int(reward.get('max_claim',0)): return 'Reward sudah habis.'
+        if exp and exp < nowdt: return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
+        if any(c.get('telegram_user_id') == str(uid) and c.get('reward_code') == code and c.get('status') == 'claimed' for c in data['claims']): return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
+        if int(reward.get('claimed_count',0)) >= int(reward.get('max_claim',0)): return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
         item = next((i for i in data['reward_items'] if i.get('reward_code') == code and not i.get('used')), None)
-        if not item: return 'Reward sudah habis.'
+        if not item: return '❌ Kode tidak valid / sudah habis / sudah pernah kamu klaim.'
         item['used'] = True; item['used_by'] = str(uid); item['used_at'] = _utc_timestamp(); reward['claimed_count'] = int(reward.get('claimed_count',0)) + 1; user['reward_status'] = 'claimed'; user['reward_claimed'] = True
         token_rec = data.get('event_tokens', {}).get(user.get('token'))
         if token_rec: token_rec['reward_claimed'] = True
         data['claims'].append({'telegram_user_id':str(uid),'username':user.get('username',''),'reward_code':code,'reward_item_id':item['id'],'token':user.get('token',''),'claimed_at':_utc_timestamp(),'status':'claimed'}); _save_event_data(data)
-        return f"Reward berhasil diklaim!\n\nBerikut hadiah kamu:\n{item['content']}\n\nSimpan data ini baik-baik. Jangan bagikan ke orang lain."
+        return f"🎉 Reward berhasil diklaim.\n\nKode:\n`{code}`\n\nHadiah kamu:\n`{item['content']}`\n\nSimpan data ini baik-baik dan jangan bagikan ke orang lain."
 
 
 
@@ -601,28 +612,28 @@ def process_telegram_update(update):
         if data == 'event_users': _telegram_send_message(chat_id, _format_users(), _admin_keyboard()); return
         if data == 'reward_codes': _telegram_send_message(chat_id, _format_reward_codes(), _admin_keyboard()); return
         if data == 'claim_history': _telegram_send_message(chat_id, _format_claim_history(), _admin_keyboard()); return
-        if data == 'reward_generate': _set_bot_state(chat_id, 'add_reward'); _telegram_send_message(chat_id, 'Format auto:\nNama Reward | type | max_claim | expired_date\n\nFormat manual:\nCODE | Nama Reward | type | max_claim | expired_date\n\nContoh:\nPremium App Random | account | 3 | 2026-06-30', _claim_keyboard()); return
-        if data == 'reward_stock': _set_bot_state(chat_id, 'add_stock'); _telegram_send_message(chat_id, 'Kirim stok hadiah dengan format:\nREWARD_CODE | detail hadiah\n\nContoh:\nMII-WIN-2026-XXXX | email: akun1@example.com | password: xxxx', _claim_keyboard()); return
+        if data == 'reward_generate': _set_bot_state(chat_id, 'add_reward'); _telegram_send_message(chat_id, '➕ Generate Reward Code\n\nKirim format:\n\n`Nama Reward | type | max_claim | expired_date`\n\nContoh:\n\n`Premium App Random | account | 3 | 2026-06-30`\n\nSistem akan otomatis membuat kode:\n`MII-WIN-2026-XXXX`\n\nJika ingin manual code, gunakan format:\n\n`CODE | Nama Reward | type | max_claim | expired_date`\n\nContoh manual:\n\n`MII-WIN-2026 | Premium App Random | account | 3 | 2026-06-30`', _claim_keyboard()); return
+        if data == 'reward_stock': _set_bot_state(chat_id, 'add_stock'); _telegram_send_message(chat_id, '📦 Tambah Stok Hadiah\n\nKirim format:\n\n`REWARD_CODE | detail hadiah`\n\nContoh:\n\n`MII-WIN-2026-ABCD | email: akun1@example.com | password: xxxx`\n\nAtau:\n\n`MII-WIN-2026-ABCD | Voucher: ABCD-1234`', _claim_keyboard()); return
         if data in ('maintenance_on','maintenance_off'): set_maintenance_status(data == 'maintenance_on'); _telegram_send_message(chat_id, ('🔴 Maintenance aktif.\n\n' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.\n\n') + _admin_text(), _admin_keyboard()); return
         if state in ('add_reward','add_stock'): _handle_admin_text(chat_id, raw_data); return
     if data == 'join_wa_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Grup WhatsApp.', _inline_url_keyboard('Join WhatsApp', WHATSAPP_GROUP_LINK)); return
-    if data == 'join_tg_link': _telegram_send_message(chat_id, 'Klik tombol di bawah untuk join Channel Telegram.', _inline_url_keyboard('Join Channel Telegram', TELEGRAM_CHANNEL_LINK)); return
+    if data == 'join_tg_link': _telegram_send_message(chat_id, '📢 Klik tombol di bawah untuk join Channel Telegram MII STORE.', _inline_url_keyboard('Join Channel Telegram', TELEGRAM_CHANNEL_LINK)); return
     if data == 'open_bounty': _telegram_send_message(chat_id, 'Buka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty')); return
     if data == 'event_verify':
         tg_status = _telegram_get_chat_member(uid)
-        if tg_status == 'error': _telegram_send_message(chat_id, 'Bot belum bisa mengecek channel. Pastikan TELEGRAM_CHANNEL_ID benar dan bot sudah menjadi admin channel.', _user_keyboard()); return
-        if tg_status != 'joined': _telegram_send_message(chat_id, 'Kamu belum join Channel Telegram. Join dulu lalu tekan VERIFIKASI JOIN.', _user_keyboard()); return
+        if tg_status == 'error': _telegram_send_message(chat_id, '⚠️ Sistem belum bisa mengecek channel.\nPastikan bot sudah menjadi admin channel dan TELEGRAM_CHANNEL_ID benar.', _user_keyboard()); return
+        if tg_status != 'joined': _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nSilakan join dulu, lalu tekan VERIFIKASI JOIN lagi.', _user_keyboard()); return
         with _EVENT_LOCK:
             d=_load_event_data(); u=d['users'][uid]; u['telegram_join_verified']=True; u['verified']=True; u['last_action_at']=_utc_timestamp(); d['users'][uid]=u; _save_event_data(d)
-        _telegram_send_message(chat_id, 'Verifikasi berhasil. Kamu sekarang bisa claim token BOUNTY GAME.', _user_keyboard()); return
+        _telegram_send_message(chat_id, '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.', _user_keyboard()); return
     if data == 'event_claim_token': _u, msg = _claim_or_get_token(uid); _telegram_send_message(chat_id, msg, _user_keyboard()); return
-    if data == 'event_claim_reward': _set_bot_state(chat_id, 'claim_reward'); _telegram_send_message(chat_id, 'Kirim kode reward/kode kemenangan kamu.', _claim_keyboard()); return
+    if data == 'event_claim_reward': _set_bot_state(chat_id, 'claim_reward'); _telegram_send_message(chat_id, '🏆 Kirim kode kemenangan / reward code kamu.\n\nContoh:\n`MII-WIN-2026-ABCD`', _claim_keyboard()); return
     if data == 'event_myreward':
         d=_load_event_data(); claims=[c for c in d['claims'] if c.get('telegram_user_id')==uid]
         _telegram_send_message(chat_id, '📦 Reward Saya\n' + ('\n'.join(f"- {c['reward_code']} pada {c['claimed_at']}" for c in claims) if claims else 'Belum ada reward.'), _user_keyboard()); return
     if state == 'claim_reward':
         msg = _claim_reward(uid, raw_data)
-        if msg.startswith('Reward berhasil'): _clear_bot_state(chat_id); _telegram_send_message(chat_id, msg, _user_keyboard())
+        if msg.startswith('🎉 Reward berhasil'): _clear_bot_state(chat_id); _telegram_send_message(chat_id, msg, _user_keyboard())
         else: _telegram_send_message(chat_id, msg, _claim_keyboard())
         return
     admin_commands = {'/status','/users','/event_stats','/reward_codes','/claim_history','/maintenance_on','/maintenance_off'}
@@ -853,7 +864,7 @@ def event_validate_token():
     token = (request.get_json(silent=True) or {}).get('token', '')
     ok, user, error = validate_event_token(token)
     if not ok:
-        return jsonify({'valid': False, 'error': error or 'Token tidak valid atau sudah expired.'}), 400
+        return jsonify({'valid': False, 'error': error or 'Token tidak valid, sudah digunakan, atau expired.'}), 400
     token = token.strip().upper()
     with _EVENT_LOCK:
         data = _load_event_data()
