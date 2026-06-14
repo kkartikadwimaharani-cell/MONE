@@ -2,6 +2,10 @@ function uiText(key, vars) {
   return (window.t && window.t(key, vars)) || key;
 }
 
+function assetPath(path) {
+  return window.assetUrl ? window.assetUrl(path) : '/static/' + String(path || '').replace(/^\//, '');
+}
+
 /* ── UI HELPERS ────────────────────────────────── */
 
 function setStatus(msg, type) {
@@ -140,7 +144,7 @@ window.setAppMode = setAppMode;
 
   function getVaultAudio() {
     if (!vaultAudio) {
-      vaultAudio = new Audio('/static/audio/vault-theme.mp3');
+      vaultAudio = new Audio(window.assetUrl ? window.assetUrl('audio/vault-theme.mp3') : '/static/audio/vault-theme.mp3');
       vaultAudio.volume = 0.25;
       vaultAudio.loop = true;
       vaultAudio.preload = 'none';
@@ -386,7 +390,7 @@ window.setAppMode = setAppMode;
               '<span class="vault-scanline"></span>' +
               '<span class="vault-card-badge vault-card-badge-left">LV.99999</span>' +
               '<span class="vault-card-badge vault-card-badge-right">ONLINE</span>' +
-              '<span class="vault-admin-photo-wrap"><span class="vault-avatar-scan"></span><img class="vault-admin-photo" src="/static/img/Admin.png" alt="NO NAME admin profile" draggable="false" oncontextmenu="return false" ondragstart="return false"></span>' +
+              '<span class="vault-admin-photo-wrap"><span class="vault-avatar-scan"></span><img class="vault-admin-photo" src="' + assetPath('img/Admin.png') + '" alt="NO NAME admin profile" draggable="false" oncontextmenu="return false" ondragstart="return false"></span>' +
               '<span class="vault-admin-name">NO NAME</span>' +
               '<span class="vault-admin-title">UNKNOWN ENTITY</span>' +
               '<span class="vault-admin-meta"><span>CLEARANCE: UNKNOWN</span><span>POLICY: RESTRICTED</span><span>PROTOCOL: CONTROL MODE</span></span>' +
@@ -721,26 +725,6 @@ window.setAppMode = setAppMode;
     stage.addEventListener('pointerleave', endReveal);
   }
 
-  function clearUiCache() {
-    try {
-      var keep = {};
-      Object.keys(localStorage).forEach(function(k) {
-        if (/vault|private/i.test(k)) keep[k] = localStorage.getItem(k);
-      });
-      localStorage.clear();
-      Object.keys(keep).forEach(function(k) { localStorage.setItem(k, keep[k]); });
-    } catch (e) {}
-    try { sessionStorage.clear(); } catch (e) {}
-    var jobs = [];
-    if ('serviceWorker' in navigator) jobs.push(navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(reg) { reg.unregister(); }); }));
-    if ('caches' in window) jobs.push(caches.keys().then(function(keys) { return Promise.all(keys.map(function(key) { return caches.delete(key); })); }));
-    Promise.allSettled(jobs).then(function() {
-      var url = new URL(window.location.href);
-      url.searchParams.set('v', '20260614-final-hero-' + Date.now());
-      window.location.replace(url.toString());
-    });
-  }
-
   function goHomeSection(id) {
     if (typeof window.navigateTo === 'function' && window.currentView !== 'downloader') {
       window.navigateTo('downloader', true);
@@ -767,11 +751,6 @@ window.setAppMode = setAppMode;
   document.addEventListener('DOMContentLoaded', function() {
     initCharacterReveal();
     initHomepageCharacterFlip();
-    var clearBtn = document.getElementById('clearCacheBtn');
-    if (clearBtn && clearBtn.dataset.bound !== 'true') {
-      clearBtn.dataset.bound = 'true';
-      clearBtn.addEventListener('click', clearUiCache);
-    }
   });
   document.addEventListener('click', function(e) {
     var scrollItem = e.target.closest('[data-scroll-target]');
