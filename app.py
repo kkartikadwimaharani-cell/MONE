@@ -234,12 +234,14 @@ def _save_event_data(data):
     os.replace(tmp, EVENT_DATA_FILE)
 
 
-def _user_from_message(message):
-    u = message.get('from') or {}
+def _user_from_telegram_actor(actor, chat=None):
+    actor = actor or {}
+    chat = chat or {}
     now = _utc_timestamp()
     return {
-        'telegram_user_id': str(u.get('id') or message.get('chat', {}).get('id')),
-        'username': u.get('username') or '', 'first_name': u.get('first_name') or '', 'last_name': u.get('last_name') or '',
+        'telegram_user_id': str(actor.get('id') or chat.get('id')),
+        'chat_id': str(chat.get('id') or ''),
+        'username': actor.get('username') or '', 'first_name': actor.get('first_name') or '', 'last_name': actor.get('last_name') or '',
         'started_at': now, 'telegram_join_verified': False, 'verified': False,
         'token_active': False, 'token': '', 'token_created_at': '', 'token_expired_at': '',
         'token_used_for_event': False, 'reward_claimed': False, 'game_attempts': 0,
@@ -248,13 +250,20 @@ def _user_from_message(message):
     }
 
 
-def _upsert_event_user(message):
-    incoming = _user_from_message(message)
+def _user_from_message(message):
+    return _user_from_telegram_actor((message or {}).get('from') or {}, (message or {}).get('chat') or {})
+
+
+def _upsert_event_user(message=None, actor=None, chat=None):
+    if actor is not None or chat is not None:
+        incoming = _user_from_telegram_actor(actor or {}, chat or {})
+    else:
+        incoming = _user_from_message(message or {})
     uid = incoming['telegram_user_id']
     with _EVENT_LOCK:
         data = _load_event_data()
         user = data['users'].get(uid, incoming)
-        for k in ('username', 'first_name', 'last_name'):
+        for k in ('username', 'first_name', 'last_name', 'chat_id'):
             user[k] = incoming[k]
         user.setdefault('started_at', incoming['started_at'])
         for k, v in incoming.items():
@@ -388,7 +397,7 @@ def _claim_or_get_token(uid):
         data = _load_event_data()
         user = data['users'].get(uid)
         if not user or not user.get('verified'):
-            return None, 'Verifikasi join dulu sebelum claim token.'
+            return None, '❌ Kamu belum verifikasi channel Telegram.'
         if _is_token_active(user):
             rec = data.get('event_tokens', {}).get(user.get('token'), {})
             if rec.get('status') == 'active' and not rec.get('used_for_event'):
@@ -398,6 +407,12 @@ def _claim_or_get_token(uid):
                     'Expired:\n'
                     f'{_md_code(_format_expiry(user.get("token_expired_at")))}'
                 )
+        if user.get('token_used_for_event') or user.get('token_used'):
+            return user, (
+                '🎟 Token BOUNTY GAME kamu sudah dipakai untuk challenge:\n\n'
+                f'{_md_code(user.get("token", "-"))}\n\n'
+                'Token yang sudah dipakai tidak bisa dibuat ulang.'
+            )
         if user.get('token'):
             _expire_token_record(data, user['token'])
         token = _new_token()
@@ -520,7 +535,7 @@ def _telegram_get_chat_member(user_id):
 
 
 def _admin_chat_id(): return os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '6737854054').strip()
-def _is_admin_chat(chat_id): return str(chat_id) == _admin_chat_id()
+def _is_admin_chat(user_id): return str(user_id) == _admin_chat_id()
 def _is_logged_in(chat_id):
     with _BOT_SESSION_LOCK: return str(chat_id) in _BOT_AUTHENTICATED_CHATS
 
@@ -768,20 +783,22 @@ def _claim_reward(uid, reward_code):
 
 
 
-def _set_bot_state(chat_id, state):
+def _set_bot_state(chat_id, state, uid=None):
     _BOT_USER_STATES[str(chat_id)] = state
+    user_key = str(uid if uid is not None else chat_id)
     with _EVENT_LOCK:
-        data = _load_event_data(); user = data['users'].get(str(chat_id))
+        data = _load_event_data(); user = data['users'].get(user_key)
         if user:
-            user['state'] = state; user['last_action_at'] = _utc_timestamp(); data['users'][str(chat_id)] = user; _save_event_data(data)
+            user['state'] = state; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
 
 
-def _clear_bot_state(chat_id):
+def _clear_bot_state(chat_id, uid=None):
     _BOT_USER_STATES.pop(str(chat_id), None)
+    user_key = str(uid if uid is not None else chat_id)
     with _EVENT_LOCK:
-        data = _load_event_data(); user = data['users'].get(str(chat_id))
+        data = _load_event_data(); user = data['users'].get(user_key)
         if user:
-            user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][str(chat_id)] = user; _save_event_data(data)
+            user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
 
 def _normalize_bot_action(data):
     mapping = {
@@ -827,16 +844,18 @@ def process_telegram_update(update):
     if callback:
         _telegram_answer_callback(callback.get('id'))
         raw_data = callback.get('data', '')
+        telegram_actor = callback.get('from') or {}
     else:
         raw_data = (message.get('text') or '').strip()
-    user = _upsert_event_user(message)
+        telegram_actor = message.get('from') or {}
+    user = _upsert_event_user(actor=telegram_actor, chat=chat)
     uid = user['telegram_user_id']
     data = _normalize_bot_action(raw_data)
     state = _BOT_USER_STATES.get(str(chat_id))
 
     if data in ('menu', 'cancel') and state != 'claim_reward':
-        _clear_bot_state(chat_id)
-        if _is_admin_chat(chat_id) and _is_logged_in(chat_id):
+        _clear_bot_state(chat_id, uid)
+        if _is_admin_chat(uid) and _is_logged_in(chat_id):
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
         else:
             show_user_home(chat_id, user)
@@ -846,7 +865,7 @@ def process_telegram_update(update):
         pending = str(chat_id) in _BOT_LOGIN_PENDING_CHATS
     if pending:
         expected = os.environ.get('BOT_ADMIN_PASSWORD', '')
-        if _is_admin_chat(chat_id) and expected and hmac.compare_digest(raw_data, expected):
+        if _is_admin_chat(uid) and expected and hmac.compare_digest(raw_data, expected):
             with _BOT_SESSION_LOCK:
                 _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
                 _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
@@ -856,9 +875,9 @@ def process_telegram_update(update):
         return
 
     if raw_data in ('/start', '/login') or data == 'admin_login':
-        if _is_admin_chat(chat_id) and not _is_logged_in(chat_id):
+        if _is_admin_chat(uid) and not _is_logged_in(chat_id):
             _show_login_prompt(chat_id)
-        elif _is_admin_chat(chat_id):
+        elif _is_admin_chat(uid):
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
         else:
             show_user_home(chat_id, user)
@@ -868,18 +887,18 @@ def process_telegram_update(update):
         with _BOT_SESSION_LOCK:
             _BOT_AUTHENTICATED_CHATS.discard(str(chat_id))
             _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
-        _clear_bot_state(chat_id)
+        _clear_bot_state(chat_id, uid)
         _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
     admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'reward_generate', 'reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'reward_info'}
-    if data in admin_actions and not _is_admin_chat(chat_id):
+    if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
-    if _is_admin_chat(chat_id) and data in admin_actions and not _is_logged_in(chat_id):
+    if _is_admin_chat(uid) and data in admin_actions and not _is_logged_in(chat_id):
         _show_login_prompt(chat_id)
         return
-    if _is_admin_chat(chat_id) and _is_logged_in(chat_id):
+    if _is_admin_chat(uid) and _is_logged_in(chat_id):
         if data == 'event_stats':
             _telegram_send_message(chat_id, _format_stats(), _admin_keyboard())
             return
@@ -899,11 +918,11 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
             return
         if data == 'reward_info':
-            _set_bot_state(chat_id, 'set_reward_info')
+            _set_bot_state(chat_id, 'set_reward_info', uid)
             _telegram_send_message(chat_id, '🎁 Kirim info hadiah event.\n\nContoh:\n`Premium App Random | 3 Winner | Claim via Bot MIIWEB`', _claim_keyboard(), parse_mode='Markdown')
             return
         if data == 'reward_generate':
-            _set_bot_state(chat_id, 'add_reward')
+            _set_bot_state(chat_id, 'add_reward', uid)
             text = (
                 '➕ Generate Reward Code\n\n'
                 'Kirim format:\n\n'
@@ -920,7 +939,7 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
             return
         if data == 'reward_stock':
-            _set_bot_state(chat_id, 'add_stock')
+            _set_bot_state(chat_id, 'add_stock', uid)
             text = (
                 '📦 Tambah Stok Hadiah\n\n'
                 'Kirim format:\n\n'
@@ -983,7 +1002,7 @@ def process_telegram_update(update):
         if not user.get('verified'):
             show_unverified_start(chat_id, user)
             return
-        _set_bot_state(chat_id, 'claim_reward')
+        _set_bot_state(chat_id, 'claim_reward', uid)
         text = (
             '🏆 Kirim kode kemenangan kamu.\n\n'
             'Contoh:\n'
@@ -999,23 +1018,23 @@ def process_telegram_update(update):
         return
     if state == 'claim_reward':
         if data == 'cancel':
-            _clear_bot_state(chat_id)
+            _clear_bot_state(chat_id, uid)
             _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.')
             show_verified_menu(chat_id) if user.get('verified') else show_unverified_start(chat_id, user)
             return
         if data == 'menu':
-            _clear_bot_state(chat_id)
+            _clear_bot_state(chat_id, uid)
             show_user_home(chat_id, user)
             return
         msg = _claim_reward(uid, raw_data)
         if msg.startswith('🎉 Reward berhasil'):
-            _clear_bot_state(chat_id)
+            _clear_bot_state(chat_id, uid)
             _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
         else:
             _telegram_send_message(chat_id, msg, _claim_keyboard())
         return
     admin_commands = {'/status', '/users', '/event_stats', '/reward_codes', '/claim_history', '/maintenance_on', '/maintenance_off'}
-    if raw_data in admin_commands and not _is_admin_chat(chat_id):
+    if raw_data in admin_commands and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
     show_user_home(chat_id, user)
