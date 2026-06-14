@@ -1104,7 +1104,9 @@ def admin_stats():
 
     rows_html = ''
     for item in detailed:
-        rows_html += f'<tr><td>{item["event_type"]}</td><td>{item["count"]}</td></tr>'
+        event_type = item.get('event_type', '')
+        event_count = item.get('count', '')
+        rows_html += f'<tr><td>{event_type}</td><td>{event_count}</td></tr>'
 
     html = f'''<!DOCTYPE html>
 <html lang="en">
