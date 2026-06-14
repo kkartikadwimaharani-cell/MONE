@@ -773,3 +773,66 @@ window.setAppMode = setAppMode;
   initCharacterReveal();
   initHomepageCharacterFlip();
 })();
+
+/* 20260614-mii-store-final-v2 cache controls */
+(function() {
+  var APP_VERSION = window.APP_VERSION || '20260614-mii-store-final-v2';
+  var versionKey = 'appVersion';
+  var safeKeys = ['mii_ui_cache', 'mii_home_cache', 'mii_network_view', 'mii_drawer_state'];
+
+  function clearSafeStorage() {
+    try {
+      safeKeys.forEach(function(key) { window.localStorage.removeItem(key); });
+      window.localStorage.setItem(versionKey, APP_VERSION);
+    } catch (e) {}
+    try { window.sessionStorage.clear(); } catch (e) {}
+  }
+
+  function unregisterServiceWorkers() {
+    if (!('serviceWorker' in navigator)) return Promise.resolve();
+    return navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      return Promise.all(registrations.map(function(registration) { return registration.unregister(); }));
+    }).catch(function() {});
+  }
+
+  function clearCacheStorage() {
+    if (!('caches' in window)) return Promise.resolve();
+    return caches.keys().then(function(keys) {
+      return Promise.all(keys.map(function(key) { return caches.delete(key); }));
+    }).catch(function() {});
+  }
+
+  function reloadWithVersion() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('v', APP_VERSION);
+    window.location.replace(url.toString());
+  }
+
+  window.miiClearCache = function() {
+    clearSafeStorage();
+    Promise.all([unregisterServiceWorkers(), clearCacheStorage()]).then(reloadWithVersion);
+  };
+
+  try {
+    var current = window.localStorage.getItem(versionKey);
+    if (current !== APP_VERSION) {
+      window.localStorage.setItem(versionKey, APP_VERSION);
+      if (!new URL(window.location.href).searchParams.has('v')) {
+        Promise.all([unregisterServiceWorkers(), clearCacheStorage()]).then(function() {
+          var url = new URL(window.location.href);
+          url.searchParams.set('v', APP_VERSION);
+          window.location.replace(url.toString());
+        });
+      }
+    }
+  } catch (e) {}
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var button = document.getElementById('clearCacheBtn');
+    if (button) button.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window._closeDrawer) window._closeDrawer();
+      window.miiClearCache();
+    });
+  });
+})();
