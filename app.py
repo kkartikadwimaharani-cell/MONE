@@ -24,7 +24,7 @@ _gemini_model_cache = {}  # {model_name: GenerativeModel}
 _gemini_configured = False
 
 _MAKIMA_SYSTEM_INSTRUCTION = """
-Kamu adalah MAKIMA AI, asisten pribadi milik MII NETWORK.
+Kamu adalah MAKIMA AI, asisten pribadi milik MII STORE.
 Jawab dalam Bahasa Indonesia yang santai, jelas, tenang, elegan, dan profesional.
 Gunakan kata “kamu”, jangan “Anda”.
 Jangan bilang “sebagai AI”.
@@ -398,7 +398,7 @@ def ghost_scan():
         'language': language,
         'vpn_status': vpn_status,
         'risk_level': risk_level,
-        'scan_mode': 'MI NETWORK OBSERVATION'
+        'scan_mode': 'MII STORE OBSERVATION'
     })
 
 

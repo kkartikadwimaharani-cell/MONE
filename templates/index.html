@@ -6,10 +6,10 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>MiiTok — TikTok Downloader</title>
+  <title>MII STORE — Digital Products & AI Tools</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="/static/css/variables.css?v=i18n-gate-always-on-v5">
   <link rel="stylesheet" href="/static/css/base.css?v=i18n-gate-always-on-v5">
@@ -31,8 +31,8 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="/static/img/owner.png" alt="MIITOK logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
-      <span class="nav-brand">MII NETWORK</span>
+      <img class="nav-logo-img" src="/static/img/owner.png" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+      <span class="nav-brand">MII STORE</span>
     </div>
     <div class="nav-right">
       <div class="language-selector" id="languageSelector">
@@ -50,335 +50,81 @@
 
   <!-- Side Drawer -->
   <aside class="app-drawer side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
-    <!-- Header -->
     <div class="drawer-header">
       <div class="drawer-brand drawer-profile">
-        <img class="drawer-logo drawer-avatar" src="/static/img/owner.png" alt="MII NETWORK" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+        <img class="drawer-logo drawer-avatar" src="/static/img/owner.png" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
-          <div class="drawer-title drawer-brand-title">MII NETWORK</div>
-          <div class="drawer-subtitle drawer-brand-sub" data-i18n="downloader_store_tools">DOWNLOADER &bull; STORE &bull; TOOLS</div>
+          <div class="drawer-title drawer-brand-title">MII STORE</div>
+          <div class="drawer-subtitle drawer-brand-sub">Digital Products • AI Tools</div>
         </div>
       </div>
-
       <button class="drawer-close" id="drawerClose" aria-label="Close menu" data-i18n-aria="close_menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-
-      <div class="drawer-status drawer-badges">
-        <span class="drawer-badge-control" data-i18n="control_mode">CONTROL MODE</span>
-        <span class="drawer-badge-online" data-i18n="server_online">SERVER ONLINE</span>
-      </div>
     </div>
-
     <div class="drawer-menu-scroll">
-
-    <!-- Section: Main -->
-    <div class="drawer-section drawer-section-main">
-      <div class="drawer-section-label" data-i18n="main">MAIN</div>
-      <a href="#" class="drawer-item active" data-view="downloader">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.77a4.85 4.85 0 0 1-1.02-.08z"/></svg></span>
-        <span class="drawer-item-text" data-i18n="tiktok_downloader">TIKTOK DOWNLOADER</span>
-        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="wa-status" data-feature="wa-status">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-        <span class="drawer-item-text" data-i18n="wa_status_converter">WA STATUS CONVERTER</span>
-        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="status-splitter" data-feature="status-splitter">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="12" y1="3" x2="12" y2="17"/></svg></span>
-        <span class="drawer-item-text" data-i18n="status_splitter">STATUS SPLITTER</span>
-        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="caption" data-feature="caption-copier">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>
-        <span class="drawer-item-text" data-i18n="caption_copier">CAPTION COPIER</span>
-        <span class="drawer-item-badge soon-badge" data-i18n="soon">SOON</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="makima-ai">
-        <span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span>
-        <span class="drawer-item-text">MAKIMA AI</span>
-        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="hinter-mt">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-        <span class="drawer-item-text" data-i18n="private_vault">PRIVATE VAULT</span>
-        <span class="drawer-item-badge active-badge" data-i18n="active">ACTIVE</span>
-      </a>
-    </div>
-
-    <div class="drawer-separator"></div>
-
-    <!-- Section: Promo -->
-    <div class="drawer-section drawer-section-promo">
-      <div class="drawer-section-label" data-i18n="promo">PROMO</div>
-      <a href="#" class="drawer-item" data-view="store">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><line x1="3" y1="7" x2="21" y2="7"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span>
-        <span class="drawer-item-text" data-i18n="premium_apps_store">PREMIUM APPS STORE</span>
-      </a>
-      <a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="drawer-item">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
-        <span class="drawer-item-text" data-i18n="lynk_store">LYNK.ID STORE</span>
-      </a>
-      <a href="https://t.me/asami_am0" target="_blank" rel="noopener noreferrer" class="drawer-item">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
-        <span class="drawer-item-text" data-i18n="join_telegram">JOIN TELEGRAM</span>
-      </a>
-      <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-        <span class="drawer-item-text" data-i18n="contact_whatsapp">CONTACT WHATSAPP</span>
-      </a>
-      <a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="drawer-item">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span>
-        <span class="drawer-item-text" data-i18n="instagram">Instagram</span>
-      </a>
-    </div>
-
-    <div class="drawer-separator"></div>
-
-    <!-- Promo Card -->
-    <div class="drawer-promo-card">
-      <div class="drawer-promo-title" data-i18n="premium_available">PREMIUM APPS AVAILABLE</div>
-      <div class="drawer-promo-text">CANVA, CAPCUT, VPN, AI TOOLS</div>
-      <a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="drawer-promo-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <span data-i18n="buy_now">BUY NOW</span>
-      </a>
-    </div>
-
-    <!-- Control Mini Card (HUD) -->
-    <div class="drawer-hud-card">
-      <div class="drawer-hud-grid">
-        <div class="drawer-hud-item">
-          <span class="drawer-hud-dot green"></span>
-          <span class="drawer-hud-label" data-i18n="video_ready">VIDEO READY</span>
-        </div>
-        <div class="drawer-hud-item">
-          <span class="drawer-hud-dot yellow"></span>
-          <span class="drawer-hud-label" data-i18n="status_tools_soon">STATUS TOOLS SOON</span>
-        </div>
-        <div class="drawer-hud-item">
-          <span class="drawer-hud-dot green"></span>
-          <span class="drawer-hud-label" id="drawerDownloads" data-download-count="0">DOWNLOADS: 0</span>
-        </div>
-        <div class="drawer-hud-item">
-          <span class="drawer-hud-dot green"></span>
-          <span class="drawer-hud-label" data-i18n="server_online">SERVER ONLINE</span>
-        </div>
+      <div class="drawer-section drawer-section-main">
+        <div class="drawer-section-label">NAVIGATION</div>
+        <a href="#home" class="drawer-item active" data-scroll-target="home"><span class="drawer-item-icon">⌂</span><span class="drawer-item-text">Home</span></a>
+        <a href="#" class="drawer-item" data-view="makima-ai"><span class="drawer-item-icon"><img src="/static/img/makima-ai-profile.png" alt="MAKIMA AI" class="makima-menu-avatar makima-sidebar-avatar" draggable="false" oncontextmenu="return false" ondragstart="return false" /></span><span class="drawer-item-text">Makima AI</span></a>
+        <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon">◆</span><span class="drawer-item-text">Private Vault</span></a>
+        <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon">◎</span><span class="drawer-item-text">Social Media</span></a>
+        <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon">▣</span><span class="drawer-item-text">Digital Products</span></a>
+        <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon">✆</span><span class="drawer-item-text">Contact</span></a>
       </div>
-    </div>
-
-    <div class="drawer-separator"></div>
-
-    <!-- Section: System -->
-    <div class="drawer-section drawer-section-system">
-      <div class="drawer-section-label" data-i18n="system">SYSTEM</div>
-      <a href="#" class="drawer-item" data-view="control">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-        <span class="drawer-item-text" data-i18n="control_panel">CONTROL PANEL</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="server">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-        <span class="drawer-item-text" data-i18n="server_status">SERVER STATUS</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="howto">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-        <span class="drawer-item-text" data-i18n="how_to_use">HOW TO USE</span>
-      </a>
-      <a href="#" class="drawer-item" data-view="report">
-        <span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-        <span class="drawer-item-text" data-i18n="report_bug">REPORT BUG</span>
-      </a>
-    </div>
-
-    <!-- Footer -->
-    <div class="drawer-footer">
-      <div class="drawer-footer-sub" data-i18n="free_fast_no_watermark">FREE &bull; FAST &bull; NO WATERMARK</div>
-    </div>
     </div>
   </aside>
 
   <!-- Page -->
   <div class="page">
 
-    <!-- Header -->
-    <header class="header">
-      <div class="hero-badge" data-i18n="no_watermark">NO WATERMARK</div>
-      <h1 class="hero-title">MII NETWORK</h1>
-      <div class="hero-sub"><span class="sub-line sub-line-l"></span><span data-i18n="tiktok_downloader">TIKTOK DOWNLOADER</span><span class="sub-line sub-line-r"></span></div>
-      <div class="cyber-line-hero"></div>
-    </header>
-
-    <!-- Card -->
-    <div id="viewDownloader">
-    <div class="card">
-
-      <!-- Quality -->
-      <div class="quality-row">
-        <button class="q-btn active" onclick="setQuality(this,'best')" data-quality="best" data-i18n="best">BEST</button>
-        <button class="q-btn" onclick="setQuality(this,'1080')">1080P</button>
-        <button class="q-btn" onclick="setQuality(this,'720')">720P</button>
-        <button class="q-btn" onclick="setQuality(this,'photo')" data-quality="photo" data-i18n="photo">PHOTO</button>
-      </div>
-
-      <!-- Input -->
-      <div class="input-wrap">
-        <div class="input-icon">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.77a4.85 4.85 0 0 1-1.02-.08z"/></svg>
-        </div>
-        <button type="button" class="paste-btn" id="pasteBtn" onclick="pasteTikTokFromClipboard()" title="Paste" data-i18n-title="paste" aria-label="Paste TikTok link" data-i18n-aria="paste">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-        </button>
-        <input
-          id="urlInput"
-          class="url-input"
-          type="text"
-          placeholder="Tempel link TikTok di sini..." data-i18n-placeholder="paste_tiktok_link_here"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          oninput="onUrlInput()"
-        />
-        <button class="clear-btn" id="clearBtn" onclick="clearUrl()" title="Hapus" data-i18n-title="clear" data-i18n-aria="clear">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-        </button>
-      </div>
-
-      <!-- Preview card -->
-      <div class="preview-card" id="previewCard">
-        <img class="preview-thumb" id="previewThumb" src="" alt="" />
-        <div class="preview-info">
-          <div class="preview-title" id="previewTitle"></div>
-          <div class="preview-meta">
-            <span id="previewUploader"></span>
-            <span id="previewDuration"></span>
-          </div>
-          <div class="preview-actions">
-            <span class="quality-badge" id="qualityBadge">BEST</span>
-            <button type="button" class="mp3-btn" id="mp3Btn" onclick="handleAudioDownload(event)" title="Download MP3">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              MP3
-            </button>
+    <main id="viewDownloader" class="home-hub">
+      <section id="home" class="home-hero" aria-label="MII STORE hero">
+        <div class="hero-copy">
+          <div class="hero-badge">Premium Digital Brand</div>
+          <h1 class="hero-title">MII STORE</h1>
+          <p class="hero-subtitle">Digital Products • AI Tools • Creative Tech</p>
+          <p class="hero-description">MII STORE is a premium digital brand focused on digital products, AI tools, automation, and creative technology.</p>
+          <div class="hero-actions">
+            <button class="premium-btn primary" type="button" onclick="navigateTo('makima-ai')">Open Makima AI</button>
+            <a class="premium-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Contact WhatsApp</a>
+            <a class="premium-btn ghost" href="#social-media">Explore Socials</a>
           </div>
         </div>
-      </div>
-
-      <!-- Download button -->
-      <div class="dl-wrap" id="dlWrap">
-        <button class="dl-btn" id="dlBtn" onclick="handleVideoDownload()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span data-i18n="download">DOWNLOAD</span>
-        </button>
-      </div>
-
-      <!-- Progress -->
-      <div class="spinner-wrap" id="spinnerWrap">
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-track">
-            <div class="progress-bar-fill" id="progressFill"></div>
+        <div class="hero-character" aria-label="Swipe character reveal">
+          <div class="character-reveal" id="characterReveal">
+            <img class="character-img formal" src="/static/img/makima-formal.png" alt="Makima formal" draggable="false" />
+            <div class="cyborg-layer" id="cyborgLayer"><img class="character-img cyborg" src="/static/img/makima-cyborg.png" alt="Makima cyborg" draggable="false" /></div>
+            <div class="reveal-handle" id="revealHandle"><span></span></div>
+            <div class="swipe-hint">Swipe to reveal</div>
           </div>
-          <div class="progress-text" id="progressText">0%</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Status -->
-      <div class="status" id="status"></div>
+      <section id="social-media" class="hub-section">
+        <div class="section-heading"><span>Connect</span><h2>Social Media Cards</h2><p>All official MII STORE channels in one premium hub.</p></div>
+        <div class="social-grid">
+          <article class="social-card"><img src="/static/img/owner.png" alt="Instagram avatar"><div><h3>Instagram</h3><p>@miistore.99</p><small>Followers: 12K+</small></div><a href="https://www.instagram.com/miistore.99" target="_blank" rel="noopener noreferrer">Visit</a></article>
+          <article class="social-card"><img src="/static/img/owner.png" alt="TikTok avatar"><div><h3>TikTok</h3><p>@mii._002</p><small>Followers: 25K+</small></div><a href="https://www.tiktok.com/@mii._002" target="_blank" rel="noopener noreferrer">Open</a></article>
+          <article class="social-card"><img src="/static/img/owner.png" alt="YouTube avatar"><div><h3>YouTube</h3><p>@asami.0111</p><small>Subscribers: 5K+</small></div><a href="https://youtube.com/@asami.0111" target="_blank" rel="noopener noreferrer">Visit</a></article>
+          <article class="social-card"><img src="/static/img/owner.png" alt="Facebook avatar"><div><h3>Facebook</h3><p>MII STORE</p><small>Community: 3K+</small></div><a href="https://www.facebook.com/share/1Gyx4h46LR/" target="_blank" rel="noopener noreferrer">Open</a></article>
+          <article class="social-card"><img src="/static/img/owner.png" alt="WhatsApp avatar"><div><h3>WhatsApp</h3><p>+62 821-9122-3912</p><small>Support: Online</small></div><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Open</a></article>
+          <article class="social-card"><img src="/static/img/makima-ai-profile.png" alt="Website avatar"><div><h3>Website</h3><p>makima.cloud</p><small>Status: Live</small></div><a href="https://makima.cloud/" target="_blank" rel="noopener noreferrer">Visit</a></article>
+        </div>
+      </section>
 
-      <!-- Photo carousel section -->
-      <div id="photoSection" style="display:none; margin-top:16px;">
-        <div class="photo-count" id="photoCount"></div>
-        <div style="position:relative; padding: 0 2px;">
-          <button class="arrow-btn" id="arrowLeft" onclick="carouselScroll(-1)">&#8592;</button>
-          <button class="arrow-btn" id="arrowRight" onclick="carouselScroll(1)">&#8594;</button>
-          <div class="photo-carousel" id="photoCarousel"></div>
+      <section id="projects" class="hub-section">
+        <div class="section-heading"><span>Portfolio</span><h2>Projects</h2><p>Featured digital products and premium community experiences.</p></div>
+        <div class="project-grid">
+          <article class="project-card"><h3>Makima AI</h3><p>Personal AI assistant for creative and automation workflows.</p><button onclick="navigateTo('makima-ai')">Open Project</button></article>
+          <article class="project-card"><h3>Private Vault</h3><p>Restricted premium showcase for private modules and access notes.</p><button onclick="navigateTo('hinter-mt')">Open Vault</button></article>
+          <article class="project-card"><h3>Digital Products</h3><p>Curated apps, AI tools, templates, and digital service bundles.</p><a href="#social-media">View Links</a></article>
+          <article class="project-card"><h3>Community / Digital Community</h3><p>Updates, releases, support, and collaboration across social channels.</p><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">Contact</a></article>
         </div>
-        <div style="text-align:center; margin-top:14px;">
-          <button class="download-all-btn" id="downloadAllBtn" onclick="downloadAllPhotos()" style="display:none;" data-i18n="download_all">DOWNLOAD ALL</button>
-        </div>
-      </div>
+      </section>
 
-    </div><!-- /card -->
-
-    <!-- Features -->
-    <section class="features-section">
-      <div class="features-grid">
-        <div class="feature-card cyber-badge">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <div class="feature-title" data-i18n="fast">CEPAT</div>
-        </div>
-        <div class="feature-card cyber-badge">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div class="feature-title" data-i18n="safe">AMAN</div>
-        </div>
-        <div class="feature-card cyber-badge">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polygon points="10 8 16 11 10 14 10 8" fill="currentColor" stroke="none"/></svg>
-          </div>
-          <div class="feature-title" data-i18n="high_quality">BERKUALITAS</div>
-        </div>
-        <div class="feature-card cyber-badge">
-          <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 3l1.5 4.5H18l-3.7 2.7 1.4 4.3L12 12l-3.7 2.5 1.4-4.3L6 7.5h4.5z"/><path d="M5 20l1-3"/><path d="M19 20l-1-3"/><path d="M12 17v4"/></svg>
-          </div>
-          <div class="feature-title" data-i18n="no_watermark">NO WATERMARK</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="stats-section">
-      <div class="stats-header">
-        <div class="stats-title-main" data-i18n="control_panel">CONTROL PANEL</div>
-        <div class="stats-title-sub" data-i18n="mii_network_system">MII NETWORK SYSTEM</div>
-      </div>
-      <div class="control-badge">
-        <span class="control-badge-dot"></span>
-        <span class="control-badge-text" data-i18n="control_mode_active">CONTROL MODE ACTIVE</span>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-box hud-box">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
-          <div class="stat-value" id="statViews">0</div>
-          <div class="stat-label" data-i18n="total_views">TOTAL VIEWS</div>
-        </div>
-        <div class="stat-box hud-box">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </div>
-          <div class="stat-value" id="statDownloads">0</div>
-          <div class="stat-label" data-i18n="total_downloads">TOTAL DOWNLOADS</div>
-        </div>
-        <div class="stat-box hud-box">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="stat-value" id="statVisitors">0</div>
-          <div class="stat-label" data-i18n="total_visitors">TOTAL VISITORS</div>
-        </div>
-        <div class="stat-box hud-box">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="stat-value"><span class="server-online-dot"></span><span data-i18n="active_text">Active</span></div>
-          <div class="stat-label" data-i18n="server_online">SERVER ONLINE</div>
-        </div>
-      </div>
-      <div class="hud-watermark">CONTROL DEVIL PROTOCOL</div>
-      <div class="hud-watermark">MII NETWORK OBSERVATION</div>
-    </section>
-
-
-    <div class="footer-wrap">
-      <div class="footer-divider"></div>
-      <div class="footer">MI NETWORK &copy; 2026 - Free &amp; No Watermark</div>
-    </div>
-
-    </div><!-- /viewDownloader -->
+      <div class="footer-wrap"><div class="footer-divider"></div><div class="footer">MII STORE © 2026 — Digital Products • AI Tools • Creative Tech</div></div>
+    </main>
 
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
     <div id="viewPrivateVault" class="view-container private-vault-container" style="display:none"></div>
@@ -397,7 +143,7 @@
       <div class="modal-thumb-row">
         <img class="modal-thumb" id="modalThumb" src="" alt="" />
         <div class="modal-video-info">
-          <div class="modal-video-title" id="modalTitle">TikTok Video</div>
+          <div class="modal-video-title" id="modalTitle">Media Preview</div>
           <div class="modal-video-uploader" id="modalUploader"></div>
         </div>
       </div>

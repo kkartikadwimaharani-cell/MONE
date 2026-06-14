@@ -447,9 +447,9 @@ window.setAppMode = setAppMode;
           '<div class="store-card-title">WHATSAPP</div>' +
           '<div class="store-card-desc">' + uiText('chat_with_us') + '</div>' +
         '</a>' +
-        '<a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="store-card">' +
+        '<a href="#social-media" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>' +
-          '<div class="store-card-title">LYNK.ID STORE</div>' +
+          '<div class="store-card-title">Social Media / All Links</div>' +
           '<div class="store-card-desc">' + uiText('browse_products') + '</div>' +
         '</a>' +
       '</div>' +
@@ -682,4 +682,58 @@ window.setAppMode = setAppMode;
     flipCard.classList.toggle('is-flipped');
   });
 
+})();
+
+/* MII STORE homepage social hub interactions */
+(function() {
+  function initCharacterReveal() {
+    var box = document.getElementById('characterReveal');
+    if (!box || box.dataset.bound === 'true') return;
+    box.dataset.bound = 'true';
+    function setReveal(clientX) {
+      var rect = box.getBoundingClientRect();
+      var pct = ((clientX - rect.left) / rect.width) * 100;
+      pct = Math.max(0, Math.min(100, pct));
+      box.style.setProperty('--reveal', pct.toFixed(2) + '%');
+    }
+    box.addEventListener('pointerdown', function(e) {
+      box.setPointerCapture(e.pointerId);
+      setReveal(e.clientX);
+    });
+    box.addEventListener('pointermove', function(e) {
+      if (e.buttons || e.pointerType === 'touch') setReveal(e.clientX);
+    });
+    box.addEventListener('click', function(e) { setReveal(e.clientX); });
+  }
+
+  function goHomeSection(id) {
+    if (typeof window.navigateTo === 'function' && window.currentView !== 'downloader') {
+      window.navigateTo('downloader', true);
+    }
+    window.setTimeout(function() {
+      var target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 40);
+  }
+
+  document.addEventListener('DOMContentLoaded', initCharacterReveal);
+  document.addEventListener('click', function(e) {
+    var scrollItem = e.target.closest('[data-scroll-target]');
+    if (scrollItem) {
+      e.preventDefault();
+      if (window._closeDrawer) window._closeDrawer();
+      goHomeSection(scrollItem.getAttribute('data-scroll-target'));
+      return;
+    }
+    var anchor = e.target.closest('a[href^="#"]');
+    if (!anchor) return;
+    var id = anchor.getAttribute('href').slice(1);
+    if (!id) return;
+    var target = document.getElementById(id);
+    if (target) {
+      e.preventDefault();
+      goHomeSection(id);
+    }
+  });
+  initCharacterReveal();
 })();
