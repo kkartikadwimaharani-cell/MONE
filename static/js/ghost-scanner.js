@@ -1,1 +1,1 @@
-/* Removed from the active downloader page to keep MII NETWORK lightweight. */
+/* Removed from the active downloader page to keep MII STORE lightweight. */
