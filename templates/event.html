@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>BOUNTY GAME</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at top,#3b0710 0,#080103 42%,#020202 100%);color:#ffe8ee;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}.wrap{width:min(100%,980px);display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:stretch}.hero,.card{border:1px solid rgba(255,62,88,.34);border-radius:28px;background:linear-gradient(180deg,rgba(35,7,13,.82),rgba(10,3,6,.86));box-shadow:0 28px 90px rgba(0,0,0,.55),0 0 70px rgba(255,0,42,.16);backdrop-filter:blur(16px)}.hero{padding:34px;position:relative;overflow:hidden}.hero:before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle,rgba(255,42,72,.18),transparent 38%);animation:pulse 5s ease-in-out infinite}.badge{position:relative;display:inline-flex;padding:8px 13px;border-radius:999px;background:rgba(255,35,65,.12);border:1px solid rgba(255,78,105,.35);color:#ff7589;font-weight:900;font-size:12px;letter-spacing:.12em}h1{position:relative;margin:22px 0 12px;color:#fff;font-size:clamp(42px,7vw,78px);line-height:.9;letter-spacing:-.06em;text-shadow:0 0 34px rgba(255,0,42,.45)}h2{margin:0 0 12px;color:#ffcad2;font-size:clamp(20px,3vw,30px)}p{position:relative;color:#ffdbe1;line-height:1.65}.steps{position:relative;display:grid;gap:10px;margin-top:22px}.step{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-weight:800}.card{padding:26px}.bot{display:inline-flex;width:100%;justify-content:center;align-items:center;min-height:48px;margin:12px 0 14px;border-radius:999px;text-decoration:none;color:white;background:linear-gradient(135deg,#ff3150,#8d0014);font-weight:950;box-shadow:0 16px 45px rgba(255,0,42,.28)}label{display:block;margin:18px 0 8px;color:#ffb6c2;font-weight:900}input,button{width:100%;border-radius:16px;padding:15px 16px;font-size:16px}input{background:#070204;color:white;border:1px solid rgba(255,80,105,.42);outline:none}button{margin-top:12px;border:0;color:#fff;background:linear-gradient(135deg,#ff4764,#a8001b);font-weight:950;cursor:pointer;box-shadow:0 14px 36px rgba(255,0,42,.24)}.ok{color:#73ffad;font-weight:900}.err{color:#ff8b8b;font-weight:900}.note{font-size:13px;color:#ffb3bf}.ticket{font-size:44px;filter:drop-shadow(0 0 18px #ff2444)}@keyframes pulse{50%{transform:scale(1.05);opacity:.65}}@media(max-width:780px){.wrap{grid-template-columns:1fr}.hero,.card{border-radius:22px;padding:24px}}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:#030305;color:#ffe8ee;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}body:before{content:"";position:fixed;inset:-20%;background:radial-gradient(circle at 20% 10%,rgba(255,31,67,.34),transparent 28%),radial-gradient(circle at 82% 20%,rgba(164,0,28,.22),transparent 26%),linear-gradient(145deg,#070206,#12040a 46%,#030305);z-index:-2}.wrap{width:min(100%,920px);display:grid;grid-template-columns:1.05fr .95fr;gap:22px;align-items:stretch}.hero,.card,.grant{border:1px solid rgba(255,72,101,.32);border-radius:28px;background:linear-gradient(180deg,rgba(24,5,10,.9),rgba(7,3,5,.94));box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 80px rgba(255,0,42,.18);backdrop-filter:blur(16px)}.hero{padding:34px;display:flex;flex-direction:column;justify-content:center}.badge{display:inline-flex;width:max-content;padding:8px 13px;border-radius:999px;background:rgba(255,35,65,.12);border:1px solid rgba(255,78,105,.36);color:#ff7b8f;font-weight:900;font-size:12px;letter-spacing:.13em}h1{margin:22px 0 12px;color:#fff;font-size:clamp(44px,7vw,78px);line-height:.9;letter-spacing:-.06em;text-shadow:0 0 34px rgba(255,0,42,.48)}h2{margin:0 0 12px;color:#ffd4db;font-size:clamp(20px,3vw,29px)}p{color:#ffdbe1;line-height:1.65}.card{padding:28px}.bot,button{display:inline-flex;width:100%;justify-content:center;align-items:center;min-height:50px;border-radius:999px;color:white;background:linear-gradient(135deg,#ff3150,#920017);font-weight:950;box-shadow:0 16px 45px rgba(255,0,42,.28)}.bot{text-decoration:none;margin:10px 0 18px}label{display:block;margin:18px 0 8px;color:#ffb6c2;font-weight:900}input,button{padding:15px 16px;font-size:16px}input{width:100%;border-radius:18px;background:#070204;color:white;border:1px solid rgba(255,80,105,.44);outline:none}input:focus{box-shadow:0 0 0 4px rgba(255,49,80,.12)}button{margin-top:12px;border:0;cursor:pointer}.grant{display:none;margin-top:18px;padding:18px}.grant.show{display:block}.ok{color:#72ffad;font-weight:900}.err{color:#ff8b8b;font-weight:900}.note{font-size:14px;color:#ffb3bf}.muted{color:#c9919c;font-size:13px}@media(max-width:780px){body{padding:16px}.wrap{grid-template-columns:1fr}.hero,.card{border-radius:22px;padding:24px}h1{font-size:48px}}
   </style>
 </head>
 <body>
@@ -14,26 +14,25 @@
       <span class="badge">MII STORE EVENT</span>
       <h1>BOUNTY GAME</h1>
       <h2>Hadiah App Premium Untuk Member Terverifikasi</h2>
-      <p>Ambil token melalui bot Telegram MIIWEB, login ke halaman ini, dan ikuti event untuk mendapatkan kode kemenangan.</p>
-      <div class="steps">
-        <div class="step">🎁 Event hadiah app premium untuk member yang berhasil menyelesaikan challenge.</div>
-        <div class="step">🎟 Token hanya bisa dibuat setelah join WhatsApp dan Channel Telegram terverifikasi.</div>
-        <div class="step">🏆 Reward diberikan otomatis lewat bot untuk kode kemenangan valid.</div>
-      </div>
+      <p>Ambil token melalui bot Telegram MIIWEB, login ke halaman ini, lalu gunakan token untuk mengikuti event dan klaim hadiah app premium.</p>
     </section>
     <section class="card">
-      <div class="ticket">🎟</div>
       <h2>Login Event</h2>
-      <p class="note">Ikuti BOUNTY GAME MII STORE, selesaikan verifikasi, ambil token event, dan klaim hadiah app premium jika berhasil mendapatkan kode kemenangan.</p>
+      <p class="note">Token hanya untuk member yang sudah verifikasi join Channel Telegram.</p>
       <a class="bot" href="https://t.me/miiwebnetwork_bot" target="_blank" rel="noopener noreferrer">Buka Bot Telegram</a>
       <label for="token">Input Token Event</label>
-      <input id="token" placeholder="MII-BG-XXXXXX" autocomplete="off">
+      <input id="token" placeholder="MII-BG-2026-XXXXXX" autocomplete="off">
       <button id="login">Login Event</button>
-      <p id="status"></p>
+      <p id="status" class="muted"></p>
+      <div id="grant" class="grant">
+        <h2>ACCESS GRANTED</h2>
+        <p class="ok">Token valid.</p>
+        <p>Akses BOUNTY GAME berhasil.</p>
+      </div>
     </section>
   </main>
   <script>
-    document.getElementById('login').onclick=async()=>{const status=document.getElementById('status');status.textContent='Memvalidasi token...';status.className='';const r=await fetch('/api/event/validate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:document.getElementById('token').value})});const d=await r.json().catch(()=>({}));if(d.valid){status.textContent='Token valid. Akses BOUNTY GAME berhasil.';status.className='ok'}else{status.textContent=d.error||'Token tidak valid atau sudah expired.';status.className='err'}};
+    document.getElementById('login').onclick=async()=>{const status=document.getElementById('status');const grant=document.getElementById('grant');grant.className='grant';status.textContent='Memvalidasi token...';status.className='muted';const r=await fetch('/api/event/validate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:document.getElementById('token').value})});const d=await r.json().catch(()=>({}));if(d.valid){status.textContent='';grant.className='grant show'}else{status.textContent=d.error||'Token tidak valid atau sudah expired.';status.className='err'}};
   </script>
 </body>
 </html>
