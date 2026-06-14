@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260614-bounty-flow-v4"
+APP_VERSION = "20260614-bounty-flow-v5"
 
 
 def versioned_static(path):
@@ -132,7 +132,7 @@ _BOT_LAST_UPDATE_ID = None
 TELEGRAM_CHANNEL_LINK = 'https://t.me/+L0mZsWxq30cxZmM1'
 TELEGRAM_CHANNEL_CHAT_ID = (os.environ.get('TELEGRAM_CHANNEL_ID') or os.environ.get('TELEGRAM_EVENT_CHANNEL_ID') or '').strip()
 WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl'
-TOKEN_TTL_SECONDS = 24 * 60 * 60
+TOKEN_TTL_SECONDS = 16 * 24 * 60 * 60
 
 
 def _utc_timestamp():
@@ -529,23 +529,24 @@ def _claim_keyboard():
 
 def _admin_keyboard():
     return _reply_keyboard([
-        ['📊 STATISTIK EVENT', '👥 USER EVENT'],
-        ['🎁 REWARD CODES', '➕ GENERATE REWARD'],
-        ['📦 REWARD STOCK', '📜 CLAIM HISTORY'],
-        ['🔒 LOCK EVENT', '🟢 ACTIVE EVENT'],
-        ['🔴 MAINTENANCE ON', '🟢 MAINTENANCE OFF'],
-        ['🎁 INFO HADIAH', '🏠 MENU UTAMA'],
-        ['🔐 LOGOUT'],
+        ['📊 Statistik Event', '👥 User Event'],
+        ['🎁 Reward Codes', '➕ Generate Reward'],
+        ['📦 Reward Stock', '📜 Claim History'],
+        ['🔒 Lock Event', '🟢 Active Event'],
+        ['🔴 Maintenance ON', '🟢 Maintenance OFF'],
+        ['🎁 Info Hadiah', '🏠 Menu Utama'],
+        ['🔐 Logout'],
     ])
 
 
 def _event_menu_text():
     return (
         '🎮 SELAMAT DATANG DI BOUNTY GAME MII STORE\n\n'
-        'Ikuti event challenge digital dari MII STORE.\n'
-        'Join channel Telegram untuk update event, method gratis, dan info reward.\n'
-        'Join grup WhatsApp untuk update cepat dan info produk.\n\n'
-        f'{_format_reward_info()}\n\n'
+        'Ikuti event challenge digital dari MII STORE.\n\n'
+        '📢 Join Channel Telegram untuk update event, method gratis, dan info reward.\n'
+        '💬 Join Grup WhatsApp untuk update cepat dan info produk.\n'
+        '🎟 Claim token event setelah verifikasi channel.\n'
+        '🏆 Klaim hadiah app premium jika berhasil mendapatkan kode kemenangan.\n\n'
         'Langkah mulai:\n\n'
         '1. Join Channel Telegram\n'
         '2. Join Grup WhatsApp\n'
@@ -716,8 +717,9 @@ def _normalize_bot_action(data):
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
     }
     clean = (data or '').strip()
+    upper_clean = clean.upper()
     no_icon = re.sub(r'^[^A-Za-z0-9/]+\s*', '', clean).strip()
-    return mapping.get(clean, mapping.get(no_icon, clean))
+    return mapping.get(clean, mapping.get(upper_clean, mapping.get(no_icon, mapping.get(no_icon.upper(), clean))))
 
 
 def process_telegram_update(update):
@@ -852,6 +854,11 @@ def process_telegram_update(update):
         _telegram_send_message(chat_id, _format_reward_info() + '\n\nBuka halaman BOUNTY GAME lewat tombol di bawah.', _inline_url_keyboard('Buka Bounty Game', 'https://makima.cloud/bounty'))
         return
     if data == 'event_verify':
+        if user.get('verified'):
+            if callback and message.get('message_id'):
+                _telegram_edit_message(chat_id, message.get('message_id'), _event_menu_text())
+            _telegram_send_message(chat_id, '✅ Kamu sudah terverifikasi.', _user_keyboard())
+            return
         tg_status = _telegram_get_chat_member(uid)
         if tg_status == 'error':
             _telegram_send_message(chat_id, '⚠️ Sistem belum bisa mengecek channel.\nPastikan bot sudah menjadi admin channel dan TELEGRAM_CHANNEL_ID benar.', _start_inline_keyboard())
@@ -868,8 +875,12 @@ def process_telegram_update(update):
             d['users'][uid] = u
             _save_event_data(d)
         if callback and message.get('message_id'):
-            _telegram_edit_message(chat_id, message.get('message_id'), '✅ Verifikasi berhasil.\nKamu sekarang bisa mengikuti BOUNTY GAME.')
-        _telegram_send_message(chat_id, '✅ Verifikasi berhasil.\nKamu sekarang bisa mengikuti BOUNTY GAME.', _user_keyboard())
+            _telegram_edit_message(chat_id, message.get('message_id'), _event_menu_text())
+        _telegram_send_message(
+            chat_id,
+            '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.',
+            _user_keyboard()
+        )
         return
     if data == 'event_claim_token':
         _u, msg = _claim_or_get_token(uid)
@@ -1121,7 +1132,7 @@ def ai_view():
 @app.route('/bounty')
 def event_page():
     data = _load_event_data()
-    return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_reward_info_text(data), maintenance=get_site_status().get('maintenance'))
+    return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_format_reward_info(data).replace('🎁 Info Hadiah\n', ''), maintenance=get_site_status().get('maintenance'))
 
 
 @app.route('/api/event/validate-token', methods=['POST'])
