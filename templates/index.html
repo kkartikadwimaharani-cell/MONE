@@ -38,6 +38,16 @@
       <img class="nav-logo-img" src="{{ asset_url('img/owner.png') }}" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand-wrap"><span class="nav-brand">MII STORE</span><span class="nav-subtitle">Digital Products • AI Tools</span></span>
     </div>
+    <div class="nav-links" aria-label="Primary navigation">
+      <a href="#home" data-i18n="home">Home</a>
+      <a href="#social-media" data-i18n="social_media">Social Media</a>
+      <a href="#projects" data-i18n="projects_title">Projects</a>
+      <a href="/bounty" data-i18n="bounty_game_nav">Bounty Game</a>
+    </div>
+    <div class="nav-quick-actions">
+      <button class="nav-login" type="button" onclick="navigateTo('makima-ai')" data-i18n="makima_ai_name">Makima AI</button>
+      <a class="nav-start" href="#projects" data-i18n="digital_products_nav">Produk</a>
+    </div>
     <div class="nav-right">
       <div class="language-selector" id="languageSelector">
         <button type="button" class="language-toggle" id="languageToggle" aria-haspopup="true" aria-expanded="false" data-i18n-aria="language">
@@ -138,7 +148,28 @@
         </div>
       </section>
 
-      <div class="footer-wrap"><div class="footer-divider"></div><div class="footer" data-i18n="footer_text">MII STORE © 2026 — Digital Products • AI Tools • Creative Tech</div></div>
+      <section class="home-cta" aria-label="MII STORE CTA">
+        <div class="cta-copy">
+          <span data-i18n="cta_label">Upgrade Digital</span>
+          <h2 data-i18n="cta_title">Siap upgrade pengalaman digital Anda?</h2>
+          <p data-i18n="cta_desc">Temukan produk, tools, dan komunitas terbaik di MII STORE.</p>
+        </div>
+        <a class="premium-btn primary cta-button" href="#projects" data-i18n="cta_button">Mulai Sekarang</a>
+      </section>
+
+      <footer class="footer-wrap home-footer">
+        <div class="footer-brand">
+          <img class="footer-logo" src="{{ asset_url('img/owner.png') }}" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+          <div><strong>MII STORE</strong><span>Digital Products • AI Tools • Creative Tech</span></div>
+        </div>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="#home" data-i18n="home">Home</a>
+          <a href="#social-media" data-i18n="social_media">Social Media</a>
+          <a href="#projects" data-i18n="projects_title">Projects</a>
+          <a href="/bounty" data-i18n="bounty_game_nav">Bounty Game</a>
+        </nav>
+        <div class="footer" data-i18n="footer_text">MII STORE © 2026 — Digital Products • AI Tools • Creative Tech</div>
+      </footer>
     </main>
 
     <div id="viewComingSoon" class="view-container" style="display:none"></div>
