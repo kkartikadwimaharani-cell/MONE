@@ -246,7 +246,7 @@ def _user_from_telegram_actor(actor, chat=None):
         'token_active': False, 'token': '', 'token_created_at': '', 'token_expired_at': '',
         'token_used_for_event': False, 'reward_claimed': False, 'game_attempts': 0,
         'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'state': '',
-        'start_message_id': None, 'last_inline_message_id': None, 'last_action_at': now,
+        'start_message_id': None, 'inline_message_id': None, 'last_inline_message_id': None, 'admin_panel_message_id': None, 'last_action_at': now,
     }
 
 
@@ -457,12 +457,6 @@ def _telegram_send_message(chat_id, text, reply_markup=None, parse_mode=None):
     if reply_markup is not None: payload['reply_markup'] = reply_markup
     try:
         response = requests_lib.post(url, json=payload, timeout=10)
-        try:
-            result = response.json().get('result') if response.ok else None
-            if result and reply_markup:
-                _BOT_LAST_PANEL_MESSAGES[str(chat_id)] = result.get('message_id')
-        except Exception:
-            pass
         return response
     except Exception as exc: app.logger.warning('Telegram sendMessage failed: %s', exc); return None
 
@@ -507,8 +501,12 @@ def _telegram_delete_message(chat_id, message_id):
 def _telegram_show_panel(chat_id, text, reply_markup, message_id=None):
     mid = message_id or _BOT_LAST_PANEL_MESSAGES.get(str(chat_id))
     if mid and _telegram_edit_message(chat_id, mid, text, reply_markup):
-        return
-    _telegram_send_message(chat_id, text, reply_markup)
+        return mid
+    response = _telegram_send_message(chat_id, text, reply_markup)
+    new_mid = _response_message_id(response)
+    if new_mid:
+        _BOT_LAST_PANEL_MESSAGES[str(chat_id)] = new_mid
+    return new_mid
 
 
 def _telegram_answer_callback(callback_query_id):
@@ -630,20 +628,24 @@ def _save_user_message_ids(uid, **message_ids):
 
 def _clear_user_inline_join_buttons(chat_id, user, current_message_id=None):
     message_ids = []
-    for message_id in (current_message_id, user.get('last_inline_message_id'), user.get('start_message_id')):
+    for message_id in (current_message_id, user.get('inline_message_id'), user.get('last_inline_message_id'), user.get('start_message_id')):
         if message_id and message_id not in message_ids:
             message_ids.append(message_id)
     for message_id in message_ids:
         if _telegram_edit_reply_markup(chat_id, message_id, None):
             continue
         _telegram_delete_message(chat_id, message_id)
-    _save_user_message_ids(user['telegram_user_id'], last_inline_message_id=0)
+    _save_user_message_ids(user['telegram_user_id'], inline_message_id=0, last_inline_message_id=0)
 
 def show_unverified_start(chat_id, user=None):
+    if user:
+        old_ids = [user.get('inline_message_id'), user.get('last_inline_message_id'), user.get('start_message_id')]
+        for old_id in dict.fromkeys(mid for mid in old_ids if mid):
+            _telegram_delete_message(chat_id, old_id)
     response = _telegram_send_message(chat_id, _unverified_start_text(), _start_inline_keyboard())
     message_id = _response_message_id(response)
     if user and message_id:
-        _save_user_message_ids(user['telegram_user_id'], start_message_id=message_id, last_inline_message_id=message_id)
+        _save_user_message_ids(user['telegram_user_id'], start_message_id=message_id, inline_message_id=message_id, last_inline_message_id=message_id)
 
 
 def show_verified_menu(chat_id):
@@ -668,6 +670,25 @@ def _admin_text():
         'Pilih menu admin di bawah.'
     )
 
+
+
+def show_admin_panel(chat_id, user=None):
+    panel_id = None
+    if user:
+        panel_id = user.get('admin_panel_message_id')
+    message_id = _telegram_show_panel(chat_id, _admin_text(), _admin_keyboard(), panel_id)
+    if user and message_id:
+        _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=message_id)
+
+
+def refresh_admin_panel(chat_id, user=None):
+    panel_id = user.get('admin_panel_message_id') if user else None
+    if panel_id and _telegram_edit_message(chat_id, panel_id, _admin_text(), _admin_keyboard()):
+        return
+    cached_id = _BOT_LAST_PANEL_MESSAGES.get(str(chat_id))
+    if cached_id and _telegram_edit_message(chat_id, cached_id, _admin_text(), _admin_keyboard()):
+        if user:
+            _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=cached_id)
 
 def _show_login_prompt(chat_id):
     with _BOT_SESSION_LOCK: _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
@@ -751,7 +772,7 @@ def _handle_admin_text(chat_id, text):
             f'{_md_code(code)}'
         )
         _telegram_send_message(chat_id, text, _admin_keyboard(), parse_mode='Markdown'); return
-    _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+    _telegram_send_message(chat_id, 'Pilih menu admin di keyboard bawah.', _admin_keyboard())
 
 
 def _claim_reward(uid, reward_code):
@@ -856,7 +877,7 @@ def process_telegram_update(update):
     if data in ('menu', 'cancel') and state != 'claim_reward':
         _clear_bot_state(chat_id, uid)
         if _is_admin_chat(uid) and _is_logged_in(chat_id):
-            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+            show_admin_panel(chat_id, user)
         else:
             show_user_home(chat_id, user)
         return
@@ -869,7 +890,7 @@ def process_telegram_update(update):
             with _BOT_SESSION_LOCK:
                 _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
                 _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
-            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+            show_admin_panel(chat_id, user)
         else:
             _telegram_send_message(chat_id, '❌ Password salah.')
         return
@@ -878,7 +899,7 @@ def process_telegram_update(update):
         if _is_admin_chat(uid) and not _is_logged_in(chat_id):
             _show_login_prompt(chat_id)
         elif _is_admin_chat(uid):
-            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+            show_admin_panel(chat_id, user)
         else:
             show_user_home(chat_id, user)
         return
@@ -915,7 +936,7 @@ def process_telegram_update(update):
             new_status = _set_bounty_event_status('active' if data == 'event_active' else 'locked')
             prefix = '🟢 BOUNTY GAME sekarang aktif.' if new_status == 'active' else '🔒 BOUNTY GAME sekarang dikunci.'
             _telegram_send_message(chat_id, prefix)
-            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+            refresh_admin_panel(chat_id, user)
             return
         if data == 'reward_info':
             _set_bot_state(chat_id, 'set_reward_info', uid)
@@ -954,7 +975,7 @@ def process_telegram_update(update):
         if data in ('maintenance_on', 'maintenance_off'):
             set_maintenance_status(data == 'maintenance_on')
             _telegram_send_message(chat_id, '🔴 Maintenance aktif.' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.')
-            _telegram_send_message(chat_id, _admin_text(), _admin_keyboard())
+            refresh_admin_panel(chat_id, user)
             return
         if state in ('add_reward', 'add_stock', 'set_reward_info'):
             _handle_admin_text(chat_id, raw_data)
@@ -974,10 +995,10 @@ def process_telegram_update(update):
             return
         tg_status = _telegram_get_chat_member(uid)
         if tg_status == 'error':
-            _telegram_send_message(chat_id, '⚠️ Sistem belum bisa mengecek channel.\nPastikan bot sudah menjadi admin channel dan TELEGRAM_CHANNEL_ID benar.', _start_inline_keyboard())
+            _telegram_send_message(chat_id, '⚠️ Sistem belum bisa mengecek channel.\nPastikan bot sudah menjadi admin channel dan TELEGRAM_CHANNEL_ID benar.')
             return
         if tg_status != 'joined':
-            _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nJoin dulu, lalu tekan Verifikasi Join lagi.', _start_inline_keyboard())
+            _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nJoin dulu, lalu tekan Verifikasi Join lagi.')
             return
         with _EVENT_LOCK:
             d = _load_event_data()
@@ -1000,7 +1021,7 @@ def process_telegram_update(update):
         return
     if data == 'event_claim_reward':
         if not user.get('verified'):
-            show_unverified_start(chat_id, user)
+            _telegram_send_message(chat_id, '❌ Kamu belum join Channel Telegram.\nJoin dulu, lalu tekan Verifikasi Join lagi.')
             return
         _set_bot_state(chat_id, 'claim_reward', uid)
         text = (
@@ -1019,8 +1040,10 @@ def process_telegram_update(update):
     if state == 'claim_reward':
         if data == 'cancel':
             _clear_bot_state(chat_id, uid)
-            _telegram_send_message(chat_id, '❌ Claim reward dibatalkan.')
-            show_verified_menu(chat_id) if user.get('verified') else show_unverified_start(chat_id, user)
+            if user.get('verified'):
+                _telegram_send_message(chat_id, _verified_menu_text(), _user_keyboard())
+            else:
+                show_unverified_start(chat_id, user)
             return
         if data == 'menu':
             _clear_bot_state(chat_id, uid)
