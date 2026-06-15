@@ -720,9 +720,9 @@ window.setAppMode = setAppMode;
   });
 })();
 
-/* 20260614-globe-final-v1 cache controls */
+/* 20260615-scorpion-home-v11 cache controls */
 (function() {
-  var APP_VERSION = window.APP_VERSION || '20260614-globe-final-v1';
+  var APP_VERSION = window.APP_VERSION || '20260615-scorpion-home-v11';
   var versionKey = 'appVersion';
   var safeKeys = ['mii_ui_cache', 'mii_home_cache', 'mii_network_view', 'mii_drawer_state'];
 
