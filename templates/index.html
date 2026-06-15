@@ -98,33 +98,35 @@
           <span class="shield-glow" aria-hidden="true"></span>
           <span class="hero-shield-halo" aria-hidden="true"></span>
           <div class="hero-shield-emblem" aria-hidden="true">
-            <svg class="shield-svg" viewBox="0 0 360 440" role="img" focusable="false">
+            <svg class="shield-svg" viewBox="0 0 240 280" role="img" focusable="false" aria-label="M shield emblem">
               <defs>
-                <linearGradient id="shieldGradient" x1="72" y1="24" x2="288" y2="408" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#ffb6c1"/>
-                  <stop offset=".12" stop-color="#ff315a"/>
-                  <stop offset=".38" stop-color="#8e0019"/>
-                  <stop offset=".72" stop-color="#090307"/>
-                  <stop offset="1" stop-color="#230008"/>
+                <linearGradient id="shieldGradient" x1="44" y1="18" x2="196" y2="262" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#171015"/>
+                  <stop offset=".18" stop-color="#0b080b"/>
+                  <stop offset=".58" stop-color="#050305"/>
+                  <stop offset="1" stop-color="#130006"/>
                 </linearGradient>
-                <linearGradient id="shieldInnerGradient" x1="96" y1="58" x2="264" y2="360" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#ffffff" stop-opacity=".20"/>
-                  <stop offset=".28" stop-color="#ff2c55" stop-opacity=".16"/>
-                  <stop offset="1" stop-color="#000000" stop-opacity=".48"/>
+                <linearGradient id="shieldEdgeGradient" x1="55" y1="20" x2="188" y2="246" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#ffd8df" stop-opacity=".52"/>
+                  <stop offset=".32" stop-color="#ff2b57" stop-opacity=".86"/>
+                  <stop offset=".72" stop-color="#5e0014" stop-opacity=".72"/>
+                  <stop offset="1" stop-color="#ff6a86" stop-opacity=".48"/>
                 </linearGradient>
-                <linearGradient id="shieldMGradient" x1="82" y1="122" x2="282" y2="316" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#fff8fa"/>
-                  <stop offset=".35" stop-color="#ffd5dd"/>
-                  <stop offset=".68" stop-color="#ff6f8a"/>
-                  <stop offset="1" stop-color="#ffffff"/>
+                <linearGradient id="shieldMGradient" x1="48" y1="72" x2="192" y2="202" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#ffffff"/>
+                  <stop offset=".26" stop-color="#ffe5ea"/>
+                  <stop offset=".56" stop-color="#ff6f8c"/>
+                  <stop offset=".78" stop-color="#d70b34"/>
+                  <stop offset="1" stop-color="#fff8fb"/>
                 </linearGradient>
+                <filter id="premiumInnerShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity=".72"/>
+                </filter>
               </defs>
-              <ellipse cx="180" cy="405" rx="118" ry="22" fill="#020001" opacity=".50"/>
-              <path class="shield-body" d="M180 28 L316 72 L292 256 C281 316 242 366 180 410 C118 366 79 316 68 256 L44 72 Z"/>
-              <path d="M180 58 L286 92 L267 246 C258 291 228 333 180 369 C132 333 102 291 93 246 L74 92 Z" fill="url(#shieldInnerGradient)" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
-              <path d="M90 91 L180 62 L270 91" fill="none" stroke="rgba(255,235,240,.26)" stroke-width="3" stroke-linecap="round"/>
-              <path class="shield-m" d="M80 300 L110 130 L180 245 L250 130 L280 300 L228 300 L216 223 L180 292 L144 223 L132 300 Z" fill="url(#shieldMGradient)"/>
-              <path d="M180 43 L302 82 L280 253 C270 304 236 349 180 390 C124 349 90 304 80 253 L58 82 Z" fill="none" stroke="rgba(255,105,132,.72)" stroke-width="3.5" stroke-linejoin="round"/>
+              <path class="shield-body" d="M120 16 L204 42 L192 148 C186 197 158 232 120 262 C82 232 54 197 48 148 L36 42 Z"/>
+              <path class="shield-edge" d="M120 16 L204 42 L192 148 C186 197 158 232 120 262 C82 232 54 197 48 148 L36 42 Z"/>
+              <path class="shield-m" d="M55 190 L72 78 L120 154 L168 78 L185 190 L151 190 L144 132 L120 180 L96 132 L89 190 Z"/>
+              <path class="shield-m-cut" d="M104 116 L120 154 L136 116 L120 134 Z"/>
             </svg>
           </div>
         </div>
