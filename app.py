@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-shield-home-v13"
+APP_VERSION = "20260615-maintenance-v14"
 
 
 def versioned_static(path):
@@ -773,14 +773,16 @@ def _claim_keyboard():
 
 
 def _admin_keyboard():
+    maintenance_enabled = bool(get_site_status().get('maintenance'))
+    maintenance_button = '🔴 Matikan Maintenance' if maintenance_enabled else '🟢 Hidupkan Maintenance'
     return _reply_keyboard([
+        [maintenance_button],
         ['🟢 Open Event', '🔒 Lock Event'],
         ['🎲 Start Draw', '⚙️ Event Settings'],
         ['📦 Reward Stock', '👥 Token List'],
         ['🏆 Winner List', '📊 Status'],
-        ['♻️ Reset Event', '🔐 Logout'],
-        ['🎁 Info Hadiah', '🏠 Menu Utama'],
-        ['🔐 Logout'],
+        ['♻️ Reset Event', '🎁 Info Hadiah'],
+        ['🏠 Menu Utama', '🔐 Logout'],
     ])
 
 
@@ -1083,8 +1085,8 @@ def _normalize_bot_action(data):
         'GENERATE REWARD': 'reward_generate', 'REWARD STOCK': 'reward_stock', 'ADD REWARD STOCK': 'reward_stock', 'VIEW REWARD STOCK': 'view_reward_stock', 'DRAW SETTINGS': 'event_settings', 'EVENT SETTINGS': 'event_settings',
         'CLAIM HISTORY': 'claim_history', '/claim_history': 'claim_history',
         'LOCK EVENT': 'event_lock', 'LOCK DRAW': 'event_lock', 'ACTIVE EVENT': 'event_active', 'OPEN DRAW': 'event_active', 'OPEN EVENT': 'event_active', 'START DRAW': 'draw_start', 'DRAW STATUS': 'draw_status', 'LIST TOKEN': 'list_token', 'WINNER LIST': 'winner_list', 'RESET DRAW': 'reset_draw', 'INFO HADIAH': 'reward_info',
-        'MAINTENANCE ON': 'maintenance_on', '/maintenance_on': 'maintenance_on',
-        'MAINTENANCE OFF': 'maintenance_off', '/maintenance_off': 'maintenance_off',
+        'MAINTENANCE ON': 'maintenance_on', 'HIDUPKAN MAINTENANCE': 'maintenance_on', '/maintenance_on': 'maintenance_on',
+        'MAINTENANCE OFF': 'maintenance_off', 'MATIKAN MAINTENANCE': 'maintenance_off', '/maintenance_off': 'maintenance_off',
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
     }
     clean = (data or '').strip()
@@ -1287,8 +1289,9 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
             return
         if data in ('maintenance_on', 'maintenance_off'):
-            set_maintenance_status(data == 'maintenance_on')
-            note = '🔴 Maintenance aktif.' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.'
+            enabled = data == 'maintenance_on'
+            set_maintenance_status(enabled)
+            note = 'Maintenance website dihidupkan.' if enabled else 'Maintenance website dimatikan.'
             refresh_admin_panel(chat_id, user, note)
             return
         if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings'):
@@ -1552,7 +1555,10 @@ def inject_asset_helpers():
 # Maintenance request guard
 # ---------------------------------------------------------------------------
 _MAINTENANCE_ALLOWED_ENDPOINTS = {
-    'telegram_webhook', 'telegram_status', 'event_page', 'event_draw_status', 'event_validate_token', 'event_start_draw', 'admin_panel', 'admin_panel_reward', 'admin_panel_stock', 'static'
+    'telegram_webhook', 'telegram_status', 'event_draw_status', 'event_token_status',
+    'event_join_draw', 'event_validate_token', 'event_start_draw', 'admin_panel',
+    'admin_panel_event_status', 'admin_panel_reward_info', 'admin_panel_reward',
+    'admin_panel_stock', 'static',
 }
 
 
