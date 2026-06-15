@@ -95,37 +95,85 @@
           </div>
         </div>
         <div class="hero-scorpion" aria-label="Cyber scorpion brand mark">
-          <div class="scorpion-stage" aria-hidden="true">
+          <div class="hero-scorpion-stage scorpion-stage" aria-hidden="true">
             <span class="scorpion-glow"></span>
-            <svg class="scorpion-logo" viewBox="0 0 320 260" role="img" focusable="false" aria-hidden="true">
+            <span class="scorpion-halo"></span>
+            <svg class="hero-scorpion-svg scorpion-logo" viewBox="0 0 420 420" role="img" focusable="false" aria-hidden="true">
               <defs>
-                <linearGradient id="scorpionMetal" x1="0" x2="1" y1="0" y2="1">
-                  <stop offset="0" stop-color="#ff8a9b"/>
-                  <stop offset=".42" stop-color="#ff183d"/>
-                  <stop offset="1" stop-color="#64000e"/>
+                <radialGradient id="scorpionCoreGlow" cx="50%" cy="48%" r="58%">
+                  <stop offset="0" stop-color="#ff6d7f" stop-opacity=".95"/>
+                  <stop offset=".36" stop-color="#ff123f" stop-opacity=".72"/>
+                  <stop offset="1" stop-color="#250007" stop-opacity=".08"/>
+                </radialGradient>
+                <linearGradient id="scorpionMetal" x1="72" y1="74" x2="336" y2="348" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#ffd1d8"/>
+                  <stop offset=".14" stop-color="#ff536d"/>
+                  <stop offset=".48" stop-color="#c9002b"/>
+                  <stop offset=".78" stop-color="#54000e"/>
+                  <stop offset="1" stop-color="#120006"/>
                 </linearGradient>
-                <filter id="scorpionNeon" x="-40%" y="-40%" width="180%" height="180%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ff1638" flood-opacity=".75"/>
-                  <feDropShadow dx="0" dy="0" stdDeviation="13" flood-color="#ff002f" flood-opacity=".35"/>
+                <linearGradient id="scorpionEdge" x1="96" y1="60" x2="310" y2="356" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#fff0f3"/>
+                  <stop offset=".28" stop-color="#ff3154"/>
+                  <stop offset="1" stop-color="#750018"/>
+                </linearGradient>
+                <filter id="scorpionNeon" x="-35%" y="-35%" width="170%" height="170%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="2.4" flood-color="#ff6a80" flood-opacity=".86"/>
+                  <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#ff0738" flood-opacity=".42"/>
+                  <feDropShadow dx="0" dy="18" stdDeviation="15" flood-color="#080003" flood-opacity=".68"/>
+                </filter>
+                <filter id="stingerGlow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff8a9b" flood-opacity=".95"/>
+                  <feDropShadow dx="0" dy="0" stdDeviation="11" flood-color="#ff002f" flood-opacity=".7"/>
                 </filter>
               </defs>
-              <g class="scorpion-tail" fill="none" stroke="url(#scorpionMetal)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
-                <path d="M173 90 C202 42 250 42 260 82 C271 127 222 132 211 101"/>
-                <path d="M260 82 L282 63 L277 94 Z" fill="url(#scorpionMetal)" stroke-width="3"/>
+
+              <g class="scorpion-shadow" opacity=".45"><ellipse cx="210" cy="322" rx="118" ry="28" fill="#050001"/></g>
+              <g class="scorpion-tail" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M232 137 C263 93 326 77 351 116 C378 158 344 196 303 180" stroke="#48000d" stroke-width="26" opacity=".72"/>
+                <path class="scorpion-tail-seg" d="M232 137 C263 93 326 77 351 116 C378 158 344 196 303 180" stroke="url(#scorpionMetal)" stroke-width="15"/>
+                <path d="M257 106 l18 -18 M300 91 l13 -21 M343 112 l25 -9 M353 154 l28 6 M322 181 l16 22" stroke="#ffd0d7" stroke-width="2.2" opacity=".52"/>
+                <path class="scorpion-stinger" d="M303 180 L363 212 L344 161 Z" fill="url(#scorpionEdge)" stroke="#ff92a3" stroke-width="2.5" filter="url(#stingerGlow)"/>
+                <path d="M333 178 L363 212" stroke="#ffdce1" stroke-width="2" opacity=".55"/>
               </g>
-              <g class="scorpion-leg" fill="none" stroke="#ff3150" stroke-width="9" stroke-linecap="round" opacity=".82">
-                <path d="M128 138 L88 158 L66 183"/><path d="M141 154 L104 188 L86 218"/><path d="M192 138 L232 158 L254 183"/><path d="M179 154 L216 188 L234 218"/>
+
+              <g class="scorpion-legs" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path class="scorpion-leg leg-left-1" d="M171 197 L129 178 L84 144 L56 116"/>
+                <path class="scorpion-leg leg-left-2" d="M168 219 L120 220 L72 209 L38 188"/>
+                <path class="scorpion-leg leg-left-3" d="M171 240 L126 264 L88 298 L61 326"/>
+                <path class="scorpion-leg leg-left-4" d="M184 257 L153 302 L129 350"/>
+                <path class="scorpion-leg leg-right-1" d="M249 197 L291 178 L336 144 L364 116"/>
+                <path class="scorpion-leg leg-right-2" d="M252 219 L300 220 L348 209 L382 188"/>
+                <path class="scorpion-leg leg-right-3" d="M249 240 L294 264 L332 298 L359 326"/>
+                <path class="scorpion-leg leg-right-4" d="M236 257 L267 302 L291 350"/>
               </g>
-              <g class="scorpion-claw-left" fill="none" stroke="url(#scorpionMetal)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
-                <path d="M127 104 C84 74 50 82 38 116"/><path d="M42 111 L18 96"/><path d="M43 116 L19 133"/>
+
+              <g class="scorpion-claw-left" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M177 168 C136 120 86 91 55 111" stroke="url(#scorpionMetal)" stroke-width="14"/>
+                <path d="M59 108 L18 69 L44 124 Z" fill="url(#scorpionEdge)" stroke="#ff8b9d" stroke-width="2.5"/>
+                <path d="M55 116 L12 149 L44 124" stroke="url(#scorpionMetal)" stroke-width="11"/>
+                <path d="M103 124 L79 105 M134 144 L110 126" stroke="#ffd6dc" stroke-width="2" opacity=".55"/>
               </g>
-              <g class="scorpion-claw-right" fill="none" stroke="url(#scorpionMetal)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
-                <path d="M193 104 C236 74 270 82 282 116"/><path d="M278 111 L302 96"/><path d="M277 116 L301 133"/>
+              <g class="scorpion-claw-right" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M243 168 C284 120 334 91 365 111" stroke="url(#scorpionMetal)" stroke-width="14"/>
+                <path d="M361 108 L402 69 L376 124 Z" fill="url(#scorpionEdge)" stroke="#ff8b9d" stroke-width="2.5"/>
+                <path d="M365 116 L408 149 L376 124" stroke="url(#scorpionMetal)" stroke-width="11"/>
+                <path d="M317 124 L341 105 M286 144 L310 126" stroke="#ffd6dc" stroke-width="2" opacity=".55"/>
               </g>
+
               <g class="scorpion-body" filter="url(#scorpionNeon)">
-                <ellipse cx="160" cy="138" rx="42" ry="58" fill="url(#scorpionMetal)"/>
-                <ellipse cx="160" cy="91" rx="28" ry="27" fill="url(#scorpionMetal)"/>
-                <path d="M132 131 H188 M128 151 H192 M139 173 H181" stroke="#ffd3da" stroke-width="3" opacity=".45"/>
+                <path d="M210 119 L241 138 L252 177 L234 203 L210 213 L186 203 L168 177 L179 138 Z" fill="url(#scorpionMetal)" stroke="#ff8ba0" stroke-width="2.5"/>
+                <path d="M210 181 C242 188 258 215 248 249 C239 282 216 301 210 307 C204 301 181 282 172 249 C162 215 178 188 210 181 Z" fill="url(#scorpionMetal)" stroke="#ff758e" stroke-width="2.5"/>
+                <path class="scorpion-inner-glow" d="M210 143 L226 157 L231 179 L219 193 L210 197 L201 193 L189 179 L194 157 Z" fill="url(#scorpionCoreGlow)" opacity=".7"/>
+                <path d="M179 226 H241 M174 248 H246 M184 271 H236 M195 292 H225" stroke="#ffe0e5" stroke-width="2.2" opacity=".5"/>
+                <path d="M210 122 V304 M189 143 L231 143 M174 222 L246 222" stroke="#ff98a9" stroke-width="1.4" opacity=".36"/>
+                <path d="M195 161 L183 177 L197 190 M225 161 L237 177 L223 190 M194 231 L181 244 M226 231 L239 244" stroke="#140006" stroke-width="2.6" opacity=".55"/>
+                <circle cx="210" cy="151" r="4" fill="#ffd5dc" opacity=".8"/>
+              </g>
+
+              <g class="scorpion-tech-lines" fill="none" stroke="#ffbac4" stroke-width="1.3" opacity=".48">
+                <path d="M145 82 H99 M275 82 H321 M146 338 H96 M274 338 H324"/>
+                <path d="M99 82 l-14 14 M321 82 l14 14 M96 338 l-14 -14 M324 338 l14 -14"/>
               </g>
             </svg>
           </div>

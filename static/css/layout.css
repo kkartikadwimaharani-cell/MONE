@@ -1914,79 +1914,102 @@ body { background:#030204 !important; }
 .hero-globe, .futuristic-globe { display: none !important; }
 .hero-scorpion {
   position: relative !important;
-  min-height: 390px !important;
+  min-height: 420px !important;
   display: grid !important;
   place-items: center !important;
   align-self: center !important;
   overflow: hidden !important;
   isolation: isolate !important;
+  perspective: 900px !important;
 }
+.hero-scorpion-stage,
 .scorpion-stage {
   position: relative !important;
-  width: min(36vw, 430px) !important;
-  aspect-ratio: 1.1 !important;
+  width: min(38vw, 500px) !important;
+  aspect-ratio: 1 !important;
   display: grid !important;
   place-items: center !important;
-  animation: scorpionCrawl 10s ease-in-out infinite !important;
+  animation: scorpionCrawl 12s cubic-bezier(.45,0,.28,1) infinite !important;
+  transform-style: preserve-3d !important;
   will-change: transform !important;
 }
 .scorpion-stage::before,
-.scorpion-stage::after {
+.scorpion-stage::after,
+.scorpion-halo {
   content: "" !important;
   position: absolute !important;
-  inset: 7% !important;
   border-radius: 50% !important;
   pointer-events: none !important;
   z-index: -1 !important;
 }
 .scorpion-stage::before {
-  border: 1px solid rgba(255, 72, 96, .34) !important;
+  inset: 4% !important;
+  border: 1px solid rgba(255, 82, 104, .38) !important;
   background:
-    repeating-linear-gradient(0deg, transparent 0 10px, rgba(255, 46, 76, .10) 11px 12px),
-    radial-gradient(circle, rgba(255, 0, 54, .13), transparent 66%) !important;
-  box-shadow: inset 0 0 42px rgba(255, 0, 54, .12), 0 0 38px rgba(255, 0, 54, .13) !important;
-  animation: scorpionScan 8s linear infinite !important;
+    radial-gradient(circle at 50% 48%, rgba(255, 20, 56, .22), rgba(98, 0, 20, .11) 44%, transparent 67%),
+    conic-gradient(from 90deg, transparent, rgba(255, 72, 96, .26), transparent 22%, rgba(255, 255, 255, .10), transparent 43%, rgba(255, 0, 54, .22), transparent 68%) !important;
+  box-shadow: inset 0 0 48px rgba(255, 0, 54, .13), 0 0 54px rgba(255, 0, 54, .16) !important;
+  animation: scorpionHaloRotate 28s linear infinite !important;
 }
 .scorpion-stage::after {
-  inset: 18% !important;
-  border: 1px dashed rgba(255, 118, 136, .22) !important;
-  transform: rotate(-18deg) !important;
+  inset: 16% !important;
+  border: 1px dashed rgba(255, 150, 164, .26) !important;
+  box-shadow: 0 0 22px rgba(255, 0, 54, .12) !important;
+  animation: scorpionHaloRotate 42s linear infinite reverse !important;
+}
+.scorpion-halo {
+  inset: 10% !important;
+  border: 1px solid rgba(255, 219, 225, .16) !important;
+  transform: rotateX(64deg) rotateZ(-18deg) !important;
+  box-shadow: 0 0 32px rgba(255, 32, 70, .18), inset 0 0 18px rgba(255, 32, 70, .14) !important;
+  animation: scorpionHaloTilt 16s linear infinite !important;
 }
 .scorpion-glow {
   position: absolute !important;
-  inset: 17% !important;
+  inset: 13% !important;
   border-radius: 50% !important;
-  background: radial-gradient(circle, rgba(255, 15, 54, .36), rgba(130, 0, 22, .13) 48%, transparent 72%) !important;
-  filter: blur(10px) !important;
-  animation: scorpionBodyGlow 4.8s ease-in-out infinite !important;
-  z-index: -1 !important;
+  background: radial-gradient(circle, rgba(255, 28, 62, .44), rgba(120, 0, 24, .16) 43%, transparent 73%) !important;
+  filter: blur(13px) !important;
+  animation: scorpionIdlePulse 5.2s ease-in-out infinite !important;
+  z-index: -2 !important;
 }
+.hero-scorpion-svg,
 .scorpion-logo {
-  width: 90% !important;
-  max-width: 390px !important;
+  width: 96% !important;
+  max-width: 470px !important;
   height: auto !important;
   overflow: visible !important;
-  filter: drop-shadow(0 0 18px rgba(255, 0, 54, .42)) !important;
+  transform: rotateX(8deg) rotateZ(-1deg) !important;
+  filter: drop-shadow(0 22px 24px rgba(0,0,0,.55)) drop-shadow(0 0 20px rgba(255, 0, 54, .36)) !important;
 }
-.scorpion-body { animation: scorpionBodyGlow 4.8s ease-in-out infinite !important; transform-origin: 160px 138px !important; }
-.scorpion-tail { animation: scorpionTailPulse 2.9s ease-in-out infinite !important; transform-origin: 178px 106px !important; }
-.scorpion-claw-left { animation: scorpionClawLeft 3.4s ease-in-out infinite !important; transform-origin: 126px 105px !important; }
-.scorpion-claw-right { animation: scorpionClawRight 3.4s ease-in-out infinite !important; transform-origin: 194px 105px !important; }
-.scorpion-leg { animation: scorpionLegShift 5s ease-in-out infinite !important; transform-origin: 160px 160px !important; }
+.scorpion-body { animation: scorpionIdlePulse 5.2s ease-in-out infinite !important; transform-origin: 210px 214px !important; }
+.scorpion-tail { animation: scorpionTailSwing 4.6s ease-in-out infinite !important; transform-origin: 232px 137px !important; }
+.scorpion-stinger { animation: scorpionStingerPulse 2.7s ease-in-out infinite !important; transform-origin: 348px 184px !important; }
+.scorpion-claw-left { animation: scorpionClawShiftLeft 4.4s ease-in-out infinite !important; transform-origin: 176px 168px !important; }
+.scorpion-claw-right { animation: scorpionClawShiftRight 4.4s ease-in-out infinite !important; transform-origin: 244px 168px !important; }
+.scorpion-leg { stroke: url(#scorpionMetal); stroke-width: 9; opacity: .88; animation: scorpionLegMicro 5.8s ease-in-out infinite !important; }
+.leg-left-2, .leg-right-2 { animation-delay: -.8s !important; }
+.leg-left-3, .leg-right-3 { animation-delay: -1.6s !important; }
+.leg-left-4, .leg-right-4 { animation-delay: -2.4s !important; }
+.scorpion-tech-lines { animation: scorpionHighlightSweep 6.8s ease-in-out infinite !important; }
+.scorpion-tail-seg { stroke-dasharray: 34 10 !important; }
 .social-card, .project-card { box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 0 28px rgba(255,0,54,.055), 0 18px 46px rgba(0,0,0,.34) !important; }
 .social-card:hover, .project-card:hover { transform: translateY(-5px) !important; border-color: rgba(255, 91, 112, .62) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 0 38px rgba(255,0,54,.22), 0 24px 54px rgba(0,0,0,.42) !important; }
 .social-icon, .project-icon { position: relative !important; overflow: hidden !important; }
 .social-icon::after, .project-icon::after { content:""; position:absolute; inset: 8px; border-radius: inherit; border: 1px solid rgba(255,255,255,.08); animation: scorpionIconPulse 3.8s ease-in-out infinite; }
 .project-bounty h3 { font-size: clamp(11px, .9vw, 14px) !important; }
-@keyframes scorpionCrawl { 0%,100%{transform:translate3d(0,0,0) rotate(0deg)} 24%{transform:translate3d(12px,-2px,0) rotate(.6deg)} 52%{transform:translate3d(14px,13px,0) rotate(-.5deg)} 76%{transform:translate3d(-4px,7px,0) rotate(.25deg)} }
-@keyframes scorpionTailPulse { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-4deg) translateY(-2px)} }
-@keyframes scorpionClawLeft { 0%,88%,100%{transform:rotate(0deg)} 46%{transform:rotate(3deg)} 56%{transform:rotate(-2deg)} }
-@keyframes scorpionClawRight { 0%,88%,100%{transform:rotate(0deg)} 46%{transform:rotate(-3deg)} 56%{transform:rotate(2deg)} }
-@keyframes scorpionBodyGlow { 0%,100%{opacity:.86; transform:scale(1)} 50%{opacity:1; transform:scale(1.018)} }
-@keyframes scorpionLegShift { 0%,100%{transform:translateX(0)} 50%{transform:translateX(2px)} }
-@keyframes scorpionScan { to { background-position: 0 72px, 0 0; transform: rotate(360deg); } }
+@keyframes scorpionCrawl { 0%,100%{transform:translate3d(0,0,0) rotate(0deg)} 28%{transform:translate3d(7px,-3px,0) rotate(.35deg)} 56%{transform:translate3d(10px,5px,0) rotate(-.28deg)} 78%{transform:translate3d(-3px,3px,0) rotate(.18deg)} }
+@keyframes scorpionIdlePulse { 0%,100%{opacity:.88; transform:scale(1)} 50%{opacity:1; transform:scale(1.018)} }
+@keyframes scorpionTailSwing { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(-3.2deg) translateY(-3px)} }
+@keyframes scorpionStingerPulse { 0%,100%{opacity:.92; transform:scale(1)} 50%{opacity:1; transform:scale(1.065)} }
+@keyframes scorpionClawShiftLeft { 0%,100%{transform:rotate(0deg) translateX(0)} 46%{transform:rotate(2.5deg) translateX(-2px)} 62%{transform:rotate(-1.1deg) translateX(1px)} }
+@keyframes scorpionClawShiftRight { 0%,100%{transform:rotate(0deg) translateX(0)} 46%{transform:rotate(-2.5deg) translateX(2px)} 62%{transform:rotate(1.1deg) translateX(-1px)} }
+@keyframes scorpionLegMicro { 0%,100%{transform:translate(0,0)} 50%{transform:translate(1.8px,-1.2px)} }
+@keyframes scorpionHaloRotate { to { transform: rotate(360deg); } }
+@keyframes scorpionHaloTilt { to { transform: rotateX(64deg) rotateZ(342deg); } }
+@keyframes scorpionHighlightSweep { 0%,100%{opacity:.32} 48%{opacity:.72} }
 @keyframes scorpionIconPulse { 0%,100%{opacity:.38; transform:scale(.96)} 50%{opacity:.72; transform:scale(1.04)} }
-@media (max-width:900px){ .hero-scorpion{order:2; min-height:300px !important;} .scorpion-stage{width:min(78vw,340px) !important;} }
+@media (max-width:900px){ .hero-scorpion{order:2; min-height:330px !important;} .scorpion-stage{width:min(78vw,380px) !important;} }
 @media (max-width:760px){ .social-card{grid-template-rows:58px 30px 42px !important;} .social-card a{grid-row:3 !important;} .project-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;} }
 @media (max-width:560px){ .hero-scorpion{min-height:238px !important;} .scorpion-stage{width:min(82vw,292px) !important;} .social-grid,.project-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;} .social-card{min-height:154px !important;} .project-card{min-height:178px !important;} }
-@media (prefers-reduced-motion: reduce){ .scorpion-stage,.scorpion-body,.scorpion-tail,.scorpion-claw-left,.scorpion-claw-right,.scorpion-leg,.scorpion-glow,.scorpion-stage::before,.social-icon::after,.project-icon::after{animation:none !important;} }
+@media (prefers-reduced-motion: reduce){ .scorpion-stage,.scorpion-body,.scorpion-tail,.scorpion-stinger,.scorpion-claw-left,.scorpion-claw-right,.scorpion-leg,.scorpion-glow,.scorpion-halo,.scorpion-tech-lines,.scorpion-stage::before,.scorpion-stage::after,.social-icon::after,.project-icon::after{animation:none !important;} }
