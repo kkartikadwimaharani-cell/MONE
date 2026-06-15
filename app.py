@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-mii-reward-draw-v1"
+APP_VERSION = "20260615-mii-reward-draw-v2"
 
 
 def versioned_static(path):
@@ -198,12 +198,14 @@ def _default_event_data():
         'event_tokens': {},
         'reward_codes': {},
         'reward_items': [],
+        'winning_keys': {},
         'claims': [],
         'event_settings': {
             'bounty_event_status': 'locked',
             'draw_status': 'locked',
-            'reward_info': 'MII Reward Draw | 1 Winner | Token via Bot MIIWEB',
+            'reward_info': 'CloudMoon Account',
             'winner': None,
+            'win_quota': 1,
         },
     }
 
@@ -221,12 +223,14 @@ def _load_event_data():
     data.setdefault('event_tokens', {})
     data.setdefault('reward_codes', {})
     data.setdefault('reward_items', [])
+    data.setdefault('winning_keys', {})
     data.setdefault('claims', [])
     data.setdefault('event_settings', {})
     data['event_settings'].setdefault('bounty_event_status', 'locked')
     data['event_settings'].setdefault('draw_status', data['event_settings'].get('bounty_event_status', 'locked'))
-    data['event_settings'].setdefault('reward_info', 'MII Reward Draw | 1 Winner | Token via Bot MIIWEB')
+    data['event_settings'].setdefault('reward_info', 'CloudMoon Account')
     data['event_settings'].setdefault('winner', None)
+    data['event_settings'].setdefault('win_quota', 1)
     return data
 
 
@@ -379,18 +383,17 @@ def _normalize_reward_expires(value):
 
 def validate_event_token(token):
     token = (token or '').strip().upper()
-    if _bounty_event_status() != 'open':
-        return False, None, 'Event belum dibuka.'
     with _EVENT_LOCK:
         data = _load_event_data()
+        if _bounty_event_status(data) != 'open':
+            return False, None, 'Event draw belum dibuka.'
         rec = data.get('event_tokens', {}).get(token)
         user = data['users'].get(str(rec.get('telegram_user_id'))) if rec else None
         if not rec or not user or not user.get('verified'):
-            return False, None, 'Token tidak valid atau sudah expired.'
-        if rec.get('status') not in {'active', 'winner'}:
-            return False, None, 'Token tidak valid.'
+            return False, None, 'Token tidak valid atau belum terdaftar.'
+        if rec.get('draw_status') == 'used' or rec.get('status') in {'used', 'winner', 'loser'}:
+            return False, None, 'Token ini sudah pernah digunakan.'
         return True, user, ''
-
 
 def _new_token():
     return 'MII-DRAW-2026-' + base64.b32encode(os.urandom(4)).decode('ascii').rstrip('=')[:6]
@@ -410,6 +413,8 @@ def _claim_or_get_token(uid):
                 f'{_md_code(user.get("token", "-"))}\n\n'
                 'Telegram ID:\n'
                 f'{_md_code(uid)}\n\n'
+                'Masukkan token ini di halaman MII Reward Draw:\n'
+                'https://makima.cloud/bounty\n\n'
                 '1 akun Telegram hanya bisa memiliki 1 token event.'
             )
         if _bounty_event_status(data) != 'open':
@@ -430,17 +435,21 @@ def _claim_or_get_token(uid):
             'first_name': user.get('first_name', ''),
             'created_at': now,
             'status': 'active',
+            'draw_status': 'unused',
+            'result': 'none',
+            'winning_key': '',
         }
         data['users'][uid] = user
         _save_event_data(data)
         return user, (
-            '🎟 TOKEN EVENT KAMU\n\n'
+            '🎟 TOKEN DRAW KAMU\n\n'
             'Token:\n'
             f'{_md_code(token)}\n\n'
             'Telegram ID:\n'
             f'{_md_code(uid)}\n\n'
-            'Simpan token ini.\n'
-            'Token ini akan masuk ke sistem undian MII Reward Draw.'
+            'Masukkan token ini di halaman MII Reward Draw:\n'
+            'https://makima.cloud/bounty\n\n'
+            '1 akun Telegram hanya bisa memiliki 1 token event.'
         )
 
 
@@ -459,10 +468,47 @@ def _draw_status_payload(data=None):
             status = 'drawing'
     return {
         'draw_status': status,
-        'total_tokens': len(_valid_draw_tokens(data)),
+        'total_tokens': len(data.get('event_tokens', {})),
+        'reward_stock': sum(1 for i in data.get('reward_items', []) if not i.get('used')),
+        'slot_winner': int(settings.get('win_quota') or 1),
+        'total_winners': len(data.get('winning_keys', {})),
         'winner': winner if status == 'finished' else None,
     }
 
+
+
+def _run_web_draw(token):
+    token = (token or '').strip().upper()
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        if _bounty_event_status(data) != 'open':
+            return None, 'Event draw belum dibuka.', 423
+        rec = data.get('event_tokens', {}).get(token)
+        user = data.get('users', {}).get(str(rec.get('telegram_user_id'))) if rec else None
+        if not rec or not user or not user.get('verified'):
+            return None, 'Token tidak valid atau belum terdaftar.', 404
+        if rec.get('draw_status') == 'used' or rec.get('status') in {'used', 'winner', 'loser'}:
+            return None, 'Token ini sudah pernah digunakan.', 409
+        now = _utc_timestamp()
+        settings = _event_settings(data)
+        quota = int(settings.get('win_quota') or 1)
+        is_win = len(data.get('winning_keys', {})) < quota and (int.from_bytes(os.urandom(2), 'big') % 100 < 35)
+        rec['draw_status'] = 'used'; rec['used_at'] = now
+        user['token_used_for_event'] = True; user['token_used'] = True; user['last_action_at'] = now
+        if not is_win:
+            rec['status'] = 'loser'; rec['result'] = 'lose'; user['reward_status'] = 'lose'
+            _save_event_data(data)
+            return {'result': 'lose', 'message': 'Belum menang kali ini.', 'token': token}, '', 200
+        winning_key = _generate_code('MII-WIN')
+        while winning_key in data.get('winning_keys', {}):
+            winning_key = _generate_code('MII-WIN')
+        rec['status'] = 'winner'; rec['result'] = 'win'; rec['winning_key'] = winning_key
+        user['reward_status'] = 'winner'
+        key_rec = {'winning_key': winning_key, 'token': token, 'telegram_id': str(rec.get('telegram_id') or rec.get('telegram_user_id')), 'username': rec.get('username',''), 'first_name': rec.get('first_name',''), 'created_at': now, 'used': False, 'reward_sent': False}
+        data.setdefault('winning_keys', {})[winning_key] = key_rec
+        settings['winner'] = key_rec; settings['updated_at'] = now
+        _save_event_data(data)
+        return {'result': 'win', **key_rec}, '', 200
 
 def _start_reward_draw():
     with _EVENT_LOCK:
@@ -637,7 +683,8 @@ def _start_inline_keyboard():
 
 def _user_keyboard():
     return _reply_keyboard([
-        ['🎟 Claim Token', '🌐 Buka MII Reward Draw'],
+        ['🎟 Claim Token', '🎁 Claim Reward'],
+        ['🌐 Buka MII Reward Draw', '📦 Reward Saya'],
         ['🏠 Menu Utama'],
     ])
 
@@ -648,11 +695,11 @@ def _claim_keyboard():
 
 def _admin_keyboard():
     return _reply_keyboard([
-        ['🎲 Start Draw', '📊 Draw Status'],
-        ['👥 List Token', '🏆 Winner List'],
-        ['🔒 Lock Draw', '🟢 Open Draw'],
-        ['♻️ Reset Draw', '📊 Statistik Event'],
-        ['🔴 Maintenance ON', '🟢 Maintenance OFF'],
+        ['📦 Add Reward Stock', '📦 View Reward Stock'],
+        ['🏆 Winner List', '📜 Claim History'],
+        ['⚙️ Draw Settings', '🔒 Lock Draw', '🟢 Open Draw'],
+        ['♻️ Reset Draw', '👥 List Token'],
+        ['📊 Statistik Event', '🔴 Maintenance ON', '🟢 Maintenance OFF'],
         ['🎁 Info Hadiah', '🏠 Menu Utama'],
         ['🔐 Logout'],
     ])
@@ -798,7 +845,7 @@ def _format_reward_codes():
 
 def _format_claim_history():
     data = _load_event_data(); lines = ['📜 10 Claim Terbaru']
-    for c in data['claims'][-10:][::-1]: lines.append(f"- @{c.get('username','-')} {c.get('reward_code')} {c.get('claimed_at')}")
+    for c in data['claims'][-10:][::-1]: lines.append(f"- @{c.get('username','-')} {c.get('winning_key') or c.get('reward_code')} {c.get('claimed_at')}")
     return '\n'.join(lines) if len(lines)>1 else 'Belum ada claim.'
 
 
@@ -842,49 +889,56 @@ def _handle_admin_text(chat_id, text):
         _telegram_send_message(chat_id, '✅ Info hadiah berhasil disimpan.\n\n' + _format_reward_info(), _admin_keyboard(), parse_mode='Markdown')
         return
     if state == 'add_stock':
-        parts = [p.strip() for p in text.split('|', 1)]
-        if len(parts) < 2: _telegram_send_message(chat_id, 'Format: `REWARD_CODE | detail hadiah`', parse_mode='Markdown'); return
-        code = parts[0].upper()
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        reward_name = 'CloudMoon Account'; rows = []
+        if lines and lines[0].lower().startswith('nama reward:'):
+            reward_name = lines[0].split(':', 1)[1].strip() or reward_name
+            rows = [ln for ln in lines[1:] if not ln.lower().startswith('data:')]
+        elif lines:
+            reward_name = lines[0]
+            rows = lines[1:]
+        if not rows:
+            _telegram_send_message(chat_id, 'Format stok tidak valid. Kirim nama reward lalu baris data akun.'); return
         with _EVENT_LOCK:
             data = _load_event_data()
-            if code not in data['reward_codes']: _telegram_send_message(chat_id, '❌ Reward code tidak ditemukan.'); return
-            item_id = str(uuid.uuid4()); data['reward_items'].append({'id':item_id,'reward_code':code,'content':parts[1],'used':False,'used_by':'','used_at':'','created_at':_utc_timestamp()}); _save_event_data(data)
-        text = (
-            '✅ Stok hadiah berhasil ditambahkan.\n\n'
-            'Reward Code:\n'
-            f'{_md_code(code)}'
-        )
-        _telegram_send_message(chat_id, text, _admin_keyboard(), parse_mode='Markdown'); return
+            for row in rows:
+                item_id = str(uuid.uuid4())
+                data['reward_items'].append({'id':item_id,'reward_id':item_id,'reward_name':reward_name,'content':row,'reward_data':row,'used':False,'used_by_telegram_id':'','used_by_winning_key':'','used_at':'','created_at':_utc_timestamp()})
+            _save_event_data(data)
+        _clear_bot_state(chat_id)
+        _telegram_send_message(chat_id, f'✅ {len(rows)} stok reward berhasil ditambahkan.\nReward: {reward_name}', _admin_keyboard()); return
     _telegram_send_message(chat_id, 'Pilih menu admin di keyboard bawah.', _admin_keyboard())
 
 
 def _claim_reward(uid, reward_code):
-    code = (reward_code or '').strip().upper(); nowdt = datetime.now(timezone.utc)
+    key = (reward_code or '').strip().upper()
     with _EVENT_LOCK:
         data = _load_event_data(); user = data['users'].get(str(uid))
         if not user or not user.get('verified'): return 'Kamu belum menyelesaikan verifikasi MII REWARD DRAW.'
-        if not (user.get('token_used_for_event') or user.get('token_used')): return 'Token event kamu belum terdaftar untuk MII REWARD DRAW.'
-        reward = data['reward_codes'].get(code)
-        if not reward or not reward.get('is_active'): return 'Kode tidak valid.'
-        exp = _parse_ts(reward.get('expires_at')) if reward.get('expires_at') else None
-        if exp and exp < nowdt: return 'Reward sudah expired.'
-        if any(c.get('telegram_user_id') == str(uid) and c.get('reward_code') == code and c.get('status') == 'claimed' for c in data['claims']): return 'Kamu sudah pernah claim reward ini.'
-        if int(reward.get('claimed_count',0)) >= int(reward.get('max_claim',0)): return 'Reward sudah habis.'
-        item = next((i for i in data['reward_items'] if i.get('reward_code') == code and not i.get('used')), None)
-        if not item: return 'Reward sudah habis.'
-        item['used'] = True; item['used_by'] = str(uid); item['used_at'] = _utc_timestamp(); reward['claimed_count'] = int(reward.get('claimed_count',0)) + 1; user['reward_status'] = 'claimed'; user['reward_claimed'] = True
-        token_rec = data.get('event_tokens', {}).get(user.get('token'))
+        win = data.get('winning_keys', {}).get(key)
+        if not win: return 'Winning Key tidak valid.'
+        if win.get('used'): return 'Winning Key ini sudah pernah digunakan.'
+        if str(win.get('telegram_id')) != str(uid): return 'Winning Key ini bukan milik akun Telegram kamu.'
+        item = next((i for i in data.get('reward_items', []) if not i.get('used')), None)
+        if not item: return 'Reward sedang kosong. Hubungi admin.'
+        now = _utc_timestamp()
+        item['used'] = True; item['used_by_telegram_id'] = str(uid); item['used_by_winning_key'] = key; item['used_at'] = now; item['used_by'] = str(uid)
+        win['used'] = True; win['reward_sent'] = True; win['reward_item_id'] = item.get('id'); win['used_at'] = now
+        user['reward_status'] = 'claimed'; user['reward_claimed'] = True
+        token_rec = data.get('event_tokens', {}).get(win.get('token'))
         if token_rec: token_rec['reward_claimed'] = True
-        data['claims'].append({'telegram_user_id':str(uid),'username':user.get('username',''),'reward_code':code,'reward_item_id':item['id'],'token':user.get('token',''),'claimed_at':_utc_timestamp(),'status':'claimed'}); _save_event_data(data)
+        reward_name = item.get('reward_name') or _reward_info_text(data) or 'CloudMoon Account'
+        data['claims'].append({'telegram_user_id':str(uid),'username':user.get('username',''),'winning_key':key,'reward_name':reward_name,'reward_item_id':item['id'],'token':win.get('token',''),'claimed_at':now,'status':'claimed'}); _save_event_data(data)
         return (
-            '🎉 Reward berhasil diklaim.\n\n'
-            'Kode:\n'
-            f'{_md_code(code)}\n\n'
-            'Hadiah kamu:\n'
-            f"{_md_code(item['content'])}\n\n"
-            'Simpan baik-baik dan jangan bagikan ke orang lain.'
+            '🎁 REWARD BERHASIL DIKIRIM\n\n'
+            'Winning Key:\n'
+            f'{_md_code(key)}\n\n'
+            'Reward:\n'
+            f'{reward_name}\n\n'
+            'Detail Akun:\n'
+            f"{_md_code(item.get('content') or item.get('reward_data') or '')}\n\n"
+            'Terima kasih sudah ikut MII Reward Draw.'
         )
-
 
 
 def _set_bot_state(chat_id, state, uid=None):
@@ -916,7 +970,7 @@ def _normalize_bot_action(data):
         'STATISTIK EVENT': 'event_stats', '/event_stats': 'event_stats',
         'USER EVENT': 'event_users', '/users': 'event_users',
         'REWARD CODES': 'reward_codes', '/reward_codes': 'reward_codes',
-        'GENERATE REWARD': 'reward_generate', 'REWARD STOCK': 'reward_stock',
+        'GENERATE REWARD': 'reward_generate', 'REWARD STOCK': 'reward_stock', 'ADD REWARD STOCK': 'reward_stock', 'VIEW REWARD STOCK': 'view_reward_stock', 'DRAW SETTINGS': 'draw_status',
         'CLAIM HISTORY': 'claim_history', '/claim_history': 'claim_history',
         'LOCK EVENT': 'event_lock', 'LOCK DRAW': 'event_lock', 'ACTIVE EVENT': 'event_active', 'OPEN DRAW': 'event_active', 'START DRAW': 'draw_start', 'DRAW STATUS': 'draw_status', 'LIST TOKEN': 'list_token', 'WINNER LIST': 'winner_list', 'RESET DRAW': 'reset_draw', 'INFO HADIAH': 'reward_info',
         'MAINTENANCE ON': 'maintenance_on', '/maintenance_on': 'maintenance_on',
@@ -998,7 +1052,7 @@ def process_telegram_update(update):
         _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
-    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'reward_generate', 'reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info'}
+    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info'}
     if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
@@ -1017,6 +1071,10 @@ def process_telegram_update(update):
             return
         if data == 'claim_history':
             _telegram_send_message(chat_id, _format_claim_history())
+            return
+        if data == 'view_reward_stock':
+            d=_load_event_data(); total=len(d.get('reward_items',[])); left=sum(1 for i in d.get('reward_items',[]) if not i.get('used'))
+            _telegram_send_message(chat_id, f'📦 Reward Stock\nTersedia: {left}\nTotal: {total}', _admin_keyboard())
             return
         if data in ('event_lock', 'event_active'):
             new_status = _set_bounty_event_status('open' if data == 'event_active' else 'locked')
@@ -1096,11 +1154,9 @@ def process_telegram_update(update):
             text = (
                 '📦 Tambah Stok Hadiah\n\n'
                 'Kirim format:\n\n'
-                '`REWARD_CODE | detail hadiah`\n\n'
-                'Contoh:\n\n'
-                '`MII-WIN-2026-ABCD | email: akun1@example.com | password: xxxx`\n\n'
+                '`CloudMoon Account\nemail1@gmail.com | pass123\nemail2@gmail.com | pass456`\n\n'
                 'Atau:\n\n'
-                '`MII-WIN-2026-ABCD | Voucher: ABCD-1234`'
+                '`Nama Reward: CloudMoon Account\nData:\nemail1@gmail.com | pass123`'
             )
             _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
             return
@@ -1126,7 +1182,7 @@ def process_telegram_update(update):
             show_user_home(chat_id, user)
             return
         msg = _claim_reward(uid, raw_data)
-        if msg.startswith('🎉 Reward berhasil'):
+        if msg.startswith('🎁 REWARD BERHASIL'):
             _clear_bot_state(chat_id, uid)
             _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
         else:
@@ -1176,7 +1232,7 @@ def process_telegram_update(update):
             return
         _set_bot_state(chat_id, 'awaiting_reward_code', uid)
         text = (
-            '🏆 Kirim kode kemenangan kamu.\n\n'
+            'Kirim Winning Key kamu.\n\n'
             'Contoh:\n'
             '`MII-WIN-2026-ABCD`'
         )
@@ -1366,7 +1422,7 @@ def inject_asset_helpers():
 # Maintenance request guard
 # ---------------------------------------------------------------------------
 _MAINTENANCE_ALLOWED_ENDPOINTS = {
-    'telegram_webhook', 'telegram_status', 'event_page', 'event_draw_status', 'event_validate_token', 'admin_panel', 'admin_panel_reward', 'admin_panel_stock', 'static'
+    'telegram_webhook', 'telegram_status', 'event_page', 'event_draw_status', 'event_validate_token', 'event_start_draw', 'admin_panel', 'admin_panel_reward', 'admin_panel_stock', 'static'
 }
 
 
@@ -1424,8 +1480,17 @@ def event_validate_token():
     token = (request.get_json(silent=True) or {}).get('token', '')
     ok, user, error = validate_event_token(token)
     if not ok:
-        return jsonify({'valid': False, 'error': error or 'Token tidak valid atau sudah expired.'}), 400
+        return jsonify({'valid': False, 'error': error or 'Token tidak valid atau belum terdaftar.'}), 400
     return jsonify({'valid': True, 'message': 'Token valid untuk MII REWARD DRAW.'})
+
+
+@app.route('/api/event/start-draw', methods=['POST'])
+def event_start_draw():
+    token = (request.get_json(silent=True) or {}).get('token', '')
+    payload, error, status = _run_web_draw(token)
+    if error:
+        return jsonify({'ok': False, 'error': error}), status
+    return jsonify({'ok': True, **payload})
 
 
 def _admin_web_authed():
