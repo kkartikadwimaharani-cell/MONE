@@ -70,7 +70,7 @@
         <a href="#" class="drawer-item" data-view="hinter-mt"><span class="drawer-item-icon premium-menu-icon icon-vault" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="private_vault_name">Private Vault</span></a>
         <a href="#social-media" class="drawer-item" data-scroll-target="social-media"><span class="drawer-item-icon premium-menu-icon icon-social" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="social_media">Social Media</span></a>
         <a href="#projects" class="drawer-item" data-scroll-target="projects"><span class="drawer-item-icon premium-menu-icon icon-products" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="digital_products_nav">Digital Products</span></a>
-        <a href="/bounty" class="drawer-item"><span class="drawer-item-icon premium-menu-icon icon-bounty" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="bountyGame">BOUNTY GAME</span></a>
+        <a href="/bounty" class="drawer-item"><span class="drawer-item-icon premium-menu-icon icon-bounty" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="bountyGame">MII REWARD DRAW</span></a>
         <a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="drawer-item"><span class="drawer-item-icon premium-menu-icon icon-contact" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="contact">Kontak</span></a>
         <button type="button" class="drawer-item drawer-cache-btn" id="clearCacheBtn"><span class="drawer-item-icon premium-menu-icon icon-cache" aria-hidden="true"></span><span class="drawer-item-text" data-i18n="clear_cache">Clear Cache</span></button>
       </div>
@@ -91,23 +91,43 @@
             <button class="premium-btn primary" type="button" onclick="navigateTo('makima-ai')" data-i18n="openMakima">OPEN MAKIMA AI</button>
             <a class="premium-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contactWhatsapp">CONTACT WHATSAPP</a>
             <a class="premium-btn ghost" href="#social-media" data-i18n="exploreSocials">EXPLORE SOCIALS</a>
-            <a class="premium-btn bounty" href="/bounty" data-i18n="bountyGame">BOUNTY GAME</a>
+            <a class="premium-btn bounty" href="/bounty" data-i18n="bountyGame">MII REWARD DRAW</a>
           </div>
         </div>
-        <div class="hero-globe" aria-label="Futuristic rotating digital globe">
-          <div class="futuristic-globe" aria-hidden="true">
-            <span class="globe-aura"></span>
-            <span class="globe-sphere">
-              <span class="globe-map"></span>
-              <span class="globe-latitudes"></span>
-              <span class="globe-longitudes"></span>
-              <span class="globe-highlight"></span>
-            </span>
-            <span class="globe-orbit orbit-alpha"></span>
-            <span class="globe-orbit orbit-beta"></span>
-            <span class="globe-pulse-dot dot-one"></span>
-            <span class="globe-pulse-dot dot-two"></span>
-            <span class="globe-pulse-dot dot-three"></span>
+        <div class="hero-scorpion" aria-label="Cyber scorpion brand mark">
+          <div class="scorpion-stage" aria-hidden="true">
+            <span class="scorpion-glow"></span>
+            <svg class="scorpion-logo" viewBox="0 0 320 260" role="img" focusable="false" aria-hidden="true">
+              <defs>
+                <linearGradient id="scorpionMetal" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#ff8a9b"/>
+                  <stop offset=".42" stop-color="#ff183d"/>
+                  <stop offset="1" stop-color="#64000e"/>
+                </linearGradient>
+                <filter id="scorpionNeon" x="-40%" y="-40%" width="180%" height="180%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ff1638" flood-opacity=".75"/>
+                  <feDropShadow dx="0" dy="0" stdDeviation="13" flood-color="#ff002f" flood-opacity=".35"/>
+                </filter>
+              </defs>
+              <g class="scorpion-tail" fill="none" stroke="url(#scorpionMetal)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M173 90 C202 42 250 42 260 82 C271 127 222 132 211 101"/>
+                <path d="M260 82 L282 63 L277 94 Z" fill="url(#scorpionMetal)" stroke-width="3"/>
+              </g>
+              <g class="scorpion-leg" fill="none" stroke="#ff3150" stroke-width="9" stroke-linecap="round" opacity=".82">
+                <path d="M128 138 L88 158 L66 183"/><path d="M141 154 L104 188 L86 218"/><path d="M192 138 L232 158 L254 183"/><path d="M179 154 L216 188 L234 218"/>
+              </g>
+              <g class="scorpion-claw-left" fill="none" stroke="url(#scorpionMetal)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M127 104 C84 74 50 82 38 116"/><path d="M42 111 L18 96"/><path d="M43 116 L19 133"/>
+              </g>
+              <g class="scorpion-claw-right" fill="none" stroke="url(#scorpionMetal)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#scorpionNeon)">
+                <path d="M193 104 C236 74 270 82 282 116"/><path d="M278 111 L302 96"/><path d="M277 116 L301 133"/>
+              </g>
+              <g class="scorpion-body" filter="url(#scorpionNeon)">
+                <ellipse cx="160" cy="138" rx="42" ry="58" fill="url(#scorpionMetal)"/>
+                <ellipse cx="160" cy="91" rx="28" ry="27" fill="url(#scorpionMetal)"/>
+                <path d="M132 131 H188 M128 151 H192 M139 173 H181" stroke="#ffd3da" stroke-width="3" opacity=".45"/>
+              </g>
+            </svg>
           </div>
         </div>
       </section>
@@ -130,7 +150,7 @@
           <article class="project-card project-makima"><span class="project-icon icon-ai-card" aria-hidden="true"></span><h3>MAKIMA AI</h3><button onclick="navigateTo('makima-ai')" data-i18n="openMakima">BUKA MAKIMA AI</button></article>
           <article class="project-card project-vault"><span class="project-icon icon-vault-card" aria-hidden="true"></span><h3>PRIVATE VAULT</h3><button onclick="navigateTo('hinter-mt')" data-i18n="openVault">BUKA VAULT</button></article>
           <article class="project-card project-products"><span class="project-icon icon-products-card" aria-hidden="true"></span><h3>DIGITAL PRODUCTS</h3><a href="#social-media" data-i18n="viewProduct">LIHAT PRODUK</a></article>
-          <article class="project-card bounty-card project-bounty"><span class="project-icon icon-bounty-card" aria-hidden="true"></span><h3>BOUNTY GAME</h3><a href="/bounty" data-i18n="joinEvent">IKUTI EVENT</a></article>
+          <article class="project-card bounty-card project-bounty"><span class="project-icon icon-bounty-card" aria-hidden="true"></span><h3>MII REWARD DRAW</h3><a href="/bounty" data-i18n="joinEvent">IKUTI DRAW</a></article>
           <article class="project-card project-community"><span class="project-icon icon-community-card" aria-hidden="true"></span><h3>COMMUNITY</h3><a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" data-i18n="contact">KONTAK</a></article>
         </div>
       </section>
@@ -147,7 +167,7 @@
           <a href="#home" data-i18n="home">BERANDA</a>
           <a href="#social-media" data-i18n="social">SOSIAL</a>
           <a href="#projects" data-i18n="project">PROYEK</a>
-          <a href="/bounty" data-i18n="bountyGame">BOUNTY GAME</a>
+          <a href="/bounty" data-i18n="bountyGame">MII REWARD DRAW</a>
         </nav>
         <p class="footer-copy">© 2026 MII STORE</p>
       </footer>
