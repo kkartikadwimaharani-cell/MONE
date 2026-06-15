@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-mii-reward-draw-v3"
+APP_VERSION = "20260615-mii-reward-draw-v4"
 
 
 def versioned_static(path):
@@ -521,6 +521,32 @@ def _draw_status_payload(data=None):
     }
 
 
+
+
+def _token_room_payload(token, data=None):
+    token = (token or '').strip().upper()
+    data = data or _load_event_data()
+    rec = data.get('event_tokens', {}).get(token)
+    if not rec:
+        return None
+    user = data.get('users', {}).get(str(rec.get('telegram_user_id') or rec.get('telegram_id')))
+    if not user or not user.get('verified'):
+        return None
+    result = rec.get('result') or 'none'
+    draw_status = rec.get('draw_status') or 'unused'
+    is_winner = draw_status == 'winner' or result == 'win'
+    is_loser = draw_status in {'lose', 'lost'} or result in {'lose', 'lost'}
+    return {
+        'valid': True,
+        'token': rec.get('token') or token,
+        'joined_draw': bool(rec.get('joined_draw')),
+        'joined_at': rec.get('joined_at', ''),
+        'draw_status': draw_status,
+        'result': 'winner' if is_winner else ('not_winner' if is_loser else result),
+        'is_winner': is_winner,
+        'is_loser': is_loser,
+        'round': rec.get('round') or rec.get('draw_round') or 0,
+    }
 
 def _run_web_draw(token):
     ok, user, error = validate_event_token(token)
@@ -1551,6 +1577,29 @@ def event_page():
 @app.route('/api/event/draw-status')
 def event_draw_status():
     return jsonify(_draw_status_payload())
+
+
+@app.route('/api/event/token-status', methods=['POST'])
+def event_token_status():
+    token = (request.get_json(silent=True) or {}).get('token', '')
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        payload = _token_room_payload(token, data)
+        if not payload:
+            return jsonify({'valid': False, 'error': 'Token tidak valid atau belum terdaftar.'}), 404
+        return jsonify({**payload, 'event': _draw_status_payload(data)})
+
+
+@app.route('/api/event/join-draw', methods=['POST'])
+def event_join_draw():
+    token = (request.get_json(silent=True) or {}).get('token', '')
+    payload, error, status = _run_web_draw(token)
+    if error:
+        return jsonify({'ok': False, 'error': error}), status
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        room = _token_room_payload(token, data) or {}
+        return jsonify({'ok': True, **payload, **room, 'event': _draw_status_payload(data)})
 
 
 @app.route('/api/event/validate-token', methods=['POST'])
