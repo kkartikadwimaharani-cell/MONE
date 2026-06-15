@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-bounty-ui-v8"
+APP_VERSION = "20260615-bounty-ui-v9"
 
 
 def versioned_static(path):
