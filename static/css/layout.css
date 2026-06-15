@@ -1697,3 +1697,148 @@ body::after { opacity: .18 !important; }
 @media (prefers-reduced-motion: reduce) {
   .futuristic-globe, .globe-sphere, .globe-latitudes, .globe-longitudes { animation: none !important; }
 }
+
+/* ── 20260615 mockup-matched MII STORE homepage override ───────────── */
+body { background: #030407 !important; }
+.page { padding: 96px 24px 28px !important; }
+.home-hub {
+  width: 100% !important;
+  max-width: min(1320px, calc(100vw - 48px)) !important;
+  gap: 14px !important;
+}
+.premium-marquee { display: none !important; }
+.top-nav {
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  height: 76px !important;
+  padding: 0 clamp(26px, 4vw, 54px) !important;
+  border-radius: 0 !important;
+  background: rgba(7, 7, 10, .88) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 31, 58, .42) !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.34) !important;
+}
+.top-nav::before { display: none !important; }
+.nav-logo-img { width: 48px !important; height: 48px !important; border-color: rgba(255, 0, 45, .75) !important; }
+.nav-brand { font-size: clamp(1.35rem, 2vw, 1.75rem) !important; letter-spacing: .10em !important; }
+.language-toggle, .hamburger-btn {
+  min-width: 74px !important;
+  min-height: 42px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 53, 76, .42) !important;
+  background: rgba(12, 10, 13, .72) !important;
+  color: #fff !important;
+}
+.hamburger-btn { min-width: 48px !important; }
+.home-hero, .hub-section, .home-cta {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 38, 64, .42) !important;
+  background:
+    linear-gradient(rgba(255, 28, 54, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 28, 54, .035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(22, 7, 10, .78), rgba(3, 3, 6, .93)) !important;
+  background-size: 18px 18px, 18px 18px, auto !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 0 38px rgba(255,0,45,.08) !important;
+  overflow: hidden !important;
+}
+.home-hero::before, .hub-section::after, .home-cta::after { display: none !important; }
+.home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(420px, .84fr) !important;
+  min-height: 318px !important;
+  padding: 42px clamp(38px, 5vw, 64px) 16px !important;
+  gap: 24px !important;
+}
+.hero-title {
+  font-size: clamp(72px, 7.3vw, 120px) !important;
+  letter-spacing: -.035em !important;
+  line-height: .86 !important;
+  color: #fff7f7 !important;
+  text-shadow: 0 0 8px rgba(255,255,255,.30), 0 0 28px rgba(255,0,45,.72) !important;
+}
+.hero-kicker { font-size: clamp(14px, 1.18vw, 18px) !important; letter-spacing: .32em !important; color: #ff3855 !important; }
+.hero-actions { grid-template-columns: repeat(4, minmax(150px, 1fr)) !important; width: min(100%, 760px) !important; max-width: 760px !important; gap: 12px !important; }
+.premium-btn, .project-card a, .project-card button, .social-card a {
+  border-radius: 9px !important;
+  border-color: rgba(255, 50, 76, .55) !important;
+  background: linear-gradient(180deg, rgba(28,9,13,.92), rgba(8,7,9,.95)) !important;
+  min-height: 50px !important;
+  font-size: 13px !important;
+  letter-spacing: .06em !important;
+}
+.premium-btn.primary, .project-card a, .project-card button, .cta-button { background: linear-gradient(180deg, #ff2443, #9c0017) !important; }
+.hero-globe { min-height: 328px !important; align-self: end !important; }
+.futuristic-globe { width: min(37vw, 460px) !important; filter: drop-shadow(0 0 34px rgba(255,0,54,.45)) !important; }
+.globe-sphere { width: 72% !important; }
+.orbit-alpha { inset: 2% !important; }
+.orbit-beta { inset: 10% !important; }
+.hub-section { padding: 16px 20px 14px !important; }
+.section-heading { margin: 0 0 12px !important; text-align: left !important; display: flex !important; align-items: center !important; gap: 12px !important; }
+.section-heading::before { content: ""; width: 18px; height: 18px; border-radius: 4px; background: linear-gradient(135deg, #ff2c4d, #8b0015); transform: skew(-18deg); box-shadow: 0 0 16px rgba(255,0,54,.48); }
+.section-heading span { display: none !important; }
+.section-heading h2 { margin: 0 !important; font-size: 22px !important; letter-spacing: .28em !important; color: #fff !important; }
+.social-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px 24px !important; }
+.social-card {
+  min-height: 64px !important;
+  grid-template-columns: 54px minmax(0, 1fr) 96px !important;
+  grid-template-rows: 1fr !important;
+  align-items: center !important;
+  padding: 12px 22px !important;
+  border-radius: 9px !important;
+}
+.social-card h3 { font-size: 14px !important; text-transform: uppercase !important; letter-spacing: .08em !important; }
+.social-card a { grid-column: auto !important; height: 34px !important; min-height: 34px !important; width: 96px !important; padding: 0 !important; }
+.social-icon { width: 36px !important; height: 36px !important; justify-self: center !important; }
+.project-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 14px !important; }
+.project-card {
+  min-height: 148px !important;
+  grid-template-rows: 58px 34px 36px !important;
+  padding: 12px 14px !important;
+  border-radius: 9px !important;
+  text-align: center !important;
+}
+.project-icon { width: 58px !important; height: 58px !important; justify-self: center !important; }
+.project-card h3 { min-height: 0 !important; justify-content: center !important; font-size: 15px !important; letter-spacing: .10em !important; text-align: center !important; }
+.project-card a, .project-card button { height: 36px !important; min-height: 36px !important; font-size: 12px !important; }
+.home-cta { min-height: 118px !important; padding: 24px !important; display: grid !important; place-items: center !important; gap: 14px !important; text-align: center !important; }
+.cta-copy h2 { margin: 0 !important; font-size: clamp(32px, 3.2vw, 46px) !important; letter-spacing: .08em !important; line-height: 1.05 !important; }
+.cta-button { width: min(260px, 100%) !important; }
+.home-footer { min-height: 52px !important; padding: 10px clamp(12px, 3vw, 32px) !important; border-top: 1px solid rgba(255,45,68,.26) !important; }
+.footer-copy::after { content: ". ALL RIGHTS RESERVED."; }
+
+@media (max-width: 1180px) {
+  .home-hero { grid-template-columns: 1fr !important; }
+  .hero-globe { order: 2; }
+  .futuristic-globe { width: min(72vw, 440px) !important; }
+  .project-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 700px) {
+  .page { padding: 76px 12px 18px !important; }
+  .top-nav { height: 72px !important; padding: 0 18px !important; }
+  .nav-logo-img { width: 46px !important; height: 46px !important; }
+  .nav-brand { font-size: 1.35rem !important; }
+  .language-toggle { min-width: 78px !important; }
+  .home-hub { max-width: 100% !important; gap: 14px !important; }
+  .home-hero, .hub-section, .home-cta { padding: 22px 16px !important; border-radius: 10px !important; }
+  .home-hero { display: flex !important; flex-direction: column !important; gap: 6px !important; }
+  .hero-title { font-size: clamp(60px, 18vw, 92px) !important; line-height: .9 !important; }
+  .hero-kicker { font-size: clamp(13px, 3.6vw, 16px) !important; letter-spacing: .16em !important; }
+  .hero-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; margin-top: 20px !important; gap: 10px !important; }
+  .hero-actions .premium-btn { min-height: 74px !important; font-size: 16px !important; line-height: 1.25 !important; }
+  .hero-globe { min-height: 310px !important; width: 100% !important; }
+  .futuristic-globe { width: min(92vw, 430px) !important; }
+  .social-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .social-card { min-height: 116px !important; grid-template-columns: 1fr !important; grid-template-rows: 48px 28px !important; padding: 12px 10px !important; }
+  .social-card h3 { display: none !important; }
+  .social-card a { width: 100% !important; height: 30px !important; min-height: 30px !important; }
+  .social-icon { width: 48px !important; height: 48px !important; }
+  .project-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 7px !important; }
+  .project-card { min-height: 150px !important; grid-template-rows: 50px 46px 34px !important; padding: 8px 6px !important; }
+  .project-icon { width: 50px !important; height: 50px !important; }
+  .project-card h3 { font-size: clamp(10px, 2.8vw, 14px) !important; letter-spacing: .06em !important; line-height: 1.15 !important; }
+  .project-card a, .project-card button { height: 34px !important; min-height: 34px !important; font-size: clamp(10px, 2.6vw, 13px) !important; }
+  .cta-copy h2 { font-size: clamp(28px, 8.6vw, 44px) !important; }
+  .home-footer { flex-direction: column !important; gap: 8px !important; padding-bottom: 4px !important; }
+}
