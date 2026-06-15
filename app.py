@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260614-maintenance-cyber-butterfly-v1"
+APP_VERSION = "20260615-premium-ui-bot-flow-v2"
 
 
 def versioned_static(path):
@@ -583,20 +583,14 @@ def _admin_keyboard():
 def _unverified_start_text():
     return (
         '🎮 BOUNTY GAME MII STORE\n\n'
-        'Ikuti event challenge digital dari MII STORE.\n\n'
-        '📢 Join Channel Telegram untuk update event dan method gratis.\n'
-        '💬 Join Grup WhatsApp untuk info cepat.\n'
-        '🎟 Token bisa diklaim setelah verifikasi channel.\n\n'
-        'Tekan tombol di bawah untuk mulai.'
+        '1. Join Channel Telegram.\n'
+        '2. Grup WhatsApp opsional.\n'
+        '3. Tekan Verifikasi Join untuk membuka menu event.'
     )
 
 
 def _verified_menu_text():
-    return (
-        '🎮 BOUNTY GAME MII STORE\n\n'
-        'Kamu sudah terverifikasi.\n'
-        'Gunakan menu di bawah.'
-    )
+    return '✅ BOUNTY GAME aktif untuk akun kamu.\nPilih menu di bawah.'
 
 
 def _response_message_id(response):
@@ -667,34 +661,37 @@ def show_user_home(chat_id, user):
         show_unverified_start(chat_id, user)
 
 
-def _admin_text():
+def _admin_text(note=None):
     status = 'MAINTENANCE' if get_site_status().get('maintenance') else 'ONLINE'
     event_status = _bounty_event_status().upper()
-    return (
-        '🛡 MII STORE ADMIN PANEL\n'
-        '🎮 Mode: BOUNTY GAME\n'
-        f'🌐 Website: {status}\n'
-        f'🎯 Event: {event_status}\n\n'
-        'Pilih menu admin di bawah.'
-    )
+    lines = [
+        '🛡 MII STORE ADMIN PANEL',
+        f'Mode    : BOUNTY GAME',
+        f'Website : {status}',
+        f'Event   : {event_status}',
+    ]
+    if note:
+        lines.extend(['', note])
+    lines.extend(['', 'Pilih menu admin.'])
+    return '\n'.join(lines)
 
 
 
-def show_admin_panel(chat_id, user=None):
+def show_admin_panel(chat_id, user=None, note=None):
     panel_id = None
     if user:
         panel_id = user.get('admin_panel_message_id')
-    message_id = _telegram_show_panel(chat_id, _admin_text(), _admin_keyboard(), panel_id)
+    message_id = _telegram_show_panel(chat_id, _admin_text(note), _admin_keyboard(), panel_id)
     if user and message_id:
         _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=message_id)
 
 
-def refresh_admin_panel(chat_id, user=None):
+def refresh_admin_panel(chat_id, user=None, note=None):
     panel_id = user.get('admin_panel_message_id') if user else None
-    if panel_id and _telegram_edit_message(chat_id, panel_id, _admin_text(), _admin_keyboard()):
+    if panel_id and _telegram_edit_message(chat_id, panel_id, _admin_text(note), _admin_keyboard()):
         return
     cached_id = _BOT_LAST_PANEL_MESSAGES.get(str(chat_id))
-    if cached_id and _telegram_edit_message(chat_id, cached_id, _admin_text(), _admin_keyboard()):
+    if cached_id and _telegram_edit_message(chat_id, cached_id, _admin_text(note), _admin_keyboard()):
         if user:
             _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=cached_id)
 
@@ -946,8 +943,7 @@ def process_telegram_update(update):
         if data in ('event_lock', 'event_active'):
             new_status = _set_bounty_event_status('active' if data == 'event_active' else 'locked')
             prefix = '🟢 BOUNTY GAME sekarang aktif.' if new_status == 'active' else '🔒 BOUNTY GAME sekarang dikunci.'
-            _telegram_send_message(chat_id, prefix)
-            refresh_admin_panel(chat_id, user)
+            refresh_admin_panel(chat_id, user, prefix)
             return
         if data == 'reward_info':
             _set_bot_state(chat_id, 'set_reward_info', uid)
@@ -985,8 +981,8 @@ def process_telegram_update(update):
             return
         if data in ('maintenance_on', 'maintenance_off'):
             set_maintenance_status(data == 'maintenance_on')
-            _telegram_send_message(chat_id, '🔴 Maintenance aktif.' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.')
-            refresh_admin_panel(chat_id, user)
+            note = '🔴 Maintenance aktif.' if data == 'maintenance_on' else '🟢 Maintenance nonaktif.'
+            refresh_admin_panel(chat_id, user, note)
             return
         if state in ('add_reward', 'add_stock', 'set_reward_info'):
             _handle_admin_text(chat_id, raw_data)
@@ -1022,7 +1018,7 @@ def process_telegram_update(update):
         callback_message_id = message.get('message_id') if callback else None
         if user.get('verified'):
             _clear_user_inline_join_buttons(chat_id, user, callback_message_id)
-            _telegram_send_message(chat_id, '✅ Kamu sudah terverifikasi.\nGunakan menu di bawah.', _user_keyboard())
+            _telegram_send_message(chat_id, _verified_menu_text(), _user_keyboard())
             return
         tg_status = _telegram_get_chat_member(uid)
         if tg_status == 'error':
@@ -1040,13 +1036,12 @@ def process_telegram_update(update):
             d['users'][uid] = u
             _save_event_data(d)
         _clear_user_inline_join_buttons(chat_id, u, callback_message_id)
-        _telegram_send_message(
-            chat_id,
-            '✅ Verifikasi berhasil.\nKamu sekarang bisa claim token BOUNTY GAME.',
-            _user_keyboard()
-        )
+        _telegram_send_message(chat_id, '✅ Verifikasi berhasil.\nMenu event sudah terbuka.', _user_keyboard())
         return
     if data == 'event_claim_token':
+        if not user.get('verified'):
+            show_unverified_start(chat_id, user)
+            return
         _u, msg = _claim_or_get_token(uid)
         _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
         return
