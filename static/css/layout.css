@@ -1186,3 +1186,193 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   body::before, .butterfly-layer::after, .mii-guardian, .guardian-glow, .guardian-halo, .wing, .guardian-orbits span { animation: none !important; }
 }
+
+/* ── MII STORE premium core emblem + homepage polish (2026-06-15 v2) ── */
+.hero-globe::before,
+.globe-wrap,
+.digital-globe,
+.globe-orbit,
+.globe-particle,
+.mii-guardian,
+.guardian-glow,
+.guardian-halo,
+.guardian-wings,
+.guardian-body,
+.guardian-orbits { display: none !important; }
+
+.page { padding-bottom: 72px !important; }
+.home-hub {
+  max-width: min(1280px, calc(100vw - 48px)) !important;
+  gap: clamp(54px, 6vw, 92px) !important;
+}
+.home-hero,
+.hub-section,
+.home-cta {
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(255, 65, 92, .20) !important;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 0, 68, .16), transparent 34%),
+    radial-gradient(circle at 86% 78%, rgba(142, 0, 36, .12), transparent 36%),
+    linear-gradient(145deg, rgba(22, 7, 12, .72), rgba(3, 3, 6, .86)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 28px 90px rgba(0,0,0,.34), 0 0 54px rgba(205,0,46,.08) !important;
+}
+.home-hero { grid-template-columns: minmax(0, 1.05fr) minmax(330px, .85fr) !important; align-items: center !important; }
+.hero-title { max-width: 780px; }
+.hero-subtitle,
+.hero-description,
+.hero-badge,
+.hero-metrics,
+.section-heading p,
+.social-card p,
+.project-card p,
+.footer-warning { display: none !important; }
+.hero-actions { grid-template-columns: repeat(2, minmax(0, 230px)) !important; }
+
+.mii-core-emblem {
+  position: relative;
+  width: clamp(230px, 34vw, 410px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  filter: drop-shadow(0 0 26px rgba(255, 0, 72, .24));
+}
+.mii-core-emblem::before {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 72, .16), transparent 62%);
+  z-index: -3;
+}
+.mii-core-bg {
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 30, 80, .34), transparent 58%),
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,.12), transparent 22%);
+  box-shadow: 0 0 34px rgba(255, 0, 72, .24), inset 0 0 34px rgba(255, 0, 72, .18);
+  animation: corePulse 3.8s ease-in-out infinite;
+}
+.mii-core-ring {
+  position: absolute;
+  border: 1px solid rgba(255, 58, 96, .30);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(255, 0, 72, .12), inset 0 0 16px rgba(255, 255, 255, .025);
+}
+.ring-one { inset: 15%; transform: rotate(18deg) scaleX(1.13); animation: ringSpin 15s linear infinite; }
+.ring-two { inset: 22%; transform: rotate(-32deg) scaleY(.78); animation: ringSpinReverse 19s linear infinite; }
+.ring-three { inset: 8% 24%; opacity: .48; transform: rotateX(72deg); animation: haloDrift 21s linear infinite; }
+.mii-core-mark {
+  position: relative;
+  z-index: 4;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 28, 76, .30), rgba(16,0,7,.88));
+  border: 1px solid rgba(255, 75, 112, .34);
+  box-shadow: 0 0 28px rgba(255, 0, 72, .30), inset 0 0 22px rgba(255, 0, 72, .18), inset 0 1px 0 rgba(255,255,255,.16);
+  animation: markPulse 4s ease-in-out infinite;
+}
+.mii-core-mark strong {
+  font-size: clamp(24px, 4vw, 48px);
+  letter-spacing: .08em;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(255, 0, 72, .8);
+}
+.mii-wing {
+  position: absolute;
+  top: 39%;
+  width: 31%;
+  height: 25%;
+  display: grid;
+  gap: 7px;
+  z-index: 2;
+  opacity: .82;
+  filter: drop-shadow(0 0 12px rgba(255, 0, 72, .20));
+  animation: wingShimmer 3.4s ease-in-out infinite;
+}
+.mii-wing.left { right: 52%; transform: skewY(-10deg); justify-items: end; }
+.mii-wing.right { left: 52%; transform: skewY(10deg); justify-items: start; }
+.mii-wing span {
+  display: block;
+  height: clamp(5px, .7vw, 8px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 34, 82, .76), rgba(255,255,255,.22));
+  border: 1px solid rgba(255, 50, 90, .16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+.mii-wing.left span { background: linear-gradient(270deg, transparent, rgba(255, 34, 82, .76), rgba(255,255,255,.22)); }
+.mii-wing span:nth-child(1) { width: 72%; }
+.mii-wing span:nth-child(2) { width: 88%; }
+.mii-wing span:nth-child(3) { width: 100%; }
+.mii-wing span:nth-child(4) { width: 76%; }
+
+.social-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 22px !important; }
+.project-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 18px !important; }
+.social-card,
+.project-card { min-height: 218px !important; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease !important; }
+.project-card { min-height: 250px !important; }
+.social-card:hover,
+.project-card:hover { transform: translateY(-6px); border-color: rgba(255, 82, 110, .45) !important; box-shadow: 0 30px 84px rgba(0,0,0,.42), 0 0 42px rgba(255,0,54,.14) !important; }
+.social-icon,
+.project-icon { position: relative; font-size: 0 !important; color: transparent !important; overflow: hidden; }
+.social-icon::before,
+.project-icon::before { content: ""; width: 34px; height: 34px; display: block; background: #fff0f3; filter: drop-shadow(0 0 9px rgba(255,0,64,.55)); }
+.instagram::before { border-radius: 10px; box-shadow: inset 0 0 0 4px #fff0f3, inset 0 0 0 10px transparent; background: radial-gradient(circle at 72% 28%, #fff0f3 0 3px, transparent 4px), radial-gradient(circle, transparent 0 7px, #fff0f3 8px 11px, transparent 12px); }
+.tiktok::before { clip-path: polygon(45% 0,65% 0,65% 54%,84% 54%,84% 72%,65% 72%,65% 81%,53% 95%,34% 100%,14% 92%,5% 77%,8% 59%,22% 47%,42% 45%,42% 62%,30% 63%,24% 72%,29% 82%,41% 83%,45% 77%); }
+.youtube::before { clip-path: polygon(7% 20%,93% 20%,100% 50%,93% 80%,7% 80%,0 50%); }
+.youtube::after { content:""; position:absolute; width:14px; height:16px; background:#230007; clip-path:polygon(0 0,100% 50%,0 100%); left:50%; top:50%; transform:translate(-38%,-50%); }
+.facebook::before { clip-path: polygon(57% 100%,37% 100%,37% 56%,22% 56%,22% 38%,37% 38%,37% 25%,44% 9%,58% 0,78% 0,78% 18%,65% 18%,58% 23%,57% 38%,78% 38%,74% 56%,57% 56%); }
+.whatsapp::before { border-radius: 50%; background: radial-gradient(circle at center, transparent 0 14px, #fff0f3 15px 17px), linear-gradient(45deg, transparent 42%, #fff0f3 43% 58%, transparent 59%); }
+.lynk::before { clip-path: polygon(13% 26%,50% 4%,87% 26%,87% 74%,50% 96%,13% 74%); }
+.icon-ai-card::before { border-radius: 50%; background: radial-gradient(circle, transparent 0 9px, #fff0f3 10px 13px, transparent 14px), linear-gradient(#fff0f3,#fff0f3); }
+.icon-vault-card::before { border-radius: 9px; clip-path: polygon(20% 42%,20% 28%,30% 10%,50% 2%,70% 10%,80% 28%,80% 42%,92% 42%,92% 96%,8% 96%,8% 42%); }
+.icon-products-card::before { clip-path: polygon(50% 0,92% 24%,92% 74%,50% 100%,8% 74%,8% 24%); }
+.icon-bounty-card::before { clip-path: polygon(22% 8%,78% 8%,78% 26%,95% 26%,86% 55%,68% 62%,60% 76%,74% 76%,74% 92%,26% 92%,26% 76%,40% 76%,32% 62%,14% 55%,5% 26%,22% 26%); }
+.icon-community-card::before { background: radial-gradient(circle at 50% 18%, #fff0f3 0 6px, transparent 7px), radial-gradient(circle at 22% 70%, #fff0f3 0 6px, transparent 7px), radial-gradient(circle at 78% 70%, #fff0f3 0 6px, transparent 7px), linear-gradient(32deg, transparent 0 43%, #fff0f3 44% 49%, transparent 50%), linear-gradient(-32deg, transparent 0 43%, #fff0f3 44% 49%, transparent 50%); }
+
+.home-cta { max-width: 980px; margin-inline: auto; }
+.home-footer { max-width: 1180px !important; width: 100% !important; }
+.footer-links a { color: rgba(255,235,238,.62); text-decoration: none; font-weight: 850; font-size: 13px; }
+.footer-links a:hover { color: #fff; text-shadow: 0 0 14px rgba(255,0,64,.55); }
+
+@keyframes corePulse { 0%,100% { opacity:.72; transform:scale(1); } 50% { opacity:1; transform:scale(1.045); } }
+@keyframes markPulse { 50% { box-shadow:0 0 34px rgba(255,0,72,.38), inset 0 0 24px rgba(255,0,72,.24), inset 0 1px 0 rgba(255,255,255,.18); } }
+@keyframes ringSpin { from { transform: rotate(18deg) scaleX(1.13); } to { transform: rotate(378deg) scaleX(1.13); } }
+@keyframes ringSpinReverse { from { transform: rotate(-32deg) scaleY(.78); } to { transform: rotate(-392deg) scaleY(.78); } }
+@keyframes haloDrift { to { transform: rotateX(72deg) rotateZ(360deg); } }
+@keyframes wingShimmer { 0%,100% { opacity:.66; filter:brightness(1); } 50% { opacity:.95; filter:brightness(1.22); } }
+
+@media (max-width: 1180px) {
+  .home-hub { max-width: min(100%, calc(100vw - 40px)) !important; }
+  .project-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; overflow: visible; padding-bottom: 0; }
+}
+@media (max-width: 900px) {
+  body::before { background-size: auto, auto, 56px 56px, 56px 56px, 100% 12px; }
+  .home-hero { grid-template-columns: 1fr !important; }
+  .hero-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .mii-core-emblem { width: min(78vw, 340px); }
+  .social-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; overflow: visible; }
+  .home-footer, .home-cta { flex-direction: column !important; align-items: stretch !important; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+@media (max-width: 560px) {
+  .home-hub { max-width: 100% !important; gap: 38px !important; }
+  .home-hero, .hub-section, .home-cta { border-radius: 24px !important; padding: 22px 16px !important; }
+  .mii-core-emblem { width: min(78vw, 292px); filter: drop-shadow(0 0 18px rgba(255,0,72,.20)); }
+  .mii-core-bg { filter: none; box-shadow: 0 0 22px rgba(255,0,72,.20), inset 0 0 22px rgba(255,0,72,.14); }
+  .hero-actions, .social-grid, .project-grid { grid-template-columns: 1fr !important; }
+  .social-card, .project-card { min-height: 172px !important; padding: 18px !important; }
+  .social-icon, .project-icon { width: 62px !important; height: 62px !important; border-radius: 20px !important; }
+  .social-icon::before, .project-icon::before { width: 30px; height: 30px; }
+  .butterfly-layer::after { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before, .butterfly-layer::after, .mii-core-bg, .mii-core-ring, .mii-core-mark, .mii-wing { animation: none !important; }
+}
