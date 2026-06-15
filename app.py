@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-scorpion-home-v11"
+APP_VERSION = "20260615-shield-home-v12"
 
 
 def versioned_static(path):
