@@ -721,8 +721,23 @@ def _telegram_get_chat_member(user_id):
         app.logger.warning('Telegram getChatMember failed: %s', exc); return 'error'
 
 
-def _admin_chat_id(): return os.environ.get('TELEGRAM_ADMIN_CHAT_ID', '6737854054').strip()
-def _is_admin_chat(user_id): return str(user_id) == _admin_chat_id()
+def getAdminIdFromEnv():
+    return (os.environ.get('TELEGRAM_ADMIN_CHAT_ID') or os.environ.get('TELEGRAM_ADMIN_ID') or '').strip()
+
+
+def isAdmin(user_id):
+    admin_id = getAdminIdFromEnv()
+    return bool(admin_id and user_id is not None and str(user_id).strip() == str(admin_id).strip())
+
+
+def checkAdminPassword(input_value):
+    expected = (os.environ.get('BOT_ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD') or '').strip()
+    supplied = (input_value or '').strip()
+    return bool(expected and supplied and hmac.compare_digest(supplied, expected))
+
+
+def _admin_chat_id(): return getAdminIdFromEnv()
+def _is_admin_chat(user_id): return isAdmin(user_id)
 def _is_logged_in(chat_id):
     with _BOT_SESSION_LOCK: return str(chat_id) in _BOT_AUTHENTICATED_CHATS
 
@@ -759,12 +774,11 @@ def _claim_keyboard():
 
 def _admin_keyboard():
     return _reply_keyboard([
-        ['📦 Add Reward Stock', '📦 View Reward Stock'],
-        ['🏆 Winner List', '📜 Claim History'],
         ['🟢 Open Event', '🔒 Lock Event'],
         ['🎲 Start Draw', '⚙️ Event Settings'],
-        ['♻️ Reset Draw', '👥 List Token'],
-        ['📊 Statistik Event', '🔴 Maintenance ON', '🟢 Maintenance OFF'],
+        ['📦 Reward Stock', '👥 Token List'],
+        ['🏆 Winner List', '📊 Status'],
+        ['♻️ Reset Event', '🔐 Logout'],
         ['🎁 Info Hadiah', '🏠 Menu Utama'],
         ['🔐 Logout'],
     ])
@@ -864,7 +878,7 @@ def _admin_text(note=None):
         f'Web: {status}',
         f'Event: {event_status}',
         f"Hadiah: {payload.get('reward_name') or '-'}",
-        f"Token: {payload['total_tokens']}",
+        f"Total Token: {payload['total_tokens']}",
         f"Winner: {payload['total_winners']} / {payload['slot_winner']}",
         f"Stock: {payload['reward_stock']}",
     ]
@@ -1110,7 +1124,10 @@ def process_telegram_update(update):
     if data in ('menu', 'cancel') and state != 'awaiting_reward_code':
         was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings')
         _clear_bot_state(chat_id, uid)
-        if _is_admin_chat(uid) and _is_logged_in(chat_id):
+        if _is_admin_chat(uid):
+            if not _is_logged_in(chat_id):
+                _show_login_prompt(chat_id)
+                return
             if data == 'cancel' and was_admin_input:
                 _telegram_send_message(chat_id, '❌ Dibatalkan.')
             show_admin_panel(chat_id, user)
@@ -1121,8 +1138,7 @@ def process_telegram_update(update):
     with _BOT_SESSION_LOCK:
         pending = str(chat_id) in _BOT_LOGIN_PENDING_CHATS
     if pending:
-        expected = os.environ.get('BOT_ADMIN_PASSWORD', '')
-        if _is_admin_chat(uid) and expected and hmac.compare_digest(raw_data, expected):
+        if _is_admin_chat(uid) and checkAdminPassword(raw_data):
             with _BOT_SESSION_LOCK:
                 _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
                 _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
@@ -1145,7 +1161,10 @@ def process_telegram_update(update):
             _BOT_AUTHENTICATED_CHATS.discard(str(chat_id))
             _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
         _clear_bot_state(chat_id, uid)
-        _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
+        if _is_admin_chat(uid):
+            _telegram_send_message(chat_id, '🔐 Logout berhasil. Kirim /start untuk login admin lagi.')
+        else:
+            _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
     admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info'}
@@ -1155,7 +1174,10 @@ def process_telegram_update(update):
     if _is_admin_chat(uid) and data in admin_actions and not _is_logged_in(chat_id):
         _show_login_prompt(chat_id)
         return
-    if _is_admin_chat(uid) and _is_logged_in(chat_id):
+    if _is_admin_chat(uid):
+        if not _is_logged_in(chat_id):
+            _show_login_prompt(chat_id)
+            return
         if data == 'event_stats':
             _telegram_send_message(chat_id, _format_stats())
             return
@@ -1272,6 +1294,10 @@ def process_telegram_update(update):
         if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings'):
             _handle_admin_text(chat_id, raw_data)
             return
+
+    if _is_admin_chat(uid):
+        show_admin_panel(chat_id, user)
+        return
 
     if state == 'awaiting_reward_code':
         if data == 'cancel':
@@ -1621,11 +1647,9 @@ def event_start_draw():
 
 
 def _admin_web_authed():
-    expected = os.environ.get('BOT_ADMIN_PASSWORD', '')
     if session.get('mii_event_admin') is True:
         return True
-    supplied = request.form.get('password', '')
-    return bool(expected and supplied and hmac.compare_digest(supplied, expected))
+    return checkAdminPassword(request.form.get('password', ''))
 
 
 @app.route('/admin-panel', methods=['GET', 'POST'])
