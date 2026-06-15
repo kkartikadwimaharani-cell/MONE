@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-maintenance-v14"
+APP_VERSION = "20260615-maintenance-v15"
 
 
 def versioned_static(path):
@@ -908,6 +908,10 @@ def refresh_admin_panel(chat_id, user=None, note=None):
     if cached_id and _telegram_edit_message(chat_id, cached_id, _admin_text(note), _admin_keyboard()):
         if user:
             _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=cached_id)
+        return
+    message_id = _telegram_show_panel(chat_id, _admin_text(note), _admin_keyboard())
+    if user and message_id:
+        _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=message_id)
 
 def _show_login_prompt(chat_id):
     with _BOT_SESSION_LOCK: _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
@@ -1564,9 +1568,10 @@ _MAINTENANCE_ALLOWED_ENDPOINTS = {
 
 @app.before_request
 def maintenance_guard():
+    allowed_prefixes = ('/telegram/', '/admin-panel', '/admin', '/api/admin', '/internal/', '/webhook')
     if request.endpoint in _MAINTENANCE_ALLOWED_ENDPOINTS:
         return None
-    if request.path.startswith('/static/'):
+    if request.path.startswith('/static/') or request.path.startswith(allowed_prefixes):
         return None
     if get_site_status().get('maintenance'):
         return render_template('maintenance.html', status=get_site_status()), 503
