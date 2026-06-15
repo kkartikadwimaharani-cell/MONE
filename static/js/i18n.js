@@ -4,7 +4,7 @@
 
   var storageKey = 'mii_network_language';
   var defaultLang = 'id';
-  var langShort = { id: 'ID', en: 'EN', ja: 'JP', ko: 'KR', zh: 'CN', ru: 'RU' };
+  var langShort = { id: 'ID', en: 'EN', ja: 'JP', ko: 'KR', zh: 'CN', cn: 'CN', ru: 'RU' };
 
   var dictionaries = {
     id: {
@@ -48,13 +48,21 @@
   };
   Object.keys(portfolioTranslations).forEach(function(lang) { dictionaries[lang] = Object.assign({}, dictionaries.en, dictionaries[lang] || {}, portfolioTranslations.en, portfolioTranslations[lang]); });
 
+
+  var miiStoreTranslations = {
+    id: { heroTagline:'DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH', openMakima:'OPEN MAKIMA AI', contactWhatsapp:'CONTACT WHATSAPP', exploreSocials:'EXPLORE SOCIALS', bountyGame:'BOUNTY GAME', socialMedia:'SOCIAL MEDIA', projects:'PROJECTS', open:'BUKA', openVault:'BUKA VAULT', viewProduct:'LIHAT PRODUK', joinEvent:'IKUTI EVENT', contact:'KONTAK', cta:'SIAP UPGRADE PENGALAMAN DIGITAL ANDA?', startNow:'MULAI SEKARANG', home:'BERANDA', social:'SOSIAL', project:'PROYEK', connectLabel:'CONNECT', portfolioLabel:'PORTFOLIO', drawer_subtitle:'Digital Products • AI Tools' },
+    en: { heroTagline:'DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH', openMakima:'OPEN MAKIMA AI', contactWhatsapp:'CONTACT WHATSAPP', exploreSocials:'EXPLORE SOCIALS', bountyGame:'BOUNTY GAME', socialMedia:'SOCIAL MEDIA', projects:'PROJECTS', open:'OPEN', openVault:'OPEN VAULT', viewProduct:'VIEW PRODUCT', joinEvent:'JOIN EVENT', contact:'CONTACT', cta:'READY TO UPGRADE YOUR DIGITAL EXPERIENCE?', startNow:'START NOW', home:'HOME', social:'SOCIAL', project:'PROJECTS', connectLabel:'CONNECT', portfolioLabel:'PORTFOLIO', drawer_subtitle:'Digital Products • AI Tools' },
+    cn: { heroTagline:'数字产品 • AI 工具 • 创意科技', openMakima:'打开 MAKIMA AI', contactWhatsapp:'联系 WHATSAPP', exploreSocials:'查看社交媒体', bountyGame:'奖励活动', socialMedia:'社交媒体', projects:'项目', open:'打开', openVault:'打开 VAULT', viewProduct:'查看产品', joinEvent:'参加活动', contact:'联系', cta:'准备升级你的数字体验了吗？', startNow:'立即开始', home:'首页', social:'社交', project:'项目', connectLabel:'连接', portfolioLabel:'作品', drawer_subtitle:'数字产品 • AI 工具' }
+  };
+  miiStoreTranslations.zh = miiStoreTranslations.cn;
+  Object.keys(miiStoreTranslations).forEach(function(lang) { dictionaries[lang] = Object.assign({}, dictionaries.en, dictionaries[lang] || {}, miiStoreTranslations[lang]); });
+
   var languages = [
-    { code: 'id', label: 'Indonesia' }, { code: 'en', label: 'English' }, { code: 'ja', label: '日本語' },
-    { code: 'ko', label: '한국어' }, { code: 'zh', label: '中文' }, { code: 'ru', label: 'Русский' }
+    { code: 'id', label: 'Indonesia' }, { code: 'en', label: 'English' }, { code: 'cn', label: '中文' }
   ];
 
   function getLanguage() {
-    try { var saved = window.localStorage.getItem(storageKey); return dictionaries[saved] ? saved : defaultLang; } catch (e) { return defaultLang; }
+    try { var saved = window.localStorage.getItem(storageKey); if (saved === 'zh') saved = 'cn'; return dictionaries[saved] ? saved : defaultLang; } catch (e) { return defaultLang; }
   }
 
   function translate(key, vars) {
@@ -71,7 +79,7 @@
     window.currentLanguage = lang;
     try { window.localStorage.setItem(storageKey, lang); } catch (e) {}
     document.documentElement.setAttribute('lang', lang);
-    document.body.classList.toggle('cjk-lang', /^(ja|ko|zh)$/.test(lang));
+    document.body.classList.toggle('cjk-lang', /^(ja|ko|zh|cn)$/.test(lang));
     document.body.classList.toggle('ru-lang', lang === 'ru');
 
     document.querySelectorAll('[data-i18n]').forEach(function(el) { el.textContent = translate(el.getAttribute('data-i18n')); });
