@@ -1564,3 +1564,136 @@ body::after { opacity: .18 !important; }
 @media (prefers-reduced-motion: reduce) {
   .globe-aura, .globe-sphere, .globe-map, .globe-orbit, .globe-pulse-dot { animation: none !important; }
 }
+
+/* ── 20260615 v5: equal projects + premium animated globe final override ── */
+.home-hub {
+  width: 100% !important;
+  max-width: min(1280px, calc(100vw - 40px)) !important;
+}
+.home-hero,
+.hub-section,
+.home-cta {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 48, 82, .15), transparent 34%),
+    radial-gradient(circle at 86% 72%, rgba(120, 0, 28, .12), transparent 36%),
+    linear-gradient(145deg, rgba(22, 7, 12, .76), rgba(4, 3, 6, .88)) !important;
+  border-color: rgba(255, 76, 102, .24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 28px 92px rgba(0,0,0,.34),
+    0 0 56px rgba(255,0,58,.08) !important;
+}
+.home-hero::before,
+.hub-section::after,
+.home-cta::after {
+  opacity: .9 !important;
+  background:
+    linear-gradient(rgba(255, 70, 96, .032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 70, 96, .028) 1px, transparent 1px),
+    radial-gradient(circle at 15% 15%, rgba(255, 52, 82, .14), transparent 32%) !important;
+  background-size: 38px 38px, 38px 38px, auto !important;
+}
+.home-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, .88fr) !important;
+  gap: clamp(24px, 4vw, 60px) !important;
+}
+.hero-copy { align-self: center !important; }
+.hero-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 230px)) !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+}
+.hero-actions .premium-btn { width: 100% !important; justify-content: center !important; text-align: center !important; }
+.hero-globe { align-self: center !important; min-height: clamp(270px, 32vw, 430px) !important; }
+.futuristic-globe { animation: globeFloatPremium 6.5s ease-in-out infinite; }
+.globe-sphere { animation: globeSphereRotate 28s linear infinite, globeSoftBreath 4.6s ease-in-out infinite !important; }
+.globe-latitudes { animation: globeGridDrift 12s linear infinite; }
+.globe-longitudes { animation: globeMeridianSweep 18s linear infinite; }
+.orbit-alpha { animation-duration: 14s !important; }
+.orbit-beta { animation-duration: 20s !important; }
+.project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr !important;
+  align-items: stretch !important;
+  gap: 18px !important;
+}
+.project-card {
+  min-height: 248px !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-rows: 74px minmax(54px, 1fr) 52px !important;
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  gap: 16px !important;
+  padding: 22px !important;
+}
+.project-icon {
+  align-self: start !important;
+  justify-self: start !important;
+  width: 70px !important;
+  height: 70px !important;
+  margin: 0 !important;
+}
+.project-card h3 {
+  align-self: center !important;
+  justify-self: stretch !important;
+  min-height: 54px !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  line-height: 1.08 !important;
+}
+.project-card a,
+.project-card button,
+.social-card a {
+  align-self: end !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  padding: 0 14px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+.social-grid { display: grid !important; grid-auto-rows: 1fr !important; align-items: stretch !important; }
+.social-card {
+  height: 100% !important;
+  display: grid !important;
+  grid-template-rows: 76px 1fr 52px !important;
+  gap: 14px !important;
+}
+.social-card h3 { align-self: center !important; margin: 0 !important; }
+.home-footer {
+  min-height: 82px !important;
+  padding: 22px 4px 0 !important;
+  margin-top: 0 !important;
+}
+@keyframes globeFloatPremium { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-8px,0); } }
+@keyframes globeSphereRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes globeGridDrift { to { transform: rotate(360deg); } }
+@keyframes globeMeridianSweep { from { transform: perspective(360px) rotateY(34deg) rotateZ(0deg); } to { transform: perspective(360px) rotateY(34deg) rotateZ(360deg); } }
+@media (max-width: 1180px) {
+  .project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 900px) {
+  .home-hero { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 26px !important; }
+  .hero-globe { order: 2; min-height: 300px !important; }
+  .hero-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; width: 100% !important; }
+  .project-grid, .social-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .project-card { min-height: 226px !important; grid-template-rows: 70px minmax(48px, 1fr) 52px !important; }
+}
+@media (max-width: 560px) {
+  .home-hub { max-width: 100% !important; gap: 30px !important; }
+  .home-hero, .hub-section, .home-cta { padding: 22px 16px !important; }
+  .hero-actions, .project-grid, .social-grid { grid-template-columns: 1fr !important; }
+  .hero-globe { min-height: 270px !important; }
+  .futuristic-globe { width: min(78vw, 292px) !important; }
+  .project-card { min-height: 220px !important; grid-template-rows: 66px minmax(44px, 1fr) 52px !important; padding: 18px !important; }
+  .social-card { min-height: 196px !important; padding: 18px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .futuristic-globe, .globe-sphere, .globe-latitudes, .globe-longitudes { animation: none !important; }
+}
