@@ -2048,3 +2048,96 @@ body { background:#030204 !important; }
 @media(max-width:900px){.hero-shield-stage{order:2;width:min(78vw,360px);min-height:300px;margin-inline:auto}.home-hero{grid-template-columns:1fr!important}}
 @media(max-width:560px){.hero-shield-stage{width:min(80vw,280px);min-height:230px}.hero-shield-emblem{width:86%;height:86%}.shield-glow{inset:12%;filter:blur(16px)}}
 @media(prefers-reduced-motion:reduce){.hero-shield-stage,.hero-shield-emblem,.shield-glow,.shield-halo,.shield-core,.shield-m{animation:none!important;transition:none!important}}
+
+/* ── 20260615 v13: dominant premium shield hero emblem ───────────────── */
+.hero-scorpion,
+.hero-globe,
+.futuristic-globe { display: none !important; }
+.hero-shield-stage {
+  position: relative !important;
+  width: 100% !important;
+  min-height: clamp(280px, 46vw, 460px) !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+}
+.hero-shield-stage::before {
+  content: "" !important;
+  position: absolute !important;
+  width: clamp(300px, 48vw, 560px) !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255, 0, 72, .34), rgba(150, 0, 34, .16) 38%, transparent 70%) !important;
+  filter: blur(10px) !important;
+  opacity: .78 !important;
+  animation: shieldGlowPulse 3s ease-in-out infinite !important;
+  z-index: -3 !important;
+}
+.hero-shield-stage::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 9% !important;
+  width: clamp(160px, 24vw, 280px) !important;
+  height: clamp(18px, 3vw, 36px) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse, rgba(0,0,0,.72), transparent 72%) !important;
+  filter: blur(4px) !important;
+  opacity: .70 !important;
+  z-index: -1 !important;
+}
+.hero-shield-halo,
+.shield-halo {
+  position: absolute !important;
+  width: clamp(240px, 38vw, 420px) !important;
+  aspect-ratio: 1 !important;
+  inset: auto !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 35, 85, 0.28) !important;
+  box-shadow: 0 0 42px rgba(255, 0, 72, 0.22), inset 0 0 40px rgba(255, 0, 72, 0.08) !important;
+  background: conic-gradient(from 0deg, transparent, rgba(255,255,255,.16), rgba(255,35,85,.30), transparent 34%, rgba(255,35,85,.18), transparent 72%) !important;
+  animation: shieldHaloSpin 12s linear infinite !important;
+  z-index: -2 !important;
+}
+.hero-shield-halo::before,
+.shield-halo::before { content:""; position:absolute; inset:12%; border-radius:inherit; border:1px solid rgba(255, 190, 200, .13); transform:none !important; }
+.hero-shield-emblem {
+  position: relative !important;
+  width: clamp(180px, 30vw, 340px) !important;
+  aspect-ratio: 0.82 !important;
+  height: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  filter: drop-shadow(0 0 18px rgba(255, 0, 72, 0.55)) drop-shadow(0 0 46px rgba(255, 0, 72, 0.22)) !important;
+  animation: shieldFloat 4s ease-in-out infinite !important;
+  z-index: 2 !important;
+  will-change: transform;
+}
+.shield-svg { width: 100% !important; height: 100% !important; overflow: visible !important; }
+.shield-body { fill: url(#shieldGradient) !important; stroke: rgba(255, 45, 90, 0.95) !important; stroke-width: 3.5 !important; }
+.shield-m { fill: url(#shieldMGradient) !important; filter: drop-shadow(0 0 12px rgba(255, 0, 72, 0.72)) !important; animation: shieldMPulse 3s ease-in-out infinite !important; transform-origin: 180px 230px !important; }
+.shield-glow {
+  position: absolute !important;
+  width: clamp(220px, 34vw, 390px) !important;
+  aspect-ratio: 1 !important;
+  inset: auto !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255, 0, 72, .38), rgba(255, 0, 72, .12) 42%, transparent 68%) !important;
+  filter: blur(18px) !important;
+  opacity: .72 !important;
+  animation: shieldGlowPulse 3s ease-in-out infinite !important;
+  z-index: -2 !important;
+}
+.hero-shield-stage:hover .hero-shield-emblem,
+.hero-shield-stage:active .hero-shield-emblem { filter: drop-shadow(0 0 26px rgba(255, 0, 72, .78)) drop-shadow(0 0 64px rgba(255, 0, 72, .34)) !important; }
+.hero-shield-stage:hover .shield-glow,
+.hero-shield-stage:active .shield-glow { opacity: .96 !important; }
+@keyframes shieldHaloSpin { from { transform: rotate(0deg) scale(1); } to { transform: rotate(360deg) scale(1); } }
+@keyframes shieldFloat { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-7px) scale(1.035); } }
+@keyframes shieldMPulse { 0%, 100% { opacity: 0.82; filter: drop-shadow(0 0 9px rgba(255, 0, 72, 0.45)); } 50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(255, 0, 72, 0.9)); } }
+@keyframes shieldGlowPulse { 0%, 100% { opacity:.58; transform:scale(.96); } 50% { opacity:1; transform:scale(1.08); } }
+@media (max-width: 900px) { .hero-shield-stage { order: 2 !important; min-height: clamp(280px, 58vw, 360px) !important; margin-top: 0 !important; } }
+@media (max-width: 560px) { .hero-shield-stage { min-height: 280px !important; } .hero-shield-halo, .shield-halo { width: clamp(240px, 82vw, 320px) !important; } .hero-shield-emblem { width: clamp(180px, 68vw, 220px) !important; } }
+@media (prefers-reduced-motion: reduce) { .hero-shield-stage::before, .hero-shield-halo, .shield-halo, .hero-shield-emblem, .shield-m, .shield-glow { animation: none !important; } }
