@@ -19,19 +19,73 @@
     <div class="maintenance-particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 
     <section class="maintenance-card">
-      <div class="maintenance-butterfly" aria-hidden="true">
-        <span class="butterfly-glow"></span>
-        <span class="butterfly-wing butterfly-wing-left butterfly-wing-top"></span>
-        <span class="butterfly-wing butterfly-wing-right butterfly-wing-top"></span>
-        <span class="butterfly-wing butterfly-wing-left butterfly-wing-bottom"></span>
-        <span class="butterfly-wing butterfly-wing-right butterfly-wing-bottom"></span>
-        <span class="butterfly-body"></span>
+
+      <!-- Katana Scene -->
+      <div class="maintenance-katana-scene" aria-hidden="true">
+        <div class="katana-slash-arc"></div>
+
+        <!-- Afterimage trails -->
+        <div class="katana-trail"></div>
+        <div class="katana-trail"></div>
+
+        <!-- Katana blade SVG -->
+        <div class="katana-wrapper">
+          <svg class="katana-svg" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Blade -->
+            <path d="M10 30 L185 18 L188 24 L14 38 Z" fill="url(#bladeGrad)" />
+            <!-- Blade edge highlight -->
+            <path d="M12 30 L185 18.5" stroke="rgba(255,255,255,0.85)" stroke-width="0.8" stroke-linecap="round"/>
+            <!-- Fuller groove -->
+            <path d="M20 31 L170 21" stroke="rgba(200,160,255,0.4)" stroke-width="0.6" stroke-linecap="round"/>
+            <!-- Habaki (blade collar) -->
+            <rect x="8" y="26" width="10" height="10" rx="1" fill="url(#habakiGrad)" transform="rotate(-4 13 31)"/>
+            <!-- Tsuba (guard) -->
+            <ellipse cx="10" cy="31" rx="5" ry="10" fill="url(#tsuba)" transform="rotate(-4 10 31)"/>
+            <!-- Handle -->
+            <path d="M0 27 L11 24 L13 36 L2 37 Z" fill="url(#handleGrad)" />
+            <!-- Handle wrapping lines -->
+            <line x1="3" y1="27.5" x2="4" y2="35.5" stroke="rgba(200,160,255,0.5)" stroke-width="0.7"/>
+            <line x1="6" y1="26.5" x2="7" y2="34.5" stroke="rgba(200,160,255,0.5)" stroke-width="0.7"/>
+            <line x1="9" y1="25.5" x2="10" y2="33.5" stroke="rgba(200,160,255,0.5)" stroke-width="0.7"/>
+            <!-- Tip glow -->
+            <circle cx="187" cy="21" r="3" fill="rgba(200,160,255,0.7)" filter="url(#glow)"/>
+            <defs>
+              <linearGradient id="bladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d8c4f8"/>
+                <stop offset="40%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#6d28d9"/>
+              </linearGradient>
+              <linearGradient id="habakiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#c4b5fd"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <radialGradient id="tsuba" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="100%" stop-color="#4c1d95"/>
+              </radialGradient>
+              <linearGradient id="handleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5b21b6"/>
+                <stop offset="100%" stop-color="#1e0a3c"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+          </svg>
+        </div>
+
+        <!-- Blade shine -->
+        <div class="blade-shine"></div>
+
+        <!-- Impact glow -->
+        <div class="katana-impact"></div>
       </div>
 
       <p class="maintenance-title">MII STORE</p>
       <h1 class="maintenance-heading">SYSTEM UPDATE</h1>
       <p class="maintenance-subtitle">Website sedang diperbarui.<br>Silakan kembali beberapa saat lagi.</p>
-      <div class="maintenance-status-pill"><span>STATUS</span><strong>MAINTENANCE</strong></div>
+      <div class="maintenance-status-pill"><span>MAINTENANCE</span></div>
       <div class="maintenance-progress" aria-hidden="true"><span></span></div>
       <a class="maintenance-whatsapp-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">CONTACT WHATSAPP</a>
     </section>
