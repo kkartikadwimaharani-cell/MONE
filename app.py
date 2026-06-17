@@ -200,6 +200,7 @@ def _default_event_data():
         'reward_items': [],
         'winning_keys': {},
         'claims': [],
+        'referral_rewards': [],   # stok hadiah referral: list of {'id','content','reward_name','used',..}
         'event_settings': {
             'bounty_event_status': 'locked',
             'draw_status': 'locked',
@@ -214,6 +215,11 @@ def _default_event_data():
             'winners': [],
             'current_round': 0,
             'win_quota': 1,
+            # --- Referral settings ---
+            'referral_open': True,          # True = referral aktif, False = tutup
+            'referral_max_user': 15,        # maks invite agar dapat premium
+            'referral_reward_name': 'Premium App',  # nama hadiah referral
+            'referral_reward_info': '',     # deskripsi hadiah referral
         },
     }
 
@@ -233,6 +239,7 @@ def _load_event_data():
     data.setdefault('reward_items', [])
     data.setdefault('winning_keys', {})
     data.setdefault('claims', [])
+    data.setdefault('referral_rewards', [])
     data.setdefault('event_settings', {})
     data['event_settings'].setdefault('bounty_event_status', 'locked')
     data['event_settings'].setdefault('draw_status', data['event_settings'].get('bounty_event_status', 'locked'))
@@ -247,6 +254,10 @@ def _load_event_data():
     data['event_settings'].setdefault('winners', [])
     data['event_settings'].setdefault('current_round', 0)
     data['event_settings'].setdefault('win_quota', 1)
+    data['event_settings'].setdefault('referral_open', True)
+    data['event_settings'].setdefault('referral_max_user', 15)
+    data['event_settings'].setdefault('referral_reward_name', 'Premium App')
+    data['event_settings'].setdefault('referral_reward_info', '')
     return data
 
 
@@ -262,8 +273,10 @@ def _user_from_telegram_actor(actor, chat=None):
     actor = actor or {}
     chat = chat or {}
     now = _utc_timestamp()
+    uid = str(actor.get('id') or chat.get('id'))
+    ref_code = 'REF' + uid[-6:].upper() if uid else ''
     return {
-        'telegram_user_id': str(actor.get('id') or chat.get('id')),
+        'telegram_user_id': uid,
         'chat_id': str(chat.get('id') or ''),
         'username': actor.get('username') or '', 'first_name': actor.get('first_name') or '', 'last_name': actor.get('last_name') or '',
         'started_at': now, 'telegram_join_verified': False, 'verified': False,
@@ -271,6 +284,14 @@ def _user_from_telegram_actor(actor, chat=None):
         'token_used_for_event': False, 'reward_claimed': False, 'game_attempts': 0,
         'is_admin': False, 'reward_claims': [], 'reward_status': 'none', 'state': '',
         'start_message_id': None, 'inline_message_id': None, 'last_inline_message_id': None, 'admin_panel_message_id': None, 'last_action_at': now,
+        # Referral fields
+        'referral_code': ref_code,
+        'referred_by': '',          # referral_code siapa yang mengundang
+        'referral_invited': [],     # list telegram_user_id yang join via kode ini
+        'referral_count': 0,        # jumlah yg berhasil join via kode ini
+        'referral_reward_claimed': False,  # sudah dapat hadiah referral?
+        'referral_reward_item_id': '',
+        'is_premium': False,        # status premium dari referral
     }
 
 
@@ -294,6 +315,14 @@ def _upsert_event_user(message=None, actor=None, chat=None):
             user.setdefault(k, v)
         user['is_admin'] = _is_admin_chat(uid)
         user.setdefault('reward_claims', [])
+        # Preserve referral fields
+        user.setdefault('referral_code', incoming.get('referral_code', ''))
+        user.setdefault('referred_by', '')
+        user.setdefault('referral_invited', [])
+        user.setdefault('referral_count', 0)
+        user.setdefault('referral_reward_claimed', False)
+        user.setdefault('referral_reward_item_id', '')
+        user.setdefault('is_premium', False)
         user['last_action_at'] = _utc_timestamp()
         data['users'][uid] = user
         _save_event_data(data)
@@ -358,18 +387,26 @@ def _set_reward_info(text):
 
 
 def _format_reward_info(data=None):
+    data = data or _load_event_data()
+    settings = _event_settings(data)
     info = _reward_info_text(data)
-    if not info:
-        return '🎁 Info Hadiah\nPremium App Random'
-    parts = [part.strip() for part in info.split('|') if part.strip()]
-    if len(parts) >= 3:
-        return (
-            '🎁 Info Hadiah\n'
-            f'{parts[0]}\n'
-            f'Slot: {parts[1]}\n'
-            f'Claim: {parts[2]}'
-        )
-    return '🎁 Info Hadiah\n' + info
+    reward_name = settings.get('reward_name') or info or 'Premium App Random'
+    event_name = settings.get('event_name', 'MII Reward Draw')
+    event_date = settings.get('event_date', '-')
+    event_time = settings.get('event_time', '-')
+    win_quota = settings.get('win_quota', 1)
+    announcement = settings.get('announcement', '')
+    lines = [
+        '🎁 *INFO HADIAH EVENT*',
+        '',
+        f'🏷 Event: *{event_name}*',
+        f'📅 Tanggal: {event_date} | ⏰ {event_time}',
+        f'🏆 Pemenang: {win_quota} orang',
+        f'🎀 Hadiah: *{reward_name}*',
+    ]
+    if announcement:
+        lines += ['', f'📢 _{announcement}_']
+    return '\n'.join(lines)
 
 def _event_stats(data=None):
     data = data or _load_event_data()
@@ -600,7 +637,22 @@ def _start_reward_draw():
         settings['updated_at'] = now
         _save_event_data(data)
     for win in notify:
-        _telegram_send_message(win['telegram_id'], '🏆 SELAMAT KAMU MENANG\n\nToken:\n' + _md_code(win['token']) + '\n\nWinning Key:\n' + _md_code(win['winning_key']) + '\n\nKlik Claim Reward untuk mengambil hadiah kamu.', _user_keyboard(), parse_mode='Markdown')
+        _telegram_send_message(win['telegram_id'], (
+            '🏆 *SELAMAT, KAMU MENANG!*\n\n'
+            '━━━━━━━━━━━━━━━━━━\n'
+            '🎀 *MII Reward Draw*\n'
+            '━━━━━━━━━━━━━━━━━━\n\n'
+            'Token Kamu:\n'
+            + _md_code(win['token']) +
+            '\n\nWinning Key:\n'
+            + _md_code(win['winning_key']) +
+            '\n\n'
+            '📌 Cara klaim:\n'
+            '1. Tekan *Claim Reward* di menu bawah\n'
+            '2. Kirim Winning Key di atas\n'
+            '3. Hadiah langsung dikirim ke sini\n\n'
+            '⏳ Segera klaim sebelum kedaluwarsa.'
+        ), _user_keyboard(), parse_mode='Markdown')
     return (notify[-1] if notify else None), 'selected'
 
 
@@ -764,7 +816,7 @@ def _user_keyboard():
     return _reply_keyboard([
         ['🎟 Claim Token', '🎁 Claim Reward'],
         ['🌐 Buka MII Reward Draw', '📦 Reward Saya'],
-        ['🏠 Menu Utama'],
+        ['🔗 Info Referral', '🏠 Menu Utama'],
     ])
 
 
@@ -775,6 +827,9 @@ def _claim_keyboard():
 def _admin_keyboard():
     maintenance_enabled = bool(get_site_status().get('maintenance'))
     maintenance_button = '🔴 Matikan Maintenance' if maintenance_enabled else '🟢 Hidupkan Maintenance'
+    data = _load_event_data()
+    referral_open = data['event_settings'].get('referral_open', True)
+    referral_button = '🔒 Tutup Referral' if referral_open else '🟢 Buka Referral'
     return _reply_keyboard([
         [maintenance_button],
         ['🟢 Open Event', '🔒 Lock Event'],
@@ -782,6 +837,8 @@ def _admin_keyboard():
         ['📦 Reward Stock', '👥 Token List'],
         ['🏆 Winner List', '📊 Status'],
         ['♻️ Reset Event', '🎁 Info Hadiah'],
+        [referral_button, '🎀 Hadiah Referral'],
+        ['📥 Stok Referral', '📋 Referral Stats'],
         ['🏠 Menu Utama', '🔐 Logout'],
     ])
 
@@ -1014,15 +1071,115 @@ def _handle_admin_text(chat_id, text):
             reward_name = lines[0]
             rows = lines[1:]
         if not rows:
-            _telegram_send_message(chat_id, 'Format stok tidak valid. Kirim nama reward lalu baris data akun.'); return
+            _telegram_send_message(chat_id, '❌ Format tidak valid.\nKirim nama reward di baris pertama, lalu data akun baris berikutnya.'); return
         with _EVENT_LOCK:
             data = _load_event_data()
+            existing_contents = {i.get('content', '').strip().lower() for i in data.get('reward_items', [])}
+            added = []; skipped = []
             for row in rows:
-                item_id = str(uuid.uuid4())
-                data['reward_items'].append({'id':item_id,'reward_id':item_id,'reward_name':reward_name,'content':row,'reward_data':row,'used':False,'used_by_telegram_id':'','used_by_winning_key':'','used_at':'','created_at':_utc_timestamp()})
+                row_clean = row.strip()
+                if not row_clean: continue
+                if row_clean.lower() in existing_contents:
+                    skipped.append(row_clean)
+                else:
+                    item_id = str(uuid.uuid4())
+                    data['reward_items'].append({'id':item_id,'reward_id':item_id,'reward_name':reward_name,'content':row_clean,'reward_data':row_clean,'used':False,'used_by_telegram_id':'','used_by_winning_key':'','used_at':'','created_at':_utc_timestamp()})
+                    existing_contents.add(row_clean.lower())
+                    added.append(row_clean)
             _save_event_data(data)
+            stock_left = sum(1 for i in data.get('reward_items', []) if not i.get('used'))
         _clear_bot_state(chat_id)
-        _telegram_send_message(chat_id, f'✅ {len(rows)} stok reward berhasil ditambahkan.\nReward: {reward_name}', _admin_keyboard()); return
+        # Build numbered confirmation
+        added_lines = '\n'.join(f'`{i+1}. {a}`' for i, a in enumerate(added)) if added else '_Tidak ada_'
+        skip_lines = '\n'.join(f'`• {s}`' for s in skipped) if skipped else ''
+        result_text = (
+            f'✅ *Stok reward berhasil diperbarui*\n\n'
+            f'Reward: `{reward_name}`\n'
+            f'Total stok aktif: *{stock_left} akun*\n\n'
+            f'➕ *Ditambahkan ({len(added)}):*\n{added_lines}'
+        )
+        if skipped:
+            result_text += f'\n\n⚠️ *Dilewati — duplikat ({len(skipped)}):*\n{skip_lines}'
+        _telegram_send_message(chat_id, result_text, _admin_keyboard(), parse_mode='Markdown'); return
+    if state == 'set_referral_reward':
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        reward_name = ''
+        reward_info = ''
+        if len(lines) == 1 and ':' not in lines[0]:
+            reward_name = lines[0]
+        else:
+            for ln in lines:
+                if ':' in ln:
+                    k, v = ln.split(':', 1)
+                    k = k.strip().lower()
+                    v = v.strip()
+                    if 'nama' in k:
+                        reward_name = v
+                    elif 'info' in k or 'deskripsi' in k:
+                        reward_info = v
+        if not reward_name:
+            _telegram_send_message(chat_id, '❌ Nama hadiah tidak boleh kosong.', _claim_keyboard())
+            return
+        with _EVENT_LOCK:
+            d = _load_event_data()
+            d['event_settings']['referral_reward_name'] = reward_name
+            if reward_info:
+                d['event_settings']['referral_reward_info'] = reward_info
+            _save_event_data(d)
+        _clear_bot_state(chat_id)
+        _telegram_send_message(
+            chat_id,
+            f'✅ *Hadiah referral berhasil diatur.*\n\n'
+            f'Nama: `{reward_name}`\n'
+            f'Info: `{reward_info or "-"}`',
+            _admin_keyboard(), parse_mode='Markdown'
+        )
+        return
+    if state == 'add_referral_stock':
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        reward_name = 'Premium App'
+        rows = []
+        if lines and lines[0].lower().startswith('nama reward:'):
+            reward_name = lines[0].split(':', 1)[1].strip() or reward_name
+            rows = [ln for ln in lines[1:] if not ln.lower().startswith('data:')]
+        elif lines:
+            reward_name = lines[0]
+            rows = lines[1:]
+        if not rows:
+            _telegram_send_message(chat_id, '❌ Format tidak valid.\nKirim nama reward di baris pertama, lalu data akun baris berikutnya.'); return
+        with _EVENT_LOCK:
+            data = _load_event_data()
+            existing_contents = {i.get('content', '').strip().lower() for i in data.get('referral_rewards', [])}
+            added = []; skipped = []
+            for row in rows:
+                row_clean = row.strip()
+                if not row_clean: continue
+                if row_clean.lower() in existing_contents:
+                    skipped.append(row_clean)
+                else:
+                    item_id = str(uuid.uuid4())
+                    data['referral_rewards'].append({
+                        'id': item_id, 'reward_name': reward_name, 'content': row_clean,
+                        'reward_data': row_clean, 'used': False, 'used_by_telegram_id': '',
+                        'used_at': '', 'created_at': _utc_timestamp()
+                    })
+                    existing_contents.add(row_clean.lower())
+                    added.append(row_clean)
+            _save_event_data(data)
+            stock_left = sum(1 for i in data.get('referral_rewards', []) if not i.get('used'))
+        _clear_bot_state(chat_id)
+        added_lines = '\n'.join(f'`{i+1}. {a}`' for i, a in enumerate(added)) if added else '_Tidak ada_'
+        skip_lines = '\n'.join(f'`• {s}`' for s in skipped) if skipped else ''
+        result_text = (
+            f'✅ *Stok referral berhasil diperbarui*\n\n'
+            f'Reward: `{reward_name}`\n'
+            f'Total stok aktif: *{stock_left} akun*\n\n'
+            f'➕ *Ditambahkan ({len(added)}):*\n{added_lines}'
+        )
+        if skipped:
+            result_text += f'\n\n⚠️ *Dilewati — duplikat ({len(skipped)}):*\n{skip_lines}'
+        _telegram_send_message(chat_id, result_text, _admin_keyboard(), parse_mode='Markdown')
+        return
     _telegram_send_message(chat_id, 'Pilih menu admin di keyboard bawah.', _admin_keyboard())
 
 
@@ -1046,15 +1203,230 @@ def _claim_reward(uid, reward_code):
         reward_name = item.get('reward_name') or _reward_info_text(data) or 'CloudMoon Account'
         data['claims'].append({'telegram_user_id':str(uid),'username':user.get('username',''),'winning_key':key,'reward_name':reward_name,'reward_item_id':item['id'],'token':win.get('token',''),'claimed_at':now,'status':'claimed'}); _save_event_data(data)
         return (
-            '🎁 REWARD BERHASIL DIKIRIM\n\n'
+            '🎁 *REWARD BERHASIL DIKIRIM*\n\n'
+            '━━━━━━━━━━━━━━━━━━\n\n'
             'Winning Key:\n'
             f'{_md_code(key)}\n\n'
-            'Reward:\n'
-            f'{reward_name}\n\n'
+            f'Reward: *{reward_name}*\n\n'
             'Detail Akun:\n'
             f"{_md_code(item.get('content') or item.get('reward_data') or '')}\n\n"
-            'Terima kasih sudah ikut MII Reward Draw.'
+            '━━━━━━━━━━━━━━━━━━\n'
+            '✅ Simpan data akun di atas dengan aman.\n'
+            'Terima kasih sudah ikut *MII Reward Draw*! 🎊'
         )
+
+
+# ---------------------------------------------------------------------------
+# Referral System
+# ---------------------------------------------------------------------------
+
+def _get_bot_username():
+    """Get bot username from Telegram for generating referral links."""
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return None
+    try:
+        resp = requests_lib.get(f'https://api.telegram.org/bot{token}/getMe', timeout=5)
+        if resp.ok:
+            return resp.json().get('result', {}).get('username')
+    except Exception:
+        pass
+    return None
+
+
+def _referral_link(ref_code):
+    bot_username = _get_bot_username()
+    if bot_username:
+        return f'https://t.me/{bot_username}?start={ref_code}'
+    return f'(Bot username tidak ditemukan — kirim kode: {ref_code})'
+
+
+def _process_referral_join(new_uid, ref_code, chat_id):
+    """Proses ketika user baru bergabung via link referral."""
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        settings = _event_settings(data)
+        if not settings.get('referral_open', True):
+            return  # Referral ditutup, abaikan
+        # Cari pemilik ref_code
+        inviter = next(
+            (u for u in data['users'].values() if u.get('referral_code', '').upper() == ref_code),
+            None
+        )
+        if not inviter:
+            return
+        inviter_uid = str(inviter['telegram_user_id'])
+        if inviter_uid == str(new_uid):
+            return  # Tidak bisa invite diri sendiri
+        new_user = data['users'].get(str(new_uid))
+        if not new_user:
+            return
+        if new_user.get('referred_by'):
+            return  # Sudah pernah diundang
+        # Catat referral
+        new_user['referred_by'] = ref_code
+        data['users'][str(new_uid)] = new_user
+        inviter['referral_count'] = inviter.get('referral_count', 0) + 1
+        invited_list = inviter.get('referral_invited', [])
+        if str(new_uid) not in invited_list:
+            invited_list.append(str(new_uid))
+        inviter['referral_invited'] = invited_list
+        max_user = int(settings.get('referral_max_user', 15))
+        data['users'][inviter_uid] = inviter
+        _save_event_data(data)
+    # Notif ke inviter
+    count = inviter.get('referral_count', 0)
+    _telegram_send_message(
+        inviter.get('chat_id') or inviter_uid,
+        f'🎉 *+1 Referral!*\n\n'
+        f'User baru bergabung via link kamu.\n'
+        f'Total invite: *{count}/{max_user}*\n\n'
+        f'{"🎁 Kamu sudah memenuhi syarat! Kirim /claimreferral untuk ambil hadiah." if count >= max_user else f"Butuh {max_user - count} lagi untuk hadiah premium."}',
+        parse_mode='Markdown'
+    )
+
+
+def _claim_referral_reward(uid):
+    with _EVENT_LOCK:
+        data = _load_event_data()
+        settings = _event_settings(data)
+        if not settings.get('referral_open', True):
+            return '❌ Sistem referral sedang ditutup.'
+        user = data['users'].get(str(uid))
+        if not user:
+            return '❌ Akun tidak ditemukan.'
+        if not user.get('verified'):
+            return '❌ Kamu belum verifikasi channel.'
+        max_user = int(settings.get('referral_max_user', 15))
+        count = user.get('referral_count', 0)
+        if count < max_user:
+            return (
+                f'❌ Belum cukup referral.\n\n'
+                f'Invite kamu: *{count}/{max_user}*\n'
+                f'Butuh *{max_user - count}* lagi.'
+            )
+        if user.get('referral_reward_claimed'):
+            return '✅ Kamu sudah pernah claim hadiah referral.'
+        item = next((i for i in data.get('referral_rewards', []) if not i.get('used')), None)
+        if not item:
+            return '⚠️ Stok hadiah referral habis. Hubungi admin.'
+        now = _utc_timestamp()
+        item['used'] = True
+        item['used_by_telegram_id'] = str(uid)
+        item['used_at'] = now
+        user['referral_reward_claimed'] = True
+        user['referral_reward_item_id'] = item.get('id', '')
+        user['is_premium'] = True
+        data['users'][str(uid)] = user
+        _save_event_data(data)
+        reward_name = item.get('reward_name') or settings.get('referral_reward_name', 'Premium App')
+        reward_info = settings.get('referral_reward_info', '')
+        return (
+            '🎁 *HADIAH REFERRAL BERHASIL DIKIRIM*\n\n'
+            f'Reward: *{reward_name}*\n\n'
+            f'{"📝 _" + reward_info + "_" + chr(10) + chr(10) if reward_info else ""}'
+            f'Detail Akun:\n'
+            f'{_md_code(item.get("content") or item.get("reward_data") or "")}\n\n'
+            '✨ Selamat! Kamu kini menjadi pengguna premium MII STORE.\n'
+            'Terima kasih sudah mengundang teman-temanmu! 🙌'
+        )
+
+
+def _format_user_referral_info(uid):
+    data = _load_event_data()
+    settings = _event_settings(data)
+    user = data['users'].get(str(uid))
+    if not user:
+        return '❌ Akun tidak ditemukan.'
+    ref_open = settings.get('referral_open', True)
+    if not ref_open:
+        return (
+            '🔒 *Sistem Referral Ditutup*\n\n'
+            'Referral sedang tidak aktif saat ini.\n'
+            'Pantau channel untuk info selanjutnya.'
+        )
+    max_user = int(settings.get('referral_max_user', 15))
+    count = user.get('referral_count', 0)
+    ref_code = user.get('referral_code', '')
+    link = _referral_link(ref_code)
+    reward_name = settings.get('referral_reward_name', 'Premium App')
+    reward_info = settings.get('referral_reward_info', '')
+    claimed = user.get('referral_reward_claimed', False)
+    progress_bar = '▓' * min(count, max_user) + '░' * max(0, max_user - count)
+    lines = [
+        '🔗 *INFO REFERRAL KAMU*',
+        '',
+        f'Kode kamu: `{ref_code}`',
+        f'Link undangan:',
+        f'`{link}`',
+        '',
+        f'📊 Progress: {count}/{max_user}',
+        f'[{progress_bar}]',
+        '',
+        f'🎁 Hadiah: *{reward_name}*',
+    ]
+    if reward_info:
+        lines.append(f'_{reward_info}_')
+    lines.append('')
+    if claimed:
+        lines.append('✅ Kamu sudah claim hadiah referral.')
+    elif count >= max_user:
+        lines.append('🎉 *Syarat terpenuhi!*')
+        lines.append('Tekan tombol *Claim Referral* atau kirim /claimreferral untuk ambil hadiah.')
+    else:
+        lines.append(f'Butuh *{max_user - count}* lagi untuk dapat hadiah.')
+        lines.append('')
+        lines.append('Bagikan link di atas ke teman-teman kamu! 🚀')
+    return '\n'.join(lines)
+
+
+def _format_referral_stats():
+    data = _load_event_data()
+    settings = _event_settings(data)
+    users = list(data['users'].values())
+    total_referrers = sum(1 for u in users if u.get('referral_count', 0) > 0)
+    total_via_ref = sum(1 for u in users if u.get('referred_by'))
+    total_claimed = sum(1 for u in users if u.get('referral_reward_claimed'))
+    max_user = int(settings.get('referral_max_user', 15))
+    ref_open = settings.get('referral_open', True)
+    stock_total = len(data.get('referral_rewards', []))
+    stock_left = sum(1 for i in data.get('referral_rewards', []) if not i.get('used'))
+    lines = [
+        '📋 *STATISTIK REFERRAL*',
+        '',
+        f'Status: {"🟢 AKTIF" if ref_open else "🔒 DITUTUP"}',
+        f'Syarat: {max_user} user',
+        f'Hadiah: {settings.get("referral_reward_name", "-")}',
+        '',
+        f'Total pengundang aktif: {total_referrers}',
+        f'Total bergabung via referral: {total_via_ref}',
+        f'Total hadiah diklaim: {total_claimed}',
+        f'Stok tersisa: {stock_left}/{stock_total}',
+        '',
+        '👥 Top Referrer:',
+    ]
+    top = sorted(users, key=lambda u: u.get('referral_count', 0), reverse=True)[:5]
+    for u in top:
+        if u.get('referral_count', 0) > 0:
+            lines.append(f"  @{u.get('username') or '-'} → {u.get('referral_count', 0)} invite")
+    return '\n'.join(lines)
+
+
+def _format_referral_claimed():
+    data = _load_event_data()
+    users = [u for u in data['users'].values() if u.get('referral_reward_claimed')]
+    if not users:
+        return '📋 Belum ada yang claim hadiah referral.'
+    lines = ['📋 *DAFTAR CLAIM HADIAH REFERRAL*', '']
+    for u in sorted(users, key=lambda x: x.get('last_action_at', ''), reverse=True)[:20]:
+        item_id = u.get('referral_reward_item_id', '-')
+        item = next((i for i in data.get('referral_rewards', []) if i.get('id') == item_id), {})
+        content = item.get('content', '-')
+        lines.append(
+            f"@{u.get('username') or '-'} | {u.get('telegram_user_id')}\n"
+            f"  Invite: {u.get('referral_count', 0)} | Akun: `{content}`"
+        )
+    return '\n'.join(lines)
 
 
 def _set_bot_state(chat_id, state, uid=None):
@@ -1092,6 +1464,13 @@ def _normalize_bot_action(data):
         'MAINTENANCE ON': 'maintenance_on', 'HIDUPKAN MAINTENANCE': 'maintenance_on', '/maintenance_on': 'maintenance_on',
         'MAINTENANCE OFF': 'maintenance_off', 'MATIKAN MAINTENANCE': 'maintenance_off', '/maintenance_off': 'maintenance_off',
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
+        # Referral admin
+        'BUKA REFERRAL': 'referral_open', 'TUTUP REFERRAL': 'referral_close',
+        'HADIAH REFERRAL': 'referral_set_reward', 'STOK REFERRAL': 'referral_add_stock',
+        'REFERRAL STATS': 'referral_stats', 'REFERRAL CLAIMED': 'referral_claimed_list',
+        # Referral user
+        'INFO REFERRAL': 'referral_info', '/referral': 'referral_info',
+        'CLAIM REFERRAL': 'referral_claim', '/claimreferral': 'referral_claim',
     }
     clean = (data or '').strip()
     upper_clean = clean.upper()
@@ -1153,7 +1532,12 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '❌ Password salah.')
         return
 
-    if raw_data in ('/start', '/login') or data == 'admin_login':
+    if raw_data in ('/start', '/login') or data == 'admin_login' or raw_data.startswith('/start '):
+        # Handle referral deep link: /start REFxxxxxx
+        if raw_data.startswith('/start '):
+            ref_param = raw_data.split(' ', 1)[1].strip().upper()
+            if ref_param.startswith('REF') and ref_param != user.get('referral_code', ''):
+                _process_referral_join(uid, ref_param, chat_id)
         if _is_admin_chat(uid) and not _is_logged_in(chat_id):
             _show_login_prompt(chat_id)
         elif _is_admin_chat(uid):
@@ -1173,7 +1557,7 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
-    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info'}
+    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'referral_open', 'referral_close', 'referral_set_reward', 'referral_add_stock', 'referral_stats', 'referral_claimed_list'}
     if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
@@ -1197,8 +1581,22 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, _format_claim_history())
             return
         if data == 'view_reward_stock':
-            d=_load_event_data(); total=len(d.get('reward_items',[])); left=sum(1 for i in d.get('reward_items',[]) if not i.get('used'))
-            _telegram_send_message(chat_id, f'📦 Reward Stock\nTersedia: {left}\nTotal: {total}', _admin_keyboard())
+            d = _load_event_data()
+            all_items = d.get('reward_items', [])
+            unused = [i for i in all_items if not i.get('used')]
+            used = [i for i in all_items if i.get('used')]
+            lines = [
+                f'📦 *REWARD STOCK — MII DRAW*\n',
+                f'Total: {len(all_items)} | Tersedia: {len(unused)} | Terpakai: {len(used)}\n',
+                '━━━━━━━━━━━━━━━━━━',
+            ]
+            if unused:
+                lines.append('\n✅ *Stok Aktif:*')
+                for idx, item in enumerate(unused, 1):
+                    lines.append(f'`{idx}. {item.get("content","")}`')
+            else:
+                lines.append('\n_Stok kosong._')
+            _telegram_send_message(chat_id, '\n'.join(lines), _admin_keyboard(), parse_mode='Markdown')
             return
         if data in ('event_lock', 'event_active'):
             new_status = _set_bounty_event_status('open' if data == 'event_active' else 'locked')
@@ -1214,31 +1612,38 @@ def process_telegram_update(update):
                 return
             if result == 'no_stock':
                 _telegram_send_message(chat_id, 'Reward stock masih kosong.', _admin_keyboard()); return
+            d = _load_event_data(); settings = _event_settings(d)
+            reward_name = settings.get('reward_name', '-')
             text = (
-                '🏆 PEMENANG MII REWARD DRAW\n\n'
+                '🏆 *PEMENANG MII REWARD DRAW*\n\n'
+                '━━━━━━━━━━━━━━━━━━\n\n'
                 'Token:\n'
                 f'{_md_code(winner.get("token", "-"))}\n\n'
                 'Telegram ID:\n'
                 f'{_md_code(winner.get("telegram_id", "-"))}\n\n'
-                'Username:\n'
-                f'@{winner.get("username") or "-"}\n\n'
-                'Nama:\n'
-                f'{winner.get("first_name") or "-"}\n\n'
-                'Status:\n'
-                'WINNER SELECTED'
+                f'Username: @{winner.get("username") or "-"}\n'
+                f'Nama: {winner.get("first_name") or "-"}\n\n'
+                f'Hadiah: *{reward_name}*\n\n'
+                '━━━━━━━━━━━━━━━━━━\n'
+                '✅ Status: *WINNER SELECTED*\n'
+                'Pemenang telah menerima notifikasi untuk claim reward.'
             )
             _telegram_send_message(chat_id, text, _admin_keyboard(), parse_mode='Markdown')
             return
         if data == 'draw_status':
             payload = _draw_status_payload()
             winner = payload.get('winner') or {}
+            d = _load_event_data(); settings = _event_settings(d)
+            stock_left = sum(1 for i in d.get('reward_items', []) if not i.get('used'))
             text = (
-                '📊 DRAW STATUS\n\n'
-                f"Status: {payload['draw_status'].upper()}\n"
+                '📊 *DRAW STATUS*\n\n'
+                f"Status: *{payload['draw_status'].upper()}*\n"
                 f"Total Token: {payload['total_tokens']}\n"
-                f"Winner: {winner.get('token') or 'Belum ada pemenang'}"
+                f"Winner: {payload['total_winners']}/{payload['slot_winner']}\n"
+                f"Stok Reward: {stock_left}\n\n"
+                f"Pemenang: {winner.get('token') or 'Belum ada pemenang'}"
             )
-            _telegram_send_message(chat_id, text, _admin_keyboard())
+            _telegram_send_message(chat_id, text, _admin_keyboard(), parse_mode='Markdown')
             return
         if data == 'list_token':
             d = _load_event_data()
@@ -1283,12 +1688,30 @@ def process_telegram_update(update):
             return
         if data == 'reward_stock':
             _set_bot_state(chat_id, 'add_stock', uid)
+            d = _load_event_data()
+            existing = [i for i in d.get('reward_items', []) if not i.get('used')]
+            stock_count = len(existing)
+            preview_lines = []
+            for idx, item in enumerate(existing[-3:], start=max(1, stock_count - 2)):
+                preview_lines.append(f'`{idx}. {item.get("content","")}`')
+            preview_text = '\n'.join(preview_lines) if preview_lines else '_Stok kosong_'
             text = (
-                '📦 Tambah Stok Hadiah\n\n'
-                'Kirim format:\n\n'
-                '`CloudMoon Account\nemail1@gmail.com | pass123\nemail2@gmail.com | pass456`\n\n'
-                'Atau:\n\n'
-                '`Nama Reward: CloudMoon Account\nData:\nemail1@gmail.com | pass123`'
+                '📦 *TAMBAH STOK REWARD (MII DRAW)*\n\n'
+                f'Stok tersisa: *{stock_count} akun*\n\n'
+                '3 stok terakhir:\n'
+                + preview_text +
+                '\n\n'
+                '━━━━━━━━━━━━━━━━━━\n'
+                '📋 *Format pengisian:*\n\n'
+                'Baris pertama = nama reward\n'
+                'Baris berikutnya = data akun\n\n'
+                '```\n'
+                'CloudMoon Pro\n'
+                'email1@gmail.com-pass123\n'
+                'email2@gmail.com-pass456\n'
+                'email3@gmail.com-pass789\n'
+                '```\n\n'
+                '⚠️ Sistem otomatis cek duplikat — akun yang sama tidak akan masuk dua kali.'
             )
             _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
             return
@@ -1298,7 +1721,67 @@ def process_telegram_update(update):
             note = 'Maintenance website dihidupkan.' if enabled else 'Maintenance website dimatikan.'
             refresh_admin_panel(chat_id, user, note)
             return
-        if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings'):
+        if data in ('referral_open', 'referral_close'):
+            with _EVENT_LOCK:
+                d = _load_event_data()
+                d['event_settings']['referral_open'] = (data == 'referral_open')
+                _save_event_data(d)
+            status_str = '✅ DIBUKA' if data == 'referral_open' else '🔒 DITUTUP'
+            refresh_admin_panel(chat_id, user, f'Sistem Referral {status_str}.')
+            return
+        if data == 'referral_set_reward':
+            _set_bot_state(chat_id, 'set_referral_reward', uid)
+            d = _load_event_data(); s = _event_settings(d)
+            cur_name = s.get('referral_reward_name', 'Premium App')
+            cur_info = s.get('referral_reward_info', '-')
+            text = (
+                '🎁 *Atur Hadiah Referral*\n\n'
+                f'Nama hadiah saat ini: `{cur_name}`\n'
+                f'Info saat ini: `{cur_info}`\n\n'
+                'Kirim format:\n\n'
+                '`Nama Hadiah: Premium App 1 Bulan`\n'
+                '`Info Hadiah: Akun premium aktif 30 hari`\n\n'
+                'Atau singkat:\n'
+                '`Premium App 1 Bulan`'
+            )
+            _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
+            return
+        if data == 'referral_add_stock':
+            _set_bot_state(chat_id, 'add_referral_stock', uid)
+            d = _load_event_data()
+            existing = [i for i in d.get('referral_rewards', []) if not i.get('used')]
+            stock_count = len(existing)
+            preview_lines = []
+            for idx, item in enumerate(existing[-3:], start=max(1, stock_count - 2)):
+                preview_lines.append(f'`{idx}. {item.get("content","")}`')
+            preview_text = '\n'.join(preview_lines) if preview_lines else '_Stok kosong_'
+            text = (
+                '📦 *TAMBAH STOK HADIAH REFERRAL*\n\n'
+                f'Stok tersisa: *{stock_count} akun*\n\n'
+                '3 stok terakhir:\n'
+                + preview_text +
+                '\n\n'
+                '━━━━━━━━━━━━━━━━━━\n'
+                '📋 *Format pengisian:*\n\n'
+                'Baris pertama = nama reward\n'
+                'Baris berikutnya = data akun\n\n'
+                '```\n'
+                'Premium App\n'
+                'email1@gmail.com-miishop\n'
+                'email2@gmail.com-miishop\n'
+                'email3@gmail.com-miishop\n'
+                '```\n\n'
+                '⚠️ Sistem otomatis cek duplikat — akun yang sama tidak akan masuk dua kali.'
+            )
+            _telegram_send_message(chat_id, text, _claim_keyboard(), parse_mode='Markdown')
+            return
+        if data == 'referral_stats':
+            _telegram_send_message(chat_id, _format_referral_stats(), _admin_keyboard())
+            return
+        if data == 'referral_claimed_list':
+            _telegram_send_message(chat_id, _format_referral_claimed(), _admin_keyboard())
+            return
+        if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_referral_reward', 'add_referral_stock'):
             _handle_admin_text(chat_id, raw_data)
             return
 
@@ -1380,6 +1863,13 @@ def process_telegram_update(update):
         claims = [c for c in d['claims'] if c.get('telegram_user_id') == uid]
         lines = '\n'.join(f"- {c['reward_code']} pada {c['claimed_at']}" for c in claims) if claims else 'Belum ada reward.'
         _telegram_send_message(chat_id, '📦 Reward Saya\n' + lines, _user_keyboard())
+        return
+    if data == 'referral_info':
+        _telegram_send_message(chat_id, _format_user_referral_info(uid), _user_keyboard(), parse_mode='Markdown')
+        return
+    if data == 'referral_claim':
+        msg = _claim_referral_reward(uid)
+        _telegram_send_message(chat_id, msg, _user_keyboard(), parse_mode='Markdown')
         return
     admin_commands = {'/status', '/users', '/event_stats', '/reward_codes', '/claim_history', '/maintenance_on', '/maintenance_off'}
     if raw_data in admin_commands and not _is_admin_chat(uid):
