@@ -990,16 +990,18 @@ def _handle_admin_text(chat_id, text):
         _telegram_send_message(chat_id, '✅ Info hadiah berhasil disimpan.\n\n' + _format_reward_info(), _admin_keyboard(), parse_mode='Markdown')
         return
     if state == 'set_community_link':
-        parts = [p.strip() for p in text.split('|', 1)]
+        parts = [p.strip() for p in text.split('|', 2)]
         name = parts[0] if parts else 'COMMUNITY'
         link = parts[1] if len(parts) > 1 else ''
+        btn_label = parts[2] if len(parts) > 2 else ('GABUNG' if link else '')
         status = get_site_status()
         status['community_name'] = name
         status['community_link'] = link
+        status['community_btn_label'] = btn_label or 'GABUNG'
         status['updated_at'] = _utc_timestamp()
         _save_site_status(status)
         _clear_bot_state(chat_id)
-        _telegram_send_message(chat_id, f'✅ Community berhasil diupdate.\n\nNama: {name}\nLink: {link or "(kosong)"}', _admin_keyboard())
+        _telegram_send_message(chat_id, f'✅ Community berhasil diupdate.\n\nNama: *{name}*\nLink: `{link or "(kosong)"}`\nTombol: *{btn_label or "GABUNG"}*', _admin_keyboard(), parse_mode='Markdown')
         return
     if state == 'set_telegram_channel':
         link = text.strip()
@@ -1121,6 +1123,7 @@ def _normalize_bot_action(data):
         'MAINTENANCE ON': 'maintenance_on', 'HIDUPKAN MAINTENANCE': 'maintenance_on', '/maintenance_on': 'maintenance_on',
         'MAINTENANCE OFF': 'maintenance_off', 'MATIKAN MAINTENANCE': 'maintenance_off', '/maintenance_off': 'maintenance_off',
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
+        'COMMUNITY LINK': 'community_link', 'TELEGRAM CHANNEL': 'telegram_channel',
     }
     clean = (data or '').strip()
     upper_clean = clean.upper()
@@ -1332,21 +1335,22 @@ def process_telegram_update(update):
             return
 
     if _is_admin_chat(uid):
-        if data in ('🔗 community link', 'community link'):
+        if data == 'community_link':
             status = get_site_status()
             current_name = status.get('community_name', 'COMMUNITY')
             current_link = status.get('community_link', '(kosong)')
+            current_btn = status.get('community_btn_label', 'GABUNG')
             _set_bot_state(chat_id, 'set_community_link', uid)
             _telegram_send_message(chat_id,
-                f'🔗 Edit Community\n\nSaat ini:\nNama: {current_name}\nLink: {current_link}\n\nKirim format:\n`Nama | https://link.com`\n\nContoh:\n`COMMUNITY | https://wa.me/6282191223912`\n\nUntuk mengosongkan link:\n`COMMUNITY |`',
+                f'🔗 Edit Community\n\nSaat ini:\nNama: *{current_name}*\nLink: `{current_link}`\nTombol: *{current_btn}*\n\nKirim format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nUntuk kosongkan link:\n`COMMUNITY | |`',
                 _claim_keyboard(), parse_mode='Markdown')
             return
-        if data in ('📢 telegram channel', 'telegram channel'):
+        if data == 'telegram_channel':
             status = get_site_status()
             current = status.get('telegram_channel_link', '(kosong)')
             _set_bot_state(chat_id, 'set_telegram_channel', uid)
             _telegram_send_message(chat_id,
-                f'📢 Edit Telegram Channel\n\nSaat ini:\n{current}\n\nKirim link baru:\n`https://t.me/+xxxxx`',
+                f'📢 Edit Telegram Channel\n\nSaat ini:\n`{current}`\n\nKirim link baru:',
                 _claim_keyboard(), parse_mode='Markdown')
             return
         show_admin_panel(chat_id, user)
@@ -1645,6 +1649,7 @@ def index():
     return render_template('index.html',
         community_name=status.get('community_name', 'COMMUNITY'),
         community_link=status.get('community_link', ''),
+        community_btn_label=status.get('community_btn_label', 'GABUNG'),
         telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
     )
 
@@ -1655,6 +1660,7 @@ def ai_view():
     return render_template('index.html',
         community_name=status.get('community_name', 'COMMUNITY'),
         community_link=status.get('community_link', ''),
+        community_btn_label=status.get('community_btn_label', 'GABUNG'),
         telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
     )
 
