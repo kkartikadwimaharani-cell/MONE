@@ -178,7 +178,26 @@ def get_site_status():
         status.setdefault('maintenance', False)
         status.setdefault('message', 'Kami sedang melakukan pembaruan sistem.')
         status.setdefault('updated_at', _utc_timestamp())
+        status.setdefault('community_name', 'COMMUNITY')
+        status.setdefault('community_link', '')
+        status.setdefault('community_btn_label', 'GABUNG')
+        status.setdefault('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
         return status
+
+
+def _save_site_status(status):
+    with _STATUS_LOCK:
+        _ensure_status_file()
+        try:
+            with open(SITE_STATUS_FILE, 'r', encoding='utf-8') as f:
+                existing = json.load(f)
+            if isinstance(existing, dict):
+                existing.update(status)
+                status = existing
+        except (OSError, json.JSONDecodeError):
+            pass
+        with open(SITE_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(status, f, ensure_ascii=False, indent=2)
 
 
 def set_maintenance_status(enabled):
@@ -1095,6 +1114,14 @@ def _set_bot_state(chat_id, state, uid=None):
         data = _load_event_data(); user = data['users'].get(user_key)
         if user:
             user['state'] = state; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
+    # Also persist admin states to site_status for restart recovery
+    if state in ('set_community_link', 'set_telegram_channel'):
+        try:
+            ss = get_site_status()
+            ss[f'_admin_state_{chat_id}'] = state
+            _save_site_status(ss)
+        except Exception:
+            pass
 
 
 def _clear_bot_state(chat_id, uid=None):
@@ -1104,6 +1131,15 @@ def _clear_bot_state(chat_id, uid=None):
         data = _load_event_data(); user = data['users'].get(user_key)
         if user:
             user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
+    # Clean admin state from site_status
+    try:
+        ss = get_site_status()
+        key = f'_admin_state_{chat_id}'
+        if key in ss:
+            del ss[key]
+            _save_site_status(ss)
+    except Exception:
+        pass
 
 def _normalize_bot_action(data):
     mapping = {
@@ -1158,6 +1194,26 @@ def process_telegram_update(update):
     uid = user['telegram_user_id']
     data = _normalize_bot_action(raw_data)
     state = _BOT_USER_STATES.get(str(chat_id))
+    # Fallback ke db kalau memory kosong (setelah restart Railway)
+    if not state and uid:
+        try:
+            _db_data = _load_event_data()
+            _db_user = _db_data.get('users', {}).get(str(uid), {})
+            if _db_user.get('state'):
+                state = _db_user['state']
+                _BOT_USER_STATES[str(chat_id)] = state
+        except Exception:
+            pass
+    # Fallback ke site_status untuk admin states
+    if not state:
+        try:
+            ss = get_site_status()
+            saved = ss.get(f'_admin_state_{chat_id}')
+            if saved:
+                state = saved
+                _BOT_USER_STATES[str(chat_id)] = state
+        except Exception:
+            pass
 
     if data in ('menu', 'cancel') and state != 'awaiting_reward_code':
         was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel')
@@ -1333,8 +1389,6 @@ def process_telegram_update(update):
         if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel'):
             _handle_admin_text(chat_id, raw_data)
             return
-
-    if _is_admin_chat(uid):
         if data == 'community_link':
             status = get_site_status()
             current_name = status.get('community_name', 'COMMUNITY')
@@ -1342,7 +1396,7 @@ def process_telegram_update(update):
             current_btn = status.get('community_btn_label', 'GABUNG')
             _set_bot_state(chat_id, 'set_community_link', uid)
             _telegram_send_message(chat_id,
-                f'🔗 Edit Community\n\nSaat ini:\nNama: *{current_name}*\nLink: `{current_link}`\nTombol: *{current_btn}*\n\nKirim format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nUntuk kosongkan link:\n`COMMUNITY | |`',
+                f'🔗 Edit Community\n\nSaat ini:\nNama: *{current_name}*\nLink: `{current_link}`\nTombol: *{current_btn}*\n\nKirim format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nKosongkan link:\n`COMMUNITY | |`',
                 _claim_keyboard(), parse_mode='Markdown')
             return
         if data == 'telegram_channel':
@@ -1353,8 +1407,6 @@ def process_telegram_update(update):
                 f'📢 Edit Telegram Channel\n\nSaat ini:\n`{current}`\n\nKirim link baru:',
                 _claim_keyboard(), parse_mode='Markdown')
             return
-        show_admin_panel(chat_id, user)
-        return
 
     if state == 'awaiting_reward_code':
         if data == 'cancel':
