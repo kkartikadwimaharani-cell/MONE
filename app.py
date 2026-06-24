@@ -463,6 +463,9 @@ def _claim_or_get_token(uid):
     uid = str(uid)
     with _EVENT_LOCK:
         data = _load_event_data()
+        # Cek status event — jangan izinkan claim kalau LOCKED
+        if _bounty_event_status(data) == 'locked':
+            return None, '🔒 Event sedang LOCKED. Token belum bisa diklaim sekarang.\n\nTunggu admin membuka event.'
         user = data['users'].get(uid)
         if not user or not user.get('verified'):
             return None, '❌ Kamu belum verifikasi Channel Telegram.'
@@ -1188,7 +1191,22 @@ def process_telegram_update(update):
         raw_data = callback.get('data', '')
         telegram_actor = callback.get('from') or {}
     else:
-        raw_data = (message.get('text') or '').strip()
+        raw_text = (message.get('text') or '').strip()
+        # Telegram kadang strip URL dari text dan simpan di entities (text_link).
+        # Reconstruct: ganti entity type=text_link dengan URL aslinya.
+        entities = message.get('entities') or []
+        if entities and any(e.get('type') == 'text_link' for e in entities):
+            rebuilt = list(raw_text)
+            offset_shift = 0
+            for ent in sorted(entities, key=lambda e: e.get('offset', 0)):
+                if ent.get('type') == 'text_link' and ent.get('url'):
+                    url = ent['url']
+                    eoff = ent.get('offset', 0) + offset_shift
+                    elen = ent.get('length', 0)
+                    rebuilt[eoff:eoff + elen] = list(url)
+                    offset_shift += len(url) - elen
+            raw_text = ''.join(rebuilt)
+        raw_data = raw_text
         telegram_actor = message.get('from') or {}
     user = _upsert_event_user(actor=telegram_actor, chat=chat)
     uid = user['telegram_user_id']
