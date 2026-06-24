@@ -1348,10 +1348,24 @@ def process_telegram_update(update):
             return
         if data == 'list_token':
             d = _load_event_data()
-            tokens = sorted(_valid_draw_tokens(d), key=lambda r: r.get('created_at', ''), reverse=True)[:20]
-            lines = ['👥 LIST TOKEN']
-            lines.extend(f"- {r.get('token')} | {r.get('telegram_id') or r.get('telegram_user_id')} | @{r.get('username','-')}" for r in tokens)
-            _telegram_send_message(chat_id, '\n'.join(lines) if len(lines) > 1 else 'Belum ada token.', _admin_keyboard())
+            all_tokens = sorted(
+                [r for r in d.get('event_tokens', {}).values() if r.get('token')],
+                key=lambda r: r.get('created_at', ''), reverse=True
+            )[:30]
+            if not all_tokens:
+                _telegram_send_message(chat_id, 'Belum ada token yang di-claim.', _admin_keyboard())
+                return
+            total = len(all_tokens)
+            joined = sum(1 for r in all_tokens if r.get('joined_draw'))
+            parts = []
+            parts.append('\U0001f465 TOKEN LIST (' + str(total) + ' token, ' + str(joined) + ' join draw)\n')
+            for r in all_tokens:
+                s = '\u2705 Join Draw' if r.get('joined_draw') else '\U0001f39f Claim Only'
+                tid = str(r.get('telegram_id') or r.get('telegram_user_id') or '-')
+                uname = str(r.get('username') or r.get('first_name') or '-')
+                tok = str(r.get('token', '-'))
+                parts.append(s + '\nToken: ' + tok + '\nID: ' + tid + ' | @' + uname + '\n')
+            _telegram_send_message(chat_id, '\n'.join(parts), _admin_keyboard())
             return
         if data == 'winner_list':
             winner = (_draw_status_payload().get('winner') or {})
@@ -1405,6 +1419,9 @@ def process_telegram_update(update):
             refresh_admin_panel(chat_id, user, note)
             return
         if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel'):
+            # Ignore pesan kosong (Telegram link preview / web_page update)
+            if not raw_data or not raw_data.strip():
+                return
             _handle_admin_text(chat_id, raw_data)
             return
         if data == 'community_link':
