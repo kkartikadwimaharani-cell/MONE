@@ -2331,3 +2331,416 @@ body { background:#030204 !important; }
 /* === FOX GLOW FIX - reduce overexposure === */
 .hero-fox-stage .fox-svg{filter:drop-shadow(0 0 6px #ff0014) drop-shadow(0 0 16px rgba(255,0,20,.6)) drop-shadow(0 0 32px rgba(255,0,20,.3))!important}
 .hero-fox-stage .glow{background:radial-gradient(circle,rgba(255,0,20,.55),rgba(255,0,20,.18),transparent 68%)!important;filter:blur(8px)!important}
+
+/* ══════════════════════════════════════════════════════
+   20260625 MII STORE — DREAMKRATE-INSPIRED PREMIUM REFRESH
+   Vivid dark, high contrast, alive. Fox hero stays.
+   ══════════════════════════════════════════════════════ */
+
+/* --- Background: deep dark with vivid red nebula glow --- */
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(220, 0, 38, .28), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 60%, rgba(160, 0, 24, .16), transparent),
+    radial-gradient(ellipse 50% 50% at 0% 80%, rgba(100, 0, 14, .12), transparent),
+    #050103 !important;
+}
+
+/* Subtle grid overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(255, 30, 58, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 30, 58, .055) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 0 42%, transparent 100%);
+}
+
+/* --- Navbar: floating pill, sharp --- */
+.top-nav {
+  top: 16px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(1200px, calc(100vw - 28px)) !important;
+  height: 70px !important;
+  padding: 0 clamp(18px, 3vw, 32px) !important;
+  border-radius: 20px !important;
+  background: rgba(9, 4, 7, .82) !important;
+  border: 1px solid rgba(255, 38, 66, .28) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.52), 0 0 0 1px rgba(255,255,255,.035) !important;
+  backdrop-filter: blur(20px) !important;
+}
+.top-nav::before { display: none !important; }
+.nav-logo-img {
+  width: 46px !important; height: 46px !important;
+  border: 1.5px solid rgba(255, 38, 66, .62) !important;
+  box-shadow: 0 0 18px rgba(255,0,38,.20) !important;
+}
+.nav-brand { font-size: clamp(1.1rem, 1.8vw, 1.5rem) !important; letter-spacing: .08em !important; }
+
+/* --- Page + Hub --- */
+.page { padding-top: 106px !important; }
+.home-hub {
+  max-width: min(1240px, calc(100vw - 40px)) !important;
+  gap: clamp(40px, 5vw, 72px) !important;
+}
+.premium-marquee { display: none !important; }
+
+/* --- Hero: two-column, photo left text right on desktop --- */
+.home-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr) !important;
+  gap: clamp(24px, 4vw, 60px) !important;
+  align-items: center !important;
+  min-height: min(640px, calc(100svh - 140px)) !important;
+  padding: clamp(36px, 5vw, 64px) !important;
+  border: 1px solid rgba(255, 50, 80, .22) !important;
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at 72% 28%, rgba(255, 0, 52, .18), transparent 40%),
+    linear-gradient(145deg, rgba(22, 6, 12, .82), rgba(3, 2, 5, .94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 32px 100px rgba(0,0,0,.42) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,45,72,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,45,72,.04) 1px, transparent 1px);
+  background-size: 38px 38px;
+  pointer-events: none;
+  mask-image: radial-gradient(circle at 72% 30%, #000 0 44%, transparent 80%);
+}
+
+/* --- Hero text --- */
+.hero-copy { position: relative; z-index: 2; }
+.hero-title {
+  font-size: clamp(3.4rem, 7.8vw, 7.6rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -.055em !important;
+  line-height: .9 !important;
+  margin: 0 0 16px !important;
+  animation: none !important;
+  text-shadow: 0 0 40px rgba(255,0,46,.38), 0 2px 0 rgba(255,255,255,.08) !important;
+}
+.hero-title::after { display: none !important; }
+.hero-kicker {
+  display: block !important;
+  margin: 0 0 28px !important;
+  color: rgba(255, 230, 235, .72) !important;
+  font-weight: 800 !important;
+  font-size: clamp(13px, 1.2vw, 17px) !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase !important;
+  line-height: 1.6 !important;
+}
+.hero-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 0 !important;
+  max-width: 520px !important;
+}
+
+/* --- Fox hero stage: right column, bigger, vivid --- */
+.hero-butterfly-stage,
+.hero-fox-stage {
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  width: 100% !important;
+  min-height: clamp(300px, 38vw, 480px) !important;
+  z-index: 2 !important;
+}
+/* aura behind fox */
+.hero-fox-stage::before {
+  content: "";
+  position: absolute;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 38, .38), rgba(160, 0, 22, .16) 46%, transparent 72%);
+  filter: blur(28px);
+  z-index: -1;
+}
+
+/* --- Buttons: pill style, dreamkrate-like --- */
+.premium-btn,
+.project-card a,
+.project-card button,
+.social-card a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 50px !important;
+  padding: 12px 20px !important;
+  font-size: clamp(13px, 1vw, 15px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .04em !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 60, 88, .36) !important;
+  background: rgba(255,255,255,.06) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.28) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.premium-btn::before,
+.project-card a::before,
+.project-card button::before,
+.social-card a::before {
+  content: "";
+  position: absolute;
+  inset: -2px auto -2px -60%;
+  width: 38%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  transition: left .5s ease;
+}
+.premium-btn:hover::before,
+.project-card a:hover::before,
+.project-card button:hover::before,
+.social-card a:hover::before { left: 115%; }
+.premium-btn:hover,
+.project-card a:hover,
+.project-card button:hover,
+.social-card a:hover {
+  transform: translateY(-3px) !important;
+  border-color: rgba(255, 90, 112, .72) !important;
+  box-shadow: 0 0 0 1px rgba(255,90,112,.18), 0 18px 48px rgba(0,0,0,.36) !important;
+}
+/* Primary CTA buttons */
+.premium-btn.primary,
+.premium-btn.bounty,
+.project-card a,
+.project-card button,
+.cta-button {
+  background: linear-gradient(135deg, #ff2e4c 0%, #a8001a 52%, #2e0007 100%) !important;
+  border-color: rgba(255, 68, 90, .52) !important;
+  box-shadow: 0 0 32px rgba(255,0,48,.22), 0 14px 38px rgba(0,0,0,.32) !important;
+}
+
+/* --- Sections: card-style with subtle grid --- */
+.hub-section {
+  padding: clamp(30px, 4vw, 52px) !important;
+  border: 1px solid rgba(255, 55, 82, .18) !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 0, 52, .10), transparent 32%),
+    linear-gradient(145deg, rgba(18, 6, 10, .68), rgba(3, 2, 5, .88)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 22px 80px rgba(0,0,0,.26) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.hub-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,48,72,.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,48,72,.032) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  mask-image: radial-gradient(circle at 20% 20%, #000 0 40%, transparent 80%);
+}
+
+/* Section heading: left-aligned, big */
+.section-heading {
+  text-align: left !important;
+  margin: 0 0 28px !important;
+  max-width: 900px !important;
+}
+.section-heading span {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  color: #ff4060 !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase;
+}
+.section-heading h2 {
+  margin: 0 !important;
+  font-size: clamp(2rem, 4.8vw, 3.6rem) !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+}
+
+/* --- Social cards: 3 col, compact --- */
+.social-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+.social-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 22px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 62, 88, .22) !important;
+  background: linear-gradient(145deg, rgba(28, 8, 14, .76), rgba(5, 4, 7, .94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 16px 48px rgba(0,0,0,.28) !important;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
+  min-height: 200px !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.social-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 0%, rgba(255, 56, 82, .18), transparent 40%);
+  pointer-events: none;
+}
+.social-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: rgba(255, 88, 110, .48) !important;
+  box-shadow: 0 0 0 1px rgba(255,88,110,.12), 0 28px 80px rgba(0,0,0,.40), 0 0 38px rgba(255,0,48,.12) !important;
+}
+.social-icon {
+  width: 62px !important; height: 62px !important;
+  border-radius: 18px !important;
+  display: inline-grid !important; place-items: center !important;
+  flex: 0 0 auto !important;
+}
+.social-card h3 { margin: 0 !important; font-size: 1.1rem !important; font-weight: 900 !important; }
+.social-card a { width: 100% !important; text-align: center !important; margin-top: auto !important; }
+
+/* --- Project grid: 3 col even --- */
+.project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+.project-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: 24px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 62, 88, .22) !important;
+  background: linear-gradient(145deg, rgba(28, 8, 14, .76), rgba(5, 4, 7, .94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 16px 48px rgba(0,0,0,.28) !important;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
+  min-height: 240px !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.project-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 18% 0%, rgba(255, 56, 82, .16), transparent 38%);
+  pointer-events: none;
+}
+.project-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: rgba(255, 88, 110, .48) !important;
+  box-shadow: 0 0 0 1px rgba(255,88,110,.12), 0 28px 80px rgba(0,0,0,.40), 0 0 38px rgba(255,0,48,.12) !important;
+}
+.project-icon {
+  width: 68px !important; height: 68px !important;
+  border-radius: 20px !important;
+  flex: 0 0 auto !important;
+}
+.project-card h3 {
+  margin: 0 !important;
+  font-size: clamp(1rem, 1.4vw, 1.2rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: .04em !important;
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+.project-card a,
+.project-card button { width: 100% !important; text-align: center !important; }
+
+/* --- CTA section --- */
+.home-cta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  padding: clamp(28px, 4vw, 52px) !important;
+  border: 1px solid rgba(255, 55, 82, .24) !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(255, 0, 52, .22), transparent 38%),
+    linear-gradient(135deg, rgba(72, 6, 16, .62), rgba(6, 2, 5, .94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 24px 80px rgba(0,0,0,.30) !important;
+}
+.cta-copy h2 {
+  margin: 0 !important;
+  font-size: clamp(1.8rem, 4vw, 3.2rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.03em !important;
+}
+.cta-button { min-width: min(240px, 100%) !important; }
+
+/* --- Footer --- */
+.home-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 18px !important;
+  max-width: 100% !important;
+  padding: 20px 4px 0 !important;
+  border-top: 1px solid rgba(255, 50, 72, .18) !important;
+  margin-top: 0 !important;
+}
+.footer-links a {
+  color: rgba(255, 232, 236, .62) !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  letter-spacing: .04em !important;
+}
+.footer-links a:hover { color: #fff !important; }
+.footer-copy { color: rgba(255,232,236,.42) !important; font-size: 12px !important; margin: 0 !important; }
+
+/* --- Responsive --- */
+@media (max-width: 1100px) {
+  .home-hero { grid-template-columns: 1fr !important; }
+  .hero-fox-stage, .hero-butterfly-stage { order: 2 !important; min-height: 300px !important; }
+  .hero-actions { max-width: 100% !important; }
+  .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .social-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 760px) {
+  .top-nav { top: 10px !important; width: calc(100vw - 22px) !important; height: 66px !important; }
+  .page { padding-top: 92px !important; padding-inline: 16px !important; }
+  .home-hub { gap: 32px !important; }
+  .home-hero { padding: 28px 18px !important; border-radius: 24px !important; min-height: 0 !important; }
+  .hero-fox-stage, .hero-butterfly-stage { min-height: 260px !important; }
+  .hub-section { padding: 24px 18px !important; border-radius: 22px !important; }
+  .home-cta { flex-direction: column !important; align-items: stretch !important; text-align: center !important; }
+  .home-footer { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+}
+@media (max-width: 560px) {
+  .page { padding-inline: 14px !important; }
+  .home-hub { gap: 24px !important; }
+  .hero-title { font-size: clamp(2.8rem, 16vw, 4.4rem) !important; }
+  .hero-actions { grid-template-columns: 1fr !important; }
+  .social-grid, .project-grid { grid-template-columns: 1fr !important; }
+  .social-card, .project-card { min-height: 180px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-hero::after, body::before { animation: none !important; }
+}
