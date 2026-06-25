@@ -182,6 +182,13 @@ def get_site_status():
         status.setdefault('community_link', '')
         status.setdefault('community_btn_label', 'GABUNG')
         status.setdefault('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
+        status.setdefault('extension_locked', True)
+        status.setdefault('extension_title', 'MII NETWORK EXTENSION')
+        status.setdefault('extension_desc', 'Tools browser extension untuk TikTok downloader, HD auto-enable, dan lebih banyak fitur eksklusif. Segera hadir!')
+        status.setdefault('extension_version', '2.1.0')
+        status.setdefault('extension_image_url', '')
+        status.setdefault('extension_zip_url', '')
+        status.setdefault('extension_tutorial', [])
         return status
 
 
@@ -734,6 +741,23 @@ def _telegram_answer_callback(callback_query_id):
         except Exception as exc: app.logger.warning('Telegram answerCallbackQuery failed: %s', exc)
 
 
+def _telegram_get_photo_url(file_id):
+    """Get public URL of a Telegram photo via getFile API."""
+    url = _telegram_api_url('getFile')
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
+    if not url or not token:
+        return None
+    try:
+        resp = requests_lib.post(url, json={'file_id': file_id}, timeout=10)
+        result = resp.json().get('result', {})
+        file_path = result.get('file_path')
+        if file_path:
+            return f'https://api.telegram.org/file/bot{token}/{file_path}'
+    except Exception as exc:
+        app.logger.warning('Telegram getFile failed: %s', exc)
+    return None
+
+
 def _telegram_get_chat_member(user_id):
     url = _telegram_api_url('getChatMember')
     if not url or not TELEGRAM_CHANNEL_CHAT_ID:
@@ -812,7 +836,8 @@ def _admin_keyboard():
         ['🏆 Winner List', '📊 Status'],
         ['♻️ Reset Event', '🎁 Info Hadiah'],
         ['🔗 Community Link', '📢 Telegram Channel'],
-        ['🏠 Menu Utama', '🔐 Logout'],
+        ['🧩 Extension Page', '🏠 Menu Utama'],
+        ['🔐 Logout'],
     ])
 
 
@@ -1012,6 +1037,12 @@ def _handle_admin_text(chat_id, text):
         _telegram_send_message(chat_id, '✅ Info hadiah berhasil disimpan.\n\n' + _format_reward_info(), _admin_keyboard(), parse_mode='Markdown')
         return
     if state == 'set_community_link':
+        # Wajib ada '|' — tanpanya berarti bukan input valid (mungkin tombol admin yang kepencet)
+        if '|' not in text:
+            _telegram_send_message(chat_id,
+                '⚠️ Format salah. Kirim dalam format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nKosongkan link:\n`COMMUNITY | |`',
+                _claim_keyboard(), parse_mode='Markdown')
+            return
         parts = [p.strip() for p in text.split('|', 2)]
         name = parts[0] if parts else 'COMMUNITY'
         link = parts[1] if len(parts) > 1 else ''
@@ -1033,6 +1064,54 @@ def _handle_admin_text(chat_id, text):
         _save_site_status(status)
         _clear_bot_state(chat_id)
         _telegram_send_message(chat_id, f'✅ Telegram Channel berhasil diupdate.\n\nLink: {link}', _admin_keyboard())
+        return
+    if state == 'set_ext_text':
+        if '|' not in text:
+            _telegram_send_message(chat_id, '⚠️ Format salah.\nKirim: `Judul | Deskripsi | Versi`', _claim_keyboard(), parse_mode='Markdown')
+            return
+        parts = [p.strip() for p in text.split('|', 2)]
+        status = get_site_status()
+        if parts[0]: status['extension_title'] = parts[0]
+        if len(parts) > 1 and parts[1]: status['extension_desc'] = parts[1]
+        if len(parts) > 2 and parts[2]: status['extension_version'] = parts[2]
+        _save_site_status(status)
+        _clear_bot_state(chat_id)
+        _telegram_send_message(chat_id, f'✅ Teks Extension Page diupdate.\n\nJudul: *{status["extension_title"]}*\nVersi: `{status["extension_version"]}`', _admin_keyboard(), parse_mode='Markdown')
+        return
+    if state == 'set_ext_zip':
+        url = text.strip()
+        status = get_site_status()
+        status['extension_zip_url'] = url
+        _save_site_status(status)
+        _clear_bot_state(chat_id)
+        _telegram_send_message(chat_id, f'✅ ZIP URL disimpan.\n\n`{url}`', _admin_keyboard(), parse_mode='Markdown')
+        return
+    if state == 'set_ext_tutorial':
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        status = get_site_status()
+        status['extension_tutorial'] = lines
+        _save_site_status(status)
+        _clear_bot_state(chat_id)
+        steps = '\n'.join([f'{i+1}. {t}' for i,t in enumerate(lines)])
+        _telegram_send_message(chat_id, f'✅ Tutorial disimpan ({len(lines)} langkah).\n\n{steps}', _admin_keyboard())
+        return
+    if state == 'set_ext_image' and text == '__photo__':
+        photos = message.get('photo') if 'message' in str(type(message)) else []
+        try:
+            photos = message.get('photo', [])
+            largest = sorted(photos, key=lambda p: p.get('file_size', 0), reverse=True)[0]
+            file_id = largest.get('file_id')
+            photo_url = _telegram_get_photo_url(file_id)
+            if photo_url:
+                status = get_site_status()
+                status['extension_image_url'] = photo_url
+                _save_site_status(status)
+                _clear_bot_state(chat_id)
+                _telegram_send_message(chat_id, f'✅ Gambar Extension Page disimpan.\n\n`{photo_url}`', _admin_keyboard(), parse_mode='Markdown')
+            else:
+                _telegram_send_message(chat_id, '❌ Gagal mendapat URL gambar. Coba lagi.', _claim_keyboard())
+        except Exception as e:
+            _telegram_send_message(chat_id, f'❌ Error: {e}', _claim_keyboard())
         return
     if state == 'set_event_settings':
         fields = {'nama event':'event_name','nama hadiah':'reward_name','tanggal event':'event_date','jam mulai':'event_time','jumlah winner':'win_quota','countdown per round':'countdown_seconds','announcement':'announcement'}
@@ -1163,6 +1242,7 @@ def _normalize_bot_action(data):
         'MAINTENANCE OFF': 'maintenance_off', 'MATIKAN MAINTENANCE': 'maintenance_off', '/maintenance_off': 'maintenance_off',
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
         'COMMUNITY LINK': 'community_link', 'TELEGRAM CHANNEL': 'telegram_channel',
+        'EXTENSION PAGE': 'extension_page',
     }
     clean = (data or '').strip()
     upper_clean = clean.upper()
@@ -1208,6 +1288,10 @@ def process_telegram_update(update):
             raw_text = ''.join(rebuilt)
         raw_data = raw_text
         telegram_actor = message.get('from') or {}
+        # Handle foto dari bot admin untuk upload gambar extension
+        photos = message.get('photo')
+        if photos and not raw_data:
+            raw_data = '__photo__'
     user = _upsert_event_user(actor=telegram_actor, chat=chat)
     uid = user['telegram_user_id']
     data = _normalize_bot_action(raw_data)
@@ -1234,7 +1318,7 @@ def process_telegram_update(update):
             pass
 
     if data in ('menu', 'cancel') and state != 'awaiting_reward_code':
-        was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel')
+        was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel', 'set_ext_text', 'set_ext_zip', 'set_ext_tutorial', 'set_ext_image')
         _clear_bot_state(chat_id, uid)
         if _is_admin_chat(uid):
             if not _is_logged_in(chat_id):
@@ -1279,7 +1363,7 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
-    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info'}
+    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock'}
     if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
@@ -1418,7 +1502,7 @@ def process_telegram_update(update):
             note = 'Maintenance website dihidupkan.' if enabled else 'Maintenance website dimatikan.'
             refresh_admin_panel(chat_id, user, note)
             return
-        if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel'):
+        if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel', 'set_ext_text', 'set_ext_zip', 'set_ext_tutorial', 'set_ext_image'):
             # Ignore pesan kosong (Telegram link preview / web_page update)
             if not raw_data or not raw_data.strip():
                 return
@@ -1441,6 +1525,65 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id,
                 f'📢 Edit Telegram Channel\n\nSaat ini:\n`{current}`\n\nKirim link baru:',
                 _claim_keyboard(), parse_mode='Markdown')
+            return
+        if data == 'extension_page':
+            status = get_site_status()
+            locked = status.get('extension_locked', True)
+            title = status.get('extension_title', 'MII NETWORK EXTENSION')
+            ver = status.get('extension_version', '2.1.0')
+            img = status.get('extension_image_url', '(kosong)')
+            zipurl = status.get('extension_zip_url', '(kosong)')
+            tuts = status.get('extension_tutorial', [])
+            lock_btn = '🔓 Unlock Page' if locked else '🔒 Lock Page'
+            ext_kb = _reply_keyboard([
+                [lock_btn],
+                ['📝 Edit Teks', '🖼 Upload Gambar'],
+                ['📦 Set ZIP URL', '📋 Edit Tutorial'],
+                ['🔙 Kembali'],
+            ])
+            _telegram_send_message(chat_id,
+                f'🧩 *EXTENSION PAGE*\n\nStatus: {"🔒 LOCKED" if locked else "🔓 UNLOCKED"}\nJudul: `{title}`\nVersi: `{ver}`\nGambar: `{img}`\nZIP: `{zipurl}`\nTutorial: {len(tuts)} langkah\n\nPilih aksi:',
+                ext_kb, parse_mode='Markdown')
+            return
+        if data in ('ext_lock', 'ext_unlock') or raw_data in ('🔒 Lock Page', '🔓 Unlock Page'):
+            status = get_site_status()
+            locked = raw_data == '🔒 Lock Page' or data == 'ext_lock'
+            status['extension_locked'] = locked
+            _save_site_status(status)
+            label = '🔒 LOCKED' if locked else '🔓 UNLOCKED'
+            _telegram_send_message(chat_id, f'✅ Extension page sekarang {label}.', _admin_keyboard())
+            return
+        if raw_data == '📝 Edit Teks':
+            _set_bot_state(chat_id, 'set_ext_text', uid)
+            status = get_site_status()
+            _telegram_send_message(chat_id,
+                f'📝 Edit teks Extension Page\n\nSaat ini:\nJudul: `{status.get("extension_title","")}`\n\nKirim format:\n`Judul | Deskripsi | Versi`',
+                _claim_keyboard(), parse_mode='Markdown')
+            return
+        if raw_data == '📦 Set ZIP URL':
+            _set_bot_state(chat_id, 'set_ext_zip', uid)
+            _telegram_send_message(chat_id,
+                '📦 Kirim URL file ZIP extension\n\n(Upload ke GitHub releases / Google Drive / Telegraph, lalu kirim link-nya)',
+                _claim_keyboard(), parse_mode='Markdown')
+            return
+        if raw_data == '📋 Edit Tutorial':
+            _set_bot_state(chat_id, 'set_ext_tutorial', uid)
+            status = get_site_status()
+            tuts = status.get('extension_tutorial', [])
+            current = '\n'.join([f'{i+1}. {t}' for i,t in enumerate(tuts)]) or '(kosong)'
+            _telegram_send_message(chat_id,
+                f'📋 Edit Tutorial\n\nSaat ini:\n{current}\n\nKirim langkah-langkah dipisah newline:\n`Buka chrome://extensions`\n`Aktifkan Developer mode`\n`Load unpacked → pilih folder ZIP`',
+                _claim_keyboard(), parse_mode='Markdown')
+            return
+        if raw_data == '🖼 Upload Gambar':
+            _set_bot_state(chat_id, 'set_ext_image', uid)
+            _telegram_send_message(chat_id,
+                '🖼 Kirim foto/gambar untuk Extension Page\n\n(Kirim sebagai foto Telegram)',
+                _claim_keyboard())
+            return
+        if raw_data == '🔙 Kembali' and _BOT_USER_STATES.get(str(chat_id), '').startswith('ext') or raw_data == '🔙 Kembali':
+            _clear_bot_state(chat_id, uid)
+            show_admin_panel(chat_id, user)
             return
 
     if state == 'awaiting_reward_code':
@@ -1758,6 +1901,21 @@ def ai_view():
 def event_page():
     data = _load_event_data()
     return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_format_reward_info(data).replace('🎁 Info Hadiah\n', ''), maintenance=get_site_status().get('maintenance'))
+
+
+@app.route('/extension')
+def extension_page():
+    status = get_site_status()
+    return render_template('extension.html',
+        ext_locked=status.get('extension_locked', True),
+        ext_title=status.get('extension_title', 'MII NETWORK EXTENSION'),
+        ext_desc=status.get('extension_desc', 'Segera hadir.'),
+        ext_version=status.get('extension_version', '2.1.0'),
+        ext_image=status.get('extension_image_url', ''),
+        ext_zip=status.get('extension_zip_url', ''),
+        ext_tutorial=status.get('extension_tutorial', []),
+        maintenance=status.get('maintenance'),
+    )
 
 
 @app.route('/api/event/draw-status')
