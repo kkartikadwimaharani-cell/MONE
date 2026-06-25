@@ -3410,3 +3410,291 @@ body::before {
   width: 52px !important;
   height: 52px !important;
 }
+
+/* ══ FINAL DESKTOP + MARQUEE FIX 20260626 ══ */
+/* Hapus news/marquee bar sepenuhnya */
+.premium-marquee, .hero-marquee, .marquee-track { display: none !important; }
+
+/* Desktop full-width fix */
+html, body { max-width: 100% !important; overflow-x: hidden !important; }
+
+.top-nav {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  width: min(1440px, calc(100vw - 32px)) !important;
+}
+.page {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: clamp(14px, 4vw, 80px) !important;
+  padding-right: clamp(14px, 4vw, 80px) !important;
+}
+.home-hub {
+  max-width: min(1440px, 100%) !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Logo sharp */
+.nav-logo-img, .drawer-logo, .drawer-avatar {
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  transform: translateZ(0) !important;
+}
+
+/* ══════════════════════════════════════════════════
+   20260626 FINAL FIX — MOBILE/DESKTOP RAPI
+   - Font Syne semua heading
+   - Hero 2 col desktop, 1 col mobile (teks atas, fox bawah)
+   - Section heading teks besar tapi tidak wrap aneh
+   - Cards grid 3 col desktop, 2 col mobile, 1 col xs
+   - Logo sharp + circular crop rapi
+   ══════════════════════════════════════════════════ */
+
+/* Font global */
+.hero-title, .section-heading h2, .project-card h3, .social-card h3,
+.cta-copy h2, .nav-brand {
+  font-family: 'Syne', 'Space Grotesk', sans-serif !important;
+}
+
+/* ── LOGO: circular, sharp, no teks di luar ── */
+.nav-logo-img {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border: 1.5px solid rgba(255,22,56,.65) !important;
+  box-shadow: 0 0 18px rgba(255,0,38,.22) !important;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  flex-shrink: 0 !important;
+}
+.drawer-logo, .drawer-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border: 1.5px solid rgba(255,22,56,.55) !important;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
+
+/* ── NAV ── */
+.top-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  height: 68px !important;
+  padding: 0 clamp(14px,3vw,28px) !important;
+  top: 10px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(1440px, calc(100vw - 20px)) !important;
+  border-radius: 20px !important;
+  background: rgba(8,3,6,.90) !important;
+  border: 1px solid rgba(255,22,56,.28) !important;
+  backdrop-filter: blur(20px) !important;
+}
+.nav-brand {
+  font-size: clamp(1rem,1.6vw,1.4rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em !important;
+  white-space: nowrap !important;
+}
+.page { padding-top: 96px !important; }
+
+/* ── HERO: teks kiri, fox kanan ── */
+.home-hero {
+  display: grid !important;
+  grid-template-columns: 1fr min(44%, 420px) !important;
+  gap: clamp(16px,3vw,40px) !important;
+  align-items: center !important;
+  padding: clamp(24px,4vw,48px) !important;
+  min-height: 0 !important;
+  border-radius: 24px !important;
+}
+.hero-copy { order: 1 !important; }
+.hero-butterfly-stage, .hero-fox-stage { order: 2 !important; }
+
+/* Hero title — Syne, besar tapi tidak wrap aneh */
+.hero-title {
+  font-size: clamp(3.2rem,9vw,7.5rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.055em !important;
+  line-height: .88 !important;
+  white-space: nowrap !important;
+  animation: none !important;
+}
+.hero-kicker {
+  font-size: clamp(10px,.95vw,13px) !important;
+  font-weight: 800 !important;
+  letter-spacing: .16em !important;
+  color: rgba(255,220,228,.65) !important;
+  margin-bottom: 22px !important;
+  white-space: nowrap !important;
+}
+.hero-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  gap: 10px !important;
+  max-width: 440px !important;
+}
+.premium-btn {
+  font-size: clamp(11px,.9vw,13px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .06em !important;
+  padding: 12px 10px !important;
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+}
+
+/* ── SECTION HEADING: rapi, tidak kebesaran ── */
+.section-heading {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 20px !important;
+}
+.section-heading span {
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  color: #ff3c58 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+.section-heading h2 {
+  font-size: clamp(2rem,5vw,3.8rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* ── SOCIAL GRID: 3 col desktop ── */
+.social-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  gap: 12px !important;
+}
+.social-card {
+  padding: 18px 14px !important;
+  border-radius: 18px !important;
+  min-height: 0 !important;
+}
+.social-card h3 {
+  font-size: clamp(.82rem,1.1vw,1rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: .04em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.social-icon { width: 54px !important; height: 54px !important; border-radius: 14px !important; }
+
+/* ── PROJECT GRID: 3 col desktop ── */
+.project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  gap: 12px !important;
+}
+.project-card {
+  padding: 18px 14px !important;
+  border-radius: 18px !important;
+  min-height: 0 !important;
+}
+.project-card h3 {
+  font-size: clamp(.82rem,1.1vw,1rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: .04em !important;
+  line-height: 1.2 !important;
+  display: block !important;
+}
+.project-icon { width: 58px !important; height: 58px !important; border-radius: 16px !important; }
+.project-card a, .project-card button {
+  font-size: 11px !important;
+  padding: 10px 8px !important;
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  letter-spacing: .05em !important;
+}
+
+/* ── MOBILE < 640px ── */
+@media (max-width: 640px) {
+  .top-nav { height: 62px !important; top: 8px !important; }
+  .page { padding-top: 84px !important; padding-left: 12px !important; padding-right: 12px !important; }
+  .home-hub { gap: 14px !important; }
+
+  /* Hero: stack, teks atas fox bawah */
+  .home-hero {
+    grid-template-columns: 1fr !important;
+    padding: 22px 16px !important;
+    gap: 16px !important;
+  }
+  .hero-copy { order: 1 !important; }
+  .hero-butterfly-stage, .hero-fox-stage {
+    order: 2 !important;
+    min-height: 240px !important;
+    width: min(260px,80vw) !important;
+    margin: 0 auto !important;
+  }
+  .hero-title {
+    font-size: clamp(3rem,16vw,4.6rem) !important;
+    white-space: normal !important;
+    letter-spacing: -.04em !important;
+  }
+  .hero-kicker {
+    font-size: 10px !important;
+    letter-spacing: .10em !important;
+    white-space: normal !important;
+  }
+  .hero-actions {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+  }
+
+  /* Section heading mobile: stack */
+  .section-heading {
+    flex-direction: column !important;
+    gap: 4px !important;
+    align-items: flex-start !important;
+  }
+  .section-heading h2 {
+    font-size: clamp(1.8rem,10vw,2.8rem) !important;
+    white-space: normal !important;
+  }
+
+  /* Grids: 2 col */
+  .social-grid, .project-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 10px !important;
+  }
+  .social-card, .project-card { padding: 14px 10px !important; border-radius: 16px !important; }
+  .social-icon { width: 46px !important; height: 46px !important; border-radius: 12px !important; }
+  .project-icon { width: 50px !important; height: 50px !important; border-radius: 14px !important; }
+  .social-card h3, .project-card h3 { font-size: .75rem !important; white-space: normal !important; }
+  .project-card a, .project-card button { font-size: 10px !important; padding: 9px 6px !important; }
+
+  .hub-section { padding: 18px 14px !important; border-radius: 20px !important; }
+  .home-cta { flex-direction: column !important; padding: 20px 16px !important; }
+}
+
+/* ── VERY SMALL < 380px ── */
+@media (max-width: 380px) {
+  .hero-title { font-size: clamp(2.4rem,15vw,3.4rem) !important; }
+  .social-grid, .project-grid { grid-template-columns: 1fr !important; }
+}
+
