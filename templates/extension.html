@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <title>{{ ext_title }} — MII STORE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ asset_url('css/variables.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/layout.css') }}">
+  <style>
+    /* ── EXTENSION PAGE STYLES ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #ff1638;
+      --red2: #ff4a64;
+      --dark: #040205;
+      --panel: rgba(14,6,10,.88);
+      --border: rgba(255,22,56,.24);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(ellipse 90% 50% at 50% -5%, rgba(200,0,36,.30), transparent),
+        radial-gradient(ellipse 50% 40% at 95% 70%, rgba(140,0,22,.16), transparent),
+        #040205;
+      color: #fff;
+      min-height: 100svh;
+      overflow-x: hidden;
+    }
+
+    /* grid overlay */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,22,56,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,22,56,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 0 38%, transparent 80%);
+    }
+
+    /* ── NAV ── */
+    .ext-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 clamp(16px,4vw,32px);
+      height: 66px;
+      background: rgba(6,3,8,.90);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+    }
+    .ext-nav-logo {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,22,56,.60);
+      box-shadow: 0 0 16px rgba(255,0,38,.20);
+      object-fit: cover;
+    }
+    .ext-nav-brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+    .ext-nav-back {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,230,234,.80);
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+    }
+    .ext-nav-back:hover { border-color: var(--red2); color: #fff; }
+
+    /* ── MAIN ── */
+    .ext-page {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: clamp(32px,5vw,64px) clamp(16px,4vw,32px) 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── VERSION BADGE ── */
+    .ext-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255,22,56,.14);
+      border: 1px solid rgba(255,22,56,.36);
+      font-size: .74rem;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--red2);
+      width: fit-content;
+    }
+    .ext-badge-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── HERO CARD ── */
+    .ext-hero {
+      display: grid;
+      grid-template-columns: 1fr min(38%, 340px);
+      gap: clamp(20px,3vw,40px);
+      align-items: center;
+      padding: clamp(28px,4vw,48px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 82% 30%, rgba(255,0,48,.18), transparent 40%),
+        linear-gradient(145deg, rgba(20,6,12,.86), rgba(3,2,5,.96));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 28px 80px rgba(0,0,0,.38);
+      position: relative;
+      overflow: hidden;
+    }
+    .ext-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,22,56,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,22,56,.04) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(circle at 80% 28%, #000 0 28%, transparent 62%);
+      pointer-events: none;
+    }
+
+    .ext-hero-copy { position: relative; z-index: 2; }
+    .ext-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.2rem, 5.5vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -.045em;
+      line-height: .92;
+      margin: 12px 0 16px;
+      text-shadow: 0 0 36px rgba(255,0,48,.38);
+    }
+    .ext-desc {
+      color: rgba(255,225,230,.68);
+      font-size: clamp(.9rem, 1.2vw, 1.05rem);
+      line-height: 1.65;
+      max-width: 480px;
+    }
+
+    /* image side */
+    .ext-hero-img {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+    }
+    .ext-hero-img img {
+      width: 100%;
+      max-width: 280px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 48px rgba(255,0,48,.24), 0 20px 60px rgba(0,0,0,.44);
+      object-fit: cover;
+      aspect-ratio: 1;
+    }
+    /* pixel-art placeholder when no image */
+    .ext-img-placeholder {
+      width: min(220px, 100%);
+      aspect-ratio: 1;
+      border-radius: 20px;
+      border: 2px dashed rgba(255,22,56,.36);
+      display: grid;
+      place-items: center;
+      background: rgba(255,22,56,.06);
+    }
+    .ext-img-placeholder svg { opacity: .44; }
+
+    /* ── LOCK OVERLAY ── */
+    .ext-lock-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      background: rgba(4,2,5,.72);
+      backdrop-filter: blur(18px) saturate(.4);
+      -webkit-backdrop-filter: blur(18px) saturate(.4);
+    }
+    .lock-icon {
+      position: relative;
+      width: 90px; height: 90px;
+    }
+    /* CSS padlock */
+    .lock-body {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 56px; height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, rgba(255,22,56,.28), rgba(90,0,14,.62));
+      border: 2px solid rgba(255,22,56,.60);
+      box-shadow: 0 0 28px rgba(255,0,38,.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lock-shackle {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 30px; height: 36px;
+      border: 3px solid rgba(255,22,56,.72);
+      border-bottom: none;
+      border-radius: 15px 15px 0 0;
+      box-shadow: 0 0 16px rgba(255,0,38,.32);
+    }
+    .lock-keyhole {
+      width: 12px; height: 18px;
+      background: rgba(255,22,56,.22);
+      border-radius: 50% 50% 4px 4px;
+      border: 1.5px solid rgba(255,22,56,.50);
+      position: relative;
+    }
+    .lock-keyhole::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px; height: 7px;
+      background: rgba(255,22,56,.50);
+      border-radius: 0 0 2px 2px;
+    }
+    .lock-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: #fff;
+    }
+    .lock-sub {
+      font-size: .88rem;
+      font-weight: 600;
+      color: rgba(255,225,230,.55);
+      letter-spacing: .04em;
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    /* ── BLURRED CONTENT when locked ── */
+    .ext-blurred { filter: blur(10px) saturate(.3); user-select: none; pointer-events: none; }
+
+    /* ── COMING SOON SECTION ── */
+    .ext-coming-soon {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: clamp(22px,3vw,36px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(16,5,10,.72), rgba(3,2,5,.92));
+    }
+    .ext-coming-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: var(--red2);
+    }
+    .ext-coming-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      line-height: 1.05;
+    }
+    .ext-coming-desc {
+      color: rgba(255,225,230,.62);
+      font-size: .92rem;
+      line-height: 1.65;
+      max-width: 560px;
+    }
+
+    /* ── PIXEL FEATURE GRID ── */
+    .ext-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+      gap: 12px;
+    }
+    .ext-feat {
+      padding: 20px 18px;
+      border: 1px solid rgba(255,22,56,.18);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(20,6,12,.70), rgba(3,2,5,.90));
+      position: relative;
+      overflow: hidden;
+    }
+    .ext-feat::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red), transparent);
+      opacity: .6;
+    }
+    .ext-feat-icon {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .ext-feat-title {
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .ext-feat-desc {
+      font-size: .78rem;
+      color: rgba(255,225,230,.55);
+      line-height: 1.5;
+    }
+
+    /* ── TUTORIAL SECTION ── */
+    .ext-tutorial {
+      padding: clamp(22px,3vw,36px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(16,5,10,.72), rgba(3,2,5,.92));
+    }
+    .ext-tutorial-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 18px;
+      letter-spacing: -.02em;
+    }
+    .ext-steps { display: flex; flex-direction: column; gap: 12px; }
+    .ext-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .ext-step-num {
+      flex: 0 0 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--red), #7a0018);
+      border: 1px solid rgba(255,22,56,.40);
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      font-weight: 900;
+      box-shadow: 0 0 14px rgba(255,0,38,.22);
+    }
+    .ext-step-text {
+      padding-top: 5px;
+      font-size: .9rem;
+      line-height: 1.55;
+      color: rgba(255,230,235,.80);
+    }
+
+    /* ── DOWNLOAD BTN ── */
+    .ext-download-wrap { margin-top: 4px; }
+    .ext-download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,50,80,.52);
+      background: linear-gradient(135deg, #ff1e3c 0%, #a80018 52%, #2c0008 100%);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: .92rem;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 0 32px rgba(255,0,48,.28), 0 14px 38px rgba(0,0,0,.32);
+      transition: transform .18s, box-shadow .18s;
+    }
+    .ext-download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 44px rgba(255,0,48,.38), 0 18px 48px rgba(0,0,0,.38);
+    }
+    .ext-download-btn.disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .ext-hero { grid-template-columns: 1fr; }
+      .ext-hero-img { order: -1; min-height: 180px; }
+      .ext-hero-img img, .ext-img-placeholder { max-width: 180px; }
+      .ext-features { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 420px) {
+      .ext-features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+{% if ext_locked %}
+<div class="ext-lock-overlay" id="lockOverlay">
+  <div class="lock-icon">
+    <div class="lock-shackle"></div>
+    <div class="lock-body"><div class="lock-keyhole"></div></div>
+  </div>
+  <div class="lock-title">HALAMAN TERKUNCI</div>
+  <div class="lock-sub">Konten ini belum tersedia untuk publik. Tunggu pengumuman resmi.</div>
+  <a href="/" class="ext-nav-back" style="margin:0">← Kembali ke Beranda</a>
+</div>
+{% endif %}
+
+<div class="{% if ext_locked %}ext-blurred{% endif %}">
+
+  <!-- NAV -->
+  <nav class="ext-nav">
+    <img class="ext-nav-logo" src="{{ asset_url('img/mii-logo-new.png') }}" alt="MII" />
+    <span class="ext-nav-brand">MII STORE</span>
+    <a href="/" class="ext-nav-back">← Beranda</a>
+  </nav>
+
+  <main class="ext-page">
+
+    <!-- Badge -->
+    <div class="ext-badge">
+      <span class="ext-badge-dot"></span>
+      v{{ ext_version }} — COMING SOON
+    </div>
+
+    <!-- Hero Card -->
+    <section class="ext-hero">
+      <div class="ext-hero-copy">
+        <div class="ext-title">{{ ext_title }}</div>
+        <p class="ext-desc">{{ ext_desc }}</p>
+        {% if ext_zip %}
+        <div class="ext-download-wrap" style="margin-top:24px">
+          <a href="{{ ext_zip }}" class="ext-download-btn" download>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download ZIP
+          </a>
+        </div>
+        {% else %}
+        <div class="ext-download-wrap" style="margin-top:24px">
+          <span class="ext-download-btn disabled">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Belum Tersedia
+          </span>
+        </div>
+        {% endif %}
+      </div>
+      <div class="ext-hero-img">
+        {% if ext_image %}
+        <img src="{{ ext_image }}" alt="{{ ext_title }}" />
+        {% else %}
+        <div class="ext-img-placeholder">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="8" y="14" width="48" height="36" rx="6" stroke="rgba(255,22,56,.6)" stroke-width="2"/>
+            <rect x="22" y="8" width="8" height="8" rx="2" stroke="rgba(255,22,56,.6)" stroke-width="2"/>
+            <rect x="34" y="8" width="8" height="8" rx="2" stroke="rgba(255,22,56,.6)" stroke-width="2"/>
+            <circle cx="32" cy="32" r="8" stroke="rgba(255,22,56,.6)" stroke-width="2"/>
+            <line x1="28" y1="32" x2="36" y2="32" stroke="rgba(255,22,56,.6)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="32" y1="28" x2="32" y2="36" stroke="rgba(255,22,56,.6)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Coming Soon Info -->
+    <section class="ext-coming-soon">
+      <span class="ext-coming-label">Status</span>
+      <div class="ext-coming-title">Segera Hadir 🚀</div>
+      <p class="ext-coming-desc">Extension ini sedang dalam pengembangan aktif. Follow channel Telegram untuk notifikasi pertama saat dirilis.</p>
+    </section>
+
+    <!-- Pixel Feature Grid -->
+    <div class="ext-features">
+      <div class="ext-feat">
+        <span class="ext-feat-icon">⬇️</span>
+        <div class="ext-feat-title">TikTok Downloader</div>
+        <div class="ext-feat-desc">Download video & slideshow TikTok langsung dari browser.</div>
+      </div>
+      <div class="ext-feat">
+        <span class="ext-feat-icon">🎯</span>
+        <div class="ext-feat-title">HD Auto-Enable</div>
+        <div class="ext-feat-desc">Otomatis aktifkan kualitas tertinggi saat buka video.</div>
+      </div>
+      <div class="ext-feat">
+        <span class="ext-feat-icon">📊</span>
+        <div class="ext-feat-title">Video Stats</div>
+        <div class="ext-feat-desc">Lihat metadata lengkap, views, likes, dan bitrate.</div>
+      </div>
+      <div class="ext-feat">
+        <span class="ext-feat-icon">🔌</span>
+        <div class="ext-feat-title">Kiwi Browser</div>
+        <div class="ext-feat-desc">Support Kiwi & Chrome Android. Tanpa root.</div>
+      </div>
+    </div>
+
+    <!-- Tutorial -->
+    {% if ext_tutorial and ext_tutorial|length > 0 %}
+    <section class="ext-tutorial">
+      <div class="ext-tutorial-title">📋 Cara Pasang Extension</div>
+      <div class="ext-steps">
+        {% for step in ext_tutorial %}
+        <div class="ext-step">
+          <div class="ext-step-num">{{ loop.index }}</div>
+          <div class="ext-step-text">{{ step }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% else %}
+    <section class="ext-tutorial">
+      <div class="ext-tutorial-title">📋 Cara Pasang Extension</div>
+      <div class="ext-steps">
+        <div class="ext-step">
+          <div class="ext-step-num">1</div>
+          <div class="ext-step-text">Download file ZIP extension dari tombol di atas.</div>
+        </div>
+        <div class="ext-step">
+          <div class="ext-step-num">2</div>
+          <div class="ext-step-text">Buka Kiwi Browser → menu (⋮) → Extensions.</div>
+        </div>
+        <div class="ext-step">
+          <div class="ext-step-num">3</div>
+          <div class="ext-step-text">Aktifkan <strong>Developer mode</strong> di pojok kanan atas.</div>
+        </div>
+        <div class="ext-step">
+          <div class="ext-step-num">4</div>
+          <div class="ext-step-text">Tap <strong>+ (from .zip/.crx/.user.js)</strong> → pilih file ZIP yang didownload.</div>
+        </div>
+        <div class="ext-step">
+          <div class="ext-step-num">5</div>
+          <div class="ext-step-text">Extension aktif — buka TikTok dan coba fiturnya!</div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+  </main>
+</div>
+
+</body>
+</html>
