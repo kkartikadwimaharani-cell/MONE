@@ -187,6 +187,8 @@ def get_site_status():
         status.setdefault('extension_desc', 'Tools browser extension untuk TikTok downloader, HD auto-enable, dan lebih banyak fitur eksklusif. Segera hadir!')
         status.setdefault('extension_version', '2.1.0')
         status.setdefault('extension_image_url', '')
+        status.setdefault('extension_image_url_2', '')
+        status.setdefault('extension_image_url_3', '')
         status.setdefault('extension_zip_url', '')
         status.setdefault('extension_tutorial', [])
         return status
@@ -1096,7 +1098,6 @@ def _handle_admin_text(chat_id, text):
         _telegram_send_message(chat_id, f'✅ Tutorial disimpan ({len(lines)} langkah).\n\n{steps}', _admin_keyboard())
         return
     if state == 'set_ext_image' and text == '__photo__':
-        photos = message.get('photo') if 'message' in str(type(message)) else []
         try:
             photos = message.get('photo', [])
             largest = sorted(photos, key=lambda p: p.get('file_size', 0), reverse=True)[0]
@@ -1104,10 +1105,26 @@ def _handle_admin_text(chat_id, text):
             photo_url = _telegram_get_photo_url(file_id)
             if photo_url:
                 status = get_site_status()
-                status['extension_image_url'] = photo_url
+                # Isi slot gambar yang kosong secara urutan
+                if not status.get('extension_image_url'):
+                    status['extension_image_url'] = photo_url
+                    slot = 1
+                elif not status.get('extension_image_url_2'):
+                    status['extension_image_url_2'] = photo_url
+                    slot = 2
+                elif not status.get('extension_image_url_3'):
+                    status['extension_image_url_3'] = photo_url
+                    slot = 3
+                else:
+                    # Semua slot penuh, overwrite slot 1
+                    status['extension_image_url'] = photo_url
+                    status['extension_image_url_2'] = ''
+                    status['extension_image_url_3'] = ''
+                    slot = 1
                 _save_site_status(status)
-                _clear_bot_state(chat_id)
-                _telegram_send_message(chat_id, f'✅ Gambar Extension Page disimpan.\n\n`{photo_url}`', _admin_keyboard(), parse_mode='Markdown')
+                filled = sum(1 for k in ['extension_image_url','extension_image_url_2','extension_image_url_3'] if status.get(k))
+                msg = f'✅ Gambar {slot} disimpan ({filled}/3 slot terisi).\n`{photo_url}`\n\nKirim foto lagi untuk slot berikutnya, atau tekan menu lain untuk selesai.'
+                _telegram_send_message(chat_id, msg, _claim_keyboard(), parse_mode='Markdown')
             else:
                 _telegram_send_message(chat_id, '❌ Gagal mendapat URL gambar. Coba lagi.', _claim_keyboard())
         except Exception as e:
@@ -1909,9 +1926,13 @@ def extension_page():
     return render_template('extension.html',
         ext_locked=status.get('extension_locked', True),
         ext_title=status.get('extension_title', 'MII NETWORK EXTENSION'),
-        ext_desc=status.get('extension_desc', 'Segera hadir.'),
+        ext_desc=status.get('extension_desc', ''),
         ext_version=status.get('extension_version', '2.1.0'),
-        ext_image=status.get('extension_image_url', ''),
+        ext_images=[
+            status.get('extension_image_url', ''),
+            status.get('extension_image_url_2', ''),
+            status.get('extension_image_url_3', ''),
+        ],
         ext_zip=status.get('extension_zip_url', ''),
         ext_tutorial=status.get('extension_tutorial', []),
         maintenance=status.get('maintenance'),
