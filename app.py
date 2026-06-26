@@ -1260,6 +1260,9 @@ def _normalize_bot_action(data):
         'COMMUNITY LINK': 'community_link', 'TELEGRAM CHANNEL': 'telegram_channel',
         'EXTENSION PAGE': 'extension_page',
         'HAPUS FOTO 1': 'ext_del_img1', 'HAPUS FOTO 2': 'ext_del_img2', 'HAPUS FOTO 3': 'ext_del_img3',
+        'EDIT TEKS': 'ext_edit_text', 'UPLOAD GAMBAR': 'ext_upload_img',
+        'SET ZIP URL': 'ext_set_zip', 'EDIT TUTORIAL': 'ext_edit_tutorial',
+        'KEMBALI': 'ext_back',
     }
     clean = (data or '').strip()
     upper_clean = clean.upper()
@@ -1346,6 +1349,7 @@ def process_telegram_update(update):
         'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings',
         'reward_generate', 'reward_stock', 'view_reward_stock', 'event_manual_token',
         'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3',
+        'ext_edit_text', 'ext_upload_img', 'ext_set_zip', 'ext_edit_tutorial', 'ext_back',
         'logout', 'admin_login',
     }
     if state in admin_input_states and data in recognized_actions:
@@ -1605,20 +1609,20 @@ def process_telegram_update(update):
             slot_n = data[-1]
             _telegram_send_message(chat_id, f'🗑 Foto {slot_n} dihapus.', _admin_keyboard())
             return
-        if raw_data == '📝 Edit Teks':
+        if raw_data == '📝 Edit Teks' or data == 'ext_edit_text':
             _set_bot_state(chat_id, 'set_ext_text', uid)
             status = get_site_status()
             _telegram_send_message(chat_id,
                 f'📝 Edit teks Extension Page\n\nSaat ini:\nJudul: `{status.get("extension_title","")}`\n\nKirim format:\n`Judul | Deskripsi | Versi`',
                 _claim_keyboard(), parse_mode='Markdown')
             return
-        if raw_data == '📦 Set ZIP URL':
+        if raw_data == '📦 Set ZIP URL' or data == 'ext_set_zip':
             _set_bot_state(chat_id, 'set_ext_zip', uid)
             _telegram_send_message(chat_id,
                 '📦 Kirim URL file ZIP extension\n\n(Upload ke GitHub releases / Google Drive / Telegraph, lalu kirim link-nya)',
                 _claim_keyboard(), parse_mode='Markdown')
             return
-        if raw_data == '📋 Edit Tutorial':
+        if raw_data == '📋 Edit Tutorial' or data == 'ext_edit_tutorial':
             _set_bot_state(chat_id, 'set_ext_tutorial', uid)
             status = get_site_status()
             tuts = status.get('extension_tutorial', [])
@@ -1627,13 +1631,13 @@ def process_telegram_update(update):
                 f'📋 Edit Tutorial\n\nSaat ini:\n{current}\n\nKirim langkah-langkah dipisah newline:\n`Buka chrome://extensions`\n`Aktifkan Developer mode`\n`Load unpacked → pilih folder ZIP`',
                 _claim_keyboard(), parse_mode='Markdown')
             return
-        if raw_data == '🖼 Upload Gambar':
+        if raw_data == '🖼 Upload Gambar' or data == 'ext_upload_img':
             _set_bot_state(chat_id, 'set_ext_image', uid)
             _telegram_send_message(chat_id,
                 '🖼 Kirim foto/gambar untuk Extension Page\n\n(Kirim sebagai foto Telegram)',
                 _claim_keyboard())
             return
-        if raw_data == '🔙 Kembali' and _BOT_USER_STATES.get(str(chat_id), '').startswith('ext') or raw_data == '🔙 Kembali':
+        if data == 'ext_back' or (raw_data == '🔙 Kembali'):
             _clear_bot_state(chat_id, uid)
             show_admin_panel(chat_id, user)
             return
