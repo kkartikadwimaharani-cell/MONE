@@ -3,519 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Cache-Control" content="no-store">
   <title>{{ ext_title }} — MII STORE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Syne:wght@700;800&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset_url('css/variables.css') }}">
-  <link rel="stylesheet" href="{{ asset_url('css/base.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-/* ── RESET ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-/* ── TOKENS ── */
 :root{
-  --red:#ff1638;--red2:#ff4a64;--dark:#040205;
-  --border:rgba(255,22,56,.22);--panel:rgba(14,6,10,.88);
-  --font-head:'Barlow Condensed','Syne',sans-serif;--font-body:'Inter',sans-serif;
+  --red:#ff1638;--red2:#ff4060;
+  --dark:#040205;--border:rgba(255,22,56,.20);
 }
-
-/* ── BASE ── */
 html,body{max-width:100%;overflow-x:hidden}
 body{
-  font-family:var(--font-body);
-  background:
-    radial-gradient(ellipse 90% 50% at 50% -5%,rgba(200,0,36,.28),transparent),
-    radial-gradient(ellipse 50% 40% at 95% 70%,rgba(140,0,22,.14),transparent),
-    #040205;
+  font-family:'Outfit',sans-serif;
+  background:radial-gradient(ellipse 100% 55% at 50% -5%,rgba(200,0,36,.26),transparent),#040205;
   color:#fff;min-height:100svh;
 }
 body::before{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    linear-gradient(rgba(255,22,56,.05) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,22,56,.04) 1px,transparent 1px);
+  background-image:linear-gradient(rgba(255,22,56,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,22,56,.03) 1px,transparent 1px);
   background-size:44px 44px;
-  mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 0 38%,transparent 80%);
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 28%,#000 0 38%,transparent 80%);
 }
 
-/* ── NAV ── */
-.xnav{
+/* NAV */
+nav{
   position:sticky;top:0;z-index:100;
-  display:flex;align-items:center;gap:14px;
-  padding:0 clamp(16px,5vw,48px);height:66px;
+  display:flex;align-items:center;gap:12px;
+  padding:0 clamp(16px,5vw,40px);height:64px;
   background:rgba(6,3,8,.92);
   border-bottom:1px solid var(--border);
   backdrop-filter:blur(20px);
 }
-.xnav-logo{
-  width:42px;height:42px;border-radius:50%;
-  border:1.5px solid rgba(255,22,56,.60);
-  box-shadow:0 0 16px rgba(255,0,38,.20);
-  object-fit:cover;
-  image-rendering:crisp-edges;
-  image-rendering:-webkit-optimize-contrast;
+.n-logo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,22,56,.55);image-rendering:crisp-edges}
+.n-brand{font-size:1rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.n-back{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:10px;
+  border:1px solid var(--border);background:rgba(255,255,255,.055);
+  color:rgba(255,230,234,.75);font-size:.78rem;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;text-decoration:none;
 }
-.xnav-brand{font-family:var(--font-head);font-size:1.05rem;font-weight:800;letter-spacing:.06em}
-.xnav-back{
-  margin-left:auto;
-  display:inline-flex;align-items:center;gap:7px;
-  padding:8px 16px;border-radius:10px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.055);
-  color:rgba(255,230,234,.80);
-  font-size:.82rem;font-weight:700;letter-spacing:.04em;
-  text-decoration:none;
-  transition:border-color .15s,color .15s;
-}
-.xnav-back:hover{border-color:var(--red2);color:#fff}
-.xnav-back svg{flex:0 0 auto}
+.n-back:hover{border-color:var(--red2);color:#fff}
 
-/* ── LAYOUT ── */
-.xpage{
-  position:relative;z-index:1;
-  max-width:min(960px,calc(100vw - 40px));
-  margin:0 auto;
-  padding:clamp(28px,5vw,56px) 0 80px;
-  display:flex;flex-direction:column;gap:20px;
-}
+/* PAGE */
+.pg{position:relative;z-index:1;max-width:min(860px,calc(100vw - 32px));margin:0 auto;padding:clamp(24px,5vw,52px) 0 80px;display:flex;flex-direction:column;gap:16px}
 
-/* ── VERSION PILL ── */
-.xpill{
+/* PILL */
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;background:rgba(255,22,56,.11);border:1px solid rgba(255,22,56,.30);width:fit-content}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red);animation:bl 2s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.pill-txt{font-size:.68rem;font-weight:800;letter-spacing:.20em;text-transform:uppercase;color:var(--red2)}
+
+/* CARD */
+.card{padding:clamp(20px,4vw,36px);border:1px solid var(--border);border-radius:20px;background:linear-gradient(145deg,rgba(18,5,10,.80),rgba(3,2,5,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 18px 56px rgba(0,0,0,.26)}
+
+/* HERO */
+.hero-title{font-size:clamp(2rem,5.5vw,3.6rem);font-weight:900;letter-spacing:-.03em;line-height:.95;text-transform:uppercase;margin-bottom:14px;text-shadow:0 0 32px rgba(255,0,48,.28)}
+.hero-label{font-size:10px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--red2);margin-bottom:10px;display:block}
+
+/* DOWNLOAD BTN */
+.dl-btn{
   display:inline-flex;align-items:center;gap:8px;
-  padding:5px 14px;border-radius:999px;
-  background:rgba(255,22,56,.12);
-  border:1px solid rgba(255,22,56,.34);
-  width:fit-content;
-}
-.xpill-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--red);box-shadow:0 0 8px var(--red);
-  animation:blink 2s ease-in-out infinite;
-}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.xpill-text{
-  font-family:var(--font-body);
-  font-size:.7rem;font-weight:900;
-  letter-spacing:.20em;text-transform:uppercase;
-  color:var(--red2);
-}
-
-/* ── CARD BASE ── */
-.xcard{
-  padding:clamp(22px,4vw,40px);
-  border:1px solid var(--border);
-  border-radius:22px;
-  background:
-    radial-gradient(circle at 15% 15%,rgba(255,0,48,.09),transparent 34%),
-    linear-gradient(145deg,rgba(18,5,10,.78),rgba(3,2,5,.96));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 20px 64px rgba(0,0,0,.28);
-  position:relative;overflow:hidden;
-}
-.xcard::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(255,22,56,.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,22,56,.03) 1px,transparent 1px);
-  background-size:38px 38px;
-  mask-image:radial-gradient(circle at 15% 15%,#000 0 30%,transparent 62%);
-}
-
-/* ── HERO CARD ── */
-.xhero{display:grid;grid-template-columns:1fr min(40%,320px);gap:clamp(18px,4vw,44px);align-items:center}
-.xhero-copy{position:relative;z-index:2}
-.xlabel{
-  display:block;
-  font-size:10px;font-weight:900;letter-spacing:.26em;
-  text-transform:uppercase;color:var(--red2);margin-bottom:10px;
-}
-.xtitle{
-  font-family:var(--font-head);
-  font-size:clamp(2.4rem,6vw,4.6rem);
-  font-weight:900;font-style:italic;
-  letter-spacing:-.02em;line-height:.9;
-  margin-bottom:16px;text-transform:uppercase;
-  text-shadow:0 0 36px rgba(255,0,48,.32);
-}
-.xdesc{
-  color:rgba(255,225,230,.65);
-  font-size:clamp(.88rem,1.1vw,1rem);
-  line-height:1.68;max-width:460px;
-}
-
-/* ── DOWNLOAD BTN ── */
-.xbtn{
-  display:inline-flex;align-items:center;gap:9px;
-  padding:13px 26px;margin-top:22px;
-  border-radius:12px;
-  border:1px solid rgba(255,50,80,.50);
-  background:linear-gradient(135deg,#ff1e3c 0%,#a80018 52%,#2c0008 100%);
-  color:#fff;font-family:var(--font-body);
-  font-size:.88rem;font-weight:900;letter-spacing:.06em;
-  text-transform:uppercase;text-decoration:none;cursor:pointer;
-  box-shadow:0 0 28px rgba(255,0,48,.26),0 12px 32px rgba(0,0,0,.30);
+  padding:12px 24px;margin-top:18px;border-radius:12px;
+  border:1px solid rgba(255,50,80,.48);
+  background:linear-gradient(135deg,#ff1e3c,#a80018 55%,#2c0008);
+  color:#fff;font-family:'Outfit',sans-serif;
+  font-size:.82rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  text-decoration:none;cursor:pointer;
+  box-shadow:0 0 26px rgba(255,0,48,.24),0 10px 28px rgba(0,0,0,.28);
   transition:transform .16s,box-shadow .16s;
 }
-.xbtn:hover{transform:translateY(-2px);box-shadow:0 0 38px rgba(255,0,48,.36),0 18px 44px rgba(0,0,0,.36)}
-.xbtn.disabled{opacity:.40;cursor:not-allowed;pointer-events:none}
-/* btn icon — CSS arrow down */
-.xbtn-icon{
-  width:16px;height:16px;position:relative;flex:0 0 16px;
-}
-.xbtn-icon::before{
-  content:"";position:absolute;
-  top:1px;left:50%;transform:translateX(-50%);
-  width:2px;height:9px;background:#fff;border-radius:2px;
-}
-.xbtn-icon::after{
-  content:"";position:absolute;
-  bottom:1px;left:50%;transform:translateX(-50%) rotate(0deg);
-  width:8px;height:8px;
-  border-right:2px solid #fff;border-bottom:2px solid #fff;
-  transform:translateX(-50%) rotate(45deg) translate(-1px,-3px);
-}
-/* lock icon */
-.xbtn-lock{
-  width:16px;height:18px;position:relative;flex:0 0 16px;
-}
-.xbtn-lock::before{
-  content:"";position:absolute;
-  bottom:0;left:50%;transform:translateX(-50%);
-  width:13px;height:9px;
-  background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.70);
-  border-radius:3px;
-}
-.xbtn-lock::after{
-  content:"";position:absolute;
-  top:0;left:50%;transform:translateX(-50%);
-  width:7px;height:8px;
-  border:1.5px solid rgba(255,255,255,.70);
-  border-bottom:none;border-radius:4px 4px 0 0;
-}
+.dl-btn:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(255,0,48,.34),0 14px 36px rgba(0,0,0,.34)}
+.dl-btn.off{opacity:.38;cursor:not-allowed;pointer-events:none}
+/* CSS lock icon */
+.ico-lock{width:14px;height:16px;position:relative;flex:0 0 14px}
+.ico-lock::before{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:13px;height:9px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.65);border-radius:3px}
+.ico-lock::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:7px;height:8px;border:1.5px solid rgba(255,255,255,.65);border-bottom:none;border-radius:4px 4px 0 0}
+/* CSS download arrow */
+.ico-dl{width:14px;height:16px;position:relative;flex:0 0 14px}
+.ico-dl::before{content:"";position:absolute;top:1px;left:50%;transform:translateX(-50%);width:2px;height:9px;background:#fff;border-radius:2px}
+.ico-dl::after{content:"";position:absolute;bottom:2px;left:50%;width:9px;height:9px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:translateX(-50%) rotate(45deg) translate(-1px,-3px)}
 
-/* ── IMAGE SIDE ── */
-.xhero-imgs{
-  position:relative;z-index:2;
-  display:flex;flex-direction:column;gap:10px;
-  align-items:center;
-}
-.ximg-wrap{
-  width:100%;border-radius:16px;
-  border:1px solid var(--border);
-  overflow:hidden;
-  box-shadow:0 0 32px rgba(255,0,48,.16),0 16px 44px rgba(0,0,0,.36);
-}
-.ximg-wrap img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
-.ximg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
-.ximg-row .ximg-wrap img{aspect-ratio:16/9}
+/* PHOTOS — vertical stack */
+.photos{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.photo-item{width:100%;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 0 24px rgba(255,0,48,.12),0 12px 36px rgba(0,0,0,.30)}
+.photo-item img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
 
-/* placeholder box */
-.ximg-placeholder{
-  width:100%;aspect-ratio:16/9;
-  border:2px dashed rgba(255,22,56,.28);
-  border-radius:16px;background:rgba(255,22,56,.04);
-  display:grid;place-items:center;
-}
-/* CSS puzzle icon */
-.xpuzzle-icon{
-  width:52px;height:52px;position:relative;opacity:.38;
-}
-.xpuzzle-icon::before{
-  content:"";position:absolute;
-  inset:6px;border:2px solid rgba(255,22,56,.80);
-  border-radius:6px;
-}
-.xpuzzle-icon::after{
-  content:"";position:absolute;
-  top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:14px;height:14px;
-  border:2px solid rgba(255,22,56,.80);
-  border-radius:50%;
-}
+/* STATUS */
+.status-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;letter-spacing:-.025em;text-transform:uppercase;line-height:1}
+.lbl{font-size:10px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--red2);margin-bottom:8px;display:block}
 
-/* ── STATUS CARD ── */
-.xstatus-title{
-  font-family:var(--font-head);
-  font-size:clamp(1.6rem,4vw,2.6rem);
-  font-weight:900;font-style:italic;letter-spacing:-.02em;line-height:1;
-  margin-bottom:12px;text-transform:uppercase;
-}
-.xstatus-desc{
-  color:rgba(255,225,230,.60);
-  font-size:clamp(.88rem,1.1vw,1rem);
-  line-height:1.65;max-width:540px;
-}
+/* FEATURE GRID */
+.feats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.feat{padding:18px 14px;border:1px solid rgba(255,22,56,.15);border-radius:14px;background:linear-gradient(145deg,rgba(18,5,10,.72),rgba(3,2,5,.94));position:relative;overflow:hidden}
+.feat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--red),transparent);opacity:.5}
+.feat-name{font-size:.9rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
 
-/* ── FEATURE GRID ── */
-.xfeats{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));
-  gap:12px;
-}
-.xfeat{
-  padding:22px 18px;
-  border:1px solid rgba(255,22,56,.16);
-  border-radius:16px;
-  background:linear-gradient(145deg,rgba(18,5,10,.72),rgba(3,2,5,.94));
-  position:relative;overflow:hidden;
-}
-.xfeat::before{
-  content:"";position:absolute;
-  top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,var(--red),transparent);
-  opacity:.55;
-}
-/* CSS icon box */
-.xfeat-icon{
-  width:36px;height:36px;margin-bottom:12px;
-  border:1.5px solid rgba(255,22,56,.44);
-  border-radius:10px;
-  background:rgba(255,22,56,.10);
-  display:grid;place-items:center;
-}
-/* Generic CSS cross/plus mark inside icon */
-.xfeat-icon::before,.xfeat-icon::after{
-  content:"";position:absolute;
-  background:rgba(255,22,56,.70);border-radius:2px;
-}
-.xfeat-icon{position:relative}
-.xfeat-icon::before{width:2px;height:14px}
-.xfeat-icon::after{width:14px;height:2px}
+/* TUTORIAL */
+.tut-title{font-size:clamp(1.3rem,3vw,1.8rem);font-weight:900;letter-spacing:-.02em;text-transform:uppercase;margin-bottom:16px}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step-n{flex:0 0 28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--red),#7a0018);display:grid;place-items:center;font-size:.72rem;font-weight:900;margin-top:3px;box-shadow:0 0 10px rgba(255,0,38,.20)}
+.step-t{font-size:.88rem;line-height:1.55;color:rgba(255,230,235,.78);padding-top:3px}
 
-.xfeat-name{
-  font-family:var(--font-head);
-  font-size:1rem;font-weight:900;font-style:italic;
-  letter-spacing:.02em;text-transform:uppercase;margin-bottom:5px;
-}
-.xfeat-desc{
-  font-size:.78rem;
-  color:rgba(255,225,230,.50);line-height:1.5;
-}
+/* LOCK OVERLAY */
+.lock-ov{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:rgba(4,2,5,.76);backdrop-filter:blur(20px) saturate(.30);-webkit-backdrop-filter:blur(20px) saturate(.30)}
+.lk{position:relative;width:76px;height:80px;display:flex;align-items:flex-end;justify-content:center}
+.lk-sh{position:absolute;top:0;left:50%;transform:translateX(-50%);width:30px;height:36px;border:3px solid rgba(255,22,56,.70);border-bottom:none;border-radius:15px 15px 0 0;box-shadow:0 0 16px rgba(255,0,38,.28)}
+.lk-bd{width:54px;height:42px;border-radius:9px;background:linear-gradient(145deg,rgba(255,22,56,.20),rgba(80,0,10,.66));border:2px solid rgba(255,22,56,.55);box-shadow:0 0 24px rgba(255,0,38,.22);display:flex;align-items:center;justify-content:center}
+.lk-kh{width:10px;height:15px;background:rgba(255,22,56,.16);border:1.5px solid rgba(255,22,56,.48);border-radius:5px 5px 3px 3px;position:relative}
+.lk-kh::after{content:"";position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:3px;height:5px;background:rgba(255,22,56,.44);border-radius:0 0 2px 2px}
+.lk-title{font-size:1.3rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.lk-sub{font-size:.82rem;font-weight:600;color:rgba(255,225,230,.50);text-align:center;max-width:260px;line-height:1.58}
+.lk-back{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.055);color:rgba(255,230,234,.80);font-size:.80rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;text-decoration:none}
+.lk-back:hover{border-color:var(--red2);color:#fff}
+.blr{filter:blur(10px) saturate(.3);user-select:none;pointer-events:none}
 
-/* ── TUTORIAL ── */
-.xtut-head{
-  font-family:var(--font-head);
-  font-size:clamp(1.3rem,2.8vw,1.8rem);
-  font-weight:900;font-style:italic;letter-spacing:-.01em;
-  text-transform:uppercase;margin-bottom:18px;
-}
-.xsteps{display:flex;flex-direction:column;gap:14px}
-.xstep{display:flex;gap:14px;align-items:flex-start}
-.xstep-num{
-  flex:0 0 30px;height:30px;border-radius:50%;
-  background:linear-gradient(135deg,var(--red),#7a0018);
-  border:1px solid rgba(255,22,56,.38);
-  display:grid;place-items:center;
-  font-size:.75rem;font-weight:900;
-  box-shadow:0 0 12px rgba(255,0,38,.20);
-  margin-top:2px;
-}
-.xstep-text{
-  font-size:.92rem;line-height:1.58;
-  color:rgba(255,230,235,.78);
-  padding-top:4px;
-}
-
-/* ── LOCK OVERLAY ── */
-.xlock-overlay{
-  position:fixed;inset:0;z-index:200;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-  background:rgba(4,2,5,.75);
-  backdrop-filter:blur(20px) saturate(.35);
-  -webkit-backdrop-filter:blur(20px) saturate(.35);
-}
-/* CSS padlock */
-.xlock-icon{position:relative;width:80px;height:84px;display:flex;align-items:flex-end;justify-content:center}
-.xlock-shackle{
-  position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:32px;height:38px;
-  border:3px solid rgba(255,22,56,.72);
-  border-bottom:none;border-radius:16px 16px 0 0;
-  box-shadow:0 0 18px rgba(255,0,38,.30);
-}
-.xlock-body{
-  width:56px;height:44px;
-  border-radius:10px;
-  background:linear-gradient(145deg,rgba(255,22,56,.22),rgba(80,0,10,.68));
-  border:2px solid rgba(255,22,56,.58);
-  box-shadow:0 0 28px rgba(255,0,38,.24);
-  display:flex;align-items:center;justify-content:center;
-}
-.xlock-hole{
-  width:11px;height:16px;
-  background:rgba(255,22,56,.18);
-  border:1.5px solid rgba(255,22,56,.50);
-  border-radius:6px 6px 3px 3px;
-  position:relative;
-}
-.xlock-hole::after{
-  content:"";position:absolute;
-  bottom:-2px;left:50%;transform:translateX(-50%);
-  width:3px;height:6px;
-  background:rgba(255,22,56,.46);border-radius:0 0 2px 2px;
-}
-.xlock-title{
-  font-family:var(--font-head);
-  font-size:1.42rem;font-weight:800;letter-spacing:.03em;
-}
-.xlock-sub{
-  font-size:.86rem;font-weight:600;
-  color:rgba(255,225,230,.52);
-  letter-spacing:.03em;text-align:center;max-width:260px;line-height:1.6;
-}
-.xlock-back{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:11px 22px;border-radius:12px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.06);
-  color:rgba(255,230,234,.82);
-  font-size:.84rem;font-weight:700;letter-spacing:.04em;
-  text-decoration:none;
-  transition:border-color .15s,color .15s;
-}
-.xlock-back:hover{border-color:var(--red2);color:#fff}
-
-/* ── BLUR WHEN LOCKED ── */
-.xblur{filter:blur(10px) saturate(.3);user-select:none;pointer-events:none}
-
-/* ── RESPONSIVE ── */
-@media(max-width:680px){
-  .xhero{grid-template-columns:1fr}
-  .xhero-imgs{order:-1;max-width:min(280px,80vw);margin:0 auto}
-  .xfeats{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:420px){
-  .xfeats{grid-template-columns:1fr}
-  .ximg-row{grid-template-columns:1fr}
+@media(max-width:480px){
+  .feats{grid-template-columns:1fr}
 }
   </style>
 </head>
 <body>
 
 {% if ext_locked %}
-<div class="xlock-overlay">
-  <div class="xlock-icon">
-    <div class="xlock-shackle"></div>
-    <div class="xlock-body"><div class="xlock-hole"></div></div>
-  </div>
-  <div class="xlock-title">HALAMAN TERKUNCI</div>
-  <div class="xlock-sub">Konten ini belum tersedia. Tunggu pengumuman resmi dari admin.</div>
-  <a href="/" class="xlock-back">Kembali ke Beranda</a>
+<div class="lock-ov">
+  <div class="lk"><div class="lk-sh"></div><div class="lk-bd"><div class="lk-kh"></div></div></div>
+  <div class="lk-title">Halaman Terkunci</div>
+  <div class="lk-sub">Belum tersedia untuk publik. Tunggu pengumuman resmi.</div>
+  <a href="/" class="lk-back">Kembali</a>
 </div>
 {% endif %}
 
-<div class="{% if ext_locked %}xblur{% endif %}">
-
-<nav class="xnav">
-  <img class="xnav-logo" src="{{ asset_url('img/mii-logo-new.png') }}" alt="MII" />
-  <span class="xnav-brand">MII STORE</span>
-  <a href="/" class="xnav-back">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+<div class="{% if ext_locked %}blr{% endif %}">
+<nav>
+  <img class="n-logo" src="{{ asset_url('img/owner.png') }}" alt="MII" />
+  <span class="n-brand">MII Store</span>
+  <a href="/" class="n-back">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     Beranda
   </a>
 </nav>
 
-<main class="xpage">
+<main class="pg">
 
-  <!-- Version pill -->
-  <div class="xpill">
-    <span class="xpill-dot"></span>
-    <span class="xpill-text">v{{ ext_version }} &mdash; Coming Soon</span>
-  </div>
+  <div class="pill"><span class="pill-dot"></span><span class="pill-txt">v{{ ext_version }} &mdash; Coming Soon</span></div>
 
   <!-- Hero -->
-  <div class="xcard">
-    <div class="xhero">
-      <div class="xhero-copy">
-        <span class="xlabel">MII NETWORK</span>
-        <div class="xtitle">{{ ext_title }}</div>
-        {% if ext_desc %}<p class="xdesc">{{ ext_desc }}</p>{% endif %}
-        {% if ext_zip %}
-        <a href="{{ ext_zip }}" class="xbtn" download>
-          <span class="xbtn-icon"></span>
-          Download ZIP
-        </a>
-        {% else %}
-        <span class="xbtn disabled">
-          <span class="xbtn-lock"></span>
-          Belum Tersedia
-        </span>
-        {% endif %}
-      </div>
+  <div class="card">
+    <span class="hero-label">MII Network</span>
+    <div class="hero-title">{{ ext_title }}</div>
+    {% if ext_zip %}
+    <a href="{{ ext_zip }}" class="dl-btn" download><span class="ico-dl"></span>Download ZIP</a>
+    {% else %}
+    <span class="dl-btn off"><span class="ico-lock"></span>Belum Tersedia</span>
+    {% endif %}
 
-      <!-- Images -->
-      <div class="xhero-imgs">
-        {% set imgs = ext_images | selectattr('0') | list if ext_images else [] %}
-        {% if imgs | length == 0 %}
-          <div class="ximg-placeholder"><div class="xpuzzle-icon"></div></div>
-        {% elif imgs | length == 1 %}
-          <div class="ximg-wrap"><img src="{{ imgs[0] }}" alt="Extension preview" /></div>
-        {% elif imgs | length == 2 %}
-          <div class="ximg-wrap"><img src="{{ imgs[0] }}" alt="Preview 1" /></div>
-          <div class="ximg-row">
-            <div class="ximg-wrap"><img src="{{ imgs[1] }}" alt="Preview 2" /></div>
-          </div>
-        {% else %}
-          <div class="ximg-wrap"><img src="{{ imgs[0] }}" alt="Preview 1" /></div>
-          <div class="ximg-row">
-            <div class="ximg-wrap"><img src="{{ imgs[1] }}" alt="Preview 2" /></div>
-            <div class="ximg-wrap"><img src="{{ imgs[2] }}" alt="Preview 3" /></div>
-          </div>
-        {% endif %}
-      </div>
+    <!-- Photos vertical -->
+    {% set imgs = ext_images | selectattr('0') | list if ext_images else [] %}
+    {% if imgs | length > 0 %}
+    <div class="photos">
+      {% for img in imgs %}{% if img %}
+      <div class="photo-item"><img src="{{ img }}" alt="Preview {{ loop.index }}" loading="lazy" /></div>
+      {% endif %}{% endfor %}
     </div>
+    {% endif %}
   </div>
 
   <!-- Status -->
-  <div class="xcard">
-    <span class="xlabel">Status</span>
-    <div class="xstatus-title">Segera Hadir</div>
-    <p class="xstatus-desc">Extension sedang dalam pengembangan aktif. Follow channel Telegram untuk notifikasi pertama saat dirilis.</p>
+  <div class="card">
+    <span class="lbl">Status</span>
+    <div class="status-title">Segera Hadir</div>
   </div>
 
   <!-- Features -->
-  <div class="xfeats">
-    <div class="xfeat">
-      <div class="xfeat-icon"></div>
-      <div class="xfeat-name">Browser Extension</div>
-      <div class="xfeat-desc">Berjalan langsung di browser tanpa aplikasi tambahan.</div>
-    </div>
-    <div class="xfeat">
-      <div class="xfeat-icon"></div>
-      <div class="xfeat-name">Kiwi Support</div>
-      <div class="xfeat-desc">Kompatibel dengan Kiwi Browser dan Chrome Android.</div>
-    </div>
-    <div class="xfeat">
-      <div class="xfeat-icon"></div>
-      <div class="xfeat-name">No Root</div>
-      <div class="xfeat-desc">Tidak perlu root. Pasang langsung dari file ZIP.</div>
-    </div>
-    <div class="xfeat">
-      <div class="xfeat-icon"></div>
-      <div class="xfeat-name">Free Update</div>
-      <div class="xfeat-desc">Update gratis seumur hidup lewat channel resmi.</div>
-    </div>
+  <div class="feats">
+    <div class="feat"><div class="feat-name">Browser Extension</div></div>
+    <div class="feat"><div class="feat-name">Kiwi Support</div></div>
+    <div class="feat"><div class="feat-name">No Root</div></div>
+    <div class="feat"><div class="feat-name">Free Update</div></div>
   </div>
 
   <!-- Tutorial -->
-  <div class="xcard">
-    <div class="xtut-head">Cara Pasang Extension</div>
-    <div class="xsteps">
+  <div class="card">
+    <div class="tut-title">Cara Pasang Extension</div>
+    <div class="steps">
       {% if ext_tutorial and ext_tutorial | length > 0 %}
         {% for step in ext_tutorial %}
-        <div class="xstep">
-          <div class="xstep-num">{{ loop.index }}</div>
-          <div class="xstep-text">{{ step }}</div>
-        </div>
+        <div class="step"><div class="step-n">{{ loop.index }}</div><div class="step-t">{{ step }}</div></div>
         {% endfor %}
       {% else %}
-        <div class="xstep"><div class="xstep-num">1</div><div class="xstep-text">Download file ZIP dari tombol di atas.</div></div>
-        <div class="xstep"><div class="xstep-num">2</div><div class="xstep-text">Buka Kiwi Browser, ketuk menu titik tiga, pilih Extensions.</div></div>
-        <div class="xstep"><div class="xstep-num">3</div><div class="xstep-text">Aktifkan Developer mode di pojok kanan atas.</div></div>
-        <div class="xstep"><div class="xstep-num">4</div><div class="xstep-text">Ketuk tombol <strong>+ (from .zip/.crx/.user.js)</strong> lalu pilih file ZIP.</div></div>
-        <div class="xstep"><div class="xstep-num">5</div><div class="xstep-text">Extension terpasang dan siap digunakan.</div></div>
+        <div class="step"><div class="step-n">1</div><div class="step-t">Download file ZIP dari tombol di atas.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Buka Kiwi Browser, ketuk menu titik tiga, pilih Extensions.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Aktifkan Developer mode di pojok kanan atas.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Ketuk <strong>+ (from .zip/.crx/.user.js)</strong> lalu pilih file ZIP.</div></div>
+        <div class="step"><div class="step-n">5</div><div class="step-t">Extension terpasang dan siap digunakan.</div></div>
       {% endif %}
     </div>
   </div>
