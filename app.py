@@ -999,7 +999,7 @@ def _format_claim_history():
     return '\n'.join(lines) if len(lines)>1 else 'Belum ada claim.'
 
 
-def _handle_admin_text(chat_id, text):
+def _handle_admin_text(chat_id, text, message=None):
     state = _BOT_USER_STATES.get(str(chat_id))
     if state == 'add_reward':
         parts = [p.strip() for p in text.split('|')]
@@ -1099,36 +1099,35 @@ def _handle_admin_text(chat_id, text):
         return
     if state == 'set_ext_image' and text == '__photo__':
         try:
-            photos = message.get('photo', [])
+            photos = (message or {}).get('photo', [])
+            if not photos:
+                _telegram_send_message(chat_id, '❌ Foto tidak ditemukan. Kirim sebagai foto (bukan file).', _claim_keyboard())
+                return
             largest = sorted(photos, key=lambda p: p.get('file_size', 0), reverse=True)[0]
             file_id = largest.get('file_id')
             photo_url = _telegram_get_photo_url(file_id)
             if photo_url:
                 status = get_site_status()
-                # Isi slot gambar yang kosong secara urutan
                 if not status.get('extension_image_url'):
-                    status['extension_image_url'] = photo_url
-                    slot = 1
+                    status['extension_image_url'] = photo_url; slot = 1
                 elif not status.get('extension_image_url_2'):
-                    status['extension_image_url_2'] = photo_url
-                    slot = 2
+                    status['extension_image_url_2'] = photo_url; slot = 2
                 elif not status.get('extension_image_url_3'):
-                    status['extension_image_url_3'] = photo_url
-                    slot = 3
+                    status['extension_image_url_3'] = photo_url; slot = 3
                 else:
-                    # Semua slot penuh, overwrite slot 1
                     status['extension_image_url'] = photo_url
                     status['extension_image_url_2'] = ''
                     status['extension_image_url_3'] = ''
                     slot = 1
                 _save_site_status(status)
                 filled = sum(1 for k in ['extension_image_url','extension_image_url_2','extension_image_url_3'] if status.get(k))
-                msg = f'✅ Gambar {slot} disimpan ({filled}/3 slot terisi).\n`{photo_url}`\n\nKirim foto lagi untuk slot berikutnya, atau tekan menu lain untuk selesai.'
-                _telegram_send_message(chat_id, msg, _claim_keyboard(), parse_mode='Markdown')
+                _telegram_send_message(chat_id,
+                    'Gambar ' + str(slot) + ' disimpan (' + str(filled) + '/3 slot).\n\nKirim foto lagi untuk slot berikutnya.',
+                    _claim_keyboard())
             else:
-                _telegram_send_message(chat_id, '❌ Gagal mendapat URL gambar. Coba lagi.', _claim_keyboard())
+                _telegram_send_message(chat_id, '❌ Gagal ambil URL. Coba lagi.', _claim_keyboard())
         except Exception as e:
-            _telegram_send_message(chat_id, f'❌ Error: {e}', _claim_keyboard())
+            _telegram_send_message(chat_id, '❌ Error: ' + str(e), _claim_keyboard())
         return
     if state == 'set_event_settings':
         fields = {'nama event':'event_name','nama hadiah':'reward_name','tanggal event':'event_date','jam mulai':'event_time','jumlah winner':'win_quota','countdown per round':'countdown_seconds','announcement':'announcement'}
@@ -1523,7 +1522,7 @@ def process_telegram_update(update):
             # Ignore pesan kosong (Telegram link preview / web_page update)
             if not raw_data or not raw_data.strip():
                 return
-            _handle_admin_text(chat_id, raw_data)
+            _handle_admin_text(chat_id, raw_data, message=message)
             return
         if data == 'community_link':
             status = get_site_status()
