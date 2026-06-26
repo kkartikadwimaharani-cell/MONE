@@ -1259,6 +1259,7 @@ def _normalize_bot_action(data):
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
         'COMMUNITY LINK': 'community_link', 'TELEGRAM CHANNEL': 'telegram_channel',
         'EXTENSION PAGE': 'extension_page',
+        'HAPUS FOTO 1': 'ext_del_img1', 'HAPUS FOTO 2': 'ext_del_img2', 'HAPUS FOTO 3': 'ext_del_img3',
     }
     clean = (data or '').strip()
     upper_clean = clean.upper()
@@ -1379,7 +1380,7 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
-    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock'}
+    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3'}
     if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
@@ -1518,6 +1519,12 @@ def process_telegram_update(update):
             note = 'Maintenance website dihidupkan.' if enabled else 'Maintenance website dimatikan.'
             refresh_admin_panel(chat_id, user, note)
             return
+        # Cancel/menu harus dicek SEBELUM state handler agar tombol Batal selalu jalan
+        if data in ('menu', 'cancel'):
+            _clear_bot_state(chat_id, uid)
+            _telegram_send_message(chat_id, '❌ Dibatalkan.')
+            show_admin_panel(chat_id, user)
+            return
         if state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel', 'set_ext_text', 'set_ext_zip', 'set_ext_tutorial', 'set_ext_image'):
             # Ignore pesan kosong (Telegram link preview / web_page update)
             if not raw_data or not raw_data.strip():
@@ -1547,18 +1554,20 @@ def process_telegram_update(update):
             locked = status.get('extension_locked', True)
             title = status.get('extension_title', 'MII NETWORK EXTENSION')
             ver = status.get('extension_version', '2.1.0')
-            img = status.get('extension_image_url', '(kosong)')
+            imgs = [status.get('extension_image_url',''), status.get('extension_image_url_2',''), status.get('extension_image_url_3','')]
+            filled = sum(1 for i in imgs if i)
             zipurl = status.get('extension_zip_url', '(kosong)')
             tuts = status.get('extension_tutorial', [])
             lock_btn = '🔓 Unlock Page' if locked else '🔒 Lock Page'
             ext_kb = _reply_keyboard([
                 [lock_btn],
                 ['📝 Edit Teks', '🖼 Upload Gambar'],
+                ['🗑 Hapus Foto 1', '🗑 Hapus Foto 2', '🗑 Hapus Foto 3'],
                 ['📦 Set ZIP URL', '📋 Edit Tutorial'],
                 ['🔙 Kembali'],
             ])
             _telegram_send_message(chat_id,
-                f'🧩 *EXTENSION PAGE*\n\nStatus: {"🔒 LOCKED" if locked else "🔓 UNLOCKED"}\nJudul: `{title}`\nVersi: `{ver}`\nGambar: `{img}`\nZIP: `{zipurl}`\nTutorial: {len(tuts)} langkah\n\nPilih aksi:',
+                f'🧩 *EXTENSION PAGE*\n\nStatus: {"🔒 LOCKED" if locked else "🔓 UNLOCKED"}\nJudul: `{title}`\nVersi: `{ver}`\nFoto: {filled}/3 terisi\nZIP: `{zipurl}`\nTutorial: {len(tuts)} langkah\n\nPilih aksi:',
                 ext_kb, parse_mode='Markdown')
             return
         if data in ('ext_lock', 'ext_unlock') or raw_data in ('🔒 Lock Page', '🔓 Unlock Page'):
@@ -1568,6 +1577,15 @@ def process_telegram_update(update):
             _save_site_status(status)
             label = '🔒 LOCKED' if locked else '🔓 UNLOCKED'
             _telegram_send_message(chat_id, f'✅ Extension page sekarang {label}.', _admin_keyboard())
+            return
+        if data in ('ext_del_img1', 'ext_del_img2', 'ext_del_img3'):
+            slot_map = {'ext_del_img1': 'extension_image_url', 'ext_del_img2': 'extension_image_url_2', 'ext_del_img3': 'extension_image_url_3'}
+            key = slot_map[data]
+            status = get_site_status()
+            status[key] = ''
+            _save_site_status(status)
+            slot_n = data[-1]
+            _telegram_send_message(chat_id, f'🗑 Foto {slot_n} dihapus.', _admin_keyboard())
             return
         if raw_data == '📝 Edit Teks':
             _set_bot_state(chat_id, 'set_ext_text', uid)
