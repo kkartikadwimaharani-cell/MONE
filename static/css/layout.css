@@ -3698,3 +3698,78 @@ html, body { max-width: 100% !important; overflow-x: hidden !important; }
   .social-grid, .project-grid { grid-template-columns: 1fr !important; }
 }
 
+
+/* ══ FONT CHARACTER FIX 20260626 ══
+   Bukan teks diperbesar — tapi huruf berkarakter:
+   Heading: Syne 800 + font-stretch condensed + slight letter-spacing negatif
+   Body/UI: Inter — tetap normal size
+   ══ */
+
+/* Import Barlow Condensed untuk efek impact */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&display=swap');
+
+/* Heading: Barlow Condensed — tebal, padat, tidak kebesaran */
+.hero-title {
+  font-family: 'Barlow Condensed', 'Syne', sans-serif !important;
+  font-weight: 900 !important;
+  font-style: italic !important;
+  letter-spacing: -.02em !important;
+  font-size: clamp(2.8rem, 7vw, 6rem) !important;
+  line-height: .92 !important;
+  text-transform: uppercase !important;
+}
+
+.section-heading h2 {
+  font-family: 'Barlow Condensed', 'Syne', sans-serif !important;
+  font-weight: 900 !important;
+  font-style: italic !important;
+  font-size: clamp(1.8rem, 4.5vw, 3.2rem) !important;
+  letter-spacing: -.01em !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.project-card h3, .social-card h3 {
+  font-family: 'Barlow Condensed', 'Syne', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(.9rem, 1.3vw, 1.1rem) !important;
+  letter-spacing: .02em !important;
+  text-transform: uppercase !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+}
+
+.nav-brand {
+  font-family: 'Barlow Condensed', 'Syne', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: clamp(1rem, 1.8vw, 1.5rem) !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.premium-btn, .project-card a, .project-card button {
+  font-family: 'Barlow Condensed', 'Inter', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(12px, 1vw, 14px) !important;
+  letter-spacing: .08em !important;
+}
+
+/* Hero: dua kolom rapi, tidak overflow */
+@media (min-width: 641px) {
+  .home-hero {
+    grid-template-columns: 1fr min(40%, 380px) !important;
+  }
+  .hero-title { white-space: normal !important; }
+}
+
+/* Mobile: hero stack */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: clamp(2.4rem, 14vw, 3.8rem) !important;
+    white-space: normal !important;
+  }
+  .section-heading h2 {
+    font-size: clamp(1.6rem, 9vw, 2.4rem) !important;
+    white-space: normal !important;
+  }
+}
