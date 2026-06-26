@@ -3773,3 +3773,82 @@ html, body { max-width: 100% !important; overflow-x: hidden !important; }
     white-space: normal !important;
   }
 }
+
+/* ══ FONT FINAL FIX 20260626v3 ══
+   Hapus Barlow Condensed italic aneh
+   Ganti ke Outfit — elegan, modern, rapi
+   ══ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
+
+.hero-title,
+.section-heading h2,
+.project-card h3,
+.social-card h3,
+.cta-copy h2,
+.nav-brand {
+  font-family: 'Outfit', 'Syne', sans-serif !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+}
+
+.hero-title {
+  font-size: clamp(2.6rem, 8vw, 6.4rem) !important;
+  letter-spacing: -.04em !important;
+  line-height: .90 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.section-heading h2 {
+  font-size: clamp(1.8rem, 4.5vw, 3.4rem) !important;
+  letter-spacing: -.03em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  font-style: normal !important;
+}
+
+.project-card h3, .social-card h3 {
+  font-size: clamp(.82rem, 1.2vw, 1rem) !important;
+  letter-spacing: .03em !important;
+  text-transform: uppercase !important;
+  font-style: normal !important;
+  line-height: 1.15 !important;
+}
+
+.nav-brand {
+  font-size: clamp(.95rem, 1.6vw, 1.35rem) !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  font-style: normal !important;
+}
+
+.premium-btn,
+.project-card a,
+.project-card button {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  font-style: normal !important;
+  font-size: clamp(11px, .9vw, 13px) !important;
+  letter-spacing: .07em !important;
+}
+
+.hero-kicker {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  font-size: clamp(9px, .85vw, 12px) !important;
+  letter-spacing: .18em !important;
+  text-transform: uppercase !important;
+}
+
+/* Mobile hero title tidak overflow */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: clamp(2.2rem, 13vw, 3.6rem) !important;
+    white-space: normal !important;
+  }
+  .section-heading h2 {
+    font-size: clamp(1.6rem, 8.5vw, 2.4rem) !important;
+    white-space: normal !important;
+  }
+}
