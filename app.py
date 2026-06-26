@@ -1334,6 +1334,24 @@ def process_telegram_update(update):
         except Exception:
             pass
 
+    # Auto-clear state jika user menekan tombol action (bukan input teks biasa)
+    # Ini mencegah state nyangkut saat user menekan menu lain
+    admin_input_states = {'add_reward', 'add_stock', 'set_reward_info', 'set_event_settings',
+                          'set_community_link', 'set_telegram_channel',
+                          'set_ext_text', 'set_ext_zip', 'set_ext_tutorial', 'set_ext_image'}
+    recognized_actions = {
+        'menu', 'cancel', 'community_link', 'telegram_channel', 'extension_page',
+        'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token',
+        'winner_list', 'reset_draw', 'reward_info', 'maintenance_on', 'maintenance_off',
+        'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings',
+        'reward_generate', 'reward_stock', 'view_reward_stock', 'event_manual_token',
+        'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3',
+        'logout', 'admin_login',
+    }
+    if state in admin_input_states and data in recognized_actions:
+        _clear_bot_state(chat_id, uid)
+        state = None
+
     if data in ('menu', 'cancel') and state != 'awaiting_reward_code':
         was_admin_input = state in ('add_reward', 'add_stock', 'set_reward_info', 'set_event_settings', 'set_community_link', 'set_telegram_channel', 'set_ext_text', 'set_ext_zip', 'set_ext_tutorial', 'set_ext_image')
         _clear_bot_state(chat_id, uid)
