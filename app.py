@@ -1224,24 +1224,41 @@ def _set_bot_state(chat_id, state, uid=None):
 
 def _clear_bot_state(chat_id, uid=None):
     _BOT_USER_STATES.pop(str(chat_id), None)
-    user_key = str(uid if uid is not None else chat_id)
+    # Clear by uid AND chat_id (keduanya) untuk hindari mismatch
+    keys_to_clear = list({str(uid), str(chat_id)} - {str(None)})
     with _EVENT_LOCK:
-        data = _load_event_data(); user = data['users'].get(user_key)
-        if user:
-            user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
+        data = _load_event_data()
+        changed = False
+        for key in keys_to_clear:
+            user = data['users'].get(key)
+            if user and user.get('state'):
+                user['state'] = ''; user['last_action_at'] = _utc_timestamp()
+                data['users'][key] = user; changed = True
+        if changed:
+            _save_event_data(data)
     # Clean admin state from site_status
     try:
         ss = get_site_status()
         key = f'_admin_state_{chat_id}'
+        changed = False
         if key in ss:
-            del ss[key]
+            del ss[key]; changed = True
+        # Juga hapus semua _admin_state_ yang nilai-nya adalah state input
+        input_states = {'set_community_link','set_telegram_channel','set_ext_text',
+                        'set_ext_zip','set_ext_tutorial','set_ext_image',
+                        'add_reward','add_stock','set_reward_info','set_event_settings'}
+        for k in list(ss.keys()):
+            if k.startswith('_admin_state_') and ss.get(k) in input_states:
+                if k == f'_admin_state_{chat_id}':
+                    del ss[k]; changed = True
+        if changed:
             _save_site_status(ss)
     except Exception:
         pass
 
 def _normalize_bot_action(data):
     mapping = {
-        '/menu': 'menu', '/bounty': 'open_bounty', 'MII REWARD DRAW': 'menu', 'MENU UTAMA': 'menu',
+        '/menu': 'menu', '/bounty': 'open_bounty', '/clearstate': 'clearstate', 'MII REWARD DRAW': 'menu', 'MENU UTAMA': 'menu',
         'JOIN WHATSAPP': 'join_wa_link', 'JOIN CHANNEL TELEGRAM': 'join_tg_link',
         'VERIFIKASI JOIN': 'event_verify', '/verify': 'event_verify',
         'CLAIM TOKEN': 'event_claim_token', '/token': 'event_claim_token',
@@ -1400,6 +1417,15 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil. Kirim /start untuk login admin lagi.')
         else:
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
+        return
+
+    if data == 'clearstate':
+        if _is_admin_chat(uid):
+            _clear_bot_state(chat_id, uid)
+            _telegram_send_message(chat_id, '✅ State direset. Silakan lanjut.', _admin_keyboard() if _is_logged_in(chat_id) else None)
+        else:
+            _clear_bot_state(chat_id, uid)
+            _telegram_send_message(chat_id, '✅ State direset.')
         return
 
     admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3'}
