@@ -1224,41 +1224,24 @@ def _set_bot_state(chat_id, state, uid=None):
 
 def _clear_bot_state(chat_id, uid=None):
     _BOT_USER_STATES.pop(str(chat_id), None)
-    # Clear by uid AND chat_id (keduanya) untuk hindari mismatch
-    keys_to_clear = list({str(uid), str(chat_id)} - {str(None)})
+    user_key = str(uid if uid is not None else chat_id)
     with _EVENT_LOCK:
-        data = _load_event_data()
-        changed = False
-        for key in keys_to_clear:
-            user = data['users'].get(key)
-            if user and user.get('state'):
-                user['state'] = ''; user['last_action_at'] = _utc_timestamp()
-                data['users'][key] = user; changed = True
-        if changed:
-            _save_event_data(data)
+        data = _load_event_data(); user = data['users'].get(user_key)
+        if user:
+            user['state'] = ''; user['last_action_at'] = _utc_timestamp(); data['users'][user_key] = user; _save_event_data(data)
     # Clean admin state from site_status
     try:
         ss = get_site_status()
         key = f'_admin_state_{chat_id}'
-        changed = False
         if key in ss:
-            del ss[key]; changed = True
-        # Juga hapus semua _admin_state_ yang nilai-nya adalah state input
-        input_states = {'set_community_link','set_telegram_channel','set_ext_text',
-                        'set_ext_zip','set_ext_tutorial','set_ext_image',
-                        'add_reward','add_stock','set_reward_info','set_event_settings'}
-        for k in list(ss.keys()):
-            if k.startswith('_admin_state_') and ss.get(k) in input_states:
-                if k == f'_admin_state_{chat_id}':
-                    del ss[k]; changed = True
-        if changed:
+            del ss[key]
             _save_site_status(ss)
     except Exception:
         pass
 
 def _normalize_bot_action(data):
     mapping = {
-        '/menu': 'menu', '/bounty': 'open_bounty', '/clearstate': 'clearstate', 'MII REWARD DRAW': 'menu', 'MENU UTAMA': 'menu',
+        '/menu': 'menu', '/bounty': 'open_bounty', 'MII REWARD DRAW': 'menu', 'MENU UTAMA': 'menu',
         'JOIN WHATSAPP': 'join_wa_link', 'JOIN CHANNEL TELEGRAM': 'join_tg_link',
         'VERIFIKASI JOIN': 'event_verify', '/verify': 'event_verify',
         'CLAIM TOKEN': 'event_claim_token', '/token': 'event_claim_token',
@@ -1417,15 +1400,6 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil. Kirim /start untuk login admin lagi.')
         else:
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
-        return
-
-    if data == 'clearstate':
-        if _is_admin_chat(uid):
-            _clear_bot_state(chat_id, uid)
-            _telegram_send_message(chat_id, '✅ State direset. Silakan lanjut.', _admin_keyboard() if _is_logged_in(chat_id) else None)
-        else:
-            _clear_bot_state(chat_id, uid)
-            _telegram_send_message(chat_id, '✅ State direset.')
         return
 
     admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3'}
@@ -1983,6 +1957,124 @@ def ai_view():
 def event_page():
     data = _load_event_data()
     return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_format_reward_info(data).replace('🎁 Info Hadiah\n', ''), maintenance=get_site_status().get('maintenance'))
+
+
+MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', 'MYBINI02')
+EVOLINK_API_KEY = os.environ.get('EVOLINK_API_KEY', '')
+EVOLINK_BASE = 'https://api.evolink.ai'
+
+
+def _aivideo_authed():
+    return bool(session.get('mii_aivideo_auth'))
+
+
+@app.route('/ai-video')
+def ai_video_view():
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+    return render_template('ai-video.html')
+
+
+@app.route('/ai-video/unlock', methods=['POST'])
+def ai_video_unlock():
+    data = request.get_json(silent=True) or {}
+    pw = str(data.get('password', ''))
+    if pw == MII_AIVIDEO_PASSWORD:
+        session['mii_aivideo_auth'] = True
+        return jsonify({'ok': True})
+    return jsonify({'ok': False, 'error': 'Password salah'}), 401
+
+
+@app.route('/ai-video/logout', methods=['POST'])
+def ai_video_logout():
+    session.pop('mii_aivideo_auth', None)
+    return jsonify({'ok': True})
+
+
+@app.route('/api/aivideo/generate', methods=['POST'])
+def aivideo_generate():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    if not EVOLINK_API_KEY:
+        return jsonify({'error': 'EVOLINK_API_KEY belum diset di server'}), 500
+    payload = request.get_json(silent=True) or {}
+
+    body = {
+        'model': payload.get('model', 'seedance-2.0-mini-reference-to-video'),
+        'prompt': payload.get('prompt', ''),
+    }
+    if payload.get('image_urls'):
+        body['image_urls'] = payload['image_urls'][:9]
+    if payload.get('video_urls'):
+        body['video_urls'] = payload['video_urls'][:3]
+    if payload.get('audio_urls'):
+        body['audio_urls'] = payload['audio_urls'][:3]
+    body['duration'] = max(4, min(15, int(payload.get('duration', 5))))
+    body['quality'] = payload.get('quality', '720p') if payload.get('quality') in ('480p', '720p') else '720p'
+    valid_ratios = {'16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'}
+    body['aspect_ratio'] = payload.get('aspect_ratio') if payload.get('aspect_ratio') in valid_ratios else '16:9'
+    body['generate_audio'] = bool(payload.get('generate_audio', True))
+
+    if not body['prompt']:
+        return jsonify({'error': 'Prompt wajib diisi'}), 400
+    if not body.get('image_urls') and not body.get('video_urls'):
+        return jsonify({'error': 'Minimal 1 gambar atau video referensi diperlukan'}), 400
+
+    try:
+        resp = requests_lib.post(
+            f'{EVOLINK_BASE}/v1/videos/generations',
+            headers={'Authorization': f'Bearer {EVOLINK_API_KEY}', 'Content-Type': 'application/json'},
+            json=body, timeout=30,
+        )
+        result = resp.json()
+        if resp.status_code >= 400:
+            err = result.get('error', {}) if isinstance(result, dict) else {}
+            return jsonify({'error': err.get('message', 'Gagal membuat task video')}), resp.status_code
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Request gagal: {e}'}), 500
+
+
+@app.route('/api/aivideo/task/<task_id>')
+def aivideo_task_status(task_id):
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    if not EVOLINK_API_KEY:
+        return jsonify({'error': 'EVOLINK_API_KEY belum diset di server'}), 500
+    try:
+        resp = requests_lib.get(
+            f'{EVOLINK_BASE}/v1/tasks/{task_id}',
+            headers={'Authorization': f'Bearer {EVOLINK_API_KEY}'},
+            timeout=20,
+        )
+        result = resp.json()
+        if resp.status_code >= 400:
+            err = result.get('error', {}) if isinstance(result, dict) else {}
+            return jsonify({'error': err.get('message', 'Gagal mengambil status task')}), resp.status_code
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Request gagal: {e}'}), 500
+
+
+@app.route('/api/aivideo/upload', methods=['POST'])
+def aivideo_upload():
+    """Terima file upload dari browser, simpan sementara, kembalikan URL publik
+    agar bisa dipakai sebagai image_urls/video_urls/audio_urls untuk EvoLink."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    f = request.files.get('file')
+    if not f or not f.filename:
+        return jsonify({'error': 'File tidak ditemukan'}), 400
+    ext = os.path.splitext(f.filename)[1].lower()
+    allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
+    if ext not in allowed:
+        return jsonify({'error': 'Tipe file tidak didukung'}), 400
+    upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    safe_name = f'{uuid.uuid4().hex}{ext}'
+    f.save(os.path.join(upload_dir, safe_name))
+    file_url = request.host_url.rstrip('/') + f'/static/aivideo_uploads/{safe_name}'
+    return jsonify({'ok': True, 'url': file_url})
 
 
 @app.route('/extension')
