@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store">
+  <title>MII AI VIDEO — Private Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#ff1638;--red2:#ff4060}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Outfit',sans-serif;
+  background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(200,0,36,.30),transparent),#040205;
+  color:#fff;display:flex;align-items:center;justify-content:center;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,22,56,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,22,56,.04) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 0 40%,transparent 85%);
+}
+
+.lockbox{
+  position:relative;z-index:1;width:min(360px,88vw);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  padding:40px 28px;border-radius:22px;
+  border:1px solid rgba(255,22,56,.24);
+  background:linear-gradient(145deg,rgba(18,5,10,.86),rgba(3,2,5,.97));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.50);
+}
+
+.logo-ring{
+  width:76px;height:76px;border-radius:50%;
+  display:grid;place-items:center;position:relative;
+  background:radial-gradient(circle,rgba(255,22,56,.20),transparent 70%);
+}
+.logo-ring::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(255,22,56,.45);
+  animation:ringPulse 2.4s ease-in-out infinite;
+}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
+.logo-m{font-size:2.1rem;font-weight:900;color:var(--red);text-shadow:0 0 20px rgba(255,0,48,.60)}
+
+.brand-title{font-size:1.5rem;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;text-align:center}
+.brand-sub{font-size:.72rem;font-weight:700;letter-spacing:.22em;color:rgba(255,220,228,.50);text-transform:uppercase}
+
+.pw-field{
+  width:100%;position:relative;
+}
+.pw-input{
+  width:100%;padding:14px 16px;border-radius:12px;
+  border:1px solid rgba(255,22,56,.28);background:rgba(255,255,255,.04);
+  color:#fff;font-family:'Outfit',sans-serif;font-size:.95rem;letter-spacing:.08em;
+  text-align:center;
+}
+.pw-input::placeholder{color:rgba(255,225,230,.30);letter-spacing:.04em}
+.pw-input:focus{outline:none;border-color:rgba(255,60,90,.65);box-shadow:0 0 0 3px rgba(255,22,56,.10)}
+.pw-input.shake{animation:shk .4s ease}
+@keyframes shk{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-10px)}
+  40%{transform:translateX(9px)}
+  60%{transform:translateX(-6px)}
+  80%{transform:translateX(4px)}
+}
+
+.unlock-btn{
+  width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,50,80,.50);
+  background:linear-gradient(135deg,#ff1e3c,#a80018 55%,#2c0008);
+  color:#fff;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:800;
+  letter-spacing:.10em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 0 26px rgba(255,0,48,.24),0 12px 30px rgba(0,0,0,.30);
+  transition:transform .16s,box-shadow .16s;
+}
+.unlock-btn:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(255,0,48,.34),0 16px 38px rgba(0,0,0,.36)}
+.unlock-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.err-msg{
+  font-size:.76rem;color:var(--red2);font-weight:700;
+  min-height:16px;text-align:center;
+}
+
+.back-link{
+  font-size:.72rem;color:rgba(255,225,230,.40);text-decoration:none;
+  font-weight:600;letter-spacing:.04em;
+}
+.back-link:hover{color:rgba(255,225,230,.70)}
+  </style>
+</head>
+<body>
+
+<div class="lockbox">
+  <div class="logo-ring"><span class="logo-m">M</span></div>
+  <div>
+    <div class="brand-title">MII AI Video</div>
+    <div class="brand-sub" style="margin-top:6px">Private Workspace</div>
+  </div>
+
+  <div class="pw-field">
+    <input type="password" id="pwInput" class="pw-input" placeholder="Masukkan password" autocomplete="off" />
+  </div>
+  <div class="err-msg" id="errMsg"></div>
+
+  <button class="unlock-btn" id="unlockBtn" onclick="doUnlock()">Unlock</button>
+  <a href="/" class="back-link">&larr; Kembali ke Beranda</a>
+</div>
+
+<script>
+var input = document.getElementById('pwInput');
+var btn = document.getElementById('unlockBtn');
+var err = document.getElementById('errMsg');
+
+function doUnlock() {
+  var pw = input.value.trim();
+  if (!pw) { showError('Password wajib diisi'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+  fetch('/ai-video/unlock', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({password: pw})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      window.location.href = '/ai-video';
+    } else {
+      showError(data.error || 'Password salah');
+      btn.disabled = false;
+      btn.textContent = 'Unlock';
+    }
+  })
+  .catch(function() {
+    showError('Terjadi kesalahan, coba lagi');
+    btn.disabled = false;
+    btn.textContent = 'Unlock';
+  });
+}
+
+function showError(msg) {
+  err.textContent = msg;
+  input.classList.add('shake');
+  setTimeout(function() { input.classList.remove('shake'); }, 400);
+}
+
+input.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doUnlock();
+});
+input.focus();
+</script>
+
+</body>
+</html>
