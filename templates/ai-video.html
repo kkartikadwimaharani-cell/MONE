@@ -186,6 +186,19 @@ button{background:none;border:none;cursor:pointer}
 .upload-card.has-media .uc-label{font-size:.76rem;bottom:9px}
 .upload-card.has-media .uc-icon{display:none}
 
+/* Uploaded Assets strip — persists below the upload cards, visible whenever any media exists */
+.assets-strip{display:none;gap:8px;overflow-x:auto;padding-bottom:1px}
+.assets-strip::-webkit-scrollbar{display:none}
+.assets-strip.show{display:flex}
+.asset-chip{position:relative;flex-shrink:0;width:58px;height:58px;border-radius:13px;overflow:hidden;border:1px solid var(--border2);background:var(--btn)}
+.asset-chip img,.asset-chip video{width:100%;height:100%;object-fit:cover;display:block}
+.asset-chip.audio-asset{display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:rgba(255,60,90,.75)}
+.asset-tag{position:absolute;bottom:3px;left:3px;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.72);font-family:var(--mono);font-size:.56rem;font-weight:700;color:var(--accent-hover);z-index:1}
+.asset-remove{position:absolute;top:3px;right:3px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;z-index:2}
+.asset-remove::before,.asset-remove::after{content:"";position:absolute;width:7.5px;height:1.4px;background:#fff}
+.asset-remove::before{transform:rotate(45deg)}
+.asset-remove::after{transform:rotate(-45deg)}
+
 /* Prompt button */
 .prompt-btn{
   width:100%;display:flex;align-items:center;gap:10px;padding:15px 16px;border-radius:16px;
@@ -299,23 +312,38 @@ input[type=file].hidden-input{display:none}
 .result-refs-row{display:flex;gap:8px;overflow-x:auto}
 .result-ref-thumb{width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border2);flex-shrink:0}
 .result-footer{display:flex;gap:10px;padding:14px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0}
-.prompt-overlay{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1)}
-.prompt-overlay.show{transform:translateY(0)}
-.pe-header{display:flex;align-items:center;justify-content:space-between;padding:calc(16px + var(--safe-t)) 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.pe-title{font-family:var(--disp);font-size:20px;font-weight:700}
-.pe-done{padding:10px 20px;border-radius:11px;background:var(--accent);font-size:16px;font-weight:700;transition:background .15s}
+.prompt-overlay{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;opacity:0;transform:translateY(22px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.prompt-overlay.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.pe-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:calc(16px + var(--safe-t)) 18px 16px;border-bottom:1px solid var(--border);flex-shrink:0;width:100%}
+.pe-header-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pe-title{font-family:var(--disp);font-size:32px;font-weight:700;line-height:1.1}
+.pe-subtitle{font-size:15px;opacity:.7;line-height:1.4}
+.pe-done{padding:10px 20px;border-radius:11px;background:var(--accent);font-size:16px;font-weight:700;transition:background .15s;flex-shrink:0}
 .pe-done:active{background:var(--accent-hover)}
-.pe-body{flex:1;min-height:0;padding:18px;overflow-y:auto;display:flex;flex-direction:column}
+.pe-body{flex:1;min-height:0;padding:18px;overflow-y:auto;display:flex;flex-direction:column;width:100%}
 .pe-tags-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .pe-tag-chip{display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;background:var(--card);border:1px solid var(--border2);font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--accent-hover);transition:background .15s,transform .12s}
 .pe-tag-chip:active{transform:scale(.95);background:var(--accent-dim)}
 .pe-tag-chip img{width:18px;height:18px;border-radius:5px;object-fit:cover;flex-shrink:0}
-.pe-textarea{flex:1;width:100%;min-height:160px;background:transparent;border:none;outline:none;resize:none;font-size:20px;line-height:1.6;color:#fff}
-.pe-textarea::placeholder{color:var(--text-faint);font-size:19px}
-.pe-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0;position:relative}
-.pe-mention-btn{width:38px;height:38px;border-radius:11px;background:var(--btn);border:1px solid var(--border);display:grid;place-items:center;font-family:var(--disp);font-size:1rem;font-weight:700;color:var(--accent-hover);transition:background .15s}
-.pe-mention-btn:active{background:#2c2c2c}
+.pe-textarea{flex:1;width:100%;min-height:160px;background:transparent;border:none;outline:none;resize:none;font-size:16px;line-height:1.6;color:#fff}
+.pe-textarea::placeholder{color:var(--text-faint)}
+.pe-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0;position:relative;width:100%}
+.pe-clear-btn{height:40px;padding:0 18px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:.86rem;font-weight:600;color:#fff;transition:background .2s ease,transform .15s ease}
+.pe-clear-btn:hover{background:rgba(255,255,255,.1)}
+.pe-clear-btn:active{transform:scale(.96)}
 .pe-char-count{font-family:var(--mono);font-size:.76rem;color:var(--text-faint);font-weight:600}
+
+@media(min-width:768px){
+  .pe-header,.pe-body,.pe-footer{max-width:640px;margin-left:auto;margin-right:auto}
+  .pe-textarea{font-size:18px}
+}
+@media(min-width:1024px){
+  .pe-header,.pe-body,.pe-footer{max-width:760px}
+  .pe-textarea{font-size:20px}
+}
+@media(min-width:1440px){
+  .pe-header,.pe-body,.pe-footer{max-width:840px}
+}
 
 /* Mention popup */
 .mention-popup{
@@ -323,13 +351,15 @@ input[type=file].hidden-input{display:none}
   background:#151515;border:1px solid var(--border2);border-radius:18px;
   box-shadow:0 16px 50px rgba(0,0,0,.55);padding:14px;display:none;z-index:5;
 }
-.mention-popup.show{display:block;animation:popIn .16s cubic-bezier(.16,1,.3,1)}
-@keyframes popIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mention-popup.show{display:block;animation:popIn .18s cubic-bezier(.16,1,.3,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 .mp-title{font-size:.92rem;font-weight:700;margin-bottom:2px}
 .mp-title span{color:var(--accent-hover)}
 .mp-sub{font-size:.72rem;color:var(--text-faint);margin-bottom:10px;line-height:1.4}
-.mp-item{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;transition:background .12s}
-.mp-item:active{background:rgba(255,255,255,.05)}
+.mp-empty{font-size:.8rem;color:var(--text-faint);line-height:1.5;padding:10px 4px}
+.mp-item{display:flex;align-items:center;gap:12px;height:60px;padding:0 10px;border-radius:14px;background:rgba(255,255,255,.05);transition:background .12s;margin-bottom:8px}
+.mp-item:last-child{margin-bottom:0}
+.mp-item:active{background:rgba(255,255,255,.09)}
 .mp-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
 .mp-icon.character{background:rgba(120,200,140,.15);color:#7ee0a0}
 .mp-icon.scene{background:rgba(80,160,255,.15);color:#6cb0ff}
@@ -337,6 +367,10 @@ input[type=file].hidden-input{display:none}
 .mp-item-main{display:flex;flex-direction:column;gap:1px}
 .mp-item-name{font-size:.86rem;font-weight:700}
 .mp-item-desc{font-size:.72rem;color:var(--text-faint)}
+.mp-ref-thumb{width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2)}
+.mp-ref-thumb.audio-ref{display:flex;align-items:center;justify-content:center;background:rgba(255,60,90,.12);color:var(--accent-hover);font-size:1rem}
+.mp-refs-section{margin-bottom:0}
+.mp-refs-list{max-height:220px;overflow-y:auto}
 
 @media(min-width:768px){
   .sidebar{transform:translateX(0)}
@@ -436,7 +470,7 @@ input[type=file].hidden-input{display:none}
       <div class="task-preview">
         <div class="task-preview-inner">
           <div class="task-logo"><span>M</span></div>
-          <div class="task-preview-title">Generating Video</div>
+          <div class="task-preview-title" id="taskPreviewTitle">Generating Video</div>
           <div class="task-preview-stage" id="taskStage">Preparing…</div>
         </div>
       </div>
@@ -502,6 +536,8 @@ input[type=file].hidden-input{display:none}
           </div>
         </div>
 
+        <div class="assets-strip" id="assetsStrip"></div>
+
         <button class="prompt-btn" id="promptBtn" onclick="openPromptEditor()">
           <span class="prompt-btn-icon">✏</span>
           <span class="prompt-btn-txt" id="promptBtnTxt">PROMPT</span>
@@ -522,6 +558,12 @@ input[type=file].hidden-input{display:none}
           </div>
         </div>
         <div class="frame-hint">Set start and end keyframes to guide the motion between two images.</div>
+
+        <button class="prompt-btn" id="promptBtnFrames" onclick="openPromptEditor()">
+          <span class="prompt-btn-icon">✏</span>
+          <span class="prompt-btn-txt" id="promptBtnFramesTxt">PROMPT</span>
+          <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
 
       <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" multiple />
@@ -607,37 +649,24 @@ input[type=file].hidden-input{display:none}
 </div>
 <div class="prompt-overlay" id="promptOverlay">
   <div class="pe-header">
-    <span class="pe-title">Prompt</span>
+    <div class="pe-header-text">
+      <div class="pe-title">Prompt</div>
+      <div class="pe-subtitle">Reference uploaded assets and write your video description.</div>
+    </div>
     <button class="pe-done" onclick="closePromptEditor()">Done</button>
   </div>
   <div class="pe-body">
     <div class="pe-tags-row" id="peTagsRow"></div>
-    <textarea class="pe-textarea" id="promptInput" placeholder="Describe the scene you imagine in as much detail as you like — camera movement, lighting, expression, style, mood. Tap @ to reference your uploaded elements."></textarea>
+    <textarea class="pe-textarea" id="promptInput" placeholder="Describe your scene, camera movement, lighting, style and motion. Type @ to insert uploaded references."></textarea>
   </div>
   <div class="pe-footer">
-    <button class="pe-mention-btn" id="mentionBtn" onclick="toggleMentionPopup(false)">@</button>
+    <button class="pe-clear-btn" onclick="clearPrompt()">Clear Prompt</button>
     <span class="pe-char-count" id="charCount">0 chars</span>
 
     <div class="mention-popup" id="mentionPopup">
-      <div class="mp-title">Create elements to use <span>@mentions</span></div>
-      <div class="mp-sub">Reference them in your prompts for consistent results</div>
-      <div class="mp-item" onclick="selectMention('character')">
-        <div class="mp-icon character">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <div class="mp-item-main"><span class="mp-item-name">Character</span><span class="mp-item-desc">People, creatures, avatars</span></div>
-      </div>
-      <div class="mp-item" onclick="selectMention('scene')">
-        <div class="mp-icon scene">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        </div>
-        <div class="mp-item-main"><span class="mp-item-name">Scene</span><span class="mp-item-desc">Locations, backgrounds, sets</span></div>
-      </div>
-      <div class="mp-item" onclick="selectMention('object')">
-        <div class="mp-icon object">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <div class="mp-item-main"><span class="mp-item-name">Object</span><span class="mp-item-desc">Props, items, accessories</span></div>
+      <div class="mp-refs-section" id="mpRefsSection">
+        <div class="mp-title">Added <span>References</span></div>
+        <div class="mp-refs-list" id="mpRefsList"></div>
       </div>
     </div>
   </div>
@@ -863,9 +892,50 @@ function updateCardPreview(type) {
   card.classList.remove('pop');
   void card.offsetWidth;
   if (count > 0) card.classList.add('pop');
-  if (type === 'image' && document.getElementById('promptOverlay').classList.contains('show')) {
+  if (document.getElementById('promptOverlay').classList.contains('show')) {
     renderPeTagsRow();
   }
+  renderAssetsStrip();
+}
+
+// ══════════ UPLOADED ASSETS STRIP (persists outside the upload sheet) ══════════
+function refTag(type, idx) {
+  return '@' + type + (idx + 1);
+}
+function renderAssetsStrip() {
+  var strip = document.getElementById('assetsStrip');
+  var all = [];
+  media.image.forEach(function(item, idx) { all.push({ type: 'image', item: item, idx: idx }); });
+  media.video.forEach(function(item, idx) { all.push({ type: 'video', item: item, idx: idx }); });
+  media.audio.forEach(function(item, idx) { all.push({ type: 'audio', item: item, idx: idx }); });
+  strip.innerHTML = '';
+  all.forEach(function(entry) {
+    var chip = document.createElement('div');
+    chip.className = 'asset-chip' + (entry.type === 'audio' ? ' audio-asset' : '');
+    if (entry.type === 'audio') {
+      chip.textContent = '\u266A';
+    } else if (entry.type === 'video') {
+      var v = document.createElement('video');
+      v.src = entry.item.previewUrl;
+      v.muted = true;
+      chip.appendChild(v);
+    } else {
+      var img = document.createElement('img');
+      img.src = entry.item.previewUrl;
+      chip.appendChild(img);
+    }
+    var tag = document.createElement('span');
+    tag.className = 'asset-tag';
+    tag.textContent = refTag(entry.type, entry.idx);
+    chip.appendChild(tag);
+    var rm = document.createElement('div');
+    rm.className = 'asset-remove';
+    rm.onclick = function(e) { e.stopPropagation(); removeMedia(entry.type, entry.idx); };
+    chip.appendChild(rm);
+    chip.addEventListener('click', function() { openUploadSheet(entry.type); });
+    strip.appendChild(chip);
+  });
+  strip.classList.toggle('show', all.length > 0);
 }
 
 function removeMedia(type, idx) {
@@ -950,18 +1020,23 @@ var promptInput = document.getElementById('promptInput');
 function openPromptEditor() {
   renderPeTagsRow();
   document.getElementById('promptOverlay').classList.add('show');
-  setTimeout(function(){ promptInput.focus(); }, 300);
+  setTimeout(function(){ promptInput.focus(); }, 220);
 }
 function renderPeTagsRow() {
   var row = document.getElementById('peTagsRow');
   row.innerHTML = '';
-  media.image.forEach(function(item, idx) {
-    var chip = document.createElement('div');
-    chip.className = 'pe-tag-chip';
-    var tagName = '@image' + (idx + 1);
-    chip.innerHTML = '<img src="' + item.previewUrl + '"><span>' + tagName + '</span>';
-    chip.onclick = function() { insertTagIntoPrompt(tagName); };
-    row.appendChild(chip);
+  ['image', 'video', 'audio'].forEach(function(type) {
+    media[type].forEach(function(item, idx) {
+      var chip = document.createElement('div');
+      chip.className = 'pe-tag-chip';
+      var tagName = refTag(type, idx);
+      var thumbHtml = type === 'audio'
+        ? '<span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem">\u266A</span>'
+        : '<img src="' + item.previewUrl + '">';
+      chip.innerHTML = thumbHtml + '<span>' + tagName + '</span>';
+      chip.onclick = function() { insertTagIntoPrompt(tagName); };
+      row.appendChild(chip);
+    });
   });
 }
 function insertTagIntoPrompt(tag) {
@@ -980,14 +1055,21 @@ function closePromptEditor() {
   document.getElementById('promptOverlay').classList.remove('show');
   document.getElementById('mentionPopup').classList.remove('show');
   var val = promptInput.value.trim();
-  var btnTxt = document.getElementById('promptBtnTxt');
-  if (val) {
-    btnTxt.textContent = val;
-    btnTxt.classList.add('filled');
-  } else {
-    btnTxt.textContent = 'PROMPT';
-    btnTxt.classList.remove('filled');
-  }
+  [document.getElementById('promptBtnTxt'), document.getElementById('promptBtnFramesTxt')].forEach(function(btnTxt) {
+    if (!btnTxt) return;
+    if (val) {
+      btnTxt.textContent = val;
+      btnTxt.classList.add('filled');
+    } else {
+      btnTxt.textContent = 'PROMPT';
+      btnTxt.classList.remove('filled');
+    }
+  });
+}
+function clearPrompt() {
+  promptInput.value = '';
+  document.getElementById('charCount').textContent = '0 chars';
+  promptInput.focus();
 }
 promptInput.addEventListener('input', function() {
   document.getElementById('charCount').textContent = promptInput.value.length + ' chars';
@@ -999,25 +1081,47 @@ promptInput.addEventListener('input', function() {
     document.getElementById('mentionPopup').classList.remove('show');
   }
 });
-function toggleMentionPopup(forceOpen) {
-  var pop = document.getElementById('mentionPopup');
-  if (forceOpen === true) {
-    pop.classList.add('show');
-  } else {
-    mentionAutoTriggered = false;
-    pop.classList.toggle('show');
+function renderMentionRefs() {
+  var list = document.getElementById('mpRefsList');
+  list.innerHTML = '';
+  var all = [];
+  media.image.forEach(function(item, idx) { all.push({ type: 'image', item: item, idx: idx }); });
+  media.video.forEach(function(item, idx) { all.push({ type: 'video', item: item, idx: idx }); });
+  media.audio.forEach(function(item, idx) { all.push({ type: 'audio', item: item, idx: idx }); });
+  if (all.length === 0) {
+    list.innerHTML = '<div class="mp-empty">No uploaded assets yet. Upload images, video, or audio to reference them here.</div>';
+    return;
   }
+  all.forEach(function(entry) {
+    var tagName = refTag(entry.type, entry.idx);
+    var row = document.createElement('div');
+    row.className = 'mp-item';
+    var thumbHtml = entry.type === 'audio'
+      ? '<div class="mp-ref-thumb audio-ref">\u266A</div>'
+      : '<img class="mp-ref-thumb" src="' + entry.item.previewUrl + '">';
+    row.innerHTML = thumbHtml + '<div class="mp-item-main"><span class="mp-item-name">' + tagName + '</span><span class="mp-item-desc">' + entry.type.charAt(0).toUpperCase() + entry.type.slice(1) + ' reference</span></div>';
+    row.onclick = function() { insertMentionRef(tagName); };
+    list.appendChild(row);
+  });
 }
-function selectMention(type) {
+function insertMentionRef(tagName) {
   var val = promptInput.value;
   if (mentionAutoTriggered && val.charAt(val.length - 1) === '@') {
     val = val.slice(0, -1);
   }
-  promptInput.value = val + '@' + type + ' ';
+  promptInput.value = val;
   document.getElementById('mentionPopup').classList.remove('show');
   mentionAutoTriggered = false;
-  document.getElementById('charCount').textContent = promptInput.value.length + ' chars';
-  promptInput.focus();
+  insertTagIntoPrompt(tagName);
+}
+function toggleMentionPopup(forceOpen) {
+  var pop = document.getElementById('mentionPopup');
+  renderMentionRefs();
+  if (forceOpen === true) {
+    pop.classList.add('show');
+  } else {
+    pop.classList.remove('show');
+  }
 }
 
 // ══════════ ERROR ══════════
@@ -1061,6 +1165,7 @@ function startGenerate() {
   document.getElementById('taskStatusTxt').textContent = 'Pending — 0%';
   document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
   document.getElementById('taskStage').textContent = 'Preparing…';
+  document.getElementById('taskPreviewTitle').textContent = 'Generating Video';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('taskBox').classList.add('show');
 
@@ -1080,7 +1185,7 @@ function startGenerate() {
     }
     var taskId = res.data.id;
     var taskInfo = res.data.task_info || {};
-    document.getElementById('taskEta').textContent = taskInfo.estimated_time ? ('~' + taskInfo.estimated_time + 's') : '';
+    document.getElementById('taskEta').textContent = formatEta(taskInfo.estimated_time);
     pollTask(taskId);
   })
   .catch(function() {
@@ -1098,11 +1203,19 @@ function resetGenBtn() {
 }
 
 function stageForProgress(p) {
-  if (p < 10) return 'Preparing…';
-  if (p < 30) return 'Uploading…';
+  if (p < 10) return 'Uploading…';
+  if (p < 30) return 'Preparing…';
   if (p < 70) return 'Generating…';
   if (p < 95) return 'Rendering…';
   return 'Finishing…';
+}
+function formatEta(seconds) {
+  seconds = parseInt(seconds, 10);
+  if (!seconds || seconds <= 0) return '';
+  if (seconds < 60) return '~' + seconds + 's';
+  var m = Math.floor(seconds / 60);
+  var s = seconds % 60;
+  return '~' + m + 'm ' + (s > 0 ? s + 's' : '');
 }
 function pollTask(taskId) {
   if (pollInterval) clearInterval(pollInterval);
@@ -1124,6 +1237,11 @@ function pollTask(taskId) {
         statusEl.className = 'task-status-txt ' + status;
         document.getElementById('progressFill').style.width = progress + '%';
         document.getElementById('taskStage').textContent = stageForProgress(progress);
+        document.getElementById('taskPreviewTitle').textContent = 'Generating Video — ' + progress + '%';
+        if (data.eta_seconds != null || (data.task_info && data.task_info.estimated_time != null)) {
+          var remaining = data.eta_seconds != null ? data.eta_seconds : data.task_info.estimated_time;
+          document.getElementById('taskEta').textContent = formatEta(remaining);
+        }
 
         if (status === 'completed') {
           clearInterval(pollInterval);
