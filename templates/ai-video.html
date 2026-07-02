@@ -1,238 +1,302 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-store">
-  <title>MII AI VIDEO — Private Workspace</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Cache-Control" content="no-store">
+<title>MII AI VIDEO — Private Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --red:#ff1638;--red2:#ff4060;--red3:#a80018;
-  --border:rgba(255,22,56,.18);
-  --panel:rgba(10,4,8,.97);
-  --sidebar-w:220px;
+  --bg:#090909;
+  --card:#171717;
+  --card2:#1c1c1c;
+  --btn:#242424;
+  --border:rgba(255,255,255,.08);
+  --border2:rgba(255,255,255,.13);
+  --accent:#ff2040;
+  --accent-hover:#ff3555;
+  --accent-dim:rgba(255,32,64,.14);
+  --text:#ffffff;
+  --text-dim:rgba(255,255,255,.58);
+  --text-faint:rgba(255,255,255,.32);
+  --disp:'Space Grotesk',sans-serif;
+  --body:'Inter',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
 }
-html,body{max-width:100%;overflow:hidden;height:100%}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
 body{
-  font-family:'Outfit',sans-serif;
-  background:radial-gradient(ellipse 100% 50% at 50% -10%,rgba(200,0,36,.18),transparent),#040205;
-  color:#fff;height:100svh;display:flex;
+  font-family:var(--body);color:var(--text);
+  height:100svh;display:flex;position:relative;
+  -webkit-font-smoothing:antialiased;
 }
-body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(255,22,56,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,22,56,.03) 1px,transparent 1px);
-  background-size:46px 46px;
-  mask-image:radial-gradient(ellipse 85% 60% at 50% 20%,#000 0 40%,transparent 85%);
-}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-thumb{background:rgba(255,22,56,.30);border-radius:6px}
+button,input,textarea{font-family:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:rgba(255,32,64,.28);border-radius:6px}
 
-/* ══════════ SIDEBAR (desktop persistent, mobile slide-in) ══════════ */
-.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none}
-.sb-overlay.show{display:block}
+/* ============ SIDEBAR ============ */
+.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:80;display:none;backdrop-filter:blur(2px)}
+.sb-overlay.show{display:block;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .sidebar{
-  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);z-index:70;
-  background:rgba(6,3,8,.97);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;padding:16px 12px;gap:2px;
-  transform:translateX(-100%);transition:transform .22s ease;
+  position:fixed;top:0;left:0;bottom:0;width:248px;z-index:90;
+  background:#0c0c0c;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:calc(16px + var(--safe-t)) 12px 16px;gap:2px;
+  transform:translateX(-100%);transition:transform .26s cubic-bezier(.16,1,.3,1);
   overflow-y:auto;
 }
 .sidebar.open{transform:translateX(0)}
-.sb-head{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border);margin-bottom:10px}
-.sb-logo{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,rgba(255,22,56,.28),transparent 70%);display:grid;place-items:center;position:relative;flex-shrink:0}
-.sb-logo::before{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,22,56,.50)}
-.sb-logo-m{font-size:.85rem;font-weight:900;color:var(--red);text-shadow:0 0 10px rgba(255,0,48,.60)}
-.sb-brand{font-size:.92rem;font-weight:900}
-
-.sb-sec-lbl{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,225,230,.32);padding:14px 10px 6px}
-.sb-item{
-  display:flex;align-items:center;gap:11px;padding:10px 10px;border-radius:10px;
-  color:rgba(255,225,230,.60);text-decoration:none;font-size:.82rem;font-weight:700;
-  cursor:pointer;transition:background .15s,color .15s;
-}
-.sb-item:hover{background:rgba(255,22,56,.08);color:#fff}
-.sb-item.active{background:linear-gradient(90deg,rgba(255,22,56,.18),rgba(255,22,56,.04));color:#fff}
-.sb-icon{width:15px;height:15px;flex:0 0 15px;opacity:.8}
+.sb-head{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sb-logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;flex-shrink:0;box-shadow:0 0 18px rgba(255,32,64,.35)}
+.sb-logo-m{font-family:var(--disp);font-size:.95rem;font-weight:800;color:#fff}
+.sb-brand{font-family:var(--disp);font-size:1rem;font-weight:700;letter-spacing:-.01em}
+.sb-sec-lbl{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:16px 10px 6px}
+.sb-item{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:11px;color:var(--text-dim);text-decoration:none;font-size:.86rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.sb-item.active{background:var(--accent-dim);color:#fff}
+.sb-icon{width:17px;height:17px;flex:0 0 17px;opacity:.85}
 .sb-spacer{flex:1}
 
-/* ══════════ MAIN AREA ══════════ */
-.main{flex:1;min-width:0;display:flex;flex-direction:column;height:100svh;position:relative;margin-left:0}
+/* ============ MAIN ============ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;height:100svh;position:relative}
 
-/* TOP BAR */
+/* TOP BAR — minimal: hamburger ... avatar */
 .topbar{
-  position:relative;z-index:20;display:flex;align-items:center;gap:12px;
-  padding:0 clamp(14px,3vw,24px);height:56px;flex-shrink:0;
-  background:rgba(6,3,8,.90);border-bottom:1px solid var(--border);
-  backdrop-filter:blur(20px);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  padding:calc(10px + var(--safe-t)) 16px 10px;
 }
-.tb-menu-btn{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.05);cursor:pointer;position:relative;flex-shrink:0}
-.tb-menu-btn span,.tb-menu-btn::before,.tb-menu-btn::after{content:"";position:absolute;left:7px;right:7px;height:2px;background:#fff;border-radius:2px}
-.tb-menu-btn::before{top:10px}
-.tb-menu-btn span{top:15px;display:block}
-.tb-menu-btn::after{top:20px}
-.tb-title{font-size:.90rem;font-weight:800}
-.tb-badge{padding:3px 9px;border-radius:999px;border:1px solid rgba(255,180,0,.40);background:rgba(255,180,0,.10);color:#ffb400;font-size:.60rem;font-weight:900;letter-spacing:.10em;text-transform:uppercase;flex-shrink:0}
+.icon-btn{width:38px;height:38px;border-radius:12px;background:var(--btn);border:1px solid var(--border);display:grid;place-items:center;flex-shrink:0;transition:background .15s}
+.icon-btn:active{background:#2c2c2c}
+.icon-btn svg{width:18px;height:18px}
 .tb-spacer{flex:1}
-.tb-credit{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,22,56,.28);background:rgba(255,22,56,.08);font-size:.76rem;font-weight:800;flex-shrink:0}
-.tb-credit::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
-.tb-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--border);display:grid;place-items:center;font-size:.72rem;font-weight:800;flex-shrink:0;cursor:pointer}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#2a2a2a,#161616);border:1px solid var(--border2);display:grid;place-items:center;font-family:var(--disp);font-size:.82rem;font-weight:700;flex-shrink:0}
 
-/* Mode tabs row under topbar */
-.modebar{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;flex-shrink:0;position:relative;z-index:15}
-.mode-btn{display:flex;align-items:center;gap:6px;padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:rgba(255,225,230,.55);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s}
-.mode-btn.active{background:rgba(255,22,56,.14);border-color:rgba(255,60,90,.5);color:#fff}
+/* MODE / FILTER BAR */
+.modebar{display:flex;align-items:center;gap:8px;padding:2px 16px 10px;flex-shrink:0}
+.mode-btn{padding:8px 14px;border-radius:10px;font-size:.82rem;font-weight:600;color:var(--text-dim);background:transparent;transition:all .15s}
+.mode-btn.active{background:var(--btn);color:#fff}
+.mb-spacer{flex:1}
+.mode-icon-btn{width:32px;height:32px;border-radius:9px;background:var(--btn);border:1px solid var(--border);display:grid;place-items:center}
+.mode-icon-btn svg{width:15px;height:15px;opacity:.75}
 
-/* ══════════ CANVAS ══════════ */
-.canvas{flex:1;min-height:0;position:relative;z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px;overflow-y:auto}
-.canvas-empty-icon{width:52px;height:52px;border-radius:16px;border:2px dashed rgba(255,22,56,.26);display:grid;place-items:center;margin-bottom:4px;opacity:.55}
-.canvas-title{font-size:1rem;font-weight:800;color:rgba(255,225,230,.62)}
-.canvas-sub{font-size:.80rem;color:rgba(255,225,230,.36);text-align:center;max-width:280px}
+/* ============ CANVAS ============ */
+.canvas{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px;overflow-y:auto}
+.canvas-empty-icon{width:56px;height:56px;border-radius:18px;border:1.5px dashed rgba(255,32,64,.30);display:grid;place-items:center;margin-bottom:6px;background:rgba(255,32,64,.03)}
+.canvas-title{font-family:var(--disp);font-size:22px;font-weight:700}
+.canvas-sub{font-size:.86rem;color:var(--text-dim);text-align:center;max-width:280px;line-height:1.5}
 
 .canvas-result{width:100%;max-width:560px;display:none;flex-direction:column;gap:14px}
 .canvas-result.show{display:flex}
-.result-video{width:100%;border-radius:16px;border:1px solid rgba(255,22,56,.22);background:#000;max-height:60vh}
+.result-video{width:100%;border-radius:20px;border:1px solid var(--border);background:#000;max-height:58vh}
 .result-actions{display:flex;gap:8px;flex-wrap:wrap}
-.result-btn{flex:1;min-width:110px;padding:10px;border-radius:10px;border:1px solid rgba(255,22,56,.28);background:rgba(255,255,255,.04);color:#fff;font-family:'Outfit',sans-serif;font-size:.74rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;text-decoration:none;text-align:center;transition:all .16s}
-.result-btn:hover{border-color:rgba(255,60,90,.60);background:rgba(255,22,56,.08)}
-.result-btn.primary{background:linear-gradient(135deg,#ff1e3c,#a80018);border-color:rgba(255,50,80,.50)}
+.result-btn{flex:1;min-width:110px;padding:13px;border-radius:13px;border:1px solid var(--border);background:var(--card);font-size:.82rem;font-weight:700;letter-spacing:.01em;cursor:pointer;text-decoration:none;text-align:center;transition:all .16s;color:#fff}
+.result-btn:hover{border-color:var(--border2);background:#1e1e1e}
+.result-btn.primary{background:linear-gradient(135deg,var(--accent),#8a0018);border-color:rgba(255,60,90,.4)}
 
-.canvas-task{width:100%;max-width:420px;display:none;flex-direction:column;gap:10px;padding:20px;border-radius:16px;border:1px solid rgba(255,22,56,.24);background:rgba(255,22,56,.05)}
+.canvas-task{width:100%;max-width:420px;display:none;flex-direction:column;gap:12px;padding:22px;border-radius:20px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
 .task-row{display:flex;align-items:center;justify-content:space-between}
-.task-status-txt{font-size:.80rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.task-status-txt{font-family:var(--mono);font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .task-status-txt.pending{color:#ffb400}
-.task-status-txt.processing{color:#00b4ff}
+.task-status-txt.processing{color:#3aa8ff}
 .task-status-txt.completed{color:#3cffb0}
-.task-status-txt.failed{color:var(--red2)}
-.task-eta{font-size:.70rem;color:rgba(255,225,230,.42);font-weight:600}
-.progress-bar{width:100%;height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
-.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#ff1e3c,#ff4060);width:0%;transition:width .4s}
+.task-status-txt.failed{color:var(--accent-hover)}
+.task-eta{font-family:var(--mono);font-size:.74rem;color:var(--text-faint);font-weight:600}
+.progress-bar{width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .4s}
 
-.error-box{display:none;width:100%;max-width:420px;padding:12px 16px;border-radius:12px;background:rgba(255,22,56,.10);border:1px solid rgba(255,22,56,.35);color:#ff8090;font-size:.78rem;font-weight:600}
-.error-box.show{display:block}
+.error-box{display:none;width:100%;max-width:420px;padding:14px 16px;border-radius:14px;background:rgba(255,32,64,.09);border:1px solid rgba(255,32,64,.32);color:#ff8090;font-size:.82rem;font-weight:600;line-height:1.4}
+.error-box.show{display:block;animation:fadeIn .2s ease}
 
-/* ══════════ BOTTOM PANEL ══════════ */
-.panel-wrap{flex-shrink:0;padding:0 16px 16px;position:relative;z-index:15}
+/* ============ BOTTOM FLOATING PANEL ============ */
+.panel-wrap{flex-shrink:0;padding:0 12px calc(12px + var(--safe-b));position:relative;z-index:15}
 .panel{
-  max-width:820px;margin:0 auto;background:var(--panel);border:1px solid var(--border);
-  border-radius:18px;box-shadow:0 -10px 50px rgba(0,0,0,.4),0 4px 30px rgba(0,0,0,.3);
-  overflow:visible;transition:max-height .25s ease;
+  max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--border);
+  border-radius:28px;box-shadow:0 -8px 40px rgba(0,0,0,.5),0 20px 60px rgba(0,0,0,.45);
+  padding:14px 14px calc(14px + var(--safe-b));display:flex;flex-direction:column;gap:12px;
 }
-.panel.collapsed .panel-body{display:none}
 
-/* Toprow: media tabs */
-.panel-toprow{display:flex;align-items:center;gap:8px;padding:12px 12px 0;flex-wrap:wrap}
-.mode-chip{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;border:1px solid rgba(255,22,56,.18);background:rgba(255,255,255,.03);color:rgba(255,225,230,.58);font-size:.74rem;font-weight:800;cursor:pointer;transition:all .16s}
-.mode-chip.active{border-color:rgba(255,60,90,.55);background:rgba(255,22,56,.13);color:#fff}
-.mode-chip-count{font-size:.64rem;opacity:.6;font-weight:700}
-.panel-toprow-spacer{flex:1}
-.panel-collapse-btn{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);cursor:pointer;display:grid;place-items:center;flex-shrink:0}
-.panel-collapse-btn svg{transition:transform .2s}
-.panel.collapsed .panel-collapse-btn svg{transform:rotate(180deg)}
-
-/* Media grid */
-.media-row{padding:10px 12px 4px;display:none}
-.media-row.show{display:block}
-.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px}
-.media-slot{aspect-ratio:1;border-radius:10px;border:2px dashed rgba(255,22,56,.26);display:grid;place-items:center;cursor:pointer;position:relative;overflow:hidden;background:rgba(255,22,56,.03);transition:border-color .16s,background .16s}
-.media-slot:hover{border-color:rgba(255,60,90,.55);background:rgba(255,22,56,.06)}
-.media-slot.filled{border-style:solid;border-color:rgba(255,22,56,.30)}
-.media-slot img,.media-slot video{width:100%;height:100%;object-fit:cover;display:block}
-.slot-plus{width:18px;height:18px;position:relative}
-.slot-plus::before,.slot-plus::after{content:"";position:absolute;background:rgba(255,60,90,.55)}
-.slot-plus::before{top:8px;left:0;right:0;height:2px}
-.slot-plus::after{left:8px;top:0;bottom:0;width:2px}
-.slot-tag{position:absolute;bottom:2px;left:2px;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.68);font-size:.54rem;font-weight:800;color:var(--red2)}
-.slot-remove{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.20);display:grid;place-items:center;cursor:pointer;z-index:2}
-.slot-remove::before,.slot-remove::after{content:"";position:absolute;width:7px;height:1.3px;background:#fff}
-.slot-remove::before{transform:rotate(45deg)}
-.slot-remove::after{transform:rotate(-45deg)}
-input[type=file].hidden-input{display:none}
-
-/* PROMPT — expandable, big when focused */
-.prompt-row{padding:10px 12px}
-.prompt-editor{
-  width:100%;min-height:52px;max-height:56px;padding:12px 14px;border-radius:13px;
-  border:1px solid rgba(255,22,56,.20);background:rgba(255,255,255,.03);
-  color:#fff;font-family:'Outfit',sans-serif;font-size:.88rem;line-height:1.55;
-  resize:none;transition:max-height .25s ease,min-height .25s ease;
-  overflow-y:auto;
+/* Model selector + Elements/Frames tabs row */
+.panel-top-row{display:flex;align-items:center;gap:8px}
+.model-select{
+  display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:14px;
+  background:var(--btn);border:1px solid var(--border);flex-shrink:0;transition:border-color .15s;
 }
-.prompt-editor::placeholder{color:rgba(255,225,230,.28)}
-.prompt-editor:focus{outline:none;border-color:rgba(255,60,90,.55);min-height:180px;max-height:340px}
-.prompt-editor.has-content{min-height:100px;max-height:340px}
-.prompt-meta{display:flex;justify-content:space-between;margin-top:6px;flex-wrap:wrap;gap:6px}
-.char-count{font-size:.66rem;color:rgba(255,225,230,.32);font-weight:600}
-.tag-hint{font-size:.66rem;color:rgba(255,225,230,.34);font-weight:600}
-.tag-hint b{color:var(--red2);cursor:pointer}
+.model-select:active{border-color:var(--border2)}
+.model-select-icon{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#7a0014);flex-shrink:0}
+.model-select-txt{font-family:var(--disp);font-size:18px;font-weight:700;white-space:nowrap}
+.model-select-car{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text-dim);transition:transform .18s;flex-shrink:0}
+.model-select.open .model-select-car{transform:rotate(180deg)}
 
-/* ══ CUSTOM DROPDOWNS (replace native select) ══ */
-.opt-scroll{display:flex;gap:7px;padding:0 12px 10px;overflow-x:auto;position:relative}
-.opt-scroll::-webkit-scrollbar{display:none}
-.dd{position:relative;flex-shrink:0}
-.dd-trigger{
-  display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;
-  border:1px solid rgba(255,22,56,.20);background:rgba(255,255,255,.03);
-  font-size:.74rem;font-weight:700;color:rgba(255,225,230,.75);cursor:pointer;white-space:nowrap;
-  transition:border-color .15s;
+.elements-tabs{display:flex;gap:6px;flex:1;justify-content:flex-end}
+.el-tab{padding:9px 15px;border-radius:12px;font-size:16px;font-weight:600;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .15s}
+.el-tab.active{background:var(--accent);color:#fff}
+
+/* ---- ELEMENTS TAB CONTENT ---- */
+.tab-content{display:none;flex-direction:column;gap:12px}
+.tab-content.active{display:flex}
+
+.upload-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.upload-card{
+  position:relative;border-radius:16px;border:1px solid var(--border);background:var(--btn);
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  overflow:hidden;transition:border-color .15s,transform .12s;
 }
-.dd-trigger:hover,.dd.open .dd-trigger{border-color:rgba(255,60,90,.5)}
-.dd-car{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid rgba(255,225,230,.5);transition:transform .15s}
-.dd.open .dd-car{transform:rotate(180deg)}
-.dd-menu{
-  position:absolute;bottom:calc(100% + 8px);left:0;min-width:140px;z-index:100;
-  background:rgba(10,4,8,.98);border:1px solid rgba(255,22,56,.28);border-radius:12px;
-  box-shadow:0 12px 40px rgba(0,0,0,.5);padding:6px;display:none;
-  max-height:240px;overflow-y:auto;
+.upload-card:active{transform:scale(.97)}
+.upload-card.has-media{border-color:var(--border2)}
+.upload-card .uc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.upload-card .uc-thumb-dim{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.75) 100%)}
+.uc-icon{width:22px;height:22px;opacity:.7;z-index:1}
+.uc-label{font-size:16px;font-weight:600;letter-spacing:.02em;z-index:1}
+.uc-count{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.12);font-family:var(--mono);font-size:.66rem;font-weight:600;z-index:2}
+.uc-count.has{background:var(--accent);border-color:transparent}
+.upload-card.has-media .uc-label,.upload-card.has-media .uc-icon{position:absolute;bottom:10px;left:10px;z-index:1}
+.upload-card.has-media .uc-label{font-size:.76rem;bottom:9px}
+.upload-card.has-media .uc-icon{display:none}
+
+/* Prompt button */
+.prompt-btn{
+  width:100%;display:flex;align-items:center;gap:10px;padding:15px 16px;border-radius:16px;
+  background:var(--btn);border:1px solid var(--border);text-align:left;transition:border-color .15s;
 }
-.dd.open .dd-menu{display:block}
-.dd-opt{padding:9px 12px;border-radius:8px;font-size:.78rem;font-weight:700;color:rgba(255,225,230,.65);cursor:pointer;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dd-opt:hover{background:rgba(255,22,56,.10);color:#fff}
-.dd-opt.selected{color:var(--red2);background:rgba(255,22,56,.08)}
-.dd-opt-check{width:14px;height:14px;position:relative;flex-shrink:0}
-.dd-opt.selected .dd-opt-check::after{content:"";position:absolute;left:2px;top:5px;width:8px;height:4px;border-left:2px solid var(--red2);border-bottom:2px solid var(--red2);transform:rotate(-45deg)}
+.prompt-btn:active{border-color:var(--border2)}
+.prompt-btn-icon{font-size:16px;flex-shrink:0;opacity:.85}
+.prompt-btn-txt{font-size:18px;font-weight:500;color:var(--text-dim);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prompt-btn-txt.filled{color:#fff}
+.prompt-btn-arrow{width:15px;height:15px;opacity:.4;flex-shrink:0}
 
-/* Model toggle */
-.model-toggle{display:flex;border-radius:10px;overflow:hidden;border:1px solid rgba(255,22,56,.22);flex-shrink:0}
-.model-toggle-btn{padding:8px 15px;font-size:.74rem;font-weight:800;background:rgba(255,255,255,.03);color:rgba(255,225,230,.52);cursor:pointer;border:none;font-family:'Outfit',sans-serif}
-.model-toggle-btn.active{background:linear-gradient(135deg,#ff1e3c,#a80018);color:#fff}
+/* ---- FRAMES TAB CONTENT ---- */
+.frame-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.frame-card{
+  position:relative;border-radius:16px;border:1.5px dashed rgba(255,255,255,.14);background:var(--btn);
+  aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;
+}
+.frame-card .uc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame-card .uc-label{font-size:16px;font-weight:600;z-index:1}
+.frame-card .uc-icon{width:20px;height:20px;opacity:.65;z-index:1}
+.frame-hint{font-size:.78rem;color:var(--text-faint);text-align:center;padding:2px 6px 0;line-height:1.5}
 
-/* Audio toggle pill */
-.audio-pill{display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:10px;border:1px solid rgba(255,22,56,.20);background:rgba(255,255,255,.03);cursor:pointer;flex-shrink:0}
-.mini-switch{width:28px;height:16px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;transition:background .18s}
-.mini-switch.on{background:linear-gradient(135deg,#ff1e3c,#a80018)}
-.mini-switch-dot{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .18s}
-.mini-switch.on .mini-switch-dot{transform:translateX(12px)}
-.audio-pill-lbl{font-size:.74rem;font-weight:700;color:rgba(255,225,230,.65)}
+/* Settings dropdown chip row */
+.settings-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:1px}
+.settings-row::-webkit-scrollbar{display:none}
+.chip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;background:var(--btn);border:1px solid var(--border);font-size:16px;font-weight:600;white-space:nowrap;flex-shrink:0;transition:border-color .15s}
+.chip:active{border-color:var(--border2)}
+.chip-car{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4.5px solid var(--text-faint)}
+.chip.audio-chip{gap:8px}
+.mini-switch{width:30px;height:17px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;transition:background .18s;flex-shrink:0}
+.mini-switch.on{background:linear-gradient(135deg,var(--accent),#8a0018)}
+.mini-switch-dot{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .18s}
+.mini-switch.on .mini-switch-dot{transform:translateX(13px)}
 
-/* Bottom action row */
-.action-row{display:flex;align-items:center;gap:10px;padding:2px 12px 14px}
-.qty-stepper{display:flex;align-items:center;gap:10px;padding:8px 13px;border-radius:10px;border:1px solid rgba(255,22,56,.20);background:rgba(255,255,255,.03);flex-shrink:0}
-.qty-btn{width:16px;height:16px;display:grid;place-items:center;cursor:pointer;color:rgba(255,225,230,.6);font-weight:900;font-size:.95rem;user-select:none}
-.qty-val{font-size:.78rem;font-weight:800;min-width:26px;text-align:center}
+/* Qty + Generate */
+.action-row{display:flex;align-items:center;gap:10px}
+.qty-stepper{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:14px;background:var(--btn);border:1px solid var(--border);flex-shrink:0}
+.qty-btn{width:18px;height:18px;display:grid;place-items:center;font-weight:800;font-size:1rem;color:var(--text-dim);user-select:none}
+.qty-val{font-family:var(--mono);font-size:.84rem;font-weight:700;min-width:30px;text-align:center}
 
-.gen-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:12px;border:1px solid rgba(255,50,80,.55);background:linear-gradient(135deg,#ff1e3c,#a80018 55%,#2c0008);color:#fff;font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:800;letter-spacing:.03em;cursor:pointer;box-shadow:0 0 24px rgba(255,0,48,.22),0 10px 26px rgba(0,0,0,.28);transition:transform .16s}
-.gen-btn:hover:not(:disabled){transform:translateY(-2px)}
-.gen-btn:disabled{opacity:.5;cursor:not-allowed}
-.gen-btn .cost-tag{display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.25);font-size:.70rem;font-weight:800}
-.gen-btn.loading .gen-txt::after{content:'';display:inline-block;width:12px;height:12px;margin-left:6px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+.gen-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:14px;
+  background:linear-gradient(135deg,#ff2b48,#8a0018 60%,#25000a);border:1px solid rgba(255,60,90,.5);
+  font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:.01em;
+  box-shadow:0 0 28px rgba(255,32,64,.28),0 10px 26px rgba(0,0,0,.35);transition:transform .16s,box-shadow .16s;
+}
+.gen-btn:active:not(:disabled){transform:scale(.98)}
+.gen-btn:disabled{opacity:.5}
+.gen-btn .cost-tag{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.28);font-family:var(--mono);font-size:.72rem;font-weight:700}
+.gen-btn.loading .gen-txt::after{content:'';display:inline-block;width:13px;height:13px;margin-left:6px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ══════════ RESPONSIVE ══════════ */
+input[type=file].hidden-input{display:none}
+
+/* ============ BOTTOM SHEETS (model / ratio / resolution / duration) ============ */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:120;display:none;backdrop-filter:blur(3px)}
+.sheet-overlay.show{display:block;animation:fadeIn .18s ease}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:130;max-width:640px;margin:0 auto;
+  background:#111;border:1px solid var(--border);border-bottom:none;border-radius:26px 26px 0 0;
+  padding:10px 16px calc(20px + var(--safe-b));transform:translateY(100%);transition:transform .28s cubic-bezier(.16,1,.3,1);
+  max-height:70vh;overflow-y:auto;
+}
+.sheet.show{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);margin:4px auto 14px}
+.sheet-title{font-family:var(--disp);font-size:20px;font-weight:700;padding:0 2px 12px}
+.sheet-opt{display:flex;align-items:center;justify-content:space-between;padding:14px 12px;border-radius:13px;font-size:16px;font-weight:600;color:var(--text-dim);transition:background .12s,color .12s}
+.sheet-opt:active{background:rgba(255,255,255,.05)}
+.sheet-opt.selected{color:#fff;background:var(--accent-dim)}
+.sheet-opt-check{width:16px;height:16px;position:relative;flex-shrink:0}
+.sheet-opt.selected .sheet-opt-check::after{content:"";position:absolute;left:2px;top:5px;width:9px;height:5px;border-left:2px solid var(--accent-hover);border-bottom:2px solid var(--accent-hover);transform:rotate(-45deg)}
+.sheet-opt-desc{font-size:.72rem;color:var(--text-faint);font-weight:500;margin-top:2px}
+.sheet-opt-main{display:flex;flex-direction:column;gap:1px}
+
+/* Upload sheet (media grid) */
+.upload-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 14px}
+.upload-sheet-close{width:32px;height:32px;border-radius:10px;background:var(--btn);display:grid;place-items:center}
+.upload-sheet-close svg{width:14px;height:14px}
+.media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-bottom:6px}
+.media-slot{aspect-ratio:1;border-radius:14px;border:1.5px dashed rgba(255,32,64,.28);display:grid;place-items:center;position:relative;overflow:hidden;background:rgba(255,32,64,.03);transition:border-color .16s}
+.media-slot:active{border-color:rgba(255,60,90,.5)}
+.media-slot.filled{border-style:solid;border-color:var(--border2)}
+.media-slot img,.media-slot video{width:100%;height:100%;object-fit:cover;display:block}
+.slot-plus{width:22px;height:22px;position:relative}
+.slot-plus::before,.slot-plus::after{content:"";position:absolute;background:rgba(255,60,90,.6)}
+.slot-plus::before{top:10px;left:0;right:0;height:2.5px}
+.slot-plus::after{left:10px;top:0;bottom:0;width:2.5px}
+.slot-tag{position:absolute;bottom:4px;left:4px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.7);font-family:var(--mono);font-size:.6rem;font-weight:700;color:var(--accent-hover)}
+.slot-remove{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;z-index:2}
+.slot-remove::before,.slot-remove::after{content:"";position:absolute;width:9px;height:1.5px;background:#fff}
+.slot-remove::before{transform:rotate(45deg)}
+.slot-remove::after{transform:rotate(-45deg)}
+.slot-uploading::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.4);border:2px solid var(--accent);border-top-color:transparent;border-radius:14px;animation:spin .8s linear infinite}
+
+/* ============ FULLSCREEN PROMPT EDITOR ============ */
+.prompt-overlay{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.prompt-overlay.show{transform:translateY(0)}
+.pe-header{display:flex;align-items:center;justify-content:space-between;padding:calc(16px + var(--safe-t)) 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pe-title{font-family:var(--disp);font-size:18px;font-weight:700}
+.pe-done{padding:9px 18px;border-radius:11px;background:var(--accent);font-size:.86rem;font-weight:700;transition:background .15s}
+.pe-done:active{background:var(--accent-hover)}
+.pe-body{flex:1;min-height:0;padding:18px;overflow-y:auto;display:flex;flex-direction:column}
+.pe-textarea{flex:1;width:100%;min-height:160px;background:transparent;border:none;outline:none;resize:none;font-size:18px;line-height:1.6;color:#fff}
+.pe-textarea::placeholder{color:var(--text-faint)}
+.pe-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0;position:relative}
+.pe-mention-btn{width:38px;height:38px;border-radius:11px;background:var(--btn);border:1px solid var(--border);display:grid;place-items:center;font-family:var(--disp);font-size:1rem;font-weight:700;color:var(--accent-hover);transition:background .15s}
+.pe-mention-btn:active{background:#2c2c2c}
+.pe-char-count{font-family:var(--mono);font-size:.76rem;color:var(--text-faint);font-weight:600}
+
+/* Mention popup */
+.mention-popup{
+  position:absolute;bottom:calc(100% + 10px);left:18px;right:18px;max-width:340px;
+  background:#151515;border:1px solid var(--border2);border-radius:18px;
+  box-shadow:0 16px 50px rgba(0,0,0,.55);padding:14px;display:none;z-index:5;
+}
+.mention-popup.show{display:block;animation:popIn .16s cubic-bezier(.16,1,.3,1)}
+@keyframes popIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mp-title{font-size:.92rem;font-weight:700;margin-bottom:2px}
+.mp-title span{color:var(--accent-hover)}
+.mp-sub{font-size:.72rem;color:var(--text-faint);margin-bottom:10px;line-height:1.4}
+.mp-item{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;transition:background .12s}
+.mp-item:active{background:rgba(255,255,255,.05)}
+.mp-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.mp-icon.character{background:rgba(120,200,140,.15);color:#7ee0a0}
+.mp-icon.scene{background:rgba(80,160,255,.15);color:#6cb0ff}
+.mp-icon.object{background:rgba(190,120,255,.15);color:#c299ff}
+.mp-item-main{display:flex;flex-direction:column;gap:1px}
+.mp-item-name{font-size:.86rem;font-weight:700}
+.mp-item-desc{font-size:.72rem;color:var(--text-faint)}
+
 @media(min-width:900px){
   .sidebar{transform:translateX(0)}
-  .main{margin-left:var(--sidebar-w)}
-  .tb-menu-btn{display:none}
+  .main{margin-left:248px}
+  .topbar .icon-btn:first-child{display:none}
   .sb-overlay{display:none!important}
 }
-@media(max-width:899px){
-  .modebar{display:none}
-}
-  </style>
+</style>
 </head>
 <body>
 
@@ -266,10 +330,6 @@ input[type=file].hidden-input{display:none}
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </a>
-  <a class="sb-item" href="#" onclick="return false">
-    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-    Credits
-  </a>
   <div class="sb-spacer"></div>
   <a class="sb-item" href="#" onclick="doLogout();return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -280,25 +340,28 @@ input[type=file].hidden-input{display:none}
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
-    <button class="tb-menu-btn" onclick="toggleSidebar(true)"><span></span></button>
-    <span class="tb-title">MII AI Video</span>
-    <span class="tb-badge">Beta</span>
+    <button class="icon-btn" onclick="toggleSidebar(true)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
     <div class="tb-spacer"></div>
-    <div class="tb-credit" id="tbCredit">660 credits</div>
-    <div class="tb-avatar">M</div>
+    <div class="avatar">M</div>
   </div>
 
   <div class="modebar">
-    <div class="mode-btn active">Image</div>
-    <div class="mode-btn">Video</div>
-    <div class="mode-btn">All</div>
+    <div class="mode-btn active" data-view="image" onclick="setView('image',this)">Image</div>
+    <div class="mode-btn" data-view="video" onclick="setView('video',this)">Video</div>
+    <div class="mode-btn" data-view="all" onclick="setView('all',this)">All</div>
+    <div class="mb-spacer"></div>
+    <div class="mode-icon-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
   </div>
 
   <!-- CANVAS -->
   <div class="canvas" id="canvas">
     <div id="emptyState">
       <div class="canvas-empty-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,60,90,.6)" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,60,90,.7)" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>
       </div>
       <div class="canvas-title">No content yet</div>
       <div class="canvas-sub">Use the prompt builder below to create your first video</div>
@@ -324,180 +387,292 @@ input[type=file].hidden-input{display:none}
     <div class="error-box" id="errorBox"></div>
   </div>
 
-  <!-- PANEL -->
+  <!-- BOTTOM FLOATING PANEL -->
   <div class="panel-wrap">
     <div class="panel" id="panel">
-      <div class="panel-body">
-        <div class="panel-toprow">
-          <div class="mode-chip active" data-tab="image" onclick="switchTab('image')">Image <span class="mode-chip-count" id="imgCount">0/9</span></div>
-          <div class="mode-chip" data-tab="video" onclick="switchTab('video')">Video <span class="mode-chip-count" id="vidCount">0/3</span></div>
-          <div class="mode-chip" data-tab="audio" onclick="switchTab('audio')">Audio <span class="mode-chip-count" id="audCount">0/3</span></div>
-          <div class="panel-toprow-spacer"></div>
-          <button class="panel-collapse-btn" onclick="togglePanel()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
-          </button>
+
+      <div class="panel-top-row">
+        <button class="model-select" id="modelSelectBtn" onclick="openModelSheet()">
+          <span class="model-select-icon"></span>
+          <span class="model-select-txt" id="modelSelectTxt">Seedance 2.0</span>
+          <span class="model-select-car"></span>
+        </button>
+        <div class="elements-tabs">
+          <button class="el-tab active" data-tab="elements" onclick="switchElTab('elements',this)">Elements</button>
+          <button class="el-tab" data-tab="frames" onclick="switchElTab('frames',this)">Frames</button>
         </div>
+      </div>
 
-        <div class="media-row show" id="imageRow"><div class="media-grid" id="imageGrid"></div></div>
-        <div class="media-row" id="videoRow"><div class="media-grid" id="videoGrid"></div></div>
-        <div class="media-row" id="audioRow"><div class="media-grid" id="audioGrid"></div></div>
-
-        <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" multiple />
-        <input type="file" id="videoFileInput" class="hidden-input" accept="video/mp4,video/quicktime" />
-        <input type="file" id="audioFileInput" class="hidden-input" accept="audio/wav,audio/mpeg" />
-
-        <div class="prompt-row">
-          <textarea class="prompt-editor" id="promptInput" placeholder="Describe the scene you imagine in as much detail as you like — camera movement, lighting, expression, style, mood. Use @image1, @image2 to reference your uploaded elements."></textarea>
-          <div class="prompt-meta">
-            <span class="char-count" id="charCount">0 chars</span>
-            <span class="tag-hint">Tag otomatis muncul saat upload gambar</span>
+      <!-- ELEMENTS TAB -->
+      <div class="tab-content active" id="elementsTab">
+        <div class="upload-row">
+          <div class="upload-card" id="cardImage" onclick="openUploadSheet('image')">
+            <span class="uc-count" id="cardImageCount">0/9</span>
+            <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span class="uc-label">IMAGE</span>
           </div>
-        </div>
-
-        <div class="opt-scroll" id="optScroll">
-          <!-- Aspect Ratio Dropdown -->
-          <div class="dd" id="ddRatio">
-            <div class="dd-trigger" onclick="toggleDD('ddRatio')"><span id="ratioLabel">16:9</span><span class="dd-car"></span></div>
-            <div class="dd-menu">
-              <div class="dd-opt selected" data-val="16:9" onclick="selectDD('ddRatio','ratioLabel','16:9',this)"><span>16:9</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt" data-val="9:16" onclick="selectDD('ddRatio','ratioLabel','9:16',this)"><span>9:16</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt" data-val="1:1" onclick="selectDD('ddRatio','ratioLabel','1:1',this)"><span>1:1</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt" data-val="4:3" onclick="selectDD('ddRatio','ratioLabel','4:3',this)"><span>4:3</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt" data-val="3:4" onclick="selectDD('ddRatio','ratioLabel','3:4',this)"><span>3:4</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt" data-val="21:9" onclick="selectDD('ddRatio','ratioLabel','21:9',this)"><span>21:9</span><span class="dd-opt-check"></span></div>
-            </div>
+          <div class="upload-card" id="cardVideo" onclick="openUploadSheet('video')">
+            <span class="uc-count" id="cardVideoCount">0/3</span>
+            <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+            <span class="uc-label">VIDEO</span>
           </div>
-
-          <!-- Quality Dropdown -->
-          <div class="dd" id="ddQuality">
-            <div class="dd-trigger" onclick="toggleDD('ddQuality')"><span id="qualityLabel">720p</span><span class="dd-car"></span></div>
-            <div class="dd-menu">
-              <div class="dd-opt" data-val="480p" onclick="selectDD('ddQuality','qualityLabel','480p',this)"><span>480p</span><span class="dd-opt-check"></span></div>
-              <div class="dd-opt selected" data-val="720p" onclick="selectDD('ddQuality','qualityLabel','720p',this)"><span>720p</span><span class="dd-opt-check"></span></div>
-            </div>
-          </div>
-
-          <!-- Duration Dropdown -->
-          <div class="dd" id="ddDuration">
-            <div class="dd-trigger" onclick="toggleDD('ddDuration')"><span id="durationLabel">5s</span><span class="dd-car"></span></div>
-            <div class="dd-menu" id="durationMenu"></div>
-          </div>
-
-          <!-- Model toggle -->
-          <div class="model-toggle">
-            <button class="model-toggle-btn active" id="modelFastBtn" onclick="selectModel('fast')">Fast</button>
-            <button class="model-toggle-btn" id="modelProBtn" onclick="selectModel('pro')">Pro</button>
-          </div>
-
-          <!-- Audio toggle -->
-          <div class="audio-pill" onclick="toggleAudioGen()">
-            <div class="mini-switch on" id="audioSwitch"><div class="mini-switch-dot"></div></div>
-            <span class="audio-pill-lbl">Audio</span>
+          <div class="upload-card" id="cardAudio" onclick="openUploadSheet('audio')">
+            <span class="uc-count" id="cardAudioCount">0/3</span>
+            <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <span class="uc-label">AUDIO</span>
           </div>
         </div>
 
-        <div class="action-row">
-          <div class="qty-stepper">
-            <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
-            <div class="qty-val" id="qtyVal">1/4</div>
-            <div class="qty-btn" onclick="changeQty(1)">+</div>
+        <button class="prompt-btn" id="promptBtn" onclick="openPromptEditor()">
+          <span class="prompt-btn-icon">✏</span>
+          <span class="prompt-btn-txt" id="promptBtnTxt">PROMPT</span>
+          <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <!-- FRAMES TAB -->
+      <div class="tab-content" id="framesTab">
+        <div class="frame-row">
+          <div class="frame-card" id="cardFirstFrame" onclick="openFrameInput('first')">
+            <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span class="uc-label">First Frame</span>
           </div>
-          <button class="gen-btn" id="generateBtn" onclick="startGenerate()">
-            <span class="gen-txt">Generate</span>
-            <span class="cost-tag" id="costTag">&mdash;</span>
-          </button>
+          <div class="frame-card" id="cardLastFrame" onclick="openFrameInput('last')">
+            <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span class="uc-label">Last Frame</span>
+          </div>
         </div>
+        <div class="frame-hint">Set start and end keyframes to guide the motion between two images.</div>
+      </div>
+
+      <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" multiple />
+      <input type="file" id="videoFileInput" class="hidden-input" accept="video/mp4,video/quicktime" />
+      <input type="file" id="audioFileInput" class="hidden-input" accept="audio/wav,audio/mpeg" />
+      <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
+      <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
+
+      <div class="settings-row">
+        <div class="chip" onclick="openSheet('ratio')"><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
+        <div class="chip" onclick="openSheet('resolution')"><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
+        <div class="chip" onclick="openSheet('duration')"><span id="durationLabel">5s</span><span class="chip-car"></span></div>
+        <div class="chip audio-chip" onclick="toggleAudioGen()">
+          <div class="mini-switch on" id="audioSwitch"><div class="mini-switch-dot"></div></div>
+          <span>Audio</span>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <div class="qty-stepper">
+          <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
+          <div class="qty-val" id="qtyVal">1/4</div>
+          <div class="qty-btn" onclick="changeQty(1)">+</div>
+        </div>
+        <button class="gen-btn" id="generateBtn" onclick="startGenerate()">
+          <span class="gen-txt">GENERATE ✦</span>
+          <span class="cost-tag" id="costTag">&mdash;</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC BOTTOM SHEET (ratio / resolution / duration / model) -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle">Aspect Ratio</div>
+  <div class="sheet-list" id="sheetList"></div>
+</div>
+
+<!-- UPLOAD SHEET (media grid) -->
+<div class="sheet-overlay" id="uploadSheetOverlay" onclick="closeUploadSheet()"></div>
+<div class="sheet" id="uploadSheet">
+  <div class="sheet-handle"></div>
+  <div class="upload-sheet-head">
+    <div class="sheet-title" id="uploadSheetTitle" style="padding:0">Image</div>
+    <button class="upload-sheet-close" onclick="closeUploadSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+  </div>
+  <div class="media-grid" id="uploadGrid"></div>
+</div>
+
+<!-- FULLSCREEN PROMPT EDITOR -->
+<div class="prompt-overlay" id="promptOverlay">
+  <div class="pe-header">
+    <span class="pe-title">Prompt</span>
+    <button class="pe-done" onclick="closePromptEditor()">Done</button>
+  </div>
+  <div class="pe-body">
+    <textarea class="pe-textarea" id="promptInput" placeholder="Describe the scene you imagine in as much detail as you like — camera movement, lighting, expression, style, mood. Tap @ to reference your uploaded elements."></textarea>
+  </div>
+  <div class="pe-footer">
+    <button class="pe-mention-btn" id="mentionBtn" onclick="toggleMentionPopup(false)">@</button>
+    <span class="pe-char-count" id="charCount">0 chars</span>
+
+    <div class="mention-popup" id="mentionPopup">
+      <div class="mp-title">Create elements to use <span>@mentions</span></div>
+      <div class="mp-sub">Reference them in your prompts for consistent results</div>
+      <div class="mp-item" onclick="selectMention('character')">
+        <div class="mp-icon character">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="mp-item-main"><span class="mp-item-name">Character</span><span class="mp-item-desc">People, creatures, avatars</span></div>
+      </div>
+      <div class="mp-item" onclick="selectMention('scene')">
+        <div class="mp-icon scene">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="mp-item-main"><span class="mp-item-name">Scene</span><span class="mp-item-desc">Locations, backgrounds, sets</span></div>
+      </div>
+      <div class="mp-item" onclick="selectMention('object')">
+        <div class="mp-icon object">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <div class="mp-item-main"><span class="mp-item-name">Object</span><span class="mp-item-desc">Props, items, accessories</span></div>
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
-// ══ STATE ══
+// ══════════ STATE ══════════
 var media = { image: [], video: [], audio: [] };
+var frames = { first: null, last: null };
 var maxCounts = { image: 9, video: 3, audio: 3 };
-var currentTab = 'image';
-var selectedModel = 'seedance-2.0-mini-reference-to-video';
+var currentUploadType = 'image';
+var modelMap = {
+  Mini: 'seedance-2.0-mini-reference-to-video',
+  Fast: 'seedance-2.0-fast-reference-to-video',
+  Pro:  'seedance-2.0-pro-reference-to-video'
+};
+var selectedModelTier = 'Mini';
+var selectedModel = modelMap.Mini;
 var selectedRatio = '16:9';
-var selectedQuality = '720p';
+var selectedResolution = '720p';
 var selectedDuration = 5;
 var audioGenOn = true;
 var qty = 1;
 var maxQty = 4;
 var pollInterval = null;
+var mentionAutoTriggered = false;
 
-// ══ SIDEBAR ══
+// ══════════ SIDEBAR ══════════
 function toggleSidebar(open) {
   document.getElementById('sidebar').classList.toggle('open', open);
   document.getElementById('sbOverlay').classList.toggle('show', open);
 }
 
-// ══ PANEL COLLAPSE ══
-function togglePanel() {
-  document.getElementById('panel').classList.toggle('collapsed');
+// ══════════ MODE BAR ══════════
+function setView(view, el) {
+  document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  el.classList.add('active');
 }
 
-// ══ CUSTOM DROPDOWNS ══
-function toggleDD(id) {
-  var dd = document.getElementById(id);
-  var wasOpen = dd.classList.contains('open');
-  document.querySelectorAll('.dd').forEach(function(d) { d.classList.remove('open'); });
-  if (!wasOpen) dd.classList.add('open');
+// ══════════ ELEMENTS / FRAMES TABS ══════════
+function switchElTab(tab, el) {
+  document.querySelectorAll('.el-tab').forEach(function(b){ b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('elementsTab').classList.toggle('active', tab === 'elements');
+  document.getElementById('framesTab').classList.toggle('active', tab === 'frames');
 }
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.dd')) {
-    document.querySelectorAll('.dd').forEach(function(d) { d.classList.remove('open'); });
+
+// ══════════ GENERIC BOTTOM SHEET (ratio / resolution / duration) ══════════
+var sheetDefs = {
+  ratio: {
+    title: 'Aspect Ratio',
+    options: ['1:1','3:4','4:3','9:16','16:9','21:9'],
+    get: function(){ return selectedRatio; },
+    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; }
+  },
+  resolution: {
+    title: 'Resolution',
+    options: ['480p','720p','1080p','4K'],
+    get: function(){ return selectedResolution; },
+    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; }
+  },
+  duration: {
+    title: 'Duration',
+    options: (function(){ var a=[]; for (var s=4;s<=15;s++) a.push(s+'s'); return a; })(),
+    get: function(){ return selectedDuration + 's'; },
+    set: function(v){ selectedDuration = parseInt(v,10); document.getElementById('durationLabel').textContent = v; }
   }
-});
-function selectDD(ddId, labelId, val, el) {
-  document.getElementById(labelId).textContent = val;
-  var menu = el.parentElement;
-  menu.querySelectorAll('.dd-opt').forEach(function(o) { o.classList.remove('selected'); });
-  el.classList.add('selected');
-  document.getElementById(ddId).classList.remove('open');
-  if (ddId === 'ddRatio') selectedRatio = val;
-  if (ddId === 'ddQuality') selectedQuality = val;
-  if (ddId === 'ddDuration') selectedDuration = parseInt(val, 10);
+};
+
+function openSheet(key) {
+  var def = sheetDefs[key];
+  document.getElementById('sheetTitle').textContent = def.title;
+  var list = document.getElementById('sheetList');
+  list.innerHTML = '';
+  def.options.forEach(function(opt) {
+    var row = document.createElement('div');
+    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '');
+    row.innerHTML = '<span>' + opt + '</span><span class="sheet-opt-check"></span>';
+    row.onclick = function() {
+      def.set(opt);
+      closeSheet();
+    };
+    list.appendChild(row);
+  });
+  document.getElementById('sheetOverlay').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
 }
 
-// Populate duration dropdown 4-15s
-(function initDurationMenu() {
-  var menu = document.getElementById('durationMenu');
-  for (var s = 15; s >= 4; s--) {
-    var opt = document.createElement('div');
-    opt.className = 'dd-opt' + (s === 5 ? ' selected' : '');
-    opt.dataset.val = s + 's';
-    opt.innerHTML = '<span>' + s + 's</span><span class="dd-opt-check"></span>';
-    opt.onclick = (function(sec, el) {
-      return function() { selectDD('ddDuration', 'durationLabel', sec + 's', el); };
-    })(s, opt);
-    menu.appendChild(opt);
-  }
-})();
-
-// ══ TABS ══
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.mode-chip').forEach(function(el) {
-    el.classList.toggle('active', el.dataset.tab === tab);
+// ══════════ MODEL SHEET ══════════
+var modelDescs = {
+  Mini: 'Fastest generation, lowest cost',
+  Fast: 'Balanced speed and quality',
+  Pro:  'Highest quality, slower render'
+};
+function openModelSheet() {
+  document.getElementById('sheetTitle').textContent = 'Seedance 2.0';
+  var list = document.getElementById('sheetList');
+  list.innerHTML = '';
+  ['Mini','Fast','Pro'].forEach(function(tier) {
+    var row = document.createElement('div');
+    row.className = 'sheet-opt' + (tier === selectedModelTier ? ' selected' : '');
+    row.innerHTML = '<div class="sheet-opt-main"><span>' + tier + '</span><span class="sheet-opt-desc">' + modelDescs[tier] + '</span></div><span class="sheet-opt-check"></span>';
+    row.onclick = function() {
+      selectedModelTier = tier;
+      selectedModel = modelMap[tier];
+      document.getElementById('modelSelectTxt').textContent = 'Seedance 2.0 · ' + tier;
+      closeSheet();
+    };
+    list.appendChild(row);
   });
-  ['image','video','audio'].forEach(function(t) {
-    document.getElementById(t + 'Row').classList.toggle('show', t === tab);
-  });
+  document.getElementById('sheetOverlay').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
 }
 
-// ══ MEDIA UPLOAD ══
-function renderGrid(type) {
-  var grid = document.getElementById(type + 'Grid');
+// ══════════ UPLOAD SHEET + MEDIA ══════════
+function openUploadSheet(type) {
+  currentUploadType = type;
+  document.getElementById('uploadSheetTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1);
+  renderUploadGrid();
+  document.getElementById('uploadSheetOverlay').classList.add('show');
+  document.getElementById('uploadSheet').classList.add('show');
+}
+function closeUploadSheet() {
+  document.getElementById('uploadSheetOverlay').classList.remove('show');
+  document.getElementById('uploadSheet').classList.remove('show');
+}
+
+function renderUploadGrid() {
+  var type = currentUploadType;
+  var grid = document.getElementById('uploadGrid');
   grid.innerHTML = '';
   media[type].forEach(function(item, idx) {
     var slot = document.createElement('div');
-    slot.className = 'media-slot filled';
+    slot.className = 'media-slot filled' + (item.uploading ? ' slot-uploading' : '');
     var previewEl;
     if (type === 'audio') {
       previewEl = document.createElement('div');
-      previewEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:1.2rem;color:rgba(255,60,90,.6)';
+      previewEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:1.3rem;color:rgba(255,60,90,.7)';
       previewEl.textContent = '\u266A';
     } else if (type === 'video') {
       previewEl = document.createElement('video');
@@ -508,22 +683,18 @@ function renderGrid(type) {
       previewEl.src = item.previewUrl;
     }
     slot.appendChild(previewEl);
-
     if (type === 'image') {
       var tag = document.createElement('div');
       tag.className = 'slot-tag';
       tag.textContent = '@image' + (idx + 1);
       slot.appendChild(tag);
     }
-
     var rm = document.createElement('div');
     rm.className = 'slot-remove';
     rm.onclick = function(e) { e.stopPropagation(); removeMedia(type, idx); };
     slot.appendChild(rm);
-
     grid.appendChild(slot);
   });
-
   if (media[type].length < maxCounts[type]) {
     var addSlot = document.createElement('div');
     addSlot.className = 'media-slot';
@@ -531,14 +702,36 @@ function renderGrid(type) {
     addSlot.onclick = function() { document.getElementById(type + 'FileInput').click(); };
     grid.appendChild(addSlot);
   }
+  updateCardPreview(type);
+}
 
-  document.getElementById(type === 'image' ? 'imgCount' : type === 'video' ? 'vidCount' : 'audCount').textContent =
-    media[type].length + '/' + maxCounts[type];
+function updateCardPreview(type) {
+  var count = media[type].length;
+  var countEl = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
+  countEl.textContent = count + '/' + maxCounts[type];
+  countEl.classList.toggle('has', count > 0);
+  var card = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1));
+  var existingThumb = card.querySelector('.uc-thumb');
+  var existingDim = card.querySelector('.uc-thumb-dim');
+  if (existingThumb) existingThumb.remove();
+  if (existingDim) existingDim.remove();
+  card.classList.toggle('has-media', count > 0 && type !== 'audio');
+  if (count > 0 && type !== 'audio') {
+    var img = document.createElement('img');
+    img.className = 'uc-thumb';
+    img.src = media[type][0].previewUrl;
+    card.insertBefore(img, card.firstChild);
+    var dim = document.createElement('div');
+    dim.className = 'uc-thumb-dim';
+    card.insertBefore(dim, card.firstChild.nextSibling);
+  } else if (count > 0 && type === 'audio') {
+    card.classList.add('has-media');
+  }
 }
 
 function removeMedia(type, idx) {
   media[type].splice(idx, 1);
-  renderGrid(type);
+  renderUploadGrid();
 }
 
 document.getElementById('imageFileInput').addEventListener('change', function(e) {
@@ -562,9 +755,8 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
 
 function uploadFile(file, type, previewUrl) {
   media[type].push({ file: file, previewUrl: previewUrl, uploading: true, url: null });
-  renderGrid(type);
+  renderUploadGrid();
   var idx = media[type].length - 1;
-
   var fd = new FormData();
   fd.append('file', file);
   fetch('/api/aivideo/upload', { method: 'POST', body: fd })
@@ -576,39 +768,95 @@ function uploadFile(file, type, previewUrl) {
       } else {
         showError(data.error || 'Upload gagal');
         media[type].splice(idx, 1);
-        renderGrid(type);
       }
+      renderUploadGrid();
     })
     .catch(function() {
       showError('Upload gagal, cek koneksi');
       media[type].splice(idx, 1);
-      renderGrid(type);
+      renderUploadGrid();
     });
 }
 
-// ══ MODEL / AUDIO / QTY ══
-function selectModel(type) {
-  selectedModel = type === 'fast' ? 'seedance-2.0-mini-reference-to-video' : 'seedance-2.0-pro-reference-to-video';
-  document.getElementById('modelFastBtn').classList.toggle('active', type === 'fast');
-  document.getElementById('modelProBtn').classList.toggle('active', type === 'pro');
+// ══════════ FRAMES ══════════
+function openFrameInput(which) {
+  document.getElementById(which === 'first' ? 'firstFrameInput' : 'lastFrameInput').click();
 }
-function toggleAudioGen() {
-  audioGenOn = !audioGenOn;
-  document.getElementById('audioSwitch').classList.toggle('on', audioGenOn);
-}
+['first','last'].forEach(function(which) {
+  document.getElementById(which + 'FrameInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var previewUrl = URL.createObjectURL(file);
+    frames[which] = { file: file, previewUrl: previewUrl };
+    var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
+    card.innerHTML = '<img class="uc-thumb" src="' + previewUrl + '"><div class="uc-thumb-dim"></div><span class="uc-label" style="position:absolute;bottom:9px;left:10px;z-index:1">' + (which === 'first' ? 'First Frame' : 'Last Frame') + '</span>';
+    e.target.value = '';
+  });
+});
+
+// ══════════ QTY ══════════
 function changeQty(delta) {
   qty = Math.max(1, Math.min(maxQty, qty + delta));
   document.getElementById('qtyVal').textContent = qty + '/' + maxQty;
 }
 
-// ══ PROMPT: expand + char count + tag insert ══
+// ══════════ AUDIO TOGGLE ══════════
+function toggleAudioGen() {
+  audioGenOn = !audioGenOn;
+  document.getElementById('audioSwitch').classList.toggle('on', audioGenOn);
+}
+
+// ══════════ FULLSCREEN PROMPT EDITOR ══════════
 var promptInput = document.getElementById('promptInput');
+function openPromptEditor() {
+  document.getElementById('promptOverlay').classList.add('show');
+  setTimeout(function(){ promptInput.focus(); }, 300);
+}
+function closePromptEditor() {
+  document.getElementById('promptOverlay').classList.remove('show');
+  document.getElementById('mentionPopup').classList.remove('show');
+  var val = promptInput.value.trim();
+  var btnTxt = document.getElementById('promptBtnTxt');
+  if (val) {
+    btnTxt.textContent = val;
+    btnTxt.classList.add('filled');
+  } else {
+    btnTxt.textContent = 'PROMPT';
+    btnTxt.classList.remove('filled');
+  }
+}
 promptInput.addEventListener('input', function() {
   document.getElementById('charCount').textContent = promptInput.value.length + ' chars';
-  promptInput.classList.toggle('has-content', promptInput.value.length > 0);
+  var val = promptInput.value;
+  if (val.charAt(val.length - 1) === '@') {
+    mentionAutoTriggered = true;
+    toggleMentionPopup(true);
+  } else if (document.getElementById('mentionPopup').classList.contains('show') && mentionAutoTriggered) {
+    document.getElementById('mentionPopup').classList.remove('show');
+  }
 });
+function toggleMentionPopup(forceOpen) {
+  var pop = document.getElementById('mentionPopup');
+  if (forceOpen === true) {
+    pop.classList.add('show');
+  } else {
+    mentionAutoTriggered = false;
+    pop.classList.toggle('show');
+  }
+}
+function selectMention(type) {
+  var val = promptInput.value;
+  if (mentionAutoTriggered && val.charAt(val.length - 1) === '@') {
+    val = val.slice(0, -1);
+  }
+  promptInput.value = val + '@' + type + ' ';
+  document.getElementById('mentionPopup').classList.remove('show');
+  mentionAutoTriggered = false;
+  document.getElementById('charCount').textContent = promptInput.value.length + ' chars';
+  promptInput.focus();
+}
 
-// ══ ERROR ══
+// ══════════ ERROR ══════════
 function showError(msg) {
   var box = document.getElementById('errorBox');
   box.textContent = msg;
@@ -616,12 +864,12 @@ function showError(msg) {
   setTimeout(function() { box.classList.remove('show'); }, 6000);
 }
 
-// ══ GENERATE (API key hanya dipakai server-side saat endpoint ini dipanggil) ══
+// ══════════ GENERATE ══════════
 function startGenerate() {
   var prompt = promptInput.value.trim();
   var btn = document.getElementById('generateBtn');
 
-  if (!prompt) { showError('Prompt wajib diisi'); return; }
+  if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
   if (media.image.length === 0 && media.video.length === 0) {
     showError('Minimal 1 gambar atau video referensi diperlukan');
     return;
@@ -636,7 +884,7 @@ function startGenerate() {
     video_urls: media.video.map(function(m) { return m.url; }).filter(Boolean),
     audio_urls: media.audio.map(function(m) { return m.url; }).filter(Boolean),
     duration: selectedDuration,
-    quality: selectedQuality,
+    quality: selectedResolution,
     aspect_ratio: selectedRatio,
     generate_audio: audioGenOn,
   };
@@ -740,9 +988,9 @@ function doLogout() {
     .then(function() { window.location.href = '/ai-video'; });
 }
 
-renderGrid('image');
-renderGrid('video');
-renderGrid('audio');
+updateCardPreview('image');
+updateCardPreview('video');
+updateCardPreview('audio');
 </script>
 
 </body>
