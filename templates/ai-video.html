@@ -105,7 +105,10 @@ button{background:none;border:none;cursor:pointer}
   .canvas-sub{font-size:20px}
 }
 
-.result-btn{flex:1;min-width:110px;padding:15px;border-radius:13px;border:1px solid var(--border);background:var(--card2);font-size:16px;font-weight:700;letter-spacing:.01em;cursor:pointer;text-decoration:none;text-align:center;transition:all .16s;color:#fff}
+.result-btn{flex:1;min-width:0;padding:10px 4px;border-radius:13px;border:1px solid var(--border);background:var(--card2);font-size:11.5px;font-weight:700;letter-spacing:.01em;cursor:pointer;text-decoration:none;text-align:center;transition:all .16s;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.result-btn .rb-ico{font-size:17px;line-height:1}
+.result-btn .rb-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.failed-actions .result-btn .rb-lbl,.failed-actions .result-btn{font-size:16px;flex-direction:row}
 .result-btn:hover{border-color:var(--border2);background:#232323}
 .result-btn.primary{background:linear-gradient(135deg,var(--accent),#8a0018);border-color:rgba(255,60,90,.4)}
 
@@ -123,6 +126,10 @@ button{background:none;border:none;cursor:pointer}
 
 .canvas-preview{width:100%;max-width:480px;border-radius:22px;overflow:hidden;background:#0c0c0c;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
 .canvas-preview-media{width:100%;height:100%;object-fit:contain;background:#0c0c0c}
+.canvas-result-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;margin:0 auto}
+.canvas-result-refs{display:flex;gap:8px;overflow-x:auto;padding:0 2px}
+.canvas-result-refs .result-ref-thumb{width:48px;height:48px}
+.canvas-result-actions{display:flex;gap:8px;width:100%}
 .canvas-task{width:100%;max-width:480px;display:none;flex-direction:column;gap:14px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
 
@@ -355,7 +362,48 @@ input[type=file].hidden-input{display:none}
 .result-prompt-text{font-size:16px;line-height:1.6;color:var(--text-dim);background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px}
 .result-refs-row{display:flex;gap:8px;overflow-x:auto}
 .result-ref-thumb{width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border2);flex-shrink:0}
-.result-footer{display:flex;gap:10px;padding:14px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0}
+.result-footer{display:flex;gap:8px;padding:14px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0}
+
+/* LAST RESULT CARD */
+.last-result-card{display:flex;align-items:center;gap:12px;padding:10px 12px;margin:0 0 10px;border-radius:14px;background:rgba(255,255,255,.04);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border);cursor:pointer;transition:all .16s}
+.last-result-card:active{transform:scale(.98);background:rgba(255,255,255,.07)}
+.lr-thumb{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#4a0010);flex-shrink:0;background-size:cover;background-position:center}
+.lr-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.lr-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff}
+.lr-sub{font-size:11.5px;color:var(--text-dim,#999);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr-open{font-size:11.5px;font-weight:700;color:var(--accent);flex-shrink:0}
+
+/* HISTORY / ARCHIVE — FULLSCREEN PAGE */
+.history-page{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+.history-page.show{transform:translateY(0)}
+.history-tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px;margin:4px 18px 14px}
+.hist-tab{flex:1;padding:9px 16px;border:none;background:transparent;color:var(--text-dim,#999);font-size:12.5px;font-weight:700;border-radius:9px;cursor:pointer;transition:all .15s}
+.hist-tab.active{background:var(--accent);color:#fff}
+.history-list{flex:1;overflow-y:auto;padding:0 18px 24px;display:flex;flex-direction:column;gap:10px}
+.history-empty{text-align:center;color:var(--text-dim,#999);font-size:13px;padding:40px 0 24px}
+.hist-item{display:flex;gap:12px;padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
+.hist-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010)}
+.hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hist-prompt{font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:10.5px;color:var(--text-dim,#999)}
+.hist-actions{display:flex;gap:5px;flex-shrink:0}
+.hist-act{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hist-act:active{transform:scale(.92)}
+
+/* CONFIRM DIALOG */
+.confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
+.confirm-backdrop.show{opacity:1;pointer-events:auto}
+.confirm-box{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.94);width:min(320px,86vw);background:var(--card,#161616);border:1px solid var(--border);border-radius:18px;padding:20px;z-index:901;opacity:0;pointer-events:none;transition:all .2s var(--ease-out-soft,ease)}
+.confirm-box.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.confirm-title{font-size:15px;font-weight:800;color:#fff;margin-bottom:6px}
+.confirm-sub{font-size:12.5px;color:var(--text-dim,#999);line-height:1.4;margin-bottom:16px}
+.confirm-actions{display:flex;gap:10px}
+.confirm-actions .result-btn{flex-direction:row;font-size:13px;padding:11px}
+
+/* FULLSCREEN REF IMAGE PREVIEW */
+.img-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:950;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;padding:24px}
+.img-preview-overlay.show{opacity:1;pointer-events:auto}
+.img-preview-overlay img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
 .prompt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:149;opacity:0;pointer-events:none;transition:opacity .22s ease}
 .prompt-backdrop.show{opacity:1;pointer-events:auto}
 .prompt-overlay{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:min(640px,88vh);height:auto;background:var(--bg);z-index:150;display:flex;flex-direction:column;opacity:0;transform:translateY(28px);transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1);pointer-events:none;overflow:hidden;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px -20px rgba(0,0,0,.7),0 -1px 0 rgba(255,255,255,.05) inset}
@@ -917,9 +965,13 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     Music
   </a>
   <div class="sb-sec-lbl">Library</div>
-  <a class="sb-item" href="#" onclick="return false">
+  <a class="sb-item" href="#" onclick="openHistorySheet('history');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
     History
+  </a>
+  <a class="sb-item" href="#" onclick="openHistorySheet('archive');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>
+    Archive
   </a>
   <a class="sb-item" href="#" onclick="return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -958,9 +1010,21 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="canvas" id="canvas">
     <div id="emptyState" aria-hidden="true"></div>
 
-    <div class="canvas-preview" id="canvasPreview" style="display:none">
-      <img class="canvas-preview-media" id="canvasPreviewImg" style="display:none" onerror="imgFallback(this)">
-      <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline></video>
+    <div class="canvas-result-wrap" id="canvasResultWrap">
+      <div class="canvas-preview" id="canvasPreview" style="display:none">
+        <img class="canvas-preview-media" id="canvasPreviewImg" style="display:none" onerror="imgFallback(this)">
+        <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline></video>
+      </div>
+
+      <div class="canvas-result-refs" id="canvasResultRefs" style="display:none"></div>
+
+      <div class="canvas-result-actions" id="canvasResultActions" style="display:none">
+        <a class="result-btn primary" id="canvasDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+        <button class="result-btn" onclick="regenerateVideo()"><span class="rb-ico">↻</span><span class="rb-lbl">Retry</span></button>
+        <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
+        <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico">ℹ</span><span class="rb-lbl">Details</span></button>
+        <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico">🗑</span><span class="rb-lbl">Delete</span></button>
+      </div>
     </div>
 
     <div class="canvas-task" id="taskBox">
@@ -1070,6 +1134,15 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
       <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
 
+      <div class="last-result-card" id="lastResultCard" style="display:none" onclick="reopenLastResult()">
+        <div class="lr-thumb" id="lrThumb"></div>
+        <div class="lr-info">
+          <span class="lr-label">Last Result</span>
+          <span class="lr-sub" id="lrSub">—</span>
+        </div>
+        <span class="lr-open">Open Result ›</span>
+      </div>
+
       <div class="settings-row">
         <div class="chip credit-chip" onclick="openAccountSheet()" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -1175,11 +1248,44 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </div>
   </div>
   <div class="result-footer">
-    <a class="result-btn primary" id="downloadBtnFull" href="#" download style="flex:1.4">Download</a>
-    <button class="result-btn" onclick="regenerateVideo()">Retry</button>
-    <button class="result-btn" onclick="useResultAsReference()">Use as Ref</button>
+    <a class="result-btn primary" id="downloadBtnFull" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+    <button class="result-btn" onclick="regenerateVideo()"><span class="rb-ico">↻</span><span class="rb-lbl">Retry</span></button>
+    <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
+    <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico">🗑</span><span class="rb-lbl">Delete</span></button>
+    <button class="result-btn" onclick="openHistorySheet('history')"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
   </div>
 </div>
+<!-- HISTORY / ARCHIVE — FULLSCREEN PAGE (own page, not a floating sheet) -->
+<div class="history-page" id="historyPage">
+  <div class="pe-header">
+    <button class="icon-btn" onclick="closeHistorySheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+    <span class="pe-title" id="historyPageTitle">History</span>
+    <span style="width:40px"></span>
+  </div>
+  <div class="history-tabs">
+    <button class="hist-tab active" id="histTabHistory" onclick="switchHistoryTab('history')">History</button>
+    <button class="hist-tab" id="histTabArchive" onclick="switchHistoryTab('archive')">Archive</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+  <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
+</div>
+
+<div class="img-preview-overlay" id="imgPreviewOverlay" onclick="closeImagePreview()">
+  <img id="imgPreviewFull" src="" alt="Reference preview">
+</div>
+
+<div class="confirm-backdrop" id="confirmBackdrop" onclick="closeConfirm()"></div>
+<div class="confirm-box" id="confirmBox">
+  <div class="confirm-title" id="confirmTitle">Delete this generation?</div>
+  <div class="confirm-sub" id="confirmSub">This only removes it from your history. The file itself is not deleted.</div>
+  <div class="confirm-actions">
+    <button class="result-btn" onclick="closeConfirm()">Cancel</button>
+    <button class="result-btn primary" id="confirmActionBtn">Delete</button>
+  </div>
+</div>
+
 <div class="prompt-backdrop" id="promptBackdrop" onclick="closePromptEditor()"></div>
 <div class="prompt-overlay" id="promptOverlay">
   <div class="pe-header">
@@ -1303,6 +1409,7 @@ var selectedRatio = '16:9';
 var selectedResolution = '720p';
 var selectedDuration = 5;
 var selectedMotion = 'Dynamic';
+var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
 var pollInterval = null;
@@ -1569,6 +1676,11 @@ function pickFamily(family, qualityIdx) {
   selectedModel = q.id;
   selectedModelName = family.name;
   selectedModelTier = q.label;
+  if (family.key === 'seedance' && seedanceDefaultRes[q.label]) {
+    selectedResolution = seedanceDefaultRes[q.label];
+    var resLabelEl0 = document.getElementById('resolutionLabel');
+    if (resLabelEl0) resLabelEl0.textContent = selectedResolution;
+  }
   document.getElementById('modelSelectTxt').textContent = family.name;
   applyQualityBadge();
   renderQualityChip();
@@ -1673,6 +1785,11 @@ function pickQuality(idx) {
   var q = selectedFamily.qualities[idx];
   selectedModel = q.id;
   selectedModelTier = q.label;
+  if (selectedFamily.key === 'seedance' && seedanceDefaultRes[q.label]) {
+    selectedResolution = seedanceDefaultRes[q.label];
+    var resLabelEl1 = document.getElementById('resolutionLabel');
+    if (resLabelEl1) resLabelEl1.textContent = selectedResolution;
+  }
   applyQualityBadge();
   renderQualityChip();
   if (typeof applyModelCapabilities === 'function') applyModelCapabilities();
@@ -1849,6 +1966,9 @@ function updateCanvasPreview() {
     wrap.style.display = 'none';
     return;
   }
+  // This just shows a reference/input preview, not a generated result —
+  // so any leftover result action buttons / ref thumbs should be hidden.
+  hideCanvasResultUI();
   var firstFrame = frames.first && frames.first.previewUrl;
   var firstImage = media.image[0] && media.image[0].previewUrl;
   var src = firstFrame || firstImage;
@@ -1880,6 +2000,41 @@ function showCanvasResult(videoUrl, imageUrl) {
     imgEl.style.display = 'block';
   }
   wrap.style.display = 'flex';
+}
+// Shows the same actions (Download/Retry/Reuse/Details/Delete) and reference
+// thumbnails right under the freshly generated result on the canvas itself,
+// so the user doesn't get forced into the fullscreen Result/description page
+// to do anything with what was just generated.
+function showCanvasResultUI(payload) {
+  var mediaUrl = payload.videoUrl || payload.imageUrl || '';
+  var dlBtn = document.getElementById('canvasDownloadBtn');
+  if (dlBtn) dlBtn.href = mediaUrl;
+
+  var refImgs = (payload.reopenRecord && payload.reopenRecord.refImages) || media.image.map(function(m) { return m.previewUrl; });
+  var refsEl = document.getElementById('canvasResultRefs');
+  if (refsEl) {
+    if (refImgs && refImgs.length > 0) {
+      refsEl.innerHTML = refImgs.map(function(u) { return '<img class="result-ref-thumb" src="' + u + '" onclick="openImagePreview(\'' + u + '\')" onerror="imgFallback(this)">'; }).join('');
+      refsEl.style.display = 'flex';
+    } else {
+      refsEl.style.display = 'none';
+    }
+  }
+  var actionsEl = document.getElementById('canvasResultActions');
+  if (actionsEl) actionsEl.style.display = 'flex';
+  window.__lastResultPayload = payload;
+}
+function hideCanvasResultUI() {
+  var refsEl = document.getElementById('canvasResultRefs');
+  var actionsEl = document.getElementById('canvasResultActions');
+  if (refsEl) refsEl.style.display = 'none';
+  if (actionsEl) actionsEl.style.display = 'none';
+}
+// Opens the fullscreen Result/description page on demand (via the "Details"
+// button), instead of that page being forced open automatically as soon as
+// generation finishes.
+function openResultOverlayFromCanvas() {
+  if (window.__lastResultPayload) openResultOverlay(window.__lastResultPayload);
 }
 
 // ══════════ GENERATE BUTTON STATE ══════════
@@ -2297,10 +2452,12 @@ function startGenerate() {
   document.getElementById('errorBox').classList.remove('show');
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('canvasPreview').style.display = 'none';
+  hideCanvasResultUI();
   document.getElementById('failOverlay').classList.remove('show');
   document.getElementById('taskStatusTxt').textContent = 'Pending — 0%';
   document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
-  document.getElementById('taskStage').textContent = 'Preparing…';
+  document.getElementById('taskStage').textContent = 'Uploading Assets';
+  document.getElementById('taskEta').textContent = 'Estimating…';
   document.getElementById('taskPreviewTitle').textContent = activeMode === 'image' ? 'Generating Image' : 'Generating Video';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('taskBox').classList.add('show');
@@ -2344,15 +2501,16 @@ function resetGenBtn() {
 }
 
 function stageForProgress(p) {
-  if (p < 10) return 'Uploading…';
-  if (p < 30) return 'Preparing…';
-  if (p < 70) return 'Generating…';
-  if (p < 95) return 'Rendering…';
-  return 'Finishing…';
+  if (p < 10) return 'Uploading Assets';
+  if (p < 30) return 'Preparing Model';
+  if (p < 60) return 'Preparing Model';
+  if (p < 85) return 'Generating Motion';
+  if (p < 100) return 'Rendering Video';
+  return 'Complete';
 }
 function formatEta(seconds) {
   seconds = parseInt(seconds, 10);
-  if (!seconds || seconds <= 0) return '';
+  if (!seconds || seconds <= 0) return 'Estimating…';
   if (seconds < 60) return '~' + seconds + 's';
   var m = Math.floor(seconds / 60);
   var s = seconds % 60;
@@ -2380,9 +2538,22 @@ function pollTask(taskId) {
         document.getElementById('taskStage').textContent = stageForProgress(progress);
         document.getElementById('taskPreviewTitle').textContent = 'Generating Video — ' + progress + '%';
         updateCollapsedBar(selectedModelName, progress + '%');
-        if (data.eta_seconds != null || (data.task_info && data.task_info.estimated_time != null)) {
-          var remaining = data.eta_seconds != null ? data.eta_seconds : data.task_info.estimated_time;
+        // ETA reconciliation: the server's estimate (from task_info /
+        // eta_seconds) is only a starting guess and can be far off for
+        // fast/turbo tiers. Once we have real progress, recompute the ETA
+        // from the actual pace observed so far (elapsed / progress) and
+        // blend it with the server value so displayed time tracks reality
+        // instead of staying stuck on an inaccurate initial number.
+        var serverRemaining = data.eta_seconds != null ? data.eta_seconds
+          : (data.task_info && data.task_info.estimated_time != null ? data.task_info.estimated_time : null);
+        if (progress > 0 && window.__genStartTs) {
+          var elapsedSec = (Date.now() - window.__genStartTs) / 1000;
+          var pacedTotal = elapsedSec / (progress / 100);
+          var pacedRemaining = Math.max(pacedTotal - elapsedSec, 0);
+          var remaining = serverRemaining != null ? (pacedRemaining * 0.7 + serverRemaining * 0.3) : pacedRemaining;
           document.getElementById('taskEta').textContent = formatEta(remaining);
+        } else if (serverRemaining != null) {
+          document.getElementById('taskEta').textContent = formatEta(serverRemaining);
         }
 
         if (status === 'completed') {
@@ -2398,7 +2569,14 @@ function pollTask(taskId) {
           }
           if (videoUrl || imageUrl) {
             showCanvasResult(videoUrl, imageUrl);
-            openResultOverlay({ videoUrl: videoUrl, imageUrl: imageUrl });
+            var elapsedMs = window.__genStartTs ? (Date.now() - window.__genStartTs) : 0;
+            var genAtLabel = formatClock(new Date());
+            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, elapsedMs: elapsedMs, generatedAt: genAtLabel };
+            // Stay on the canvas with the result + its own action buttons —
+            // don't force-navigate into the fullscreen Result/description
+            // page. The user can still open it via the "Details" button.
+            showCanvasResultUI(resultPayload);
+            saveGenerationToHistory(resultPayload);
           } else {
             showError('Selesai tapi URL tidak ditemukan di response');
             updateCanvasPreview();
@@ -2427,6 +2605,7 @@ function resetForm() {
   document.getElementById('taskBox').classList.remove('show');
   document.getElementById('failOverlay').classList.remove('show');
   closeResultOverlay();
+  hideCanvasResultUI();
   document.getElementById('emptyState').style.display = 'flex';
   setPanelCollapsed(false);
   updateCanvasPreview();
@@ -2469,15 +2648,18 @@ function openResultOverlay(payload) {
   document.getElementById('downloadBtnFull').href = mediaUrl;
   document.getElementById('resultPromptText').textContent = promptInput.value.trim() || '—';
 
-  var elapsed = window.__genStartTs ? (Date.now() - window.__genStartTs) : 0;
+  var elapsed = (payload.elapsedMs != null) ? payload.elapsedMs : (window.__genStartTs ? (Date.now() - window.__genStartTs) : 0);
   var hasTier = selectedFamily.qualities.length > 1;
+  var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
+  var genTimeTxt = formatElapsed(elapsed);
+  var genAtTxt = payload.generatedAt || formatClock(new Date());
   var items = [
-    { label: 'Model', value: selectedModelName },
-    { label: 'Quality', value: hasTier ? selectedModelTier : selectedResolution },
+    { label: 'Model', value: fullModelLabel },
+    { label: 'Quality', value: selectedResolution },
     { label: isImage ? 'Resolution' : 'Duration', value: isImage ? selectedResolution : (selectedDuration + 's') },
     { label: 'Aspect Ratio', value: selectedRatio },
-    { label: 'Generation Time', value: formatElapsed(elapsed) },
-    { label: 'Generated At', value: formatClock(new Date()) }
+    { label: 'Generation Time', value: genTimeTxt },
+    { label: 'Generated At', value: genAtTxt }
   ];
   document.getElementById('resultMetaGrid').innerHTML = items.map(function(it) {
     return '<div class="result-meta-item"><span class="result-meta-label">' + it.label + '</span><span class="result-meta-value">' + it.value + '</span></div>';
@@ -2485,8 +2667,9 @@ function openResultOverlay(payload) {
 
   var refsRow = document.getElementById('resultRefsRow');
   var refsBlock = document.getElementById('resultRefsBlock');
-  if (media.image.length > 0) {
-    refsRow.innerHTML = media.image.map(function(m) { return '<img class="result-ref-thumb" src="' + m.previewUrl + '" onerror="imgFallback(this)">'; }).join('');
+  var refImgs = (payload.reopenRecord && payload.reopenRecord.refImages) || media.image.map(function(m) { return m.previewUrl; });
+  if (refImgs.length > 0) {
+    refsRow.innerHTML = refImgs.map(function(u) { return '<img class="result-ref-thumb" src="' + u + '" onclick="openImagePreview(\'' + u + '\')" onerror="imgFallback(this)">'; }).join('');
     refsBlock.style.display = 'block';
   } else {
     refsBlock.style.display = 'none';
@@ -2507,17 +2690,22 @@ function regenerateVideo() {
 function useResultAsReference() {
   var r = window.__lastResult;
   if (!r || !r.url) return;
+  var rec = r.id ? findHistoryRecord(r.id) : null;
+  if (rec) {
+    restoreFromRecord(rec);
+    closeResultOverlay();
+    return;
+  }
+  // Fallback (no history record available): just add media as a reference
   if (r.isImage) {
     if (media.image.length >= maxCounts.image) { showError('Reference limit reached'); return; }
     media.image.push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
-    renderUploadGrid();
-    switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
   } else {
     if (media.video.length >= maxCounts.video) { showError('Video reference limit reached'); return; }
     media.video.push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
-    renderUploadGrid();
-    switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
   }
+  renderUploadGrid();
+  switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
   closeResultOverlay();
   setPanelCollapsed(false);
 }
@@ -2539,6 +2727,199 @@ function doLogout() {
     .then(function() { window.location.href = '/ai-video'; });
 }
 
+// ══════════ HISTORY (client-side, saved in this browser) ══════════
+var HISTORY_KEY = 'mii_ai_video_history_v1';
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(_) { return []; }
+}
+function saveHistoryList(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(_) {}
+}
+function findHistoryRecord(id) {
+  return loadHistory().find(function(r) { return r.id === id; });
+}
+function updateHistoryRecord(id, patch) {
+  var list = loadHistory();
+  var idx = list.findIndex(function(r) { return r.id === id; });
+  if (idx > -1) { list[idx] = Object.assign({}, list[idx], patch); saveHistoryList(list); }
+}
+function deleteHistoryRecord(id) {
+  saveHistoryList(loadHistory().filter(function(r) { return r.id !== id; }));
+}
+function saveGenerationToHistory(res) {
+  var hasTier = selectedFamily.qualities.length > 1;
+  var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
+  var rec = {
+    id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    videoUrl: res.videoUrl || '',
+    imageUrl: res.imageUrl || '',
+    thumb: (media.image[0] && media.image[0].previewUrl) || res.imageUrl || '',
+    prompt: promptInput.value.trim(),
+    model: fullModelLabel,
+    quality: selectedResolution,
+    duration: activeMode === 'image' ? '' : (selectedDuration + 's'),
+    ratio: selectedRatio,
+    elapsedMs: res.elapsedMs || 0,
+    genTime: formatElapsed(res.elapsedMs || 0),
+    createdAtLabel: res.generatedAt || formatClock(new Date()),
+    createdAtTs: Date.now(),
+    refImages: media.image.map(function(m) { return m.url; }).filter(Boolean),
+    refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
+    modelKey: selectedFamily.key,
+    modelTier: selectedModelTier,
+    archived: false
+  };
+  var list = loadHistory();
+  list.unshift(rec);
+  if (list.length > 200) list = list.slice(0, 200);
+  saveHistoryList(list);
+  window.__lastResult = { url: rec.videoUrl || rec.imageUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
+  renderLastResultCard();
+}
+function renderLastResultCard() {
+  var list = loadHistory();
+  var card = document.getElementById('lastResultCard');
+  if (!card) return;
+  if (list.length === 0) { card.style.display = 'none'; return; }
+  var r = list[0];
+  document.getElementById('lrThumb').style.backgroundImage = r.thumb ? "url('" + r.thumb + "')" : '';
+  document.getElementById('lrSub').textContent = (r.model || '') + ' · ' + r.createdAtLabel;
+  card.style.display = 'flex';
+}
+function reopenLastResult() {
+  var list = loadHistory();
+  if (list.length === 0) return;
+  openHistoryItem(list[0].id);
+}
+
+var currentHistTab = 'history';
+function openHistorySheet(tab) {
+  closeSheet(); closeModelDock();
+  switchHistoryTab(tab || 'history');
+  document.getElementById('historyPage').classList.add('show');
+}
+function closeHistorySheet() {
+  document.getElementById('historyPage').classList.remove('show');
+}
+function switchHistoryTab(tab) {
+  currentHistTab = tab;
+  document.getElementById('histTabHistory').classList.toggle('active', tab === 'history');
+  document.getElementById('histTabArchive').classList.toggle('active', tab === 'archive');
+  document.getElementById('historyPageTitle').textContent = tab === 'archive' ? 'Archive' : 'History';
+  renderHistoryList();
+}
+function renderHistoryList() {
+  var list = loadHistory().filter(function(r) { return currentHistTab === 'archive' ? r.archived : !r.archived; });
+  var el = document.getElementById('historyList');
+  var empty = document.getElementById('historyEmpty');
+  if (list.length === 0) { el.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  el.innerHTML = list.map(function(r) {
+    var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
+    return '<div class="hist-item">' +
+      '<div class="hist-thumb"' + thumbStyle + '></div>' +
+      '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
+        '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
+        '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + '</span>' +
+      '</div>' +
+      '<div class="hist-actions">' +
+        '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')">\u25b6</button>' +
+        '<button class="hist-act" title="Reuse" onclick="reuseHistoryItem(\'' + r.id + '\')">\u21ba</button>' +
+        '<button class="hist-act" title="' + (r.archived ? 'Unarchive' : 'Archive') + '" onclick="toggleArchiveItem(\'' + r.id + '\')">' + (r.archived ? '\u2934' : '\u2913') + '</button>' +
+        '<button class="hist-act" title="Delete" onclick="confirmDeleteHistoryItem(\'' + r.id + '\')">\ud83d\uddd1</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+function openHistoryItem(id) {
+  var r = findHistoryRecord(id);
+  if (!r) return;
+  closeHistorySheet();
+  window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
+  openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
+}
+function downloadHistoryItem(id) {
+  var r = findHistoryRecord(id);
+  if (!r) return;
+  var a = document.createElement('a');
+  a.href = r.videoUrl || r.imageUrl; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+}
+function restoreFromRecord(r) {
+  // Restore model + quality
+  var families = modelFamilies[r.imageUrl && !r.videoUrl ? 'image' : 'video'];
+  var fam = families.find(function(f) { return f.key === r.modelKey; }) || selectedFamily;
+  var qIdx = fam.qualities.findIndex(function(q) { return q.label === r.modelTier; });
+  pickFamily(fam, qIdx > -1 ? qIdx : 0);
+  selectedResolution = r.quality || selectedResolution;
+  var resLabelEl = document.getElementById('resolutionLabel');
+  if (resLabelEl) resLabelEl.textContent = selectedResolution;
+  selectedRatio = r.ratio || selectedRatio;
+  var ratioLabelEl = document.getElementById('ratioLabel');
+  if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
+  if (r.duration) {
+    var d = parseInt(r.duration, 10);
+    if (d) { selectedDuration = d; var durEl = document.getElementById('durationLabel'); if (durEl) durEl.textContent = d + 's'; }
+  }
+  // Restore prompt
+  promptInput.value = r.prompt || '';
+  syncPromptHighlight(); autosizePrompt();
+  // Restore reference media
+  media.image = (r.refImages || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+  media.video = (r.refVideos || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+  renderUploadGrid(); renderAssetsStrip();
+  updateCardPreview('image'); updateCardPreview('video');
+  updateCreditEstimate();
+  updateGenerateButtonState();
+  switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
+  setPanelCollapsed(false);
+  showToast('Settings restored — ready to regenerate');
+}
+function reuseHistoryItem(id) {
+  var r = findHistoryRecord(id);
+  if (!r) return;
+  restoreFromRecord(r);
+  closeHistorySheet();
+  closeResultOverlay();
+}
+function toggleArchiveItem(id) {
+  var r = findHistoryRecord(id);
+  if (!r) return;
+  updateHistoryRecord(id, { archived: !r.archived });
+  renderHistoryList();
+}
+var pendingDeleteId = null;
+function confirmDeleteHistoryItem(id) {
+  pendingDeleteId = id;
+  document.getElementById('confirmTitle').textContent = 'Delete this generation?';
+  document.getElementById('confirmSub').textContent = 'This only removes it from your history. The file itself is not deleted.';
+  var btn = document.getElementById('confirmActionBtn');
+  btn.onclick = function() {
+    deleteHistoryRecord(pendingDeleteId);
+    renderHistoryList();
+    renderLastResultCard();
+    closeConfirm();
+  };
+  document.getElementById('confirmBackdrop').classList.add('show');
+  document.getElementById('confirmBox').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('confirmBackdrop').classList.remove('show');
+  document.getElementById('confirmBox').classList.remove('show');
+  pendingDeleteId = null;
+}
+function deleteCurrentResult() {
+  var r = window.__lastResult;
+  if (!r || !r.id) { closeResultOverlay(); return; }
+  confirmDeleteHistoryItem(r.id);
+}
+function openImagePreview(url) {
+  document.getElementById('imgPreviewFull').src = url;
+  document.getElementById('imgPreviewOverlay').classList.add('show');
+}
+function closeImagePreview() {
+  document.getElementById('imgPreviewOverlay').classList.remove('show');
+}
+
 updateCardPreview('image');
 updateCardPreview('video');
 updateCardPreview('audio');
@@ -2550,6 +2931,7 @@ updateModeUI();
 updateCanvasPreview();
 updateGenerateButtonState();
 fetchCreditBalance();
+renderLastResultCard();
 window.addEventListener('resize', updateModelDockPosition);
 </script>
 
