@@ -2504,6 +2504,110 @@ def ai_video_debug_data():
     return jsonify(_aivideo_debug_snapshot())
 
 
+@app.route('/ai-video/dropbox-oauth/exchange', methods=['POST'])
+def ai_video_dropbox_oauth_exchange():
+    """One-time setup helper: exchange a Dropbox OAuth2 authorization code
+    (obtained via the App Console's manual 'Generate' link, i.e. the
+    no-redirect / OOB flow) for a long-lived refresh_token + short-lived
+    access_token, using token_access_type=offline.
+
+    Guarded by the same AI Video session auth so it can't be hit by randoms.
+    The code is single-use — Dropbox invalidates it after the first
+    successful exchange, so this only works once per code.
+
+    Usage: POST { "code": "8LA7YUGb...", "redirect_uri": "" (optional) }
+    Response contains refresh_token — copy that value into Railway's
+    DROPBOX_REFRESH_TOKEN env var, then redeploy. access_token itself does
+    NOT need to be stored anywhere; the app mints fresh ones automatically
+    from the refresh_token at runtime.
+    """
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    if not (DROPBOX_APP_KEY and DROPBOX_APP_SECRET):
+        return jsonify({'error': 'DROPBOX_APP_KEY / DROPBOX_APP_SECRET belum diset di Railway'}), 500
+
+    payload = request.get_json(silent=True) or {}
+    code = str(payload.get('code', '')).strip()
+    # Empty string = OOB flow (the manual "Generate" link in Dropbox App
+    # Console uses urn:ietf:wg:oauth:2.0:oob under the hood, which maps to
+    # no redirect_uri being sent during the token exchange either).
+    redirect_uri = payload.get('redirect_uri', None)
+
+    if not code:
+        return jsonify({'error': 'Field "code" wajib diisi'}), 400
+
+    app.logger.info('[ai-video][dropbox-oauth] exchanging authorization code (len=%d)', len(code))
+
+    data = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'client_id': DROPBOX_APP_KEY,
+        'client_secret': DROPBOX_APP_SECRET,
+        'token_access_type': 'offline',  # <-- this is what makes Dropbox return a refresh_token
+    }
+    if redirect_uri:
+        data['redirect_uri'] = redirect_uri
+
+    try:
+        resp = requests_lib.post(DROPBOX_OAUTH_TOKEN_URL, data=data, timeout=30)
+    except Exception as e:
+        _aivideo_last_error('dropbox_oauth_exchange', str(e))
+        return jsonify({'error': f'Request ke Dropbox gagal: {e}'}), 502
+
+    if resp.status_code >= 400:
+        detail = resp.text[:500]
+        app.logger.error('[ai-video][dropbox-oauth] exchange failed (%s): %s', resp.status_code, detail)
+        _aivideo_last_error('dropbox_oauth_exchange', f'HTTP {resp.status_code}: {detail}')
+        hint = ''
+        if 'redirect_uri' in detail.lower():
+            hint = (' Kemungkinan code ini dibuat DENGAN redirect_uri tertentu — kirim ulang dengan '
+                    'field "redirect_uri" yang sama persis dengan yang dipakai saat generate code.')
+        elif 'code' in detail.lower() and ('invalid' in detail.lower() or 'expired' in detail.lower()):
+            hint = ' Authorization code hanya bisa dipakai SEKALI dan cepat expired — generate code baru dari Dropbox App Console lalu coba lagi segera.'
+        return jsonify({'error': f'Dropbox exchange gagal ({resp.status_code}): {detail}{hint}'}), 400
+
+    result = resp.json()
+    access_token = result.get('access_token', '')
+    refresh_token = result.get('refresh_token', '')
+    expires_in = result.get('expires_in')
+    account_id = result.get('account_id', '')
+
+    if not refresh_token:
+        app.logger.error('[ai-video][dropbox-oauth] no refresh_token in response: %s', json.dumps(result)[:300])
+        return jsonify({
+            'error': (
+                'Dropbox tidak mengembalikan refresh_token. Pastikan token_access_type=offline '
+                'terkirim (sudah otomatis di endpoint ini) dan app Dropbox kamu belum pernah '
+                'authorize sebelumnya dengan access_type lain untuk akun yang sama.'
+            )
+        }), 500
+
+    # Prime the in-memory cache immediately so ai-video works right away
+    # even before you've redeployed with the new env var.
+    if expires_in:
+        with _DROPBOX_TOKEN_LOCK:
+            _DROPBOX_TOKEN_CACHE['access_token'] = access_token
+            _DROPBOX_TOKEN_CACHE['expires_at'] = time.time() + int(expires_in) - 60
+
+    app.logger.info(
+        '[ai-video][dropbox-oauth] exchange OK, account_id=%s, refresh_token acquired (len=%d)',
+        account_id, len(refresh_token)
+    )
+    _aivideo_debug_set('dropbox', mode='refresh_token', ok=True, detail='Refresh token acquired via OAuth exchange')
+
+    return jsonify({
+        'ok': True,
+        'refresh_token': refresh_token,
+        'access_token': access_token,
+        'expires_in': expires_in,
+        'account_id': account_id,
+        'next_step': (
+            'Copy nilai "refresh_token" di atas ke Railway env var DROPBOX_REFRESH_TOKEN, '
+            'lalu redeploy. Setelah itu access_token akan di-refresh otomatis oleh server.'
+        ),
+    })
+
+
 @app.route('/extension')
 def extension_page():
     status = get_site_status()
