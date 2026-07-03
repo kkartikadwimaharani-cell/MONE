@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MII AI Video — Debug</title>
+<style>
+  :root{--bg:#0c0c0c;--card:#161616;--border:rgba(255,255,255,.09);--ok:#3ddc84;--bad:#ff4d5e;--txt:#eaeaea;--dim:#8a8a8a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px 16px 60px;line-height:1.5}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.bad{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+  .dot.unk{background:#666}
+  .row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--border)}
+  .row:last-child{border-bottom:none}
+  .row .k{color:var(--dim)}
+  .row .v{text-align:right;word-break:break-word;max-width:65%}
+  pre{background:#0a0a0a;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:#c9c9c9}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#232323;color:var(--dim);font-weight:600}
+  .badge.ok{color:var(--ok);background:rgba(61,220,132,.12)}
+  .badge.bad{color:var(--bad);background:rgba(255,77,94,.12)}
+  a{color:#7db8ff}
+  .refresh{display:inline-block;margin-top:6px;font-size:12px;color:#7db8ff;text-decoration:none}
+</style>
+</head>
+<body>
+  <h1>MII AI Video — Debug</h1>
+  <div class="sub">Snapshot server saat ini. Refresh halaman untuk data terbaru.</div>
+
+  <div class="card">
+    <h2><span class="dot {{ 'ok' if dropbox and dropbox.ok else ('bad' if dropbox and dropbox.ok is not none else 'unk') }}"></span>
+      Dropbox
+      <span class="badge {{ 'ok' if dropbox and dropbox.ok else 'bad' }}">{{ dropbox_mode }}</span>
+    </h2>
+    <div class="row"><span class="k">Status</span><span class="v">{{ 'OK' if dropbox and dropbox.ok else 'FAILED' if dropbox else 'Unknown' }}</span></div>
+    <div class="row"><span class="k">Mode</span><span class="v">{{ dropbox_mode }}</span></div>
+    <div class="row"><span class="k">Detail</span><span class="v">{{ dropbox.detail if dropbox else '-' }}</span></div>
+    <div class="row"><span class="k">Checked at</span><span class="v">{{ dropbox.at if dropbox else '-' }}</span></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot {{ 'ok' if segmind and segmind.ok else 'bad' }}"></span> Segmind</h2>
+    <div class="row"><span class="k">API key configured</span><span class="v">{{ 'YES' if segmind and segmind.ok else 'NO' }}</span></div>
+    <div class="row"><span class="k">Detail</span><span class="v">{{ segmind.detail if segmind else '-' }}</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Last Upload (Dropbox image/video URL)</h2>
+    {% if last_upload %}
+    <div class="row"><span class="k">Filename</span><span class="v">{{ last_upload.filename }}</span></div>
+    <div class="row"><span class="k">Size</span><span class="v">{{ last_upload.size }} bytes</span></div>
+    <div class="row"><span class="k">OK</span><span class="v">{{ last_upload.ok }}</span></div>
+    <div class="row"><span class="k">Image URL</span><span class="v">{% if last_upload.url %}<a href="{{ last_upload.url }}" target="_blank" rel="noopener">{{ last_upload.url }}</a>{% else %}-{% endif %}</span></div>
+    <div class="row"><span class="k">Error</span><span class="v">{{ last_upload.error or '-' }}</span></div>
+    <div class="row"><span class="k">At</span><span class="v">{{ last_upload.at }}</span></div>
+    {% else %}
+    <div class="sub">Belum ada upload tercatat sejak server terakhir restart.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Last Generate Request Payload</h2>
+    {% if last_request %}
+    <pre>{{ last_request | tojson(indent=2) }}</pre>
+    {% else %}
+    <div class="sub">Belum ada request generate tercatat.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Last Segmind Response</h2>
+    {% if last_segmind_response %}
+    <div class="row"><span class="k">Status code</span><span class="v">{{ last_segmind_response.status_code }}</span></div>
+    <div class="row"><span class="k">Content-Type</span><span class="v">{{ last_segmind_response.content_type }}</span></div>
+    <div class="row"><span class="k">At</span><span class="v">{{ last_segmind_response.at }}</span></div>
+    <pre>{{ last_segmind_response.snippet }}</pre>
+    {% else %}
+    <div class="sub">Belum ada response Segmind tercatat.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2><span class="dot {{ 'bad' if last_error else 'unk' }}"></span> Last Error (any source)</h2>
+    {% if last_error %}
+    <div class="row"><span class="k">Source</span><span class="v">{{ last_error.source }}</span></div>
+    <div class="row"><span class="k">At</span><span class="v">{{ last_error.at }}</span></div>
+    <pre>{{ last_error.message }}</pre>
+    {% else %}
+    <div class="sub">Belum ada error tercatat sejak server terakhir restart.</div>
+    {% endif %}
+  </div>
+
+  <a class="refresh" href="/ai-video/debug">↻ Refresh</a>
+  &nbsp;·&nbsp;
+  <a class="refresh" href="/ai-video">← Kembali ke AI Video</a>
+</body>
+</html>
