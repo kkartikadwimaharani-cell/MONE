@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MII AI Video — Dropbox Token Setup</title>
+<style>
+  :root{--bg:#0c0c0c;--card:#161616;--border:rgba(255,255,255,.09);--ok:#3ddc84;--bad:#ff4d5e;--txt:#eaeaea;--dim:#8a8a8a;--accent:#ff2040}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px 16px 60px;line-height:1.5}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px}
+  label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  input[type=text]{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--txt);font-size:15px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  input[type=text]:focus{outline:none;border-color:rgba(255,32,64,.5)}
+  button{width:100%;margin-top:14px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff3050,#c8102e);color:#fff;font-size:15px;font-weight:700;letter-spacing:.02em}
+  button:disabled{opacity:.5}
+  button:active{transform:scale(.98)}
+  .result-box{margin-top:12px;background:#0e0e0e;border:1px solid var(--border);border-radius:12px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;word-break:break-all;position:relative}
+  .result-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .result-label span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.03em;font-weight:700}
+  .copy-btn{background:#232323;border:1px solid var(--border);color:var(--txt);font-size:11px;padding:5px 10px;border-radius:8px;font-weight:600}
+  .copy-btn.copied{background:rgba(61,220,132,.15);color:var(--ok);border-color:rgba(61,220,132,.4)}
+  .status{display:none;padding:12px 14px;border-radius:12px;font-size:13px;margin-top:14px}
+  .status.ok{display:block;background:rgba(61,220,132,.1);border:1px solid rgba(61,220,132,.3);color:#7ee8a8}
+  .status.bad{display:block;background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);color:#ff9aa4;white-space:pre-wrap}
+  .hint{font-size:12px;color:var(--dim);margin-top:8px}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+  .badge.ok{color:var(--ok);background:rgba(61,220,132,.12)}
+  .badge.bad{color:var(--bad);background:rgba(255,77,94,.12)}
+  .steps{font-size:13px;color:#c9c9c9;padding-left:18px;margin:0}
+  .steps li{margin-bottom:8px}
+  a{color:#7db8ff}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <h1>Dropbox Token Setup</h1>
+  <div class="sub">
+    App key/secret:
+    {% if has_app_creds %}<span class="badge ok">configured</span>{% else %}<span class="badge bad">missing</span>{% endif %}
+  </div>
+
+  {% if not has_app_creds %}
+  <div class="status bad" style="display:block">
+    DROPBOX_APP_KEY / DROPBOX_APP_SECRET belum diset di Railway. Set dulu env var itu, redeploy, baru balik ke halaman ini.
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <ol class="steps">
+      <li>Buka Dropbox App Console → tab OAuth2 → tombol <b>Generate</b> untuk dapat authorization code baru (code lama biasanya sudah expired / sekali pakai).</li>
+      <li>Tempel code-nya di bawah, lalu tap tombol.</li>
+      <li>Copy <b>refresh_token</b> yang muncul → Railway env <b>DROPBOX_REFRESH_TOKEN</b> → redeploy.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <label for="codeInput">Authorization Code</label>
+    <input type="text" id="codeInput" placeholder="Tempel authorization code di sini" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button id="genBtn" onclick="doExchange()" {% if not has_app_creds %}disabled{% endif %}>Generate Refresh Token</button>
+
+    <div class="status" id="statusBox"></div>
+
+    <div id="resultArea" style="display:none">
+      <div class="result-box">
+        <div class="result-label"><span>refresh_token</span><button class="copy-btn" onclick="copyField('refreshTokenVal', this)">Copy</button></div>
+        <div id="refreshTokenVal"></div>
+      </div>
+      <div class="result-box">
+        <div class="result-label"><span>access_token</span><button class="copy-btn" onclick="copyField('accessTokenVal', this)">Copy</button></div>
+        <div id="accessTokenVal"></div>
+      </div>
+      <div class="hint" id="metaHint"></div>
+    </div>
+  </div>
+
+  <a href="/ai-video/debug">← Ke halaman Debug</a>
+
+<script>
+function copyField(id, btn) {
+  var text = document.getElementById(id).textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  }).catch(function() {
+    // Fallback for older Android webviews without clipboard API
+    var range = document.createRange();
+    range.selectNode(document.getElementById(id));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    btn.textContent = 'Copied ✓';
+  });
+}
+
+function doExchange() {
+  var code = document.getElementById('codeInput').value.trim();
+  var btn = document.getElementById('genBtn');
+  var statusBox = document.getElementById('statusBox');
+  var resultArea = document.getElementById('resultArea');
+  statusBox.className = 'status';
+  statusBox.style.display = 'none';
+  resultArea.style.display = 'none';
+
+  if (!code) {
+    statusBox.className = 'status bad';
+    statusBox.textContent = 'Tempel authorization code dulu.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Memproses…';
+
+  fetch('/ai-video/dropbox-oauth/exchange', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code: code})
+  })
+  .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
+  .then(function(res) {
+    btn.disabled = false;
+    btn.textContent = 'Generate Refresh Token';
+    if (res.status >= 400 || res.data.error) {
+      statusBox.className = 'status bad';
+      statusBox.textContent = res.data.error || 'Exchange gagal, coba lagi.';
+      return;
+    }
+    statusBox.className = 'status ok';
+    statusBox.textContent = 'Berhasil! Copy refresh_token di bawah ke Railway env DROPBOX_REFRESH_TOKEN.';
+    document.getElementById('refreshTokenVal').textContent = res.data.refresh_token || '';
+    document.getElementById('accessTokenVal').textContent = res.data.access_token || '';
+    var meta = [];
+    if (res.data.expires_in) meta.push('access_token expires in ' + res.data.expires_in + 's (tapi server auto-refresh, tidak perlu disimpan)');
+    if (res.data.account_id) meta.push('account_id: ' + res.data.account_id);
+    document.getElementById('metaHint').textContent = meta.join(' · ');
+    resultArea.style.display = 'block';
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Generate Refresh Token';
+    statusBox.className = 'status bad';
+    statusBox.textContent = 'Request gagal — cek koneksi internet kamu lalu coba lagi.';
+  });
+}
+</script>
+</body>
+</html>
