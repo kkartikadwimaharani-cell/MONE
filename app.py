@@ -2217,7 +2217,7 @@ def _run_segmind_task(task_id, endpoint, body):
         _set(status='processing', progress=15)
         resp = requests_lib.post(
             f'{SEGMIND_BASE}/{endpoint}',
-            headers={'Authorization': f'Bearer {SEGMIND_API_KEY}', 'Content-Type': 'application/json'},
+            headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
             json=body, timeout=600,
         )
         _set(progress=80)
