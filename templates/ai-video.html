@@ -1120,6 +1120,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </div>
     <div class="failed-title">Generation failed</div>
     <div class="failed-sub">Credits refunded to your balance.<br>Your prompt, media, and settings are still here.</div>
+    <div class="failed-detail" id="failedDetail" style="display:none;margin-top:2px;padding:10px 12px;border-radius:12px;background:rgba(255,32,64,.08);border:1px solid rgba(255,32,64,.22);color:#ff9aa4;font-size:.76rem;font-family:var(--mono, monospace);text-align:left;max-height:140px;overflow-y:auto;word-break:break-word;white-space:pre-wrap"></div>
     <div class="failed-actions">
       <button class="result-btn" onclick="editPromptFromFail()">Edit Prompt</button>
       <button class="result-btn primary" onclick="retryGenerate()">Retry</button>
@@ -2247,6 +2248,21 @@ function showError(msg) {
   setTimeout(function() { box.classList.remove('show'); }, 6000);
 }
 
+// Shows the "Generation failed" modal WITH the real upstream error message
+// (from Segmind / Dropbox / our backend) instead of just a generic line, so
+// the user (and whoever is debugging) can actually see what went wrong.
+function showFailOverlay(errMsg) {
+  var detailEl = document.getElementById('failedDetail');
+  if (errMsg) {
+    detailEl.textContent = errMsg;
+    detailEl.style.display = 'block';
+  } else {
+    detailEl.textContent = '';
+    detailEl.style.display = 'none';
+  }
+  document.getElementById('failOverlay').classList.add('show');
+}
+
 // ══════════ GENERATE ══════════
 function startGenerate() {
   var prompt = promptInput.value.trim();
@@ -2299,10 +2315,11 @@ function startGenerate() {
   .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
   .then(function(res) {
     if (res.status >= 400) {
-      showError(res.data.error || 'Gagal membuat task');
+      var errMsg = res.data.error || 'Gagal membuat task';
+      showError(errMsg);
       resetGenBtn();
       document.getElementById('taskBox').classList.remove('show');
-      document.getElementById('failOverlay').classList.add('show');
+      showFailOverlay(errMsg);
       return;
     }
     var taskId = res.data.id;
@@ -2314,7 +2331,7 @@ function startGenerate() {
     showError('Request gagal, cek koneksi');
     resetGenBtn();
     document.getElementById('taskBox').classList.remove('show');
-    document.getElementById('failOverlay').classList.add('show');
+    showFailOverlay('Request ke server gagal — cek koneksi internet kamu lalu coba lagi.');
   });
 }
 
@@ -2351,7 +2368,7 @@ function pollTask(taskId) {
           clearInterval(pollInterval);
           resetGenBtn();
           document.getElementById('taskBox').classList.remove('show');
-          document.getElementById('failOverlay').classList.add('show');
+          showFailOverlay(data.error);
           return;
         }
         var status = data.status;
@@ -2391,14 +2408,14 @@ function pollTask(taskId) {
           clearInterval(pollInterval);
           resetGenBtn();
           document.getElementById('taskBox').classList.remove('show');
-          document.getElementById('failOverlay').classList.add('show');
+          showFailOverlay(data.error || 'Segmind tidak mengembalikan detail error.');
         }
       })
       .catch(function() {
         clearInterval(pollInterval);
         resetGenBtn();
         document.getElementById('taskBox').classList.remove('show');
-        document.getElementById('failOverlay').classList.add('show');
+        showFailOverlay('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
       });
   }, 3000);
 }
