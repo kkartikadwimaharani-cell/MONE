@@ -1982,45 +1982,173 @@ SEGMIND_DURATIONS = (4, 5, 6, 8, 10, 12, 15)
 SEGMIND_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive')
 
 # ── Dropbox (media relay so our own domain is never sent to Segmind) ───
+# NOTE: Dropbox "permanent" access tokens (the classic single Bearer token
+# generated once from the App Console) are deprecated by Dropbox — since
+# Sept 2021 any token minted this way actually expires after ~4 hours.
+# That silent expiry is a common root cause of "Generation failed": uploads
+# start returning 401 from Dropbox with no obvious symptom on our side other
+# than the generic failure. To fix this permanently we support the OAuth2
+# refresh-token flow (app key + app secret + a long-lived refresh token),
+# which lets us mint a fresh short-lived access token on demand and cache it
+# until it is close to expiry. DROPBOX_ACCESS_TOKEN is kept ONLY as a legacy
+# fallback for local/dev use when the refresh-token env vars are not set.
 DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY', '')
 DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET', '')
-DROPBOX_ACCESS_TOKEN = os.environ.get('DROPBOX_ACCESS_TOKEN', '')
+DROPBOX_REFRESH_TOKEN = os.environ.get('DROPBOX_REFRESH_TOKEN', '')
+DROPBOX_ACCESS_TOKEN = os.environ.get('DROPBOX_ACCESS_TOKEN', '')  # legacy fallback only
+
+DROPBOX_OAUTH_TOKEN_URL = 'https://api.dropbox.com/oauth2/token'
+
+_DROPBOX_TOKEN_LOCK = threading.Lock()
+_DROPBOX_TOKEN_CACHE = {'access_token': '', 'expires_at': 0}
 
 # In-memory task store for the async generate/poll flow (single-process).
 AIVIDEO_TASKS = {}
 AIVIDEO_TASKS_LOCK = threading.Lock()
+
+# Rolling debug state for /ai-video/debug — never store secrets here, only
+# metadata useful for diagnosing "Generation failed" reports.
+_AIVIDEO_DEBUG_LOCK = threading.Lock()
+_AIVIDEO_DEBUG = {
+    'dropbox': {'mode': None, 'ok': None, 'checked_at': None, 'detail': ''},
+    'segmind': {'ok': None, 'checked_at': None, 'detail': ''},
+    'last_upload': None,
+    'last_request': None,
+    'last_segmind_response': None,
+    'last_error': None,
+}
+
+
+def _aivideo_debug_set(section, **kw):
+    with _AIVIDEO_DEBUG_LOCK:
+        if section not in _AIVIDEO_DEBUG or not isinstance(_AIVIDEO_DEBUG.get(section), dict):
+            _AIVIDEO_DEBUG[section] = {}
+        _AIVIDEO_DEBUG[section].update(kw)
+        _AIVIDEO_DEBUG[section]['at'] = _utc_timestamp()
+
+
+def _aivideo_debug_snapshot():
+    with _AIVIDEO_DEBUG_LOCK:
+        return json.loads(json.dumps(_AIVIDEO_DEBUG, default=str))
+
+
+def _aivideo_last_error(source, message):
+    app.logger.error('[ai-video] %s error: %s', source, message)
+    with _AIVIDEO_DEBUG_LOCK:
+        _AIVIDEO_DEBUG['last_error'] = {'source': source, 'message': str(message)[:2000], 'at': _utc_timestamp()}
 
 
 def _aivideo_authed():
     return bool(session.get('mii_aivideo_auth'))
 
 
+def _dropbox_refresh_access_token():
+    """Exchange the long-lived refresh token for a short-lived access token.
+    Requires DROPBOX_APP_KEY + DROPBOX_APP_SECRET + DROPBOX_REFRESH_TOKEN."""
+    if not (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN):
+        raise RuntimeError(
+            'Dropbox belum dikonfigurasi dengan refresh token. '
+            'Set DROPBOX_APP_KEY, DROPBOX_APP_SECRET, dan DROPBOX_REFRESH_TOKEN.'
+        )
+    app.logger.info('[ai-video][dropbox] refreshing access token via oauth2/token')
+    resp = requests_lib.post(
+        DROPBOX_OAUTH_TOKEN_URL,
+        data={
+            'grant_type': 'refresh_token',
+            'refresh_token': DROPBOX_REFRESH_TOKEN,
+            'client_id': DROPBOX_APP_KEY,
+            'client_secret': DROPBOX_APP_SECRET,
+        },
+        timeout=30,
+    )
+    if resp.status_code >= 400:
+        detail = resp.text[:300]
+        app.logger.error('[ai-video][dropbox] token refresh failed (%s): %s', resp.status_code, detail)
+        raise RuntimeError(f'Dropbox token refresh gagal ({resp.status_code}): {detail}')
+    data = resp.json()
+    access_token = data.get('access_token', '')
+    expires_in = int(data.get('expires_in', 14400))  # Dropbox default ~4h
+    if not access_token:
+        raise RuntimeError('Dropbox token refresh sukses tapi access_token kosong di response')
+    with _DROPBOX_TOKEN_LOCK:
+        # Refresh 60s early to avoid edge-of-expiry race conditions.
+        _DROPBOX_TOKEN_CACHE['access_token'] = access_token
+        _DROPBOX_TOKEN_CACHE['expires_at'] = time.time() + expires_in - 60
+    app.logger.info('[ai-video][dropbox] access token refreshed, expires_in=%ss', expires_in)
+    return access_token
+
+
+def _dropbox_get_access_token():
+    """Return a valid Dropbox access token, refreshing automatically when the
+    cached one is missing/expired. Falls back to the legacy static
+    DROPBOX_ACCESS_TOKEN only if refresh-token env vars are absent."""
+    has_refresh_creds = bool(DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN)
+    if has_refresh_creds:
+        with _DROPBOX_TOKEN_LOCK:
+            cached = _DROPBOX_TOKEN_CACHE['access_token']
+            valid = cached and time.time() < _DROPBOX_TOKEN_CACHE['expires_at']
+        if valid:
+            return cached
+        return _dropbox_refresh_access_token()
+    if DROPBOX_ACCESS_TOKEN:
+        app.logger.warning(
+            '[ai-video][dropbox] using legacy static DROPBOX_ACCESS_TOKEN — this token '
+            'expires after ~4h per Dropbox policy and will start failing silently. '
+            'Configure DROPBOX_APP_KEY/DROPBOX_APP_SECRET/DROPBOX_REFRESH_TOKEN instead.'
+        )
+        return DROPBOX_ACCESS_TOKEN
+    raise RuntimeError(
+        'Dropbox belum dikonfigurasi. Set DROPBOX_APP_KEY, DROPBOX_APP_SECRET, '
+        'DROPBOX_REFRESH_TOKEN (disarankan) atau DROPBOX_ACCESS_TOKEN (legacy).'
+    )
+
+
+def _dropbox_request_with_retry(method, url, **kwargs):
+    """Perform a Dropbox API call, transparently retrying once with a freshly
+    refreshed token if we get a 401 (expired/invalid token)."""
+    headers = kwargs.pop('headers', {}) or {}
+    headers = {**headers, 'Authorization': f'Bearer {_dropbox_get_access_token()}'}
+    resp = requests_lib.request(method, url, headers=headers, **kwargs)
+    if resp.status_code == 401 and DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN:
+        app.logger.warning('[ai-video][dropbox] got 401, forcing token refresh and retrying once')
+        with _DROPBOX_TOKEN_LOCK:
+            _DROPBOX_TOKEN_CACHE['access_token'] = ''
+            _DROPBOX_TOKEN_CACHE['expires_at'] = 0
+        headers['Authorization'] = f'Bearer {_dropbox_get_access_token()}'
+        resp = requests_lib.request(method, url, headers=headers, **kwargs)
+    return resp
+
+
 def _dropbox_upload_bytes(file_bytes, filename):
     """Upload raw bytes to Dropbox and return the lowercase path."""
     dbx_path = '/mii-aivideo/' + uuid.uuid4().hex + '_' + re.sub(r'[^A-Za-z0-9._-]', '_', filename)
-    resp = requests_lib.post(
+    app.logger.info('[ai-video][dropbox] uploading %s (%d bytes) -> %s', filename, len(file_bytes), dbx_path)
+    resp = _dropbox_request_with_retry(
+        'POST',
         'https://content.dropboxapi.com/2/files/upload',
         headers={
-            'Authorization': f'Bearer {DROPBOX_ACCESS_TOKEN}',
             'Dropbox-API-Arg': json.dumps({'path': dbx_path, 'mode': 'add', 'autorename': True, 'mute': True}),
             'Content-Type': 'application/octet-stream',
         },
         data=file_bytes, timeout=90,
     )
+    app.logger.info('[ai-video][dropbox] upload response: status=%s body=%s', resp.status_code, resp.text[:300])
     if resp.status_code >= 400:
-        raise RuntimeError(f'Dropbox upload gagal ({resp.status_code}): {resp.text[:200]}')
+        raise RuntimeError(f'Dropbox upload gagal ({resp.status_code}): {resp.text[:300]}')
     return resp.json()['path_lower']
 
 
 def _dropbox_temp_link(path_lower):
     """Get a direct, temporary (4h) download URL for a Dropbox path."""
-    resp = requests_lib.post(
+    resp = _dropbox_request_with_retry(
+        'POST',
         'https://api.dropboxapi.com/2/files/get_temporary_link',
-        headers={'Authorization': f'Bearer {DROPBOX_ACCESS_TOKEN}', 'Content-Type': 'application/json'},
+        headers={'Content-Type': 'application/json'},
         json={'path': path_lower}, timeout=30,
     )
+    app.logger.info('[ai-video][dropbox] temp_link response: status=%s body=%s', resp.status_code, resp.text[:300])
     if resp.status_code >= 400:
-        raise RuntimeError(f'Dropbox link gagal ({resp.status_code}): {resp.text[:200]}')
+        raise RuntimeError(f'Dropbox link gagal ({resp.status_code}): {resp.text[:300]}')
     return resp.json()['link']
 
 
@@ -2029,11 +2157,61 @@ def _dropbox_upload_and_link(file_bytes, filename):
     return _dropbox_temp_link(path_lower)
 
 
+def _dropbox_status_check():
+    """Lightweight health check used by the debug page — verifies we can
+    obtain/refresh a valid access token and that Dropbox accepts it, without
+    uploading anything."""
+    mode = 'refresh_token' if (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN) else (
+        'legacy_static' if DROPBOX_ACCESS_TOKEN else 'not_configured'
+    )
+    if mode == 'not_configured':
+        _aivideo_debug_set('dropbox', mode=mode, ok=False, detail='No Dropbox credentials configured')
+        return False, 'Dropbox belum dikonfigurasi'
+    try:
+        token = _dropbox_get_access_token()
+        resp = requests_lib.post(
+            'https://api.dropboxapi.com/2/users/get_current_account',
+            headers={'Authorization': f'Bearer {token}'}, timeout=15,
+        )
+        ok = resp.status_code < 400
+        detail = 'OK' if ok else f'{resp.status_code}: {resp.text[:200]}'
+        _aivideo_debug_set('dropbox', mode=mode, ok=ok, detail=detail)
+        return ok, detail
+    except Exception as e:
+        _aivideo_debug_set('dropbox', mode=mode, ok=False, detail=str(e)[:300])
+        return False, str(e)
+
+
+def _segmind_extract_error(resp):
+    """Pull the most useful human-readable error message out of a Segmind
+    error response. Kept long (up to 1000 chars) — Segmind validation error
+    payloads are often specific and worth showing to the user, not just
+    a generic 'Generation failed'."""
+    try:
+        err = resp.json()
+        if isinstance(err, dict):
+            msg = err.get('error') or err.get('message') or err.get('detail') or json.dumps(err)
+        else:
+            msg = str(err)
+    except Exception:
+        msg = resp.text[:1000] if resp.text else ''
+    if not msg:
+        msg = f'Segmind error (HTTP {resp.status_code})'
+    return f'[Segmind {resp.status_code}] {msg}'
+
+
 def _run_segmind_task(task_id, endpoint, body):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
                 AIVIDEO_TASKS[task_id].update(kw)
+
+    log_prefix = f'[ai-video][segmind][{task_id}]'
+    logged_body = dict(body)
+    if len(logged_body.get('prompt', '')) > 500:
+        logged_body['prompt'] = logged_body['prompt'][:500] + '…(truncated in log only, full prompt was sent)'
+    app.logger.info('%s POST %s/%s payload=%s', log_prefix, SEGMIND_BASE, endpoint, json.dumps(logged_body))
+    _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
 
     try:
         _set(status='processing', progress=15)
@@ -2044,12 +2222,55 @@ def _run_segmind_task(task_id, endpoint, body):
         )
         _set(progress=80)
         content_type = resp.headers.get('Content-Type', '')
-        if resp.status_code >= 400 or 'video' not in content_type:
+        app.logger.info('%s response status=%s content-type=%s content-length=%s',
+                         log_prefix, resp.status_code, content_type, resp.headers.get('Content-Length'))
+
+        video_bytes = None
+        upstream_error = None
+
+        if resp.status_code >= 400:
+            upstream_error = _segmind_extract_error(resp)
+        elif 'video' in content_type or 'application/octet-stream' in content_type:
+            video_bytes = resp.content
+        elif 'application/json' in content_type or resp.text.strip()[:1] == '{':
             try:
-                err = resp.json()
-                msg = err.get('error') or err.get('message') or str(err)
-            except Exception:
-                msg = resp.text[:300] or f'Segmind error {resp.status_code}'
+                data = resp.json()
+            except Exception as je:
+                upstream_error = f'Segmind mengembalikan JSON tidak valid: {je}. Body: {resp.text[:300]}'
+                data = None
+            if data is not None:
+                out_url = data.get('video_url') or data.get('output') or data.get('url')
+                b64 = data.get('video') or data.get('video_base64') or data.get('base64')
+                if isinstance(out_url, str) and out_url.startswith('http'):
+                    app.logger.info('%s downloading result from output URL', log_prefix)
+                    dl = requests_lib.get(out_url, timeout=180)
+                    if dl.status_code >= 400:
+                        upstream_error = f'Gagal download hasil dari Segmind output URL ({dl.status_code})'
+                    else:
+                        video_bytes = dl.content
+                elif isinstance(b64, str) and b64:
+                    try:
+                        video_bytes = base64.b64decode(b64)
+                    except Exception as be:
+                        upstream_error = f'Gagal decode base64 hasil Segmind: {be}'
+                else:
+                    upstream_error = (
+                        data.get('error') or data.get('message')
+                        or f'Segmind sukses (200) tapi tidak ada field video di response: {json.dumps(data)[:300]}'
+                    )
+        else:
+            upstream_error = _segmind_extract_error(resp)
+
+        _aivideo_debug_set(
+            'last_segmind_response',
+            status_code=resp.status_code, content_type=content_type,
+            snippet=(resp.text[:500] if ('application/json' in content_type or resp.status_code >= 400)
+                     else f'<binary {len(resp.content)} bytes>'),
+        )
+
+        if upstream_error or not video_bytes:
+            msg = upstream_error or 'Segmind tidak mengembalikan video (response kosong)'
+            _aivideo_last_error('segmind', msg)
             _set(status='failed', error=msg, progress=100)
             return
 
@@ -2059,12 +2280,16 @@ def _run_segmind_task(task_id, endpoint, body):
         os.makedirs(upload_dir, exist_ok=True)
         fname = f'{task_id}.mp4'
         with open(os.path.join(upload_dir, fname), 'wb') as f:
-            f.write(resp.content)
+            f.write(video_bytes)
+        app.logger.info('%s completed, wrote %d bytes to %s', log_prefix, len(video_bytes), fname)
         _set(status='completed', progress=100,
              output={'video_url': f'/static/aivideo_uploads/{fname}'})
     except requests_lib.exceptions.Timeout:
-        _set(status='failed', error='Segmind request timed out', progress=100)
+        msg = 'Segmind request timed out (>600s)'
+        _aivideo_last_error('segmind', msg)
+        _set(status='failed', error=msg, progress=100)
     except Exception as e:
+        _aivideo_last_error('segmind', str(e))
         _set(status='failed', error=str(e), progress=100)
 
 
@@ -2096,8 +2321,11 @@ def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
     if not SEGMIND_API_KEY:
+        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
+    app.logger.info('[ai-video][generate] incoming request body=%s', json.dumps(payload)[:3000])
+    _aivideo_debug_set('last_request', incoming_payload=payload)
 
     model_key = str(payload.get('model', 'MINI')).upper()
     if model_key not in SEGMIND_MODEL_MAP:
@@ -2212,24 +2440,68 @@ def aivideo_upload():
     image/video/audio reference untuk Segmind."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not DROPBOX_ACCESS_TOKEN:
-        return jsonify({'error': 'DROPBOX_ACCESS_TOKEN belum diset di server'}), 500
+    has_dropbox_creds = bool(
+        (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN) or DROPBOX_ACCESS_TOKEN
+    )
+    if not has_dropbox_creds:
+        msg = ('Dropbox belum dikonfigurasi. Set DROPBOX_APP_KEY, DROPBOX_APP_SECRET, '
+               'DROPBOX_REFRESH_TOKEN (disarankan) atau DROPBOX_ACCESS_TOKEN (legacy).')
+        _aivideo_last_error('dropbox_config', msg)
+        return jsonify({'error': msg}), 500
     f = request.files.get('file')
     if not f or not f.filename:
         return jsonify({'error': 'File tidak ditemukan'}), 400
     ext = os.path.splitext(f.filename)[1].lower()
     allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
     if ext not in allowed:
-        return jsonify({'error': 'Tipe file tidak didukung'}), 400
+        app.logger.warning('[ai-video][upload] rejected file %s: unsupported ext %s', f.filename, ext)
+        return jsonify({'error': f'Tipe file tidak didukung ({ext})'}), 400
     file_bytes = f.read()
+    app.logger.info('[ai-video][upload] received file=%s size=%d ext=%s', f.filename, len(file_bytes), ext)
     if len(file_bytes) > 50 * 1024 * 1024:
         return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
     try:
         url = _dropbox_upload_and_link(file_bytes, f.filename)
+        app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
+        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=url, ok=True, error=None)
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
+        app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
+        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=None, ok=False, error=str(e))
+        _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
 
+
+
+@app.route('/ai-video/debug')
+def ai_video_debug_page():
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+    dropbox_ok, dropbox_detail = _dropbox_status_check()
+    segmind_ok = bool(SEGMIND_API_KEY)
+    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
+    snap = _aivideo_debug_snapshot()
+    return render_template(
+        'ai-video-debug.html',
+        dropbox=snap.get('dropbox'),
+        segmind=snap.get('segmind'),
+        last_upload=snap.get('last_upload'),
+        last_request=snap.get('last_request'),
+        last_segmind_response=snap.get('last_segmind_response'),
+        last_error=snap.get('last_error'),
+        dropbox_mode=('refresh_token' if (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN)
+                      else ('legacy_static' if DROPBOX_ACCESS_TOKEN else 'not_configured')),
+    )
+
+
+@app.route('/api/aivideo/debug-data')
+def ai_video_debug_data():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    dropbox_ok, dropbox_detail = _dropbox_status_check()
+    segmind_ok = bool(SEGMIND_API_KEY)
+    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
+    return jsonify(_aivideo_debug_snapshot())
 
 
 @app.route('/extension')
