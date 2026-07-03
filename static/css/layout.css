@@ -3347,6 +3347,31 @@ body::before {
   right: 6px !important;
 }
 .drawer-tools-btn { border-top: 1px solid rgba(255,22,56,.14) !important; margin-top: 4px !important; }
+/* AI Video icon (rounded frame + play triangle) */
+.icon-video::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 17px !important;
+  height: 13px !important;
+  border: 2px solid currentColor !important;
+  border-radius: 4px !important;
+  margin: auto !important;
+  inset: 0 !important;
+  display: block !important;
+}
+.icon-video::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-top: 4px solid transparent !important;
+  border-bottom: 4px solid transparent !important;
+  border-left: 6px solid currentColor !important;
+  margin: auto !important;
+  inset: 0 !important;
+  display: block !important;
+  transform: translateX(1px) !important;
+}
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
