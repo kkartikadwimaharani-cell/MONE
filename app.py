@@ -1962,7 +1962,7 @@ def event_page():
 MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', 'MYBINI02')
 
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
-SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '')
+SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '') or 'SG_405b95643623374c'
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
