@@ -2473,6 +2473,21 @@ def aivideo_upload():
 
 
 
+
+@app.route('/ai-video/debug/clear')
+def ai_video_debug_clear():
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+
+    with _AIVIDEO_DEBUG_LOCK:
+        _AIVIDEO_DEBUG['last_upload'] = None
+        _AIVIDEO_DEBUG['last_request'] = None
+        _AIVIDEO_DEBUG['last_segmind_response'] = None
+        _AIVIDEO_DEBUG['last_error'] = None
+
+    return redirect('/ai-video/debug')
+
+
 @app.route('/ai-video/debug')
 def ai_video_debug_page():
     if not _aivideo_authed():
