@@ -2504,6 +2504,19 @@ def ai_video_debug_data():
     return jsonify(_aivideo_debug_snapshot())
 
 
+@app.route('/ai-video/dropbox-token')
+def ai_video_dropbox_token_page():
+    """Browser-friendly page (works fine on mobile) with a form that POSTs
+    to /ai-video/dropbox-oauth/exchange via fetch — no curl needed. Paste the
+    Dropbox authorization code, tap the button, copy the refresh_token."""
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+    return render_template(
+        'ai-video-dropbox-token.html',
+        has_app_creds=bool(DROPBOX_APP_KEY and DROPBOX_APP_SECRET),
+    )
+
+
 @app.route('/ai-video/dropbox-oauth/exchange', methods=['POST'])
 def ai_video_dropbox_oauth_exchange():
     """One-time setup helper: exchange a Dropbox OAuth2 authorization code
