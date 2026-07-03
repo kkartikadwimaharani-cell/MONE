@@ -121,6 +121,8 @@ button{background:none;border:none;cursor:pointer}
 .failed-actions{display:flex;gap:8px;width:100%;margin-top:8px}
 .failed-actions .result-btn{text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 
+.canvas-preview{width:100%;max-width:480px;border-radius:22px;overflow:hidden;background:#0c0c0c;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.canvas-preview-media{width:100%;height:100%;object-fit:contain;background:#0c0c0c}
 .canvas-task{width:100%;max-width:480px;display:none;flex-direction:column;gap:14px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
 
@@ -956,6 +958,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="canvas" id="canvas">
     <div id="emptyState" aria-hidden="true"></div>
 
+    <div class="canvas-preview" id="canvasPreview" style="display:none">
+      <img class="canvas-preview-media" id="canvasPreviewImg" style="display:none" onerror="imgFallback(this)">
+      <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline></video>
+    </div>
+
     <div class="canvas-task" id="taskBox">
       <div class="task-preview">
         <div class="task-preview-inner">
@@ -1059,6 +1066,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
       <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" multiple />
       <input type="file" id="videoFileInput" class="hidden-input" accept="video/mp4,video/quicktime" />
+      <input type="file" id="audioFileInput" class="hidden-input" accept="audio/mpeg,audio/wav,audio/mp3" />
       <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
       <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
 
@@ -1081,7 +1089,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
           <div class="qty-val" id="qtyVal">1/4</div>
           <div class="qty-btn" onclick="changeQty(1)">+</div>
         </div>
-        <button class="gen-btn" id="generateBtn" onclick="startGenerate()">
+        <button class="gen-btn" id="generateBtn" onclick="startGenerate()" disabled>
           <span class="gen-txt">GENERATE ✦</span>
         </button>
       </div>
@@ -1226,9 +1234,9 @@ var modelFamilies = {
       desc: 'Supports image, video references and Elements for precise control.',
       caps: { image: 9, video: 3, audio: 3, frames: true, elements: true, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
       qualities: [
-        { id: 'seedance-2.0-mini-reference-to-video', label: 'MINI' },
-        { id: 'seedance-2.0-fast-reference-to-video', label: 'FAST' },
-        { id: 'seedance-2.0-pro-reference-to-video', label: 'PRO' }
+        { id: 'MINI', label: 'MINI' },
+        { id: 'FAST', label: 'FAST' },
+        { id: 'PRO', label: 'PRO' }
       ]
     },
     {
@@ -1473,13 +1481,15 @@ var sheetDefs = {
   resolution: {
     title: 'Resolution',
     options: ['480p','720p','1080p','4K'],
-    desc: function(v){ return resDesc[v]; },
+    disabled: ['4K'],
+    desc: function(v){ return v==='4K' ? 'Not supported by this model' : resDesc[v]; },
     get: function(){ return selectedResolution; },
     set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; updateCreditEstimate(); }
   },
   duration: {
     title: 'Duration',
-    options: (function(){ var a=[]; for (var s=4;s<=15;s++) a.push(s+'s'); return a; })(),
+    // Seedance 2.0 only accepts these exact durations (not a continuous range)
+    options: [4,5,6,8,10,12,15].map(function(s){ return s+'s'; }),
     desc: function(v){ return durDesc(parseInt(v,10)); },
     get: function(){ return selectedDuration + 's'; },
     set: function(v){ selectedDuration = parseInt(v,10); document.getElementById('durationLabel').textContent = v; updateCreditEstimate(); }
@@ -1499,19 +1509,26 @@ function openSheet(key) {
   document.getElementById('sheetTitle').textContent = def.title;
   var list = document.getElementById('sheetList');
   list.innerHTML = '';
+  var disabledSet = def.disabled || [];
   def.options.forEach(function(opt, i) {
+    var isDisabled = disabledSet.indexOf(opt) !== -1;
     var row = document.createElement('div');
-    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '');
+    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '') + (isDisabled ? ' disabled' : '');
+    if (isDisabled) row.style.opacity = '.4';
     row.style.animation = 'sheetRowIn .32s var(--ease-out-soft) both';
     row.style.animationDelay = (i * 22) + 'ms';
     var descTxt = def.desc ? def.desc(opt) : '';
     row.innerHTML = '<div class="sheet-opt-main"><span>' + opt + '</span>' +
       (descTxt ? '<span class="sheet-opt-desc">' + descTxt + '</span>' : '') +
       '</div><span class="sheet-opt-check"></span>';
-    row.onclick = function() {
-      def.set(opt);
-      closeSheet();
-    };
+    if (!isDisabled) {
+      row.onclick = function() {
+        def.set(opt);
+        closeSheet();
+      };
+    } else {
+      row.onclick = function(e) { e.stopPropagation(); };
+    }
     list.appendChild(row);
   });
   document.getElementById('sheetOverlay').classList.add('show');
@@ -1619,18 +1636,25 @@ function applyModelCapabilities() {
   if (durChip)    durChip.style.display    = caps.duration   ? '' : 'none';
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
 
-  // Dynamic resolution options per model type (image => 1K/2K/4K, video => 720p/1080p)
+  // Dynamic resolution options per model type/tier.
+  // Seedance 2.0 (video): MINI/PRO support 480p/720p/1080p, FAST tops out at 720p.
+  // 4K is not offered by any Seedance 2.0 tier, so it is always shown disabled.
   if (sheetDefs && sheetDefs.resolution) {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
+      sheetDefs.resolution.disabled = [];
+    } else if (selectedFamily && selectedFamily.key === 'seedance') {
+      sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
+      sheetDefs.resolution.disabled = selectedModelTier === 'FAST' ? ['1080p','4K'] : ['4K'];
     } else {
-      sheetDefs.resolution.options = ['720p','1080p','4K'];
+      sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
+      sheetDefs.resolution.disabled = ['4K'];
     }
-    // Snap current selection to a valid option
+    // Snap current selection to a valid, enabled option
     var resLabelEl = document.getElementById('resolutionLabel');
-    var opts = sheetDefs.resolution.options;
+    var opts = sheetDefs.resolution.options.filter(function(o){ return sheetDefs.resolution.disabled.indexOf(o) === -1; });
     if (resLabelEl && opts.indexOf(selectedResolution) === -1) {
-      selectedResolution = opts[0];
+      selectedResolution = opts[opts.length - 1] || opts[0];
       resLabelEl.textContent = selectedResolution;
     }
   }
@@ -1650,6 +1674,7 @@ function pickQuality(idx) {
   selectedModelTier = q.label;
   applyQualityBadge();
   renderQualityChip();
+  if (typeof applyModelCapabilities === 'function') applyModelCapabilities();
   updateCreditEstimate();
   closeSheet();
 }
@@ -1805,6 +1830,67 @@ function updateCardPreview(type) {
     renderPeTagsRow();
   }
   renderAssetsStrip();
+  updateCanvasPreview();
+  updateGenerateButtonState();
+}
+
+// ══════════ TOP PREVIEW AREA ══════════
+// Shows: uploaded image / first-frame preview while idle, nothing while a
+// task is running (the loading card takes over), and the finished video
+// once generation completes.
+function updateCanvasPreview() {
+  var wrap = document.getElementById('canvasPreview');
+  var imgEl = document.getElementById('canvasPreviewImg');
+  var vidEl = document.getElementById('canvasPreviewVideo');
+  if (!wrap) return;
+  // Don't fight the loading card or the empty state while a task is showing.
+  if (document.getElementById('taskBox').classList.contains('show')) {
+    wrap.style.display = 'none';
+    return;
+  }
+  var firstFrame = frames.first && frames.first.previewUrl;
+  var firstImage = media.image[0] && media.image[0].previewUrl;
+  var src = firstFrame || firstImage;
+  if (src) {
+    vidEl.pause && vidEl.pause();
+    vidEl.style.display = 'none';
+    imgEl.src = src;
+    imgEl.style.display = 'block';
+    wrap.style.display = 'flex';
+    document.getElementById('emptyState').style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+function showCanvasResult(videoUrl, imageUrl) {
+  var wrap = document.getElementById('canvasPreview');
+  var imgEl = document.getElementById('canvasPreviewImg');
+  var vidEl = document.getElementById('canvasPreviewVideo');
+  if (!wrap) return;
+  document.getElementById('emptyState').style.display = 'none';
+  if (videoUrl) {
+    imgEl.style.display = 'none';
+    vidEl.src = videoUrl;
+    vidEl.style.display = 'block';
+  } else if (imageUrl) {
+    vidEl.pause && vidEl.pause();
+    vidEl.style.display = 'none';
+    imgEl.src = imageUrl;
+    imgEl.style.display = 'block';
+  }
+  wrap.style.display = 'flex';
+}
+
+// ══════════ GENERATE BUTTON STATE ══════════
+// Disabled unless there's a prompt AND at least one image/video reference
+// (or a first frame). Never triggers the API by itself — only tapping
+// GENERATE calls /api/aivideo/generate.
+function updateGenerateButtonState() {
+  var btn = document.getElementById('generateBtn');
+  if (!btn) return;
+  var hasPrompt = !!(promptInput && promptInput.value.trim());
+  var hasMedia = media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url);
+  btn.disabled = !(hasPrompt && hasMedia);
 }
 
 // ══════════ UPLOADED ASSETS STRIP (persists outside the upload sheet) ══════════
@@ -1844,6 +1930,8 @@ function renderAssetsStrip() {
 function removeMedia(type, idx) {
   media[type].splice(idx, 1);
   renderUploadGrid();
+  updateCanvasPreview();
+  updateGenerateButtonState();
 }
 
 document.getElementById('imageFileInput').addEventListener('change', function(e) {
@@ -1855,8 +1943,10 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   });
   e.target.value = '';
 });
-['video'].forEach(function(type) {
-  document.getElementById(type + 'FileInput').addEventListener('change', function(e) {
+['video', 'audio'].forEach(function(type) {
+  var input = document.getElementById(type + 'FileInput');
+  if (!input) return;
+  input.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
     var previewUrl = URL.createObjectURL(file);
@@ -1909,9 +1999,29 @@ function openFrameInput(which) {
     var file = e.target.files[0];
     if (!file) return;
     var previewUrl = URL.createObjectURL(file);
-    frames[which] = { file: file, previewUrl: previewUrl };
     var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
+    frames[which] = { file: file, previewUrl: previewUrl, uploading: true, url: null };
     card.innerHTML = '<img class="uc-thumb" src="' + previewUrl + '" onerror="imgFallback(this)"><div class="uc-thumb-dim"></div><span class="uc-label" style="position:absolute;bottom:9px;left:10px;z-index:1">' + (which === 'first' ? 'First Frame' : 'Last Frame') + '</span>';
+    updateCanvasPreview();
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/aivideo/upload', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok && frames[which]) {
+          frames[which].url = data.url;
+          frames[which].uploading = false;
+        } else {
+          showError((data && data.error) || 'Upload gagal');
+          frames[which] = null;
+        }
+        updateGenerateButtonState();
+      })
+      .catch(function() {
+        showError('Upload gagal, cek koneksi');
+        frames[which] = null;
+        updateGenerateButtonState();
+      });
     e.target.value = '';
   });
 });
@@ -2014,6 +2124,7 @@ function closePromptEditor() {
       btnTxt.classList.remove('filled');
     }
   });
+  updateGenerateButtonState();
 }
 function clearPrompt() {
   promptInput.value = '';
@@ -2070,6 +2181,7 @@ promptInput.addEventListener('input', function() {
   document.getElementById('charCount').textContent = promptInput.value.length + ' chars';
   syncPromptHighlight();
   autosizePrompt();
+  updateGenerateButtonState();
   var val = promptInput.value;
   if (val.charAt(val.length - 1) === '@') {
     mentionAutoTriggered = true;
@@ -2141,20 +2253,25 @@ function startGenerate() {
   var btn = document.getElementById('generateBtn');
 
   if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
-  if (media.image.length === 0 && media.video.length === 0) {
+  var hasFirstFrame = !!(frames.first && frames.first.url);
+  if (media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
     showError('Minimal 1 gambar atau video referensi diperlukan');
     return;
   }
-  var pendingUpload = media.image.concat(media.video).some(function(m) { return m.uploading; });
+  var pendingUpload = media.image.concat(media.video, media.audio).some(function(m) { return m.uploading; })
+    || (frames.first && frames.first.uploading) || (frames.last && frames.last.uploading);
   if (pendingUpload) { showError('Tunggu upload media selesai'); return; }
 
   var body = {
-    model: selectedModel,
+    model: selectedModelTier, // 'MINI' | 'FAST' | 'PRO'
     prompt: prompt,
     image_urls: media.image.map(function(m) { return m.url; }).filter(Boolean),
     video_urls: media.video.map(function(m) { return m.url; }).filter(Boolean),
+    audio_urls: media.audio.map(function(m) { return m.url; }).filter(Boolean),
+    first_frame_url: (frames.first && frames.first.url) || '',
+    last_frame_url: (frames.last && frames.last.url) || '',
     duration: selectedDuration,
-    quality: selectedResolution,
+    resolution: selectedResolution,
     aspect_ratio: selectedRatio,
   };
 
@@ -2163,6 +2280,7 @@ function startGenerate() {
   window.__genStartTs = Date.now();
   document.getElementById('errorBox').classList.remove('show');
   document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('canvasPreview').style.display = 'none';
   document.getElementById('failOverlay').classList.remove('show');
   document.getElementById('taskStatusTxt').textContent = 'Pending — 0%';
   document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
@@ -2204,6 +2322,8 @@ function resetGenBtn() {
   var btn = document.getElementById('generateBtn');
   btn.disabled = false;
   btn.classList.remove('loading');
+  updateGenerateButtonState();
+  updateCanvasPreview();
 }
 
 function stageForProgress(p) {
@@ -2260,9 +2380,11 @@ function pollTask(taskId) {
             if (activeMode === 'image') imageUrl = out.url; else videoUrl = out.url;
           }
           if (videoUrl || imageUrl) {
+            showCanvasResult(videoUrl, imageUrl);
             openResultOverlay({ videoUrl: videoUrl, imageUrl: imageUrl });
           } else {
             showError('Selesai tapi URL tidak ditemukan di response');
+            updateCanvasPreview();
             document.getElementById('emptyState').style.display = 'flex';
           }
         } else if (status === 'failed') {
@@ -2290,6 +2412,8 @@ function resetForm() {
   closeResultOverlay();
   document.getElementById('emptyState').style.display = 'flex';
   setPanelCollapsed(false);
+  updateCanvasPreview();
+  updateGenerateButtonState();
 }
 
 // ══════════ FULLSCREEN RESULT PAGE ══════════
@@ -2400,11 +2524,14 @@ function doLogout() {
 
 updateCardPreview('image');
 updateCardPreview('video');
+updateCardPreview('audio');
 updateCreditEstimate();
 applyQualityBadge();
 renderQualityChip();
 applyModelCapabilities();
 updateModeUI();
+updateCanvasPreview();
+updateGenerateButtonState();
 fetchCreditBalance();
 window.addEventListener('resize', updateModelDockPosition);
 </script>
