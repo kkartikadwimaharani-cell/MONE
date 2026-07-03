@@ -1960,12 +1960,112 @@ def event_page():
 
 
 MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', 'MYBINI02')
-EVOLINK_API_KEY = os.environ.get('EVOLINK_API_KEY', '')
-EVOLINK_BASE = 'https://api.evolink.ai'
+
+# ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
+SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '')
+SEGMIND_BASE = 'https://api.segmind.com/v1'
+
+# Public tier shown to the user -> real Segmind model id (never exposed to the client)
+SEGMIND_MODEL_MAP = {
+    'MINI': 'seedance-2.0-mini',
+    'FAST': 'seedance-2.0-fast',
+    'PRO':  'seedance-2.0',
+}
+# Resolutions actually supported per model (per Segmind docs). 4K is not
+# offered by any Seedance 2.0 tier, so it is never sent upstream.
+SEGMIND_RESOLUTIONS = {
+    'MINI': ('480p', '720p', '1080p'),
+    'FAST': ('480p', '720p'),
+    'PRO':  ('480p', '720p', '1080p'),
+}
+SEGMIND_DURATIONS = (4, 5, 6, 8, 10, 12, 15)
+SEGMIND_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive')
+
+# ── Dropbox (media relay so our own domain is never sent to Segmind) ───
+DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY', '')
+DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET', '')
+DROPBOX_ACCESS_TOKEN = os.environ.get('DROPBOX_ACCESS_TOKEN', '')
+
+# In-memory task store for the async generate/poll flow (single-process).
+AIVIDEO_TASKS = {}
+AIVIDEO_TASKS_LOCK = threading.Lock()
 
 
 def _aivideo_authed():
     return bool(session.get('mii_aivideo_auth'))
+
+
+def _dropbox_upload_bytes(file_bytes, filename):
+    """Upload raw bytes to Dropbox and return the lowercase path."""
+    dbx_path = '/mii-aivideo/' + uuid.uuid4().hex + '_' + re.sub(r'[^A-Za-z0-9._-]', '_', filename)
+    resp = requests_lib.post(
+        'https://content.dropboxapi.com/2/files/upload',
+        headers={
+            'Authorization': f'Bearer {DROPBOX_ACCESS_TOKEN}',
+            'Dropbox-API-Arg': json.dumps({'path': dbx_path, 'mode': 'add', 'autorename': True, 'mute': True}),
+            'Content-Type': 'application/octet-stream',
+        },
+        data=file_bytes, timeout=90,
+    )
+    if resp.status_code >= 400:
+        raise RuntimeError(f'Dropbox upload gagal ({resp.status_code}): {resp.text[:200]}')
+    return resp.json()['path_lower']
+
+
+def _dropbox_temp_link(path_lower):
+    """Get a direct, temporary (4h) download URL for a Dropbox path."""
+    resp = requests_lib.post(
+        'https://api.dropboxapi.com/2/files/get_temporary_link',
+        headers={'Authorization': f'Bearer {DROPBOX_ACCESS_TOKEN}', 'Content-Type': 'application/json'},
+        json={'path': path_lower}, timeout=30,
+    )
+    if resp.status_code >= 400:
+        raise RuntimeError(f'Dropbox link gagal ({resp.status_code}): {resp.text[:200]}')
+    return resp.json()['link']
+
+
+def _dropbox_upload_and_link(file_bytes, filename):
+    path_lower = _dropbox_upload_bytes(file_bytes, filename)
+    return _dropbox_temp_link(path_lower)
+
+
+def _run_segmind_task(task_id, endpoint, body):
+    def _set(**kw):
+        with AIVIDEO_TASKS_LOCK:
+            if task_id in AIVIDEO_TASKS:
+                AIVIDEO_TASKS[task_id].update(kw)
+
+    try:
+        _set(status='processing', progress=15)
+        resp = requests_lib.post(
+            f'{SEGMIND_BASE}/{endpoint}',
+            headers={'Authorization': f'Bearer {SEGMIND_API_KEY}', 'Content-Type': 'application/json'},
+            json=body, timeout=600,
+        )
+        _set(progress=80)
+        content_type = resp.headers.get('Content-Type', '')
+        if resp.status_code >= 400 or 'video' not in content_type:
+            try:
+                err = resp.json()
+                msg = err.get('error') or err.get('message') or str(err)
+            except Exception:
+                msg = resp.text[:300] or f'Segmind error {resp.status_code}'
+            _set(status='failed', error=msg, progress=100)
+            return
+
+        # Store the generated video via Dropbox (keeps our own storage stateless
+        # on Railway) and serve it back through our own domain to the user.
+        upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        fname = f'{task_id}.mp4'
+        with open(os.path.join(upload_dir, fname), 'wb') as f:
+            f.write(resp.content)
+        _set(status='completed', progress=100,
+             output={'video_url': f'/static/aivideo_uploads/{fname}'})
+    except requests_lib.exceptions.Timeout:
+        _set(status='failed', error='Segmind request timed out', progress=100)
+    except Exception as e:
+        _set(status='failed', error=str(e), progress=100)
 
 
 @app.route('/ai-video')
@@ -1995,73 +2095,125 @@ def ai_video_logout():
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not EVOLINK_API_KEY:
-        return jsonify({'error': 'EVOLINK_API_KEY belum diset di server'}), 500
+    if not SEGMIND_API_KEY:
+        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
 
-    body = {
-        'model': payload.get('model', 'seedance-2.0-mini-reference-to-video'),
-        'prompt': payload.get('prompt', ''),
-    }
-    if payload.get('image_urls'):
-        body['image_urls'] = payload['image_urls'][:9]
-    if payload.get('video_urls'):
-        body['video_urls'] = payload['video_urls'][:3]
-    if payload.get('audio_urls'):
-        body['audio_urls'] = payload['audio_urls'][:3]
-    body['duration'] = max(4, min(15, int(payload.get('duration', 5))))
-    body['quality'] = payload.get('quality', '720p') if payload.get('quality') in ('480p', '720p') else '720p'
-    valid_ratios = {'16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'}
-    body['aspect_ratio'] = payload.get('aspect_ratio') if payload.get('aspect_ratio') in valid_ratios else '16:9'
-    body['generate_audio'] = bool(payload.get('generate_audio', True))
+    model_key = str(payload.get('model', 'MINI')).upper()
+    if model_key not in SEGMIND_MODEL_MAP:
+        model_key = 'MINI'
+    endpoint = SEGMIND_MODEL_MAP[model_key]
 
-    if not body['prompt']:
+    prompt = str(payload.get('prompt', '')).strip()
+    if not prompt:
         return jsonify({'error': 'Prompt wajib diisi'}), 400
-    if not body.get('image_urls') and not body.get('video_urls'):
+
+    image_urls = [u for u in (payload.get('image_urls') or []) if u][:9]
+    video_urls = [u for u in (payload.get('video_urls') or []) if u][:3]
+    audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:3]
+    first_frame_url = str(payload.get('first_frame_url') or '').strip()
+    last_frame_url = str(payload.get('last_frame_url') or '').strip()
+
+    if not image_urls and not video_urls and not first_frame_url:
         return jsonify({'error': 'Minimal 1 gambar atau video referensi diperlukan'}), 400
 
+    # Resolution: snap to whatever this tier actually supports (never 4K -
+    # Seedance 2.0 does not offer it on any tier).
+    allowed_res = SEGMIND_RESOLUTIONS[model_key]
+    resolution = payload.get('resolution') or payload.get('quality') or '720p'
+    if resolution not in allowed_res:
+        resolution = '720p' if '720p' in allowed_res else allowed_res[0]
+
     try:
-        resp = requests_lib.post(
-            f'{EVOLINK_BASE}/v1/videos/generations',
-            headers={'Authorization': f'Bearer {EVOLINK_API_KEY}', 'Content-Type': 'application/json'},
-            json=body, timeout=30,
-        )
-        result = resp.json()
-        if resp.status_code >= 400:
-            err = result.get('error', {}) if isinstance(result, dict) else {}
-            return jsonify({'error': err.get('message', 'Gagal membuat task video')}), resp.status_code
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Request gagal: {e}'}), 500
+        duration = int(payload.get('duration', 5))
+    except (TypeError, ValueError):
+        duration = 5
+    if duration not in SEGMIND_DURATIONS:
+        duration = min(SEGMIND_DURATIONS, key=lambda d: abs(d - duration))
+
+    aspect_ratio = payload.get('aspect_ratio')
+    if aspect_ratio not in SEGMIND_RATIOS:
+        aspect_ratio = '16:9'
+
+    body = {
+        'prompt': prompt,
+        'duration': duration,
+        'resolution': resolution,
+        'aspect_ratio': aspect_ratio,
+        'generate_audio': bool(payload.get('generate_audio', True)),
+        'return_last_frame': False,
+        'skip_moderation': False,
+    }
+    if first_frame_url:
+        body['first_frame_url'] = first_frame_url
+    if last_frame_url:
+        body['last_frame_url'] = last_frame_url
+    if image_urls:
+        body['reference_images'] = image_urls
+    if video_urls:
+        body['reference_videos'] = video_urls
+    if audio_urls:
+        body['reference_audios'] = audio_urls
+
+    task_id = uuid.uuid4().hex
+    with AIVIDEO_TASKS_LOCK:
+        AIVIDEO_TASKS[task_id] = {
+            'status': 'pending', 'progress': 5, 'output': None, 'error': None,
+            'model': model_key, 'created': time.time(),
+        }
+    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body), daemon=True).start()
+
+    return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': duration * 12}})
+
+
+def _aivideo_task_payload(task_id):
+    with AIVIDEO_TASKS_LOCK:
+        t = AIVIDEO_TASKS.get(task_id)
+        if not t:
+            return None
+        t = dict(t)
+    resp = {'id': task_id, 'status': t['status'], 'progress': t.get('progress', 0)}
+    if t['status'] == 'completed':
+        resp['output'] = t.get('output')
+    if t['status'] == 'failed':
+        resp['error'] = t.get('error') or 'Gagal membuat video'
+    return resp
 
 
 @app.route('/api/aivideo/task/<task_id>')
+@app.route('/api/aivideo/status/<task_id>')
 def aivideo_task_status(task_id):
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not EVOLINK_API_KEY:
-        return jsonify({'error': 'EVOLINK_API_KEY belum diset di server'}), 500
-    try:
-        resp = requests_lib.get(
-            f'{EVOLINK_BASE}/v1/tasks/{task_id}',
-            headers={'Authorization': f'Bearer {EVOLINK_API_KEY}'},
-            timeout=20,
-        )
-        result = resp.json()
-        if resp.status_code >= 400:
-            err = result.get('error', {}) if isinstance(result, dict) else {}
-            return jsonify({'error': err.get('message', 'Gagal mengambil status task')}), resp.status_code
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Request gagal: {e}'}), 500
+    resp = _aivideo_task_payload(task_id)
+    if resp is None:
+        return jsonify({'error': 'Task tidak ditemukan'}), 404
+    return jsonify(resp)
+
+
+@app.route('/api/aivideo/result/<task_id>')
+def aivideo_task_result(task_id):
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    with AIVIDEO_TASKS_LOCK:
+        t = AIVIDEO_TASKS.get(task_id)
+        t = dict(t) if t else None
+    if not t:
+        return jsonify({'error': 'Task tidak ditemukan'}), 404
+    if t['status'] != 'completed':
+        return jsonify({'status': t['status'], 'error': t.get('error')}), 202
+    return jsonify({'status': 'completed', 'output': t.get('output')})
 
 
 @app.route('/api/aivideo/upload', methods=['POST'])
 def aivideo_upload():
-    """Terima file upload dari browser, simpan sementara, kembalikan URL publik
-    agar bisa dipakai sebagai image_urls/video_urls/audio_urls untuk EvoLink."""
+    """Terima file upload dari browser dan relay ke Dropbox, lalu kembalikan
+    URL sementara Dropbox (bukan URL domain kita) yang bisa dipakai sebagai
+    image/video/audio reference untuk Segmind."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    if not DROPBOX_ACCESS_TOKEN:
+        return jsonify({'error': 'DROPBOX_ACCESS_TOKEN belum diset di server'}), 500
     f = request.files.get('file')
     if not f or not f.filename:
         return jsonify({'error': 'File tidak ditemukan'}), 400
@@ -2069,12 +2221,15 @@ def aivideo_upload():
     allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
     if ext not in allowed:
         return jsonify({'error': 'Tipe file tidak didukung'}), 400
-    upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
-    os.makedirs(upload_dir, exist_ok=True)
-    safe_name = f'{uuid.uuid4().hex}{ext}'
-    f.save(os.path.join(upload_dir, safe_name))
-    file_url = request.host_url.rstrip('/') + f'/static/aivideo_uploads/{safe_name}'
-    return jsonify({'ok': True, 'url': file_url})
+    file_bytes = f.read()
+    if len(file_bytes) > 50 * 1024 * 1024:
+        return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
+    try:
+        url = _dropbox_upload_and_link(file_bytes, f.filename)
+        return jsonify({'ok': True, 'url': url})
+    except Exception as e:
+        return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
+
 
 
 @app.route('/extension')
