@@ -31,20 +31,31 @@ body::before{
   border:1px solid rgba(255,22,56,.24);
   background:linear-gradient(145deg,rgba(18,5,10,.86),rgba(3,2,5,.97));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.50);
+  animation:boxIn .5s cubic-bezier(.22,1,.36,1) both;
 }
+@keyframes boxIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 .logo-ring{
-  width:76px;height:76px;border-radius:50%;
+  width:84px;height:84px;border-radius:50%;
   display:grid;place-items:center;position:relative;
-  background:radial-gradient(circle,rgba(255,22,56,.20),transparent 70%);
+  background:radial-gradient(circle,rgba(255,22,56,.22),transparent 70%);
 }
 .logo-ring::before{
-  content:"";position:absolute;inset:0;border-radius:50%;
+  content:"";position:absolute;inset:-6px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(255,22,56,0),rgba(255,60,90,.9),rgba(255,22,56,0) 45%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+  animation:ringSpin 3.2s linear infinite;
+}
+.logo-ring::after{
+  content:"";position:absolute;inset:6px;border-radius:50%;
   border:1.5px solid rgba(255,22,56,.45);
   animation:ringPulse 2.4s ease-in-out infinite;
 }
+@keyframes ringSpin{to{transform:rotate(360deg)}}
 @keyframes ringPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
-.logo-m{font-size:2.1rem;font-weight:900;color:var(--red);text-shadow:0 0 20px rgba(255,0,48,.60)}
+.logo-m{font-size:2.1rem;font-weight:900;color:var(--red);text-shadow:0 0 20px rgba(255,0,48,.60);position:relative;z-index:1;animation:logoBreathe 2.4s ease-in-out infinite}
+@keyframes logoBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 .brand-title{font-size:1.5rem;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;text-align:center}
 .brand-sub{font-size:.72rem;font-weight:700;letter-spacing:.22em;color:rgba(255,220,228,.50);text-transform:uppercase}
@@ -68,6 +79,17 @@ body::before{
   60%{transform:translateX(-6px)}
   80%{transform:translateX(4px)}
 }
+.pw-input:disabled{opacity:.45;cursor:not-allowed}
+
+.locked-msg{
+  font-size:.78rem;color:var(--red2);font-weight:700;text-align:center;
+  background:rgba(255,22,56,.1);border:1px solid rgba(255,22,56,.3);border-radius:12px;
+  padding:12px 14px;line-height:1.5;display:none;
+}
+.locked-msg.show{display:block;animation:boxIn .3s cubic-bezier(.22,1,.36,1) both}
+.locked-msg b{color:#fff}
+
+.attempts-hint{font-size:.7rem;color:rgba(255,225,230,.4);text-align:center;letter-spacing:.03em;min-height:14px}
 
 .unlock-btn{
   width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,50,80,.50);
@@ -105,6 +127,8 @@ body::before{
     <input type="password" id="pwInput" class="pw-input" placeholder="Masukkan password" autocomplete="off" />
   </div>
   <div class="err-msg" id="errMsg"></div>
+  <div class="attempts-hint" id="attemptsHint"></div>
+  <div class="locked-msg" id="lockedMsg"></div>
 
   <button class="unlock-btn" id="unlockBtn" onclick="doUnlock()">Unlock</button>
   <a href="/" class="back-link">&larr; Kembali ke Beranda</a>
@@ -114,6 +138,38 @@ body::before{
 var input = document.getElementById('pwInput');
 var btn = document.getElementById('unlockBtn');
 var err = document.getElementById('errMsg');
+var hint = document.getElementById('attemptsHint');
+var lockedMsg = document.getElementById('lockedMsg');
+var countdownTimer = null;
+
+function formatMMSS(sec) {
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function enterLockedState(retryAfter) {
+  input.disabled = true;
+  btn.disabled = true;
+  hint.textContent = '';
+  err.textContent = '';
+  lockedMsg.classList.add('show');
+  var remaining = retryAfter;
+  if (countdownTimer) clearInterval(countdownTimer);
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      lockedMsg.classList.remove('show');
+      input.disabled = false;
+      btn.disabled = false;
+      btn.textContent = 'Unlock';
+      return;
+    }
+    lockedMsg.innerHTML = 'Perangkat ini dikunci sementara setelah 3 kali salah password.<br>Coba lagi dalam <b>' + formatMMSS(remaining) + '</b>';
+    remaining -= 1;
+  }
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
 
 function doUnlock() {
   var pw = input.value.trim();
@@ -125,15 +181,23 @@ function doUnlock() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({password: pw})
   })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
+  .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
+  .then(function(res) {
+    var data = res.data;
     if (data.ok) {
       window.location.href = '/ai-video';
-    } else {
-      showError(data.error || 'Password salah');
-      btn.disabled = false;
-      btn.textContent = 'Unlock';
+      return;
     }
+    if (data.locked) {
+      enterLockedState(data.retry_after || 300);
+      return;
+    }
+    showError(data.error || 'Password salah');
+    if (typeof data.attempts_left === 'number') {
+      hint.textContent = 'Sisa percobaan: ' + data.attempts_left;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Unlock';
   })
   .catch(function() {
     showError('Terjadi kesalahan, coba lagi');
@@ -151,7 +215,13 @@ function showError(msg) {
 input.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doUnlock();
 });
-input.focus();
+
+var initialRetryAfter = {{ (retry_after or 0) | tojson }};
+if (initialRetryAfter > 0) {
+  enterLockedState(initialRetryAfter);
+} else {
+  input.focus();
+}
 </script>
 
 </body>
