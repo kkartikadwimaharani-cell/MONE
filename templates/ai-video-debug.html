@@ -64,6 +64,17 @@
   </div>
 
   <div class="card">
+    <h2>Recent Uploads ({{ last_uploads|length }}) — bukan hanya upload terakhir</h2>
+    {% if last_uploads %}
+    {% for u in last_uploads %}
+    <div class="row"><span class="k">{{ u.filename }} <span class="badge {{ 'ok' if u.ok else 'bad' }}">{{ 'OK' if u.ok else 'FAILED' }}</span></span><span class="v">{% if u.url %}<a href="{{ u.url }}" target="_blank" rel="noopener">link</a>{% else %}{{ u.error or '-' }}{% endif %}</span></div>
+    {% endfor %}
+    {% else %}
+    <div class="sub">Belum ada upload tercatat sejak server terakhir restart.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h2>Last Generate Request Payload</h2>
     {% if last_request %}
     <pre>{{ last_request | tojson(indent=2) }}</pre>
@@ -95,7 +106,7 @@
     {% endif %}
   </div>
 
-  <a class="refresh" href="/ai-video/debug">↻ Refresh</a> <a class="refresh" href="/ai-video/debug/clear" onclick="return confirm('Hapus seluruh debug?')">🗑 Clear Debug</a>>↻ Refresh</a>
+  <a class="refresh" href="/ai-video/debug">↻ Refresh</a> <a class="refresh" href="/ai-video/debug/clear" onclick="return confirm('Hapus seluruh debug?')">🗑 Clear Debug</a>
   &nbsp;·&nbsp;
   <a class="refresh" href="/ai-video">← Kembali ke AI Video</a>
 </body>
