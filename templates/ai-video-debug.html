@@ -5,34 +5,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MII AI Video — Debug</title>
 <style>
-  :root{--bg:#0c0c0c;--card:#161616;--border:rgba(255,255,255,.09);--ok:#3ddc84;--bad:#ff4d5e;--txt:#eaeaea;--dim:#8a8a8a}
+  :root{
+    --bg:#0a0a0a;--card:#161616;--card2:#1b1b1b;--border:rgba(255,255,255,.09);
+    --ok:#3ddc84;--bad:#ff4d5e;--txt:#eaeaea;--dim:#8f8f8f;--faint:rgba(255,255,255,.35);
+    --accent:#ff2040;--accent-hover:#ff3555;--accent-dim:rgba(255,32,64,.14);
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px 16px 60px;line-height:1.5}
-  h1{font-size:20px;margin:0 0 4px}
-  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
-  .card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
-  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  body{
+    margin:0;background:
+      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,32,64,.10), transparent 60%),
+      var(--bg);
+    color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:22px 16px 60px;line-height:1.5;min-height:100vh;
+  }
+  .header{display:flex;align-items:center;gap:12px;margin-bottom:6px;animation:cardIn .4s cubic-bezier(.22,1,.36,1) both}
+  .logo{
+    width:38px;height:38px;border-radius:11px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),#7a0014);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;
+    box-shadow:0 0 20px rgba(255,32,64,.45);animation:logoPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes logoPulse{0%,100%{box-shadow:0 0 16px rgba(255,32,64,.35)}50%{box-shadow:0 0 28px rgba(255,32,64,.6)}}
+  h1{font-size:19px;margin:0;letter-spacing:.04em;text-transform:uppercase;font-weight:800}
+  .sub{color:var(--dim);font-size:12.5px;margin:10px 0 22px;letter-spacing:.02em;text-transform:uppercase;animation:cardIn .4s cubic-bezier(.22,1,.36,1) both;animation-delay:.05s}
+  .card{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--border);border-radius:16px;padding:17px 16px;margin-bottom:14px;
+    box-shadow:0 10px 24px -14px rgba(0,0,0,.6);
+    animation:cardIn .42s cubic-bezier(.22,1,.36,1) both;
+    transition:border-color .2s ease,transform .2s ease;
+  }
+  .card:hover{border-color:rgba(255,32,64,.28)}
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card h2{
+    font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:8px;
+    letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#fff;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;position:relative}
   .dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.ok::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--ok);opacity:.5;animation:dotRing 1.8s ease-out infinite}
   .dot.bad{background:var(--bad);box-shadow:0 0 8px var(--bad)}
-  .dot.unk{background:#666}
-  .row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--border)}
+  .dot.unk{background:#555}
+  @keyframes dotRing{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.9);opacity:0}}
+  .row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--border);letter-spacing:.01em}
   .row:last-child{border-bottom:none}
-  .row .k{color:var(--dim)}
-  .row .v{text-align:right;word-break:break-word;max-width:65%}
-  pre{background:#0a0a0a;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:#c9c9c9}
-  .badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#232323;color:var(--dim);font-weight:600}
+  .row .k{color:var(--dim);text-transform:uppercase;font-size:11.5px;letter-spacing:.05em;font-weight:600;padding-top:2px}
+  .row .v{text-align:right;word-break:break-word;max-width:65%;font-weight:600}
+  pre{
+    background:#080808;border:1px solid var(--border);border-radius:12px;padding:13px;
+    font-size:11.5px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:#c9c9c9;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+  }
+  .badge{font-size:10.5px;padding:3px 9px;border-radius:20px;background:#232323;color:var(--dim);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
   .badge.ok{color:var(--ok);background:rgba(61,220,132,.12)}
   .badge.bad{color:var(--bad);background:rgba(255,77,94,.12)}
-  a{color:#7db8ff}
-  .refresh{display:inline-block;margin-top:6px;font-size:12px;color:#7db8ff;text-decoration:none}
+  a{color:var(--accent-hover)}
+  .empty{color:var(--faint);font-size:12.5px;letter-spacing:.02em;text-transform:uppercase}
+
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;animation:cardIn .4s cubic-bezier(.22,1,.36,1) both;animation-delay:.1s}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;padding:11px 18px;border-radius:12px;
+    font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    text-decoration:none;border:1px solid var(--border);background:var(--card2);color:#fff;
+    cursor:pointer;transition:transform .15s cubic-bezier(.34,1.56,.64,1),background .15s ease,border-color .15s ease,box-shadow .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn svg{width:14px;height:14px;flex-shrink:0}
+  .btn:active{transform:scale(.94)}
+  .btn:hover{border-color:rgba(255,255,255,.2);background:#212121}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#c4001c);border-color:transparent;box-shadow:0 6px 18px -8px rgba(255,32,64,.55)}
+  .btn.primary:hover{background:linear-gradient(135deg,var(--accent-hover),#d4001f)}
+  .btn.danger{color:var(--bad);border-color:rgba(255,77,94,.25)}
+  .btn.danger:hover{background:rgba(255,77,94,.1);border-color:rgba(255,77,94,.4)}
 </style>
 </head>
 <body>
-  <h1>MII AI Video — Debug</h1>
-  <div class="sub">Snapshot server saat ini. Refresh halaman untuk data terbaru.</div>
+  <div class="header">
+    <div class="logo">M</div>
+    <h1>MII AI Video — Debug</h1>
+  </div>
+  <div class="sub">Snapshot server saat ini &middot; refresh halaman untuk data terbaru</div>
 
-  <div class="card">
+  <div class="card" style="animation-delay:.03s">
     <h2><span class="dot {{ 'ok' if dropbox and dropbox.ok else ('bad' if dropbox and dropbox.ok is not none else 'unk') }}"></span>
       Dropbox
       <span class="badge {{ 'ok' if dropbox and dropbox.ok else 'bad' }}">{{ dropbox_mode }}</span>
@@ -43,14 +97,14 @@
     <div class="row"><span class="k">Checked at</span><span class="v">{{ dropbox.at if dropbox else '-' }}</span></div>
   </div>
 
-  <div class="card">
+  <div class="card" style="animation-delay:.06s">
     <h2><span class="dot {{ 'ok' if segmind and segmind.ok else 'bad' }}"></span> Segmind</h2>
     <div class="row"><span class="k">API key configured</span><span class="v">{{ 'YES' if segmind and segmind.ok else 'NO' }}</span></div>
     <div class="row"><span class="k">Detail</span><span class="v">{{ segmind.detail if segmind else '-' }}</span></div>
   </div>
 
-  <div class="card">
-    <h2>Last Upload (Dropbox image/video URL)</h2>
+  <div class="card" style="animation-delay:.09s">
+    <h2>Last Upload (Dropbox Image/Video URL)</h2>
     {% if last_upload %}
     <div class="row"><span class="k">Filename</span><span class="v">{{ last_upload.filename }}</span></div>
     <div class="row"><span class="k">Size</span><span class="v">{{ last_upload.size }} bytes</span></div>
@@ -59,31 +113,31 @@
     <div class="row"><span class="k">Error</span><span class="v">{{ last_upload.error or '-' }}</span></div>
     <div class="row"><span class="k">At</span><span class="v">{{ last_upload.at }}</span></div>
     {% else %}
-    <div class="sub">Belum ada upload tercatat sejak server terakhir restart.</div>
+    <div class="empty">Belum ada upload tercatat sejak server terakhir restart.</div>
     {% endif %}
   </div>
 
-  <div class="card">
-    <h2>Recent Uploads ({{ last_uploads|length }}) — bukan hanya upload terakhir</h2>
+  <div class="card" style="animation-delay:.12s">
+    <h2>Recent Uploads ({{ last_uploads|length }}) — Bukan Hanya Upload Terakhir</h2>
     {% if last_uploads %}
     {% for u in last_uploads %}
     <div class="row"><span class="k">{{ u.filename }} <span class="badge {{ 'ok' if u.ok else 'bad' }}">{{ 'OK' if u.ok else 'FAILED' }}</span></span><span class="v">{% if u.url %}<a href="{{ u.url }}" target="_blank" rel="noopener">link</a>{% else %}{{ u.error or '-' }}{% endif %}</span></div>
     {% endfor %}
     {% else %}
-    <div class="sub">Belum ada upload tercatat sejak server terakhir restart.</div>
+    <div class="empty">Belum ada upload tercatat sejak server terakhir restart.</div>
     {% endif %}
   </div>
 
-  <div class="card">
+  <div class="card" style="animation-delay:.15s">
     <h2>Last Generate Request Payload</h2>
     {% if last_request %}
     <pre>{{ last_request | tojson(indent=2) }}</pre>
     {% else %}
-    <div class="sub">Belum ada request generate tercatat.</div>
+    <div class="empty">Belum ada request generate tercatat.</div>
     {% endif %}
   </div>
 
-  <div class="card">
+  <div class="card" style="animation-delay:.18s">
     <h2>Last Segmind Response</h2>
     {% if last_segmind_response %}
     <div class="row"><span class="k">Status code</span><span class="v">{{ last_segmind_response.status_code }}</span></div>
@@ -91,23 +145,34 @@
     <div class="row"><span class="k">At</span><span class="v">{{ last_segmind_response.at }}</span></div>
     <pre>{{ last_segmind_response.snippet }}</pre>
     {% else %}
-    <div class="sub">Belum ada response Segmind tercatat.</div>
+    <div class="empty">Belum ada response Segmind tercatat.</div>
     {% endif %}
   </div>
 
-  <div class="card">
-    <h2><span class="dot {{ 'bad' if last_error else 'unk' }}"></span> Last Error (any source)</h2>
+  <div class="card" style="animation-delay:.21s">
+    <h2><span class="dot {{ 'bad' if last_error else 'unk' }}"></span> Last Error (Any Source)</h2>
     {% if last_error %}
     <div class="row"><span class="k">Source</span><span class="v">{{ last_error.source }}</span></div>
     <div class="row"><span class="k">At</span><span class="v">{{ last_error.at }}</span></div>
     <pre>{{ last_error.message }}</pre>
     {% else %}
-    <div class="sub">Belum ada error tercatat sejak server terakhir restart.</div>
+    <div class="empty">Belum ada error tercatat sejak server terakhir restart.</div>
     {% endif %}
   </div>
 
-  <a class="refresh" href="/ai-video/debug">↻ Refresh</a> <a class="refresh" href="/ai-video/debug/clear" onclick="return confirm('Hapus seluruh debug?')">🗑 Clear Debug</a>
-  &nbsp;·&nbsp;
-  <a class="refresh" href="/ai-video">← Kembali ke AI Video</a>
+  <div class="actions">
+    <a class="btn primary" href="/ai-video/debug">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      Refresh
+    </a>
+    <a class="btn danger" href="/ai-video/debug/clear" onclick="return confirm('Hapus seluruh debug?')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      Clear Debug
+    </a>
+    <a class="btn" href="/ai-video">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Kembali ke AI Video
+    </a>
+  </div>
 </body>
 </html>
