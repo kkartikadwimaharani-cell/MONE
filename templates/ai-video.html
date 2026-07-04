@@ -124,11 +124,25 @@ button{background:none;border:none;cursor:pointer}
 .failed-actions{display:flex;gap:8px;width:100%;margin-top:8px}
 .failed-actions .result-btn{text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 
-.canvas-preview{width:100%;max-width:480px;border-radius:22px;overflow:hidden;background:#0c0c0c;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
-.canvas-preview-media{width:100%;height:100%;object-fit:contain;background:#0c0c0c}
+.canvas-preview{width:100%;max-width:480px;border-radius:22px;overflow:hidden;background:#0c0c0c;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);position:relative}
+.canvas-preview-media{width:100%;height:100%;object-fit:contain;background:#0c0c0c;position:relative;z-index:1}
 .canvas-result-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;margin:0 auto}
 .canvas-result-wrap.has-result{gap:0}
 .canvas-result-wrap.has-result .canvas-preview{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none}
+.canvas-result-wrap.has-result .canvas-preview-media{background:transparent}
+.canvas-result-wrap.has-result .canvas-preview::before{
+  content:'';position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(circle at 22% 25%, rgba(255,32,64,.32), transparent 55%),
+    radial-gradient(circle at 78% 75%, rgba(255,32,64,.20), transparent 55%),
+    #0c0c0c;
+  background-size:220% 220%;
+  animation:canvasAmbientGlow 12s ease-in-out infinite;
+}
+@keyframes canvasAmbientGlow{
+  0%,100%{background-position:0% 30%}
+  50%{background-position:100% 70%}
+}
 .canvas-result-wrap.has-result .canvas-result-box{border-top-left-radius:0;border-top-right-radius:0;border-top:none}
 .canvas-result-refs{display:flex;gap:8px;overflow-x:auto;padding:0 2px}
 .canvas-result-refs .result-ref-thumb{width:48px;height:48px}
@@ -158,7 +172,7 @@ button{background:none;border:none;cursor:pointer}
 .task-status-txt.completed{color:#3cffb0}
 .task-status-txt.failed{color:var(--accent-hover)}
 .task-eta{font-family:var(--mono);font-size:.76rem;color:var(--text-faint);font-weight:600}
-.progress-bar{width:100%;height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;position:relative}
+.progress-bar{display:none}
 .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .5s ease;position:relative;overflow:hidden}
 .progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);width:60px;animation:shimmer 1.3s linear infinite}
 @keyframes shimmer{from{transform:translateX(-60px)}to{transform:translateX(220px)}}
@@ -314,12 +328,12 @@ input[type=file].hidden-input{display:none}
 .sheet.show{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);margin:4px auto 14px}
 .sheet-title{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:0 2px 12px}
-.sheet-opt{display:flex;align-items:center;justify-content:space-between;padding:15px 12px;border-radius:13px;font-size:18px;font-weight:600;color:var(--text-dim);transition:background .12s,color .12s}
+.sheet-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;flex:1 1 128px;gap:2px;padding:14px 34px 14px 14px;border-radius:13px;font-size:18px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);transition:background .12s,color .12s}
 .sheet-opt:active{background:rgba(255,255,255,.05)}
 .sheet-opt.selected{color:#fff;background:var(--accent-dim)}
-.sheet-opt-check{width:16px;height:16px;position:relative;flex-shrink:0}
+.sheet-opt-check{width:16px;height:16px;position:absolute;top:12px;right:12px;flex-shrink:0}
 .sheet-opt.selected .sheet-opt-check::after{content:"";position:absolute;left:2px;top:5px;width:9px;height:5px;border-left:2px solid var(--accent-hover);border-bottom:2px solid var(--accent-hover);transform:rotate(-45deg)}
-.sheet-opt-desc{font-size:.72rem;color:var(--text-faint);font-weight:500;margin-top:2px}
+.sheet-opt-desc{font-size:.72rem;color:var(--text-faint);font-weight:500;letter-spacing:.02em;text-transform:uppercase;margin-top:2px}
 .sheet-opt-main{display:flex;flex-direction:column;gap:1px}
 .model-sheet-featured{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .model-featured-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--border);background:var(--card2);transition:border-color .15s,background .15s}
@@ -887,7 +901,10 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.show{animation:dreamSheetIn .48s var(--ease-pop) both}
 @keyframes dreamSheetIn{0%{transform:translateY(104%) scale(.98)}76%{transform:translateY(-8px) scale(1.005)}100%{transform:translateY(0) scale(1)}}
 .sheet-handle{width:44px;height:5px;background:rgba(255,255,255,.26)}
-.sheet-title{font-size:24px;padding-bottom:14px}.sheet-list{display:flex;flex-direction:column;gap:6px}
+.sheet-title{font-size:24px;padding-bottom:14px}
+.sheet-list{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;padding:2px 2px 10px;scrollbar-width:none}
+.sheet-list::-webkit-scrollbar{display:none}
+.sheet-list .sheet-opt{scroll-snap-align:center;flex:0 0 auto;min-width:132px}
 .sheet-opt{min-height:58px;border-radius:18px;padding:13px 14px;background:rgba(255,255,255,.018)}
 .sheet-opt:hover{background:rgba(255,255,255,.055)}.sheet-opt.selected{background:linear-gradient(90deg,rgba(255,32,64,.22),rgba(255,32,64,.055));box-shadow:0 0 0 1px rgba(255,32,64,.24) inset}
 
@@ -969,11 +986,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     Music
   </a>
   <div class="sb-sec-lbl">Library</div>
-  <a class="sb-item" href="#" onclick="openHistorySheet('history');return false">
+  <a class="sb-item" href="#" onclick="openHistoryPage();return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
     History
   </a>
-  <a class="sb-item" href="#" onclick="openHistorySheet('archive');return false">
+  <a class="sb-item" href="#" onclick="openArchivePage();return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>
     Archive
   </a>
@@ -1256,24 +1273,33 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
     <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
     <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
-    <button class="result-btn" onclick="openHistorySheet('history')"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
+    <button class="result-btn" onclick="openHistoryPage()"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
   </div>
 </div>
-<!-- HISTORY / ARCHIVE — FULLSCREEN PAGE (own page, not a floating sheet) -->
+<!-- HISTORY — FULLSCREEN PAGE (own page, not a floating sheet) -->
 <div class="history-page" id="historyPage">
   <div class="pe-header">
-    <button class="icon-btn" onclick="closeHistorySheet()">
+    <button class="icon-btn" onclick="closeHistoryPage()">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     </button>
-    <span class="pe-title" id="historyPageTitle">History</span>
+    <span class="pe-title">History</span>
     <span style="width:40px"></span>
-  </div>
-  <div class="history-tabs">
-    <button class="hist-tab active" id="histTabHistory" onclick="switchHistoryTab('history')">History</button>
-    <button class="hist-tab" id="histTabArchive" onclick="switchHistoryTab('archive')">Archive</button>
   </div>
   <div class="history-list" id="historyList"></div>
   <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
+</div>
+
+<!-- ARCHIVE — FULLSCREEN PAGE, entirely separate from History (own page, not a floating sheet) -->
+<div class="history-page" id="archivePage">
+  <div class="pe-header">
+    <button class="icon-btn" onclick="closeArchivePage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+    <span class="pe-title">Archive</span>
+    <span style="width:40px"></span>
+  </div>
+  <div class="history-list" id="archiveList"></div>
+  <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
 </div>
 
 <div class="img-preview-overlay" id="imgPreviewOverlay" onclick="closeImagePreview()">
@@ -1595,7 +1621,7 @@ var sheetDefs = {
     title: 'Resolution',
     options: ['480p','720p','1080p','4K'],
     disabled: ['4K'],
-    desc: function(v){ return v==='4K' ? 'Not supported by this model' : resDesc[v]; },
+    desc: function(v){ return resDesc[v]; },
     get: function(){ return selectedResolution; },
     set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; updateCreditEstimate(); }
   },
@@ -1623,30 +1649,31 @@ function openSheet(key) {
   var list = document.getElementById('sheetList');
   list.innerHTML = '';
   var disabledSet = def.disabled || [];
-  def.options.forEach(function(opt, i) {
-    var isDisabled = disabledSet.indexOf(opt) !== -1;
+  // Show only what this model/tier actually supports — no greyed-out
+  // options from other tiers stacked in the same list.
+  var visibleOptions = def.options.filter(function(opt) { return disabledSet.indexOf(opt) === -1; });
+  visibleOptions.forEach(function(opt, i) {
     var row = document.createElement('div');
-    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '') + (isDisabled ? ' disabled' : '');
-    if (isDisabled) row.style.opacity = '.4';
-    row.style.animation = 'sheetRowIn .32s var(--ease-out-soft) both';
-    row.style.animationDelay = (i * 22) + 'ms';
+    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '');
+    row.style.animation = 'sheetRowIn .2s var(--ease-out-soft) both';
+    row.style.animationDelay = (i * 12) + 'ms';
     var descTxt = def.desc ? def.desc(opt) : '';
     row.innerHTML = '<div class="sheet-opt-main"><span>' + opt + '</span>' +
       (descTxt ? '<span class="sheet-opt-desc">' + descTxt + '</span>' : '') +
       '</div><span class="sheet-opt-check"></span>';
-    if (!isDisabled) {
-      row.onclick = function() {
-        def.set(opt);
-        closeSheet();
-      };
-    } else {
-      row.onclick = function(e) { e.stopPropagation(); };
-    }
+    row.onclick = function() {
+      def.set(opt);
+      closeSheet();
+    };
     list.appendChild(row);
   });
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById('sheet').classList.add('show');
   setModelSelectOpen(false);
+  requestAnimationFrame(function() {
+    var sel = list.querySelector('.sheet-opt.selected');
+    if (sel) sel.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+  });
 }
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
@@ -1755,15 +1782,15 @@ function applyModelCapabilities() {
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
 
   // Dynamic resolution options per model type/tier.
-  // Seedance 2.0 (video): MINI/PRO support 480p/720p/1080p, FAST tops out at 720p.
-  // 4K is not offered by any Seedance 2.0 tier, so it is always shown disabled.
+  // Seedance 2.0 (video): PRO supports the full 480p/720p/1080p/4K range per
+  // Segmind's API (4k = 3840x2160). MINI and FAST are capped at 720p.
   if (sheetDefs && sheetDefs.resolution) {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
       sheetDefs.resolution.disabled = [];
     } else if (selectedFamily && selectedFamily.key === 'seedance') {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
-      sheetDefs.resolution.disabled = selectedModelTier === 'FAST' ? ['1080p','4K'] : ['4K'];
+      sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
     } else {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = ['4K'];
@@ -1810,8 +1837,8 @@ function openQualitySheet() {
   selectedFamily.qualities.forEach(function(q, idx) {
     var row = document.createElement('div');
     row.className = 'sheet-opt' + (idx === selectedQualityIdx ? ' selected' : '');
-    row.style.animation = 'sheetRowIn .32s var(--ease-out-soft) both';
-    row.style.animationDelay = (idx * 26) + 'ms';
+    row.style.animation = 'sheetRowIn .2s var(--ease-out-soft) both';
+    row.style.animationDelay = (idx * 12) + 'ms';
     row.innerHTML = '<span class="model-opt-name">' + q.label + '</span><span class="sheet-opt-check"></span>';
     row.onclick = function() { pickQuality(idx); };
     list.appendChild(row);
@@ -1819,6 +1846,10 @@ function openQualitySheet() {
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById('sheet').classList.add('show');
   setModelSelectOpen(false);
+  requestAnimationFrame(function() {
+    var sel = list.querySelector('.sheet-opt.selected');
+    if (sel) sel.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+  });
 }
 function openModelSheet() {
   openModelDock();
@@ -2893,49 +2924,53 @@ function reopenLastResult() {
   openHistoryItem(list[0].id);
 }
 
-var currentHistTab = 'history';
-function openHistorySheet(tab) {
+function openHistoryPage() {
   closeSheet(); closeModelDock();
-  switchHistoryTab(tab || 'history');
+  renderHistoryList();
   document.getElementById('historyPage').classList.add('show');
 }
-function closeHistorySheet() {
+function closeHistoryPage() {
   document.getElementById('historyPage').classList.remove('show');
 }
-function switchHistoryTab(tab) {
-  currentHistTab = tab;
-  document.getElementById('histTabHistory').classList.toggle('active', tab === 'history');
-  document.getElementById('histTabArchive').classList.toggle('active', tab === 'archive');
-  document.getElementById('historyPageTitle').textContent = tab === 'archive' ? 'Archive' : 'History';
-  renderHistoryList();
+function openArchivePage() {
+  closeSheet(); closeModelDock();
+  renderArchiveList();
+  document.getElementById('archivePage').classList.add('show');
 }
-function renderHistoryList() {
-  var list = loadHistory().filter(function(r) { return currentHistTab === 'archive' ? r.archived : !r.archived; });
-  var el = document.getElementById('historyList');
-  var empty = document.getElementById('historyEmpty');
+function closeArchivePage() {
+  document.getElementById('archivePage').classList.remove('show');
+}
+function buildHistItemRow(r) {
+  var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
+  return '<div class="hist-item">' +
+    '<div class="hist-thumb"' + thumbStyle + '></div>' +
+    '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
+      '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
+      '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + '</span>' +
+    '</div>' +
+    '<div class="hist-actions">' +
+      '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')">\u25b6</button>' +
+      '<button class="hist-act" title="Reuse" onclick="reuseHistoryItem(\'' + r.id + '\')">\u21ba</button>' +
+      '<button class="hist-act" title="' + (r.archived ? 'Unarchive' : 'Archive') + '" onclick="toggleArchiveItem(\'' + r.id + '\')">' + (r.archived ? '\u2934' : '\u2913') + '</button>' +
+      '<button class="hist-act" title="Delete" onclick="confirmDeleteHistoryItem(\'' + r.id + '\')">\ud83d\uddd1</button>' +
+    '</div>' +
+  '</div>';
+}
+function renderHistTypeList(archived, listId, emptyId) {
+  var el = document.getElementById(listId);
+  var empty = document.getElementById(emptyId);
+  if (!el || !empty) return; // that page's markup isn't present — nothing to refresh
+  var list = loadHistory().filter(function(r) { return archived ? !!r.archived : !r.archived; });
   if (list.length === 0) { el.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  el.innerHTML = list.map(function(r) {
-    var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
-    return '<div class="hist-item">' +
-      '<div class="hist-thumb"' + thumbStyle + '></div>' +
-      '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
-        '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
-        '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + '</span>' +
-      '</div>' +
-      '<div class="hist-actions">' +
-        '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')">\u25b6</button>' +
-        '<button class="hist-act" title="Reuse" onclick="reuseHistoryItem(\'' + r.id + '\')">\u21ba</button>' +
-        '<button class="hist-act" title="' + (r.archived ? 'Unarchive' : 'Archive') + '" onclick="toggleArchiveItem(\'' + r.id + '\')">' + (r.archived ? '\u2934' : '\u2913') + '</button>' +
-        '<button class="hist-act" title="Delete" onclick="confirmDeleteHistoryItem(\'' + r.id + '\')">\ud83d\uddd1</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  el.innerHTML = list.map(buildHistItemRow).join('');
 }
+function renderHistoryList() { renderHistTypeList(false, 'historyList', 'historyEmpty'); }
+function renderArchiveList() { renderHistTypeList(true, 'archiveList', 'archiveEmpty'); }
 function openHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
-  closeHistorySheet();
+  closeHistoryPage(); closeArchivePage();
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
   openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
@@ -2992,7 +3027,7 @@ function reuseHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   restoreFromRecord(r);
-  closeHistorySheet();
+  closeHistoryPage(); closeArchivePage();
   closeResultOverlay();
 }
 function toggleArchiveItem(id) {
@@ -3000,6 +3035,7 @@ function toggleArchiveItem(id) {
   if (!r) return;
   updateHistoryRecord(id, { archived: !r.archived });
   renderHistoryList();
+  renderArchiveList();
 }
 var pendingDeleteId = null;
 function confirmDeleteHistoryItem(id) {
@@ -3010,6 +3046,7 @@ function confirmDeleteHistoryItem(id) {
   btn.onclick = function() {
     deleteHistoryRecord(pendingDeleteId);
     renderHistoryList();
+    renderArchiveList();
     renderLastResultCard();
     closeConfirm();
   };
@@ -3030,6 +3067,8 @@ function archiveCurrentResult() {
   var r = window.__lastResult;
   if (!r || !r.id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
   updateHistoryRecord(r.id, { archived: true });
+  renderHistoryList();
+  renderArchiveList();
   showToast('Tersimpan di Archive');
 }
 function openImagePreview(url) {
