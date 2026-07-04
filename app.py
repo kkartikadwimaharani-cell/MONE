@@ -1871,7 +1871,7 @@ def set_security_headers(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
-        "img-src 'self' data: https:; "
+        "img-src 'self' data: blob: https:; "
         "media-src 'self' blob:;"
     )
     # No-cache headers for HTML responses
@@ -2013,10 +2013,23 @@ _AIVIDEO_DEBUG = {
     'dropbox': {'mode': None, 'ok': None, 'checked_at': None, 'detail': ''},
     'segmind': {'ok': None, 'checked_at': None, 'detail': ''},
     'last_upload': None,
+    'last_uploads': [],
     'last_request': None,
     'last_segmind_response': None,
     'last_error': None,
 }
+_AIVIDEO_DEBUG_MAX_UPLOADS = 30
+
+
+def _aivideo_debug_append_upload(entry):
+    # `last_upload` only ever held the single most recent file, so uploading
+    # several references in a row (e.g. 3 images) made the debug page show
+    # just the last one — looking like the others were never uploaded. Keep
+    # a bounded rolling history instead so all recent uploads stay visible.
+    with _AIVIDEO_DEBUG_LOCK:
+        lst = _AIVIDEO_DEBUG.setdefault('last_uploads', [])
+        lst.append(entry)
+        del lst[:-_AIVIDEO_DEBUG_MAX_UPLOADS]
 
 
 def _aivideo_debug_set(section, **kw):
@@ -2464,10 +2477,12 @@ def aivideo_upload():
         url = _dropbox_upload_and_link(file_bytes, f.filename)
         app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
         _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=url, ok=True, error=None)
+        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': url, 'ok': True, 'error': None, 'at': _utc_timestamp()})
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
         _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=None, ok=False, error=str(e))
+        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
 
@@ -2481,6 +2496,7 @@ def ai_video_debug_clear():
 
     with _AIVIDEO_DEBUG_LOCK:
         _AIVIDEO_DEBUG['last_upload'] = None
+        _AIVIDEO_DEBUG['last_uploads'] = []
         _AIVIDEO_DEBUG['last_request'] = None
         _AIVIDEO_DEBUG['last_segmind_response'] = None
         _AIVIDEO_DEBUG['last_error'] = None
@@ -2501,6 +2517,7 @@ def ai_video_debug_page():
         dropbox=snap.get('dropbox'),
         segmind=snap.get('segmind'),
         last_upload=snap.get('last_upload'),
+        last_uploads=list(reversed(snap.get('last_uploads') or [])),
         last_request=snap.get('last_request'),
         last_segmind_response=snap.get('last_segmind_response'),
         last_error=snap.get('last_error'),
