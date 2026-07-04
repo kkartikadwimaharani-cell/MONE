@@ -1960,6 +1960,8 @@ def event_page():
 
 
 MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', 'MYBINI02')
+AIVIDEO_LOCKOUT_THRESHOLD = 3
+AIVIDEO_LOCKOUT_SECONDS = 5 * 60
 
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
 SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '') or 'SG_405b95643623374c'
@@ -2309,18 +2311,37 @@ def _run_segmind_task(task_id, endpoint, body):
 @app.route('/ai-video')
 def ai_video_view():
     if not _aivideo_authed():
-        return render_template('ai-video-lock.html')
+        locked_until = session.get('mii_aivideo_locked_until') or 0
+        retry_after = max(int(locked_until - time.time()), 0)
+        return render_template('ai-video-lock.html', retry_after=retry_after)
     return render_template('ai-video.html')
 
 
 @app.route('/ai-video/unlock', methods=['POST'])
 def ai_video_unlock():
+    now = time.time()
+    locked_until = session.get('mii_aivideo_locked_until') or 0
+    if locked_until > now:
+        return jsonify({'ok': False, 'locked': True, 'retry_after': int(locked_until - now),
+                         'error': 'Terlalu banyak percobaan salah. Perangkat ini dikunci sementara.'}), 423
+
     data = request.get_json(silent=True) or {}
     pw = str(data.get('password', ''))
     if pw == MII_AIVIDEO_PASSWORD:
         session['mii_aivideo_auth'] = True
+        session.pop('mii_aivideo_fails', None)
+        session.pop('mii_aivideo_locked_until', None)
         return jsonify({'ok': True})
-    return jsonify({'ok': False, 'error': 'Password salah'}), 401
+
+    fails = int(session.get('mii_aivideo_fails') or 0) + 1
+    if fails >= AIVIDEO_LOCKOUT_THRESHOLD:
+        session['mii_aivideo_fails'] = 0
+        session['mii_aivideo_locked_until'] = now + AIVIDEO_LOCKOUT_SECONDS
+        return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
+                         'error': 'Password salah 3 kali. Perangkat ini dikunci sementara.'}), 423
+
+    session['mii_aivideo_fails'] = fails
+    return jsonify({'ok': False, 'attempts_left': AIVIDEO_LOCKOUT_THRESHOLD - fails, 'error': 'Password salah'}), 401
 
 
 @app.route('/ai-video/logout', methods=['POST'])
@@ -2485,6 +2506,26 @@ def aivideo_upload():
         _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
+
+
+@app.route('/api/aivideo/upload/forget', methods=['POST'])
+def aivideo_upload_forget():
+    """Called by the client right when a reference/frame is removed from the
+    UI (the X button), so the debug snapshot stops showing an upload that no
+    longer exists anywhere else (state, preview, or the generate payload)."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    url = (data.get('url') or '').strip()
+    if not url:
+        return jsonify({'ok': True})
+    with _AIVIDEO_DEBUG_LOCK:
+        lst = _AIVIDEO_DEBUG.get('last_uploads') or []
+        _AIVIDEO_DEBUG['last_uploads'] = [u for u in lst if u.get('url') != url]
+        last = _AIVIDEO_DEBUG.get('last_upload')
+        if last and last.get('url') == url:
+            _AIVIDEO_DEBUG['last_upload'] = None
+    return jsonify({'ok': True})
 
 
 
