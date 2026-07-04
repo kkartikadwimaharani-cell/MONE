@@ -129,6 +129,7 @@ button{background:none;border:none;cursor:pointer}
 .canvas-result-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;margin:0 auto}
 .canvas-result-refs{display:flex;gap:8px;overflow-x:auto;padding:0 2px}
 .canvas-result-refs .result-ref-thumb{width:48px;height:48px}
+.canvas-result-box{width:100%;max-width:480px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;gap:12px}
 .canvas-result-actions{display:flex;gap:8px;width:100%}
 .canvas-task{width:100%;max-width:480px;display:none;flex-direction:column;gap:14px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
@@ -1016,14 +1017,14 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline></video>
       </div>
 
-      <div class="canvas-result-refs" id="canvasResultRefs" style="display:none"></div>
-
-      <div class="canvas-result-actions" id="canvasResultActions" style="display:none">
-        <a class="result-btn primary" id="canvasDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
-        <button class="result-btn" onclick="regenerateVideo()"><span class="rb-ico">↻</span><span class="rb-lbl">Retry</span></button>
-        <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
-        <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico">ℹ</span><span class="rb-lbl">Details</span></button>
-        <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico">🗑</span><span class="rb-lbl">Delete</span></button>
+      <div class="canvas-result-box" id="canvasResultBox" style="display:none">
+        <div class="canvas-result-actions" id="canvasResultActions">
+          <a class="result-btn primary" id="canvasDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+          <button class="result-btn" onclick="regenerateVideo()"><span class="rb-ico">↻</span><span class="rb-lbl">Retry</span></button>
+          <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
+          <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico">ℹ</span><span class="rb-lbl">Details</span></button>
+          <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
+        </div>
       </div>
     </div>
 
@@ -1036,7 +1037,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         </div>
       </div>
       <div class="task-row">
-        <span class="task-status-txt pending" id="taskStatusTxt">Pending — 0%</span>
+        <span class="task-status-txt pending" id="taskStatusTxt">Pending</span>
         <span class="task-eta" id="taskEta"></span>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -1251,7 +1252,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <a class="result-btn primary" id="downloadBtnFull" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
     <button class="result-btn" onclick="regenerateVideo()"><span class="rb-ico">↻</span><span class="rb-lbl">Retry</span></button>
     <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
-    <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico">🗑</span><span class="rb-lbl">Delete</span></button>
+    <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
     <button class="result-btn" onclick="openHistorySheet('history')"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
   </div>
 </div>
@@ -1413,6 +1414,7 @@ var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
 var pollInterval = null;
+var currentTaskId = null;
 var mentionAutoTriggered = false;
 
 // ══════════ BUILDER 3-STATE PANEL (collapsed / half / expanded) — swipe or tap the handle ══════════
@@ -2010,25 +2012,13 @@ function showCanvasResultUI(payload) {
   var dlBtn = document.getElementById('canvasDownloadBtn');
   if (dlBtn) dlBtn.href = mediaUrl;
 
-  var refImgs = (payload.reopenRecord && payload.reopenRecord.refImages) || media.image.map(function(m) { return m.previewUrl; });
-  var refsEl = document.getElementById('canvasResultRefs');
-  if (refsEl) {
-    if (refImgs && refImgs.length > 0) {
-      refsEl.innerHTML = refImgs.map(function(u) { return '<img class="result-ref-thumb" src="' + u + '" onclick="openImagePreview(\'' + u + '\')" onerror="imgFallback(this)">'; }).join('');
-      refsEl.style.display = 'flex';
-    } else {
-      refsEl.style.display = 'none';
-    }
-  }
-  var actionsEl = document.getElementById('canvasResultActions');
-  if (actionsEl) actionsEl.style.display = 'flex';
+  var boxEl = document.getElementById('canvasResultBox');
+  if (boxEl) boxEl.style.display = 'flex';
   window.__lastResultPayload = payload;
 }
 function hideCanvasResultUI() {
-  var refsEl = document.getElementById('canvasResultRefs');
-  var actionsEl = document.getElementById('canvasResultActions');
-  if (refsEl) refsEl.style.display = 'none';
-  if (actionsEl) actionsEl.style.display = 'none';
+  var boxEl = document.getElementById('canvasResultBox');
+  if (boxEl) boxEl.style.display = 'none';
 }
 // Opens the fullscreen Result/description page on demand (via the "Details"
 // button), instead of that page being forced open automatically as soon as
@@ -2084,7 +2074,13 @@ function renderAssetsStrip() {
 }
 
 function removeMedia(type, idx) {
+  var removed = media[type][idx];
   media[type].splice(idx, 1);
+  // Free the blob: URL immediately so the removed reference can't leak
+  // memory or ever be reused/redisplayed anywhere in the UI.
+  if (removed && removed.previewUrl && removed.previewUrl.indexOf('blob:') === 0) {
+    try { URL.revokeObjectURL(removed.previewUrl); } catch(_) {}
+  }
   renderUploadGrid();
   updateCanvasPreview();
   updateGenerateButtonState();
@@ -2112,27 +2108,37 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
 });
 
 function uploadFile(file, type, previewUrl) {
-  media[type].push({ file: file, previewUrl: previewUrl, uploading: true, url: null });
+  // Track the entry by object identity (not array index). If the user
+  // removes an earlier reference while this upload is still in flight, the
+  // array shifts and a captured index would end up writing this upload's
+  // result onto a completely different (unrelated) reference — corrupting
+  // it with a stale/duplicate URL. Using the object reference itself and
+  // verifying it's still present in the array before mutating avoids that.
+  var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
+  media[type].push(entry);
   renderUploadGrid();
-  var idx = media[type].length - 1;
   var fd = new FormData();
   fd.append('file', file);
   fetch('/api/aivideo/upload', { method: 'POST', body: fd })
     .then(function(r) { return r.json(); })
     .then(function(data) {
+      var i = media[type].indexOf(entry);
+      if (i === -1) return; // removed by the user before the upload finished — discard silently
       if (data.ok) {
-        media[type][idx].url = data.url;
-        media[type][idx].uploading = false;
+        entry.url = data.url;
+        entry.uploading = false;
         showToast('Added 1 reference ' + type);
       } else {
         showError(data.error || 'Upload gagal');
-        media[type].splice(idx, 1);
+        media[type].splice(i, 1);
       }
       renderUploadGrid();
     })
     .catch(function() {
+      var i = media[type].indexOf(entry);
+      if (i === -1) return; // already removed by the user
       showError('Upload gagal, cek koneksi');
-      media[type].splice(idx, 1);
+      media[type].splice(i, 1);
       renderUploadGrid();
     });
 }
@@ -2150,13 +2156,37 @@ function showToast(msg) {
 function openFrameInput(which) {
   document.getElementById(which === 'first' ? 'firstFrameInput' : 'lastFrameInput').click();
 }
+var FRAME_CARD_PLACEHOLDER = '<svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg><span class="uc-label">__LABEL__</span>';
+function resetFrameCard(which) {
+  // Revoke any blob URL still held for this slot, then restore the card's
+  // original empty-state markup so no stale thumbnail is ever left showing
+  // for a frame that no longer exists in state.
+  var prev = frames[which];
+  if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
+    try { URL.revokeObjectURL(prev.previewUrl); } catch(_) {}
+  }
+  frames[which] = null;
+  var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
+  if (card) card.innerHTML = FRAME_CARD_PLACEHOLDER.replace('__LABEL__', which === 'first' ? 'First Frame' : 'Last Frame');
+}
 ['first','last'].forEach(function(which) {
   document.getElementById(which + 'FrameInput').addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
     var previewUrl = URL.createObjectURL(file);
     var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
-    frames[which] = { file: file, previewUrl: previewUrl, uploading: true, url: null };
+    // Free the previous frame's blob URL (if any) — it's being replaced.
+    var prev = frames[which];
+    if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
+      try { URL.revokeObjectURL(prev.previewUrl); } catch(_) {}
+    }
+    // Keep a direct reference to this specific upload's entry object. If the
+    // user reselects a different first/last frame (or removes it) before
+    // this upload resolves, frames[which] will no longer be === entry, so
+    // the stale response below is discarded instead of overwriting the new
+    // frame with the old upload's URL (a "double reference" bug).
+    var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
+    frames[which] = entry;
     card.innerHTML = '<img class="uc-thumb" src="' + previewUrl + '" onerror="imgFallback(this)"><div class="uc-thumb-dim"></div><span class="uc-label" style="position:absolute;bottom:9px;left:10px;z-index:1">' + (which === 'first' ? 'First Frame' : 'Last Frame') + '</span>';
     updateCanvasPreview();
     var fd = new FormData();
@@ -2164,18 +2194,20 @@ function openFrameInput(which) {
     fetch('/api/aivideo/upload', { method: 'POST', body: fd })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data.ok && frames[which]) {
-          frames[which].url = data.url;
-          frames[which].uploading = false;
+        if (frames[which] !== entry) return; // superseded or cleared — ignore this stale result
+        if (data.ok) {
+          entry.url = data.url;
+          entry.uploading = false;
         } else {
           showError((data && data.error) || 'Upload gagal');
-          frames[which] = null;
+          resetFrameCard(which);
         }
         updateGenerateButtonState();
       })
       .catch(function() {
+        if (frames[which] !== entry) return; // superseded or cleared — ignore this stale result
         showError('Upload gagal, cek koneksi');
-        frames[which] = null;
+        resetFrameCard(which);
         updateGenerateButtonState();
       });
     e.target.value = '';
@@ -2454,14 +2486,14 @@ function startGenerate() {
   document.getElementById('canvasPreview').style.display = 'none';
   hideCanvasResultUI();
   document.getElementById('failOverlay').classList.remove('show');
-  document.getElementById('taskStatusTxt').textContent = 'Pending — 0%';
+  document.getElementById('taskStatusTxt').textContent = 'Pending';
   document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
   document.getElementById('taskStage').textContent = 'Uploading Assets';
   document.getElementById('taskEta').textContent = 'Estimating…';
   document.getElementById('taskPreviewTitle').textContent = activeMode === 'image' ? 'Generating Image' : 'Generating Video';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('taskBox').classList.add('show');
-  updateCollapsedBar(selectedModelName, '0%');
+  updateCollapsedBar(selectedModelName);
   setPanelCollapsed(true);
 
   fetch('/api/aivideo/generate', {
@@ -2518,10 +2550,21 @@ function formatEta(seconds) {
 }
 function pollTask(taskId) {
   if (pollInterval) clearInterval(pollInterval);
+  currentTaskId = taskId;
+  var requestInFlight = false;
   pollInterval = setInterval(function() {
+    // Skip this tick entirely if the previous status request hasn't
+    // resolved yet (slow connection) — avoids piling up duplicate requests.
+    if (requestInFlight) return;
+    requestInFlight = true;
     fetch('/api/aivideo/task/' + taskId)
       .then(function(r) { return r.json(); })
       .then(function(data) {
+        requestInFlight = false;
+        // A newer generation may have started (and reassigned
+        // currentTaskId/pollInterval) while this request was in flight.
+        // Discard the response so it can never overwrite the newer result.
+        if (taskId !== currentTaskId) return;
         if (data.error) {
           clearInterval(pollInterval);
           resetGenBtn();
@@ -2532,12 +2575,12 @@ function pollTask(taskId) {
         var status = data.status;
         var progress = data.progress || 0;
         var statusEl = document.getElementById('taskStatusTxt');
-        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1) + ' — ' + progress + '%';
+        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         statusEl.className = 'task-status-txt ' + status;
         document.getElementById('progressFill').style.width = progress + '%';
         document.getElementById('taskStage').textContent = stageForProgress(progress);
-        document.getElementById('taskPreviewTitle').textContent = 'Generating Video — ' + progress + '%';
-        updateCollapsedBar(selectedModelName, progress + '%');
+        document.getElementById('taskPreviewTitle').textContent = activeMode === 'image' ? 'Generating Image' : 'Generating Video';
+        updateCollapsedBar(selectedModelName);
         // ETA reconciliation: the server's estimate (from task_info /
         // eta_seconds) is only a starting guess and can be far off for
         // fast/turbo tiers. Once we have real progress, recompute the ETA
@@ -2590,6 +2633,8 @@ function pollTask(taskId) {
         }
       })
       .catch(function() {
+        requestInFlight = false;
+        if (taskId !== currentTaskId) return;
         clearInterval(pollInterval);
         resetGenBtn();
         document.getElementById('taskBox').classList.remove('show');
@@ -2753,7 +2798,7 @@ function saveGenerationToHistory(res) {
     id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     videoUrl: res.videoUrl || '',
     imageUrl: res.imageUrl || '',
-    thumb: (media.image[0] && media.image[0].previewUrl) || res.imageUrl || '',
+    thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
     prompt: promptInput.value.trim(),
     model: fullModelLabel,
     quality: selectedResolution,
@@ -2863,11 +2908,23 @@ function restoreFromRecord(r) {
   // Restore prompt
   promptInput.value = r.prompt || '';
   syncPromptHighlight(); autosizePrompt();
-  // Restore reference media
+  // Restore reference media. This fully replaces images/video, but audio
+  // and first/last frames aren't part of a history record at all — so any
+  // audio ref or frame still sitting in the current session's state has to
+  // be explicitly cleared here too, otherwise it silently rides along into
+  // the next generate request as an unrelated, stale reference.
+  (media.audio || []).forEach(function(item) {
+    if (item && item.previewUrl && item.previewUrl.indexOf('blob:') === 0) {
+      try { URL.revokeObjectURL(item.previewUrl); } catch(_) {}
+    }
+  });
+  media.audio = [];
+  resetFrameCard('first');
+  resetFrameCard('last');
   media.image = (r.refImages || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
   media.video = (r.refVideos || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
   renderUploadGrid(); renderAssetsStrip();
-  updateCardPreview('image'); updateCardPreview('video');
+  updateCardPreview('image'); updateCardPreview('video'); updateCardPreview('audio');
   updateCreditEstimate();
   updateGenerateButtonState();
   switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
