@@ -1973,15 +1973,42 @@ SEGMIND_MODEL_MAP = {
     'FAST': 'seedance-2.0-fast',
     'PRO':  'seedance-2.0',
 }
-# Resolutions actually supported per model (per Segmind docs). 4K is not
-# offered by any Seedance 2.0 tier, so it is never sent upstream.
+# Resolutions actually supported per model (per Segmind docs). 4K is only
+# offered on Seedance 2.0 PRO.
 SEGMIND_RESOLUTIONS = {
-    'MINI': ('480p', '720p', '1080p'),
+    'MINI': ('480p', '720p'),
     'FAST': ('480p', '720p'),
-    'PRO':  ('480p', '720p', '1080p'),
+    'PRO':  ('480p', '720p', '1080p', '4K'),
 }
 SEGMIND_DURATIONS = (4, 5, 6, 8, 10, 12, 15)
 SEGMIND_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive')
+
+# Kling 3.0 — real endpoints per Segmind's published API docs
+# (segmind.com/models/kling-3-standard-image2video and kling-3-pro-image2video).
+# Image-to-video only: requires a single start_image_url, optional end_image_url.
+# Unlike Seedance, it does NOT support an arbitrary omni-reference array or a
+# discrete `resolution` param — output resolution is fixed per tier.
+KLING_MODEL_MAP = {
+    'STANDARD': 'kling-3-standard-image2video',
+    'PRO': 'kling-3-pro-image2video',
+}
+KLING_DURATION_RANGE = {
+    # Segmind's Pro doc explicitly confirms 3-15s. Standard isn't clearly
+    # confirmed at the same ceiling in public docs (some third-party sources
+    # suggest non-Pro Kling 3.0 tops out around 10s) — capped conservatively
+    # here until a real test confirms the actual limit.
+    'STANDARD': (3, 10),
+    'PRO': (3, 15),
+}
+KLING_RATIOS = ('16:9', '9:16', '1:1')
+
+# Nano Banana Pro (Google/Gemini 3 Pro image model) — one real Segmind
+# endpoint (segmind.com/models/nano-banana-pro). It doesn't expose separate
+# fast/standard/ultra endpoints, so the app's 3 quality tiers are mapped onto
+# its real output_resolution parameter (1K/2K/4K) instead of pretending
+# there are 3 distinct models.
+NANOBANANA_RESOLUTION_BY_TIER = {'FAST': '1K', 'STANDARD': '2K', 'ULTRA': '4K'}
+NANOBANANA_RATIOS = ('1:1', '2:3', '3:2', '4:3', '3:4', '4:5', '5:4', '16:9', '9:16', '21:9')
 
 # ── Dropbox (media relay so our own domain is never sent to Segmind) ───
 # NOTE: Dropbox "permanent" access tokens (the classic single Bearer token
@@ -2215,7 +2242,7 @@ def _segmind_extract_error(resp):
     return f'[Segmind {resp.status_code}] {msg}'
 
 
-def _run_segmind_task(task_id, endpoint, body):
+def _run_segmind_task(task_id, endpoint, body, output_type='video'):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -2227,6 +2254,8 @@ def _run_segmind_task(task_id, endpoint, body):
         logged_body['prompt'] = logged_body['prompt'][:500] + '…(truncated in log only, full prompt was sent)'
     app.logger.info('%s POST %s/%s payload=%s', log_prefix, SEGMIND_BASE, endpoint, json.dumps(logged_body))
     _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
+
+    is_image = (output_type == 'image')
 
     try:
         _set(status='processing', progress=15)
@@ -2240,13 +2269,14 @@ def _run_segmind_task(task_id, endpoint, body):
         app.logger.info('%s response status=%s content-type=%s content-length=%s',
                          log_prefix, resp.status_code, content_type, resp.headers.get('Content-Length'))
 
-        video_bytes = None
+        result_bytes = None
         upstream_error = None
 
         if resp.status_code >= 400:
             upstream_error = _segmind_extract_error(resp)
-        elif 'video' in content_type or 'application/octet-stream' in content_type:
-            video_bytes = resp.content
+        elif (('image' in content_type and is_image) or 'video' in content_type
+              or 'application/octet-stream' in content_type):
+            result_bytes = resp.content
         elif 'application/json' in content_type or resp.text.strip()[:1] == '{':
             try:
                 data = resp.json()
@@ -2254,24 +2284,30 @@ def _run_segmind_task(task_id, endpoint, body):
                 upstream_error = f'Segmind mengembalikan JSON tidak valid: {je}. Body: {resp.text[:300]}'
                 data = None
             if data is not None:
-                out_url = data.get('video_url') or data.get('output') or data.get('url')
-                b64 = data.get('video') or data.get('video_base64') or data.get('base64')
+                if is_image:
+                    out_url = (data.get('image_url') or data.get('output') or data.get('url')
+                               or (data.get('images')[0] if isinstance(data.get('images'), list) and data.get('images') else None))
+                    b64 = data.get('image') or data.get('image_base64') or data.get('base64')
+                else:
+                    out_url = data.get('video_url') or data.get('output') or data.get('url')
+                    b64 = data.get('video') or data.get('video_base64') or data.get('base64')
                 if isinstance(out_url, str) and out_url.startswith('http'):
                     app.logger.info('%s downloading result from output URL', log_prefix)
                     dl = requests_lib.get(out_url, timeout=180)
                     if dl.status_code >= 400:
                         upstream_error = f'Gagal download hasil dari Segmind output URL ({dl.status_code})'
                     else:
-                        video_bytes = dl.content
+                        result_bytes = dl.content
                 elif isinstance(b64, str) and b64:
                     try:
-                        video_bytes = base64.b64decode(b64)
+                        result_bytes = base64.b64decode(b64)
                     except Exception as be:
                         upstream_error = f'Gagal decode base64 hasil Segmind: {be}'
                 else:
+                    kind = 'gambar' if is_image else 'video'
                     upstream_error = (
                         data.get('error') or data.get('message')
-                        or f'Segmind sukses (200) tapi tidak ada field video di response: {json.dumps(data)[:300]}'
+                        or f'Segmind sukses (200) tapi tidak ada field {kind} di response: {json.dumps(data)[:300]}'
                     )
         else:
             upstream_error = _segmind_extract_error(resp)
@@ -2283,22 +2319,26 @@ def _run_segmind_task(task_id, endpoint, body):
                      else f'<binary {len(resp.content)} bytes>'),
         )
 
-        if upstream_error or not video_bytes:
-            msg = upstream_error or 'Segmind tidak mengembalikan video (response kosong)'
+        if upstream_error or not result_bytes:
+            kind = 'gambar' if is_image else 'video'
+            msg = upstream_error or f'Segmind tidak mengembalikan {kind} (response kosong)'
             _aivideo_last_error('segmind', msg)
             _set(status='failed', error=msg, progress=100)
             return
 
-        # Store the generated video via Dropbox (keeps our own storage stateless
-        # on Railway) and serve it back through our own domain to the user.
+        # Store the generated media via Dropbox-adjacent local static storage
+        # (keeps our own storage stateless on Railway) and serve it back
+        # through our own domain to the user.
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
         os.makedirs(upload_dir, exist_ok=True)
-        fname = f'{task_id}.mp4'
+        ext = 'png' if is_image else 'mp4'
+        fname = f'{task_id}.{ext}'
         with open(os.path.join(upload_dir, fname), 'wb') as f:
-            f.write(video_bytes)
-        app.logger.info('%s completed, wrote %d bytes to %s', log_prefix, len(video_bytes), fname)
+            f.write(result_bytes)
+        app.logger.info('%s completed, wrote %d bytes to %s', log_prefix, len(result_bytes), fname)
+        output_key = 'image_url' if is_image else 'video_url'
         _set(status='completed', progress=100,
-             output={'video_url': f'/static/aivideo_uploads/{fname}'})
+             output={output_key: f'/static/aivideo_uploads/{fname}'})
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
@@ -2362,9 +2402,7 @@ def aivideo_generate():
     _aivideo_debug_set('last_request', incoming_payload=payload)
 
     model_key = str(payload.get('model', 'MINI')).upper()
-    if model_key not in SEGMIND_MODEL_MAP:
-        model_key = 'MINI'
-    endpoint = SEGMIND_MODEL_MAP[model_key]
+    family = str(payload.get('family', 'seedance')).lower()
 
     prompt = str(payload.get('prompt', '')).strip()
     if not prompt:
@@ -2375,57 +2413,127 @@ def aivideo_generate():
     audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:3]
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
     last_frame_url = str(payload.get('last_frame_url') or '').strip()
+    aspect_ratio_in = payload.get('aspect_ratio')
 
-    if not image_urls and not video_urls and not first_frame_url:
-        return jsonify({'error': 'Minimal 1 gambar atau video referensi diperlukan'}), 400
+    if family == 'seedance':
+        if model_key not in SEGMIND_MODEL_MAP:
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = SEGMIND_MODEL_MAP[model_key]
 
-    # Resolution: snap to whatever this tier actually supports (never 4K -
-    # Seedance 2.0 does not offer it on any tier).
-    allowed_res = SEGMIND_RESOLUTIONS[model_key]
-    resolution = payload.get('resolution') or payload.get('quality') or '720p'
-    if resolution not in allowed_res:
-        resolution = '720p' if '720p' in allowed_res else allowed_res[0]
+        if not image_urls and not video_urls and not first_frame_url:
+            return jsonify({'error': 'Minimal 1 gambar atau video referensi diperlukan'}), 400
 
-    try:
-        duration = int(payload.get('duration', 5))
-    except (TypeError, ValueError):
-        duration = 5
-    if duration not in SEGMIND_DURATIONS:
-        duration = min(SEGMIND_DURATIONS, key=lambda d: abs(d - duration))
+        # Resolution: snap to whatever this tier actually supports (never 4K
+        # outside PRO).
+        allowed_res = SEGMIND_RESOLUTIONS[model_key]
+        resolution = payload.get('resolution') or payload.get('quality') or '720p'
+        if resolution not in allowed_res:
+            resolution = '720p' if '720p' in allowed_res else allowed_res[0]
 
-    aspect_ratio = payload.get('aspect_ratio')
-    if aspect_ratio not in SEGMIND_RATIOS:
-        aspect_ratio = '16:9'
+        try:
+            duration = int(payload.get('duration', 5))
+        except (TypeError, ValueError):
+            duration = 5
+        if duration not in SEGMIND_DURATIONS:
+            duration = min(SEGMIND_DURATIONS, key=lambda d: abs(d - duration))
 
-    body = {
-        'prompt': prompt,
-        'duration': duration,
-        'resolution': resolution,
-        'aspect_ratio': aspect_ratio,
-        'generate_audio': bool(payload.get('generate_audio', True)),
-        'return_last_frame': False,
-        'skip_moderation': False,
-    }
-    if first_frame_url:
-        body['first_frame_url'] = first_frame_url
-    if last_frame_url:
-        body['last_frame_url'] = last_frame_url
-    if image_urls:
-        body['reference_images'] = image_urls
-    if video_urls:
-        body['reference_videos'] = video_urls
-    if audio_urls:
-        body['reference_audios'] = audio_urls
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in SEGMIND_RATIOS else '16:9'
+
+        body = {
+            'prompt': prompt,
+            'duration': duration,
+            'resolution': resolution,
+            'aspect_ratio': aspect_ratio,
+            'generate_audio': bool(payload.get('generate_audio', True)),
+            'return_last_frame': False,
+            'skip_moderation': False,
+        }
+        if first_frame_url:
+            body['first_frame_url'] = first_frame_url
+        if last_frame_url:
+            body['last_frame_url'] = last_frame_url
+        if image_urls:
+            body['reference_images'] = image_urls
+        if video_urls:
+            body['reference_videos'] = video_urls
+        if audio_urls:
+            body['reference_audios'] = audio_urls
+
+    elif family == 'kling':
+        if model_key not in KLING_MODEL_MAP:
+            # Frontend sends the tier label as e.g. 'STANDARD'/'PRO'; anything
+            # else (or a stale Seedance tier like 'MINI') isn't a real Kling tier.
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = KLING_MODEL_MAP[model_key]
+
+        # Kling 3.0 is image-to-video only: needs one start frame. Accept
+        # either the dedicated Frames-mode first_frame_url, or fall back to
+        # the first uploaded reference image if the user used Elements mode.
+        start_image_url = first_frame_url or (image_urls[0] if image_urls else '')
+        end_image_url = last_frame_url
+        if not start_image_url:
+            return jsonify({'error': 'Kling 3.0 butuh minimal 1 gambar awal (start frame)'}), 400
+
+        try:
+            duration = int(payload.get('duration', 5))
+        except (TypeError, ValueError):
+            duration = 5
+        duration = max(KLING_DURATION_RANGE[model_key][0], min(KLING_DURATION_RANGE[model_key][1], duration))
+
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in KLING_RATIOS else '16:9'
+
+        body = {
+            'prompt': prompt,
+            'start_image_url': start_image_url,
+            'duration': str(duration),
+            'aspect_ratio': aspect_ratio,
+            'cfg_scale': float(payload.get('cfg_scale', 0.5)),
+            'generate_audio': bool(payload.get('generate_audio', True)),
+        }
+        if end_image_url:
+            body['end_image_url'] = end_image_url
+        negative_prompt = str(payload.get('negative_prompt') or '').strip()
+        if negative_prompt:
+            body['negative_prompt'] = negative_prompt
+
+    elif family == 'nanobanana':
+        endpoint = 'nano-banana-pro'
+        if model_key not in NANOBANANA_RESOLUTION_BY_TIER:
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        # The Resolution chip (1K/2K/4K) is the real, user-visible control
+        # that maps directly onto Nano Banana Pro's output_resolution param.
+        # Fall back to a tier-based default only if the client didn't send one.
+        output_resolution = payload.get('resolution') or NANOBANANA_RESOLUTION_BY_TIER[model_key]
+        if output_resolution not in ('1K', '2K', '4K'):
+            output_resolution = NANOBANANA_RESOLUTION_BY_TIER[model_key]
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in NANOBANANA_RATIOS else '1:1'
+        body = {
+            'prompt': prompt,
+            'aspect_ratio': aspect_ratio,
+            'output_resolution': output_resolution,
+            'response_modalities': 'IMAGE',
+        }
+        if image_urls:
+            body['image_urls'] = image_urls[:14]
+        duration = 0  # not applicable to image generation
+
+    else:
+        return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini. '
+                                  f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Kling 3.0 (STANDARD/PRO), '
+                                  f'dan Nano Banana Pro (FAST/STANDARD/ULTRA).'}), 501
+
+    output_type = 'image' if family == 'nanobanana' else 'video'
 
     task_id = uuid.uuid4().hex
     with AIVIDEO_TASKS_LOCK:
         AIVIDEO_TASKS[task_id] = {
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
-            'model': model_key, 'created': time.time(),
+            'model': model_key, 'family': family, 'created': time.time(),
         }
-    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body), daemon=True).start()
+    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type), daemon=True).start()
 
-    return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': duration * 12}})
+    estimated_time = (duration * 12) if duration else 20
+    return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
 
 
 def _aivideo_task_payload(task_id):
