@@ -1155,15 +1155,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
       <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
 
-      <div class="last-result-card" id="lastResultCard" style="display:none" onclick="reopenLastResult()">
-        <div class="lr-thumb" id="lrThumb"></div>
-        <div class="lr-info">
-          <span class="lr-label">Last Result</span>
-          <span class="lr-sub" id="lrSub">—</span>
-        </div>
-        <span class="lr-open">Open Result ›</span>
-      </div>
-
       <div class="settings-row">
         <div class="chip credit-chip" onclick="openAccountSheet()" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -2837,18 +2828,39 @@ function openResultOverlay(payload) {
   }
 
   document.getElementById('downloadBtnFull').href = mediaUrl;
-  document.getElementById('resultPromptText').textContent = promptInput.value.trim() || '—';
+
+  // Always prefer the actual history record's snapshotted settings over the
+  // live generate panel — the panel may have been changed to a different
+  // model/quality/duration/ratio since this specific video was generated,
+  // and this page must stay "locked" to what was really used.
+  var rec = payload.reopenRecord || (window.__lastResult && window.__lastResult.id ? findHistoryRecord(window.__lastResult.id) : null);
+
+  document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
 
   var elapsed = (payload.elapsedMs != null) ? payload.elapsedMs : (window.__genStartTs ? (Date.now() - window.__genStartTs) : 0);
-  var hasTier = selectedFamily.qualities.length > 1;
-  var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
-  var genTimeTxt = formatElapsed(elapsed);
-  var genAtTxt = payload.generatedAt || formatClock(new Date());
+  var genTimeTxt = rec ? (rec.genTime || formatElapsed(rec.elapsedMs || 0)) : formatElapsed(elapsed);
+  var genAtTxt = (rec && rec.createdAtLabel) || payload.generatedAt || formatClock(new Date());
+
+  var modelLabel, qualityVal, durationVal, ratioVal;
+  if (rec) {
+    modelLabel = rec.model;
+    qualityVal = rec.quality;
+    durationVal = rec.duration || rec.quality; // duration blank for image-mode records
+    ratioVal = rec.ratio;
+  } else {
+    // No history record at all (shouldn't normally happen — saveGenerationToHistory
+    // runs before this page can be opened) — fall back to the live panel.
+    var hasTier = selectedFamily.qualities.length > 1;
+    modelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
+    qualityVal = selectedResolution;
+    durationVal = isImage ? selectedResolution : (selectedDuration + 's');
+    ratioVal = selectedRatio;
+  }
   var items = [
-    { label: 'Model', value: fullModelLabel },
-    { label: 'Quality', value: selectedResolution },
-    { label: isImage ? 'Resolution' : 'Duration', value: isImage ? selectedResolution : (selectedDuration + 's') },
-    { label: 'Aspect Ratio', value: selectedRatio },
+    { label: 'Model', value: modelLabel },
+    { label: 'Quality', value: qualityVal },
+    { label: isImage ? 'Resolution' : 'Duration', value: durationVal },
+    { label: 'Aspect Ratio', value: ratioVal },
     { label: 'Generation Time', value: genTimeTxt },
     { label: 'Generated At', value: genAtTxt }
   ];
@@ -2858,7 +2870,7 @@ function openResultOverlay(payload) {
 
   var refsRow = document.getElementById('resultRefsRow');
   var refsBlock = document.getElementById('resultRefsBlock');
-  var refImgs = (payload.reopenRecord && payload.reopenRecord.refImages) || media.image.map(function(m) { return m.previewUrl; });
+  var refImgs = (rec && rec.refImages) || media.image.map(function(m) { return m.previewUrl; });
   if (refImgs.length > 0) {
     refsRow.innerHTML = refImgs.map(function(u) { return '<img class="result-ref-thumb" src="' + u + '" onclick="openImagePreview(\'' + u + '\')" onerror="imgFallback(this)">'; }).join('');
     refsBlock.style.display = 'block';
@@ -2866,7 +2878,7 @@ function openResultOverlay(payload) {
     refsBlock.style.display = 'none';
   }
 
-  window.__lastResult = { url: mediaUrl, isImage: isImage };
+  window.__lastResult = { url: mediaUrl, isImage: isImage, id: (rec && rec.id) || (window.__lastResult && window.__lastResult.id) };
   document.getElementById('resultOverlay').classList.add('show');
 }
 function closeResultOverlay() {
@@ -3117,15 +3129,25 @@ function closeConfirm() {
   document.getElementById('confirmBox').classList.remove('show');
   pendingDeleteId = null;
 }
-function deleteCurrentResult() {
+function resolveCurrentResultId() {
   var r = window.__lastResult;
-  if (!r || !r.id) { closeResultOverlay(); return; }
-  confirmDeleteHistoryItem(r.id);
+  if (r && r.id) return r.id;
+  var list = loadHistory();
+  if (r && r.url) {
+    var match = list.find(function(rec) { return rec.videoUrl === r.url || rec.imageUrl === r.url; });
+    if (match) return match.id;
+  }
+  return list.length > 0 ? list[0].id : null;
+}
+function deleteCurrentResult() {
+  var id = resolveCurrentResultId();
+  if (!id) { closeResultOverlay(); return; }
+  confirmDeleteHistoryItem(id);
 }
 function archiveCurrentResult() {
-  var r = window.__lastResult;
-  if (!r || !r.id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
-  updateHistoryRecord(r.id, { archived: true });
+  var id = resolveCurrentResultId();
+  if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
+  updateHistoryRecord(id, { archived: true });
   renderHistoryList();
   renderArchiveList();
   showToast('Tersimpan di Archive');
