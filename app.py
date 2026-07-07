@@ -2348,6 +2348,98 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
         _set(status='failed', error=str(e), progress=100)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# STORYBOARD (GPT Image 2) — isolated addition. Does not touch
+# SEGMIND_MODEL_MAP / KLING_MODEL_MAP / NANOBANANA_* or the if/elif chain
+# inside aivideo_generate() above. Reuses _run_segmind_task(),
+# AIVIDEO_TASKS/AIVIDEO_TASKS_LOCK, and _aivideo_authed() unchanged, so the
+# existing /api/aivideo/task/<task_id> polling route works for storyboard
+# frames with zero modification elsewhere in this file.
+# ═══════════════════════════════════════════════════════════════════════
+
+# GPT Image 2 only accepts 3 fixed sizes + "auto" — never arbitrary ratios.
+SEGMIND_GPT_IMAGE2_SIZE_MAP = {
+    '1:1': '1024x1024',
+    '4:3': '1536x1024', '16:9': '1536x1024', '21:9': '1536x1024',   # landscape-ish
+    '3:4': '1024x1536', '9:16': '1024x1536',                        # portrait-ish
+}
+SEGMIND_GPT_IMAGE2_QUALITY_MAP = {'LOW': 'low', 'STANDARD': 'medium', 'HIGH': 'high'}
+SEGMIND_GPT_IMAGE2_ENDPOINT = 'gpt-image-2'  # https://api.segmind.com/v1/gpt-image-2
+
+
+@app.route('/api/aivideo/storyboard/frame', methods=['POST'])
+def aivideo_storyboard_frame():
+    """Generate exactly ONE storyboard frame per request (GPT Image 2 via
+    Segmind). Isolated from /api/aivideo/generate — does not touch
+    Seedance / Kling / Nano Banana Pro routing above."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    if not SEGMIND_API_KEY:
+        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
+        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
+
+    payload = request.get_json(silent=True) or {}
+
+    prompt = str(payload.get('prompt', '')).strip()
+    if not prompt:
+        return jsonify({'error': 'Prompt/deskripsi scene wajib diisi'}), 400
+
+    character_image_url = str(payload.get('character_image_url') or '').strip()
+
+    # Never let a request reach Segmind carrying our own domain.
+    # character_image_url must already be a Dropbox temp-link (that's what
+    # /api/aivideo/upload returns, unchanged), never a makima.cloud /
+    # localhost / internal path. Belt-and-suspenders check:
+    if character_image_url and (
+        'makima.cloud' in character_image_url
+        or 'localhost' in character_image_url
+        or character_image_url.startswith('/')
+    ):
+        msg = f'Reference image URL tidak valid untuk Segmind (bukan URL publik): {character_image_url}'
+        app.logger.error('[ai-video][storyboard] %s', msg)
+        return jsonify({'error': msg}), 400
+
+    aspect_ratio_in = payload.get('aspect_ratio')
+    size = SEGMIND_GPT_IMAGE2_SIZE_MAP.get(aspect_ratio_in, 'auto')
+    quality = SEGMIND_GPT_IMAGE2_QUALITY_MAP.get(str(payload.get('quality') or '').upper(), 'medium')
+
+    body = {
+        'prompt': prompt,
+        'size': size,
+        'quality': quality,
+        'background': 'opaque',       # GPT Image 2 rejects background="transparent"
+        'output_format': 'png',
+        'moderation': 'auto',
+    }
+    if character_image_url:
+        # Same reference image on every frame call → character consistency
+        # across Frame 1..N. One frame per request, never a batch call.
+        body['image_urls'] = [character_image_url]
+
+    task_id = uuid.uuid4().hex
+    with AIVIDEO_TASKS_LOCK:
+        AIVIDEO_TASKS[task_id] = {
+            'status': 'pending', 'progress': 5, 'output': None, 'error': None,
+            'model': 'GPT-IMAGE-2', 'family': 'storyboard', 'created': time.time(),
+        }
+
+    # Debug log everything about this request up front.
+    app.logger.info(
+        '[ai-video][storyboard] task=%s model=GPT-IMAGE-2 endpoint=%s size=%s quality=%s '
+        'ref_image_url=%s prompt=%s',
+        task_id, SEGMIND_GPT_IMAGE2_ENDPOINT, size, quality,
+        (character_image_url or '(none)'), prompt[:200],
+    )
+
+    threading.Thread(
+        target=_run_segmind_task,
+        args=(task_id, SEGMIND_GPT_IMAGE2_ENDPOINT, body, 'image'),
+        daemon=True,
+    ).start()
+
+    return jsonify({'ok': True, 'id': task_id})
+
+
 @app.route('/ai-video')
 def ai_video_view():
     if not _aivideo_authed():
