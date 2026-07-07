@@ -57,7 +57,7 @@ button{background:none;border:none;cursor:pointer}
 .sb-logo-m{font-family:var(--disp);font-size:.95rem;font-weight:800;color:#fff}
 .sb-brand{font-family:var(--disp);font-size:1rem;font-weight:700;letter-spacing:-.01em}
 .sb-sec-lbl{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:16px 10px 6px}
-.sb-item{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:11px;color:var(--text-dim);text-decoration:none;font-size:.86rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:background .15s,color .15s}
+.sb-item{display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:11px;color:var(--text-dim);text-decoration:none;font-size:.98rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:background .15s,color .15s}
 .sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
 .sb-item.active{background:var(--accent-dim);color:#fff}
 .sb-icon{width:17px;height:17px;flex:0 0 17px;opacity:.85}
@@ -76,7 +76,7 @@ button{background:none;border:none;cursor:pointer}
 .icon-btn svg{width:18px;height:18px}
 .tb-center{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0}
 .tb-logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#ff2142,#a80019);display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 14px -4px rgba(255,32,64,.6),0 0 0 1px rgba(255,255,255,.08) inset;font-family:var(--disp);font-weight:800;color:#fff;font-size:13px;letter-spacing:.02em}
-.tb-title{font-family:var(--disp);font-size:19px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-title{font-family:var(--disp);font-size:21px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb-badge{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,32,64,.45);background:rgba(255,32,64,.10);color:#ff5a75;font-size:.58rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;flex-shrink:0}
 @media(min-width:768px){
   .tb-title{font-size:22px}
@@ -87,7 +87,7 @@ button{background:none;border:none;cursor:pointer}
 
 /* MODE / FILTER BAR — centered, equal spacing */
 .modebar{display:flex;align-items:center;justify-content:center;gap:8px;padding:2px 16px 10px;flex-shrink:0}
-.mode-btn{padding:9px 18px;border-radius:11px;font-size:.82rem;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--text-dim);background:transparent;transition:all .15s}
+.mode-btn{padding:9px 18px;border-radius:11px;font-size:.9rem;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--text-dim);background:transparent;transition:all .15s}
 .mode-btn.active{background:var(--btn);color:#fff}
 
 /* ============ CANVAS ============ */
@@ -163,6 +163,19 @@ button{background:none;border:none;cursor:pointer}
 .task-logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;box-shadow:0 0 24px rgba(255,32,64,.5);animation:logoPulse 1.8s ease-in-out infinite}
 .task-logo span{font-family:var(--disp);font-size:1.15rem;font-weight:800;color:#fff}
 @keyframes logoPulse{0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(255,32,64,.4)}50%{transform:scale(1.08);box-shadow:0 0 34px rgba(255,32,64,.65)}}
+/* Brand loading ring — same animation as the MII AI VIDEO lock screen
+   (spinning conic ring + pulsing inner ring + breathing "M"). Reused for
+   every generate-in-progress state (main AI Video AND Storyboard) instead
+   of a generic spinner. */
+.brand-ring{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
+.brand-ring::before{content:'';position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));animation:brandRingSpin 3.2s linear infinite}
+.brand-ring::after{content:'';position:absolute;inset:5px;border-radius:50%;border:1.5px solid rgba(255,32,64,.45);animation:brandRingPulse 2.4s ease-in-out infinite}
+.brand-ring-m{font-family:var(--disp);font-size:1.4rem;font-weight:900;color:#ff1638;text-shadow:0 0 16px rgba(255,0,48,.6);position:relative;z-index:1;animation:brandLogoBreathe 2.4s ease-in-out infinite}
+.brand-ring.small{width:44px;height:44px}
+.brand-ring.small .brand-ring-m{font-size:1rem}
+@keyframes brandRingSpin{to{transform:rotate(360deg)}}
+@keyframes brandRingPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
+@keyframes brandLogoBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 .task-preview-title{font-family:var(--disp);font-size:17px;font-weight:700;color:#fff}
 .task-preview-stage{font-family:var(--mono);font-size:.76rem;font-weight:600;color:rgba(255,255,255,.6);letter-spacing:.03em}
 
@@ -369,6 +382,9 @@ input[type=file].hidden-input{display:none}
 
 /* ============ FULLSCREEN RESULT PAGE ============ */
 .result-overlay{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+.app-page{display:none;flex:1;min-height:0;width:100%;flex-direction:column}
+.app-page.active{display:flex;animation:pageFadeSlide .28s cubic-bezier(.22,.61,.36,1) both}
+@keyframes pageFadeSlide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
 .result-overlay.show{transform:translateY(0)}
 .result-body{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
 .result-video-full{width:100%;border-radius:18px;border:1px solid var(--border);background:#000;max-height:52vh;display:block}
@@ -393,8 +409,34 @@ input[type=file].hidden-input{display:none}
 .lr-open{font-size:11.5px;font-weight:700;color:var(--accent);flex-shrink:0}
 
 /* HISTORY / ARCHIVE — FULLSCREEN PAGE */
-.history-page{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
-.history-page.show{transform:translateY(0)}
+.history-page{display:none;flex:1;min-height:0;width:100%;flex-direction:column;background:var(--bg)}
+.history-page.show{display:flex;animation:pageFadeSlide .28s cubic-bezier(.22,.61,.36,1) both}
+.dash-wrap{flex:1;overflow-y:auto;padding:0 18px 40px}
+.dash-hero{position:relative;margin-top:14px;padding:26px 20px 24px;border-radius:20px;border:1px solid var(--border);overflow:hidden;background:#0c0c0c}
+.dash-hero::before{content:'';position:absolute;inset:0;z-index:0;background:
+    radial-gradient(circle at 20% 15%, rgba(255,32,64,.55), transparent 60%),
+    radial-gradient(circle at 85% 75%, rgba(255,32,64,.4), transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, rgba(122,0,20,.5), transparent 70%),
+    #0c0c0c;
+  background-size:220% 220%;animation:canvasAmbientGlow 12s ease-in-out infinite}
+.dash-hero-inner{position:relative;z-index:1}
+.dash-hero-title{font-family:var(--disp);font-size:28px;font-weight:800;letter-spacing:.02em;line-height:1.1;text-transform:uppercase}
+.dash-hero-sub{color:var(--text-dim,#999);font-size:11.5px;margin-top:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.dash-card{position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px;border-radius:16px;border:1px solid var(--border);background:var(--card2);cursor:pointer;transition:border-color .15s,transform .15s;text-decoration:none;color:#fff}
+.dash-card:active{transform:scale(.97)}
+.dash-card.locked{opacity:.45;cursor:not-allowed}
+.dash-card-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;box-shadow:0 0 16px rgba(255,32,64,.35)}
+.dash-card-title{font-family:var(--disp);font-weight:700;font-size:15.5px;letter-spacing:.03em;text-transform:uppercase}
+.dash-card-sub{color:var(--text-dim,#999);font-size:12.5px;line-height:1.4;letter-spacing:.01em}
+.dash-card-tag{position:absolute;top:12px;right:12px;padding:2px 7px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.4);color:#ff5a75;font-size:.56rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.dash-section-lbl{margin:26px 2px 10px;color:var(--text-dim,#999);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.settings-list{flex:1;overflow-y:auto;padding:6px 18px 32px;display:flex;flex-direction:column;gap:10px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px;border-radius:14px;background:var(--card2);border:1px solid var(--border)}
+.set-row-lbl{font-size:15px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.set-row-val{color:var(--text-dim,#999);font-size:13.5px;letter-spacing:.02em;text-transform:uppercase}
+.api-status-card{margin:6px 18px 0;padding:16px;border-radius:16px;background:var(--card2);border:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.api-dot{width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 8px #2ecc71;display:inline-block;margin-right:6px}
 .history-tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px;margin:4px 18px 14px}
 .hist-tab{flex:1;padding:9px 16px;border:none;background:transparent;color:var(--text-dim,#999);font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:9px;cursor:pointer;transition:all .15s}
 .hist-tab.active{background:var(--accent);color:#fff}
@@ -477,7 +519,7 @@ input[type=file].hidden-input{display:none}
 }
 .mention-popup.show{display:block;animation:popIn .18s cubic-bezier(.16,1,.3,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.mp-title{font-size:.92rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
+.mp-title{font-size:1.02rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin-bottom:2px}
 .mp-title span{color:var(--accent-hover)}
 .mp-sub{font-size:.72rem;color:var(--text-faint);margin-bottom:10px;line-height:1.4}
 .mp-empty{font-size:.8rem;color:var(--text-faint);line-height:1.5;padding:10px 4px}
@@ -894,8 +936,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .credit-chip{min-width:0;border-color:rgba(255,32,64,.42);background:linear-gradient(180deg,rgba(255,32,64,.16),rgba(255,32,64,.045));box-shadow:0 12px 28px -20px rgba(255,32,64,.7),0 1px 0 rgba(255,255,255,.06) inset}
 .action-row{gap:12px}.qty-stepper{min-height:58px;border-radius:20px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset}.qty-btn{width:26px;height:26px;border-radius:10px;background:rgba(255,255,255,.035)}
 .gen-btn{min-height:64px;border-radius:23px;background:linear-gradient(180deg,#ff2142 0%,#bf001e 100%)!important;box-shadow:0 18px 38px -16px rgba(255,32,64,.95),0 1px 0 rgba(255,255,255,.2) inset!important;position:relative;overflow:hidden}
-.gen-btn::before{content:"";position:absolute;inset:-40% -30%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.22) 49%,transparent 62%);transform:translateX(-80%);animation:generateSweep 2.8s ease-in-out infinite}.gen-txt{position:relative;z-index:1}
-@keyframes generateSweep{0%,55%{transform:translateX(-85%)}85%,100%{transform:translateX(85%)}}
+.gen-txt{position:relative;z-index:1}
 
 .sheet-overlay{z-index:120;background:rgba(0,0,0,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .sheet{z-index:130;border-radius:28px 28px 0 0;max-height:76vh;background:linear-gradient(180deg,#202020,#101010);box-shadow:0 -32px 80px -16px rgba(0,0,0,.85),0 -12px 46px -28px rgba(255,32,64,.45);animation:none}
@@ -972,10 +1013,19 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <div class="sb-logo"><span class="sb-logo-m">M</span></div>
     <span class="sb-brand">MII AI</span>
   </div>
+  <div class="sb-sec-lbl">Menu</div>
+  <a class="sb-item" data-page="dashboard" href="#" onclick="navigateTo('dashboard');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    Dashboard
+  </a>
   <div class="sb-sec-lbl">Tools</div>
-  <a class="sb-item active" href="/ai-video">
+  <a class="sb-item" data-page="aivideo" href="#" onclick="navigateTo('aivideo');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
     MII AI Video
+  </a>
+  <a class="sb-item" data-page="storyboard" href="#" onclick="navigateTo('storyboard');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg>
+    Storyboard
   </a>
   <a class="sb-item" href="#" onclick="return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -986,15 +1036,29 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     Music
   </a>
   <div class="sb-sec-lbl">Library</div>
-  <a class="sb-item" href="#" onclick="openHistoryPage();return false">
+  <a class="sb-item" data-page="history" href="#" onclick="navigateTo('history');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
     History
   </a>
-  <a class="sb-item" href="#" onclick="openArchivePage();return false">
+  <a class="sb-item" data-page="archive" href="#" onclick="navigateTo('archive');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>
     Archive
   </a>
-  <a class="sb-item" href="#" onclick="return false">
+  <div class="sb-sec-lbl">System</div>
+  <a class="sb-item" data-page="apiprovider" href="#" onclick="navigateTo('apiprovider');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><circle cx="8" cy="7.5" r="1"/><circle cx="8" cy="16.5" r="1"/></svg>
+    API Provider
+  </a>
+  <div class="sb-sec-lbl">Account</div>
+  <a class="sb-item" data-page="credits" href="#" onclick="navigateTo('credits');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v2m0 6v2M9 10a3 3 0 1 1 3 3 3 3 0 0 0 3 3"/></svg>
+    Credits
+  </a>
+  <a class="sb-item" data-page="profile" href="#" onclick="navigateTo('profile');return false">
+    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    Profile
+  </a>
+  <a class="sb-item" data-page="settings" href="#" onclick="navigateTo('settings');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </a>
@@ -1013,14 +1077,63 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </button>
     <div class="tb-center">
       <span class="tb-logo" aria-hidden="true">M</span>
-      <span class="tb-title">MII AI VIDEO</span>
+      <span class="tb-title" id="pageTitleTxt">Dashboard</span>
       <span class="tb-badge">BETA</span>
     </div>
-    <button class="icon-btn" id="settingsBtn" onclick="openAccountSheet()">
+    <button class="icon-btn" id="settingsBtn" onclick="navigateTo('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </div>
 
+  <!-- PAGE: DASHBOARD (Home) -->
+  <div class="app-page active" id="pageDashboard">
+    <div class="dash-wrap">
+      <div class="dash-hero">
+        <div class="dash-hero-inner">
+          <div class="dash-hero-title">MII AI Studio</div>
+          <div class="dash-hero-sub">Digital Tools · AI Generation · Creative Suite</div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <a class="dash-card" href="#" onclick="navigateTo('aivideo');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div>
+          <div class="dash-card-title">MII AI Video</div>
+          <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
+        </a>
+        <a class="dash-card" href="#" onclick="navigateTo('storyboard');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg></div>
+          <div class="dash-card-title">Storyboard</div>
+          <div class="dash-card-sub">Multi-scene generator, karakter konsisten</div>
+        </a>
+        <a class="dash-card" href="#" onclick="navigateTo('history');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div class="dash-card-title">History</div>
+          <div class="dash-card-sub">Hasil generate terakhir</div>
+        </a>
+        <a class="dash-card" href="#" onclick="navigateTo('archive');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg></div>
+          <div class="dash-card-title">Archive History</div>
+          <div class="dash-card-sub">Hasil yang sudah diarsipkan</div>
+        </a>
+      </div>
+      <div class="dash-section-lbl">System</div>
+      <div class="dash-grid">
+        <a class="dash-card" href="#" onclick="navigateTo('apiprovider');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><circle cx="8" cy="7.5" r="1"/><circle cx="8" cy="16.5" r="1"/></svg></div>
+          <div class="dash-card-title">API Provider</div>
+          <div class="dash-card-sub">Status koneksi backend generate</div>
+        </a>
+        <a class="dash-card" href="#" onclick="navigateTo('settings');return false">
+          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          <div class="dash-card-title">Settings</div>
+          <div class="dash-card-sub">Akun &amp; preferensi</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: MII AI VIDEO -->
+  <div class="app-page" id="pageAiVideo">
   <div class="modebar" role="tablist" aria-label="Media type">
     <div class="mode-btn" data-view="image" onclick="setView('image',this)" role="tab">IMAGE</div>
     <div class="mode-btn active" data-view="video" onclick="setView('video',this)" role="tab">VIDEO</div>
@@ -1051,7 +1164,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <div class="canvas-task" id="taskBox">
       <div class="task-preview">
         <div class="task-preview-inner">
-          <div class="task-logo"><span>M</span></div>
+          <div class="brand-ring"><span class="brand-ring-m">M</span></div>
           <div class="task-preview-title" id="taskPreviewTitle">Generating Video</div>
           <div class="task-preview-stage" id="taskStage">Preparing…</div>
         </div>
@@ -1156,7 +1269,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
 
       <div class="settings-row">
-        <div class="chip credit-chip" onclick="openAccountSheet()" title="Credits">
+        <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
         </div>
         <div class="chip" id="qualityChip" onclick="openQualitySheet()" style="display:none">
@@ -1182,6 +1295,219 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       </div>
     </div>
   </div>
+  </div><!-- /pageAiVideo -->
+
+<!-- HISTORY — FULLSCREEN PAGE (own page, not a floating sheet) -->
+<div class="history-page" id="historyPage">
+  <div class="history-list" id="historyList"></div>
+  <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
+</div>
+
+<!-- ARCHIVE — FULLSCREEN PAGE, entirely separate from History (own page, not a floating sheet) -->
+<div class="history-page" id="archivePage">
+  <div class="history-list" id="archiveList"></div>
+  <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
+</div>
+
+<!-- STORYBOARD — character-consistent multi-scene generator (GPT Image 2) -->
+<div class="history-page" id="storyboardPage">
+
+  <div style="flex:1;overflow-y:auto;min-height:0;padding:4px 16px 16px">
+    <input type="file" id="storyboardCharInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
+    <div id="storyboardStatus" style="display:none;margin-top:14px;flex-direction:column;align-items:center;gap:10px;text-align:center;color:var(--text-dim);font-size:.85rem">
+      <div class="brand-ring small"><span class="brand-ring-m">M</span></div>
+      <span id="storyboardStatusTxt"></span>
+    </div>
+  </div>
+
+  <!-- FLOATING GENERATOR PANEL — identical component (.panel-wrap/.panel/.panel-handle)
+       to the one on MII AI Video. Same CSS, same corners, shadows, animation, red glow —
+       just a separate instance/id so it never touches the AI Video panel's own state. -->
+  <div class="panel-wrap">
+    <div class="panel" id="storyboardPanel">
+      <div class="panel-handle-wrap" id="storyboardPanelHandle" onclick="toggleStoryboardPanelCollapse()">
+        <div class="panel-handle"></div>
+      </div>
+      <div class="panel-collapsed-bar" onclick="toggleStoryboardPanelCollapse()">
+        <span class="panel-collapsed-model">STORYBOARD</span>
+        <span class="panel-collapsed-progress" id="storyboardCollapsedTxt"></span>
+        <span class="panel-collapsed-spacer"></span>
+        <span class="panel-collapsed-hint">Expand</span>
+      </div>
+
+      <div class="panel-body" id="storyboardPanelBody">
+        <div class="mp-title" style="margin-bottom:8px">Character Reference</div>
+        <div class="builder-input-row" style="margin-bottom:14px">
+          <div class="upload-row">
+            <div class="upload-card" id="storyboardPreview" onclick="document.getElementById('storyboardCharInput').click()">
+              <span class="uc-count" id="storyboardCharCount">0/1</span>
+              <img id="storyboardPreviewImg" class="uc-thumb" style="display:none" onerror="imgFallback(this)">
+              <svg class="uc-icon" id="storyboardPreviewIcon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span class="uc-label">CHAR</span>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;align-items:center">
+            <span style="font-size:.76rem;color:var(--text-dim);line-height:1.35">Same reference image is reused for every frame, so the character stays consistent.</span>
+          </div>
+        </div>
+
+        <div class="mp-title" style="margin-bottom:8px">Story</div>
+        <textarea id="storyboardStoryInput" placeholder="Ceritakan urutan adegannya, mis: karakter bangun pagi di kamar, lalu berjalan ke dapur membuat kopi, lalu duduk di teras menikmati matahari terbit..." style="width:100%;min-height:76px;background:var(--card2,#1c1c1c);border:1px solid var(--border);border-radius:14px;color:#fff;padding:14px;font-size:.92rem;font-family:inherit;resize:vertical"></textarea>
+
+        <div class="mp-title" style="margin-bottom:8px">Quality</div>
+        <div class="settings-row" id="storyboardQualityRow"></div>
+
+        <div class="mp-title" style="margin-bottom:8px">Aspect Ratio</div>
+        <div class="settings-row" id="storyboardRatioRow"></div>
+
+        <div class="mp-title" style="margin-bottom:8px">Frames</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+          <button class="qty-btn" onclick="adjustStoryboardScenes(-1)">−</button>
+          <span id="storyboardSceneCount" style="font-size:1.1rem;font-weight:700;min-width:24px;text-align:center">6</span>
+          <button class="qty-btn" onclick="adjustStoryboardScenes(1)">+</button>
+          <span style="color:var(--text-dim);font-size:.78rem">frames (1–20)</span>
+        </div>
+
+        <button class="gen-btn" id="storyboardGenBtn" onclick="startStoryboardGenerate()" style="width:100%">
+          <span class="gen-txt">✨ GENERATE STORYBOARD</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STORYBOARD RESULT — its own full page, styled exactly like the main generate result (merged canvas + action box) -->
+<div class="history-page" id="storyboardResultPage">
+  <div style="flex:1;overflow-y:auto;padding:16px">
+    <div class="canvas-result-wrap has-result" style="margin:0 auto">
+      <div class="canvas-preview" id="storyboardResultPreview" style="position:relative">
+        <img id="storyboardResultImg" class="canvas-preview-media" onerror="imgFallback(this)">
+        <div id="storyboardFrameLoading" style="display:none;position:absolute;inset:0;z-index:2;align-items:center;justify-content:center;background:rgba(12,12,12,.72);flex-direction:column;gap:10px">
+          <div class="brand-ring small"><span class="brand-ring-m">M</span></div>
+          <span style="font-size:.75rem;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Regenerating…</span>
+        </div>
+      </div>
+      <div class="canvas-result-box" id="storyboardResultBox" style="display:flex">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span id="storyboardSceneCounter" style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;letter-spacing:.06em">Scene 1/4</span>
+          <div style="display:flex;gap:8px">
+            <button class="icon-btn" style="width:34px;height:34px" onclick="storyboardResultNav(-1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="icon-btn" style="width:34px;height:34px" onclick="storyboardResultNav(1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="storyboardSceneCaption" style="font-size:.85rem;color:#fff;line-height:1.4"></div>
+        <div class="canvas-result-actions">
+          <a class="result-btn primary" id="storyboardDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+          <button class="result-btn" id="storyboardRegenBtn" onclick="regenerateStoryboardFrame()"><span class="rb-ico">⟳</span><span class="rb-lbl">Regenerate</span></button>
+          <button class="result-btn" onclick="archiveStoryboardResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
+          <button class="result-btn" onclick="deleteStoryboardResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
+          <button class="result-btn" onclick="closeStoryboardResultPage();openStoryboardPage()"><span class="rb-ico">↺</span><span class="rb-lbl">New</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- PAGE: API PROVIDER -->
+  <div class="app-page" id="pageApiProvider">
+    <div style="flex:1;overflow-y:auto;padding:16px 18px 32px">
+      <div class="api-status-card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Segmind — Seedance 2.0</span>
+          <span><span class="api-dot"></span><span style="font-size:12px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.06em">Connected</span></span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Video &amp; image generation backend, routed via Railway.</div>
+      </div>
+      <div class="api-status-card" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Credit Balance</span>
+          <span id="apiCreditBalanceTxt" style="font-family:var(--mono);color:var(--accent-hover);font-size:13px">—</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Dipakai untuk generate video, image, dan storyboard.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: SETTINGS -->
+  <div class="app-page" id="pageSettings">
+    <div class="settings-list">
+      <div class="set-row">
+        <span class="set-row-lbl">Credit Balance</span>
+        <span class="set-row-val" id="settingsCreditBalanceTxt">—</span>
+      </div>
+      <div class="set-row" onclick="fetchCreditBalance()" style="cursor:pointer">
+        <span class="set-row-lbl">Refresh Balance</span>
+        <span class="set-row-val">↻</span>
+      </div>
+      <div class="set-row" onclick="navigateTo('credits')" style="cursor:pointer">
+        <span class="set-row-lbl">Credits &amp; Billing</span>
+        <span class="set-row-val">→</span>
+      </div>
+      <div class="set-row" onclick="navigateTo('profile')" style="cursor:pointer">
+        <span class="set-row-lbl">Profile</span>
+        <span class="set-row-val">→</span>
+      </div>
+      <div class="set-row" onclick="doLogout()" style="cursor:pointer">
+        <span class="set-row-lbl">Logout</span>
+        <span class="set-row-val">→</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CREDITS -->
+  <div class="app-page" id="pageCredits">
+    <div style="flex:1;overflow-y:auto;padding:16px 18px 32px">
+      <div class="api-status-card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Remaining Credits</span>
+          <span id="creditsBalanceVal" style="font-family:var(--mono);color:var(--accent-hover);font-size:15px">—</span>
+        </div>
+      </div>
+      <div class="api-status-card" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Estimated Cost</span>
+          <span id="creditsEstCostVal" style="font-family:var(--mono);color:#ff5a75;font-size:15px">—</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Berdasarkan setting generate saat ini.</div>
+      </div>
+      <div class="api-status-card" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">After Generate</span>
+          <span id="creditsAfterVal" style="font-family:var(--mono);color:var(--text-dim,#999);font-size:15px">—</span>
+        </div>
+      </div>
+      <button class="gen-btn" style="width:100%;margin-top:18px" onclick="fetchCreditBalance()">
+        <span class="gen-txt">REFRESH BALANCE</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE: PROFILE -->
+  <div class="app-page" id="pageProfile">
+    <div class="settings-list">
+      <div class="set-row">
+        <span class="set-row-lbl">Account</span>
+        <span class="set-row-val">MII AI</span>
+      </div>
+      <div class="set-row" onclick="navigateTo('credits')" style="cursor:pointer">
+        <span class="set-row-lbl">Credits &amp; Billing</span>
+        <span class="set-row-val">→</span>
+      </div>
+      <div class="set-row" onclick="navigateTo('settings')" style="cursor:pointer">
+        <span class="set-row-lbl">Settings</span>
+        <span class="set-row-val">→</span>
+      </div>
+      <div class="set-row" onclick="doLogout()" style="cursor:pointer">
+        <span class="set-row-lbl">Logout</span>
+        <span class="set-row-val">→</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- DREAMKREAT-STYLE MODEL DOCK (opens above the builder panel, not a full sheet) -->
@@ -1266,31 +1592,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
     <button class="result-btn" onclick="openHistoryPage()"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
   </div>
-</div>
-<!-- HISTORY — FULLSCREEN PAGE (own page, not a floating sheet) -->
-<div class="history-page" id="historyPage">
-  <div class="pe-header">
-    <button class="icon-btn" onclick="closeHistoryPage()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
-    </button>
-    <span class="pe-title">History</span>
-    <span style="width:40px"></span>
-  </div>
-  <div class="history-list" id="historyList"></div>
-  <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
-</div>
-
-<!-- ARCHIVE — FULLSCREEN PAGE, entirely separate from History (own page, not a floating sheet) -->
-<div class="history-page" id="archivePage">
-  <div class="pe-header">
-    <button class="icon-btn" onclick="closeArchivePage()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
-    </button>
-    <span class="pe-title">Archive</span>
-    <span style="width:40px"></span>
-  </div>
-  <div class="history-list" id="archiveList"></div>
-  <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
 </div>
 
 <div class="img-preview-overlay" id="imgPreviewOverlay" onclick="closeImagePreview()">
@@ -1390,8 +1691,8 @@ var modelFamilies = {
     },
     {
       key: 'gptimage', brand: 'OPENAI', name: 'GPT IMAGE 2', featured: true,
-      desc: "OpenAI's latest image model — aspect ratio + quality only.",
-      caps: { image: 4, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
+      desc: "OpenAI's latest image model — aspect ratio + quality tiers.",
+      caps: { image: 10, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: false, resolutionSet: 'image', duration: false, motion: false },
       qualities: [
         { id: 'gpt-image-2-low',      label: 'LOW' },
         { id: 'gpt-image-2-standard', label: 'STANDARD' },
@@ -1423,7 +1724,7 @@ var modelFamilies = {
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
-var CONNECTED_FAMILIES = ['seedance', 'kling', 'nanobanana'];
+var CONNECTED_FAMILIES = ['seedance', 'kling', 'nanobanana', 'gptimage'];
 // Families where a reference image/video/frame is mandatory. Nano Banana Pro
 // (and other pure text-to-image models) can generate from prompt alone.
 var FAMILIES_REQUIRING_MEDIA = ['seedance', 'kling'];
@@ -1468,6 +1769,24 @@ function stepPanel(direction) {
 }
 function togglePanelCollapse() {
   setPanelState(getPanelState() === 'collapsed' ? 'expanded' : 'collapsed');
+}
+// Isolated collapse toggle for the Storyboard panel — mirrors the AI Video
+// panel's collapsed/half/expanded states via the exact same CSS classes,
+// but operates only on #storyboardPanel so the AI Video panel's own
+// getPanelState()/setPanelState() are never touched.
+function getStoryboardPanelState() {
+  var panel = document.getElementById('storyboardPanel');
+  if (panel.classList.contains('collapsed')) return 'collapsed';
+  if (panel.classList.contains('half')) return 'half';
+  return 'expanded';
+}
+function setStoryboardPanelState(state) {
+  var panel = document.getElementById('storyboardPanel');
+  panel.classList.toggle('collapsed', state === 'collapsed');
+  panel.classList.toggle('half', state === 'half');
+}
+function toggleStoryboardPanelCollapse() {
+  setStoryboardPanelState(getStoryboardPanelState() === 'collapsed' ? 'expanded' : 'collapsed');
 }
 (function initPanelSwipe() {
   var handle = document.getElementById('panelHandle');
@@ -1533,6 +1852,49 @@ function fetchCreditBalance() {
 function toggleSidebar(open) {
   document.getElementById('sidebar').classList.toggle('open', open);
   document.getElementById('sbOverlay').classList.toggle('show', open);
+}
+
+// ══════════ APP SHELL NAVIGATION (persistent header + sidebar, real pages) ══════════
+var PAGE_DEFS = {
+  dashboard:   { el: 'pageDashboard',   title: 'Dashboard' },
+  aivideo:     { el: 'pageAiVideo',     title: 'MII AI VIDEO' },
+  storyboard:  { el: 'storyboardPage',  title: 'Storyboard',  onEnter: function(){ renderStoryboardPills(); } },
+  history:     { el: 'historyPage',     title: 'History',     onEnter: function(){ renderHistoryList(); } },
+  archive:     { el: 'archivePage',     title: 'Archive',     onEnter: function(){ renderArchiveList(); } },
+  apiprovider: { el: 'pageApiProvider', title: 'API Provider', onEnter: function(){ var e=document.getElementById('apiCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
+  settings:    { el: 'pageSettings',    title: 'Settings',    onEnter: function(){ var e=document.getElementById('settingsCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
+  credits:     { el: 'pageCredits',     title: 'Credits',     onEnter: function(){ renderCreditsPage(); } },
+  profile:     { el: 'pageProfile',     title: 'Profile' }
+};
+function renderCreditsPage() {
+  var cost = estimateCredits();
+  var afterTxt = (creditBalance != null) ? Math.max(0, creditBalance - cost).toLocaleString() : '—';
+  var b = document.getElementById('creditsBalanceVal'); if (b) b.textContent = formatBalance(creditBalance);
+  var c = document.getElementById('creditsEstCostVal'); if (c) c.textContent = '−' + cost;
+  var a = document.getElementById('creditsAfterVal'); if (a) a.textContent = afterTxt;
+}
+var currentPage = 'dashboard';
+function hideAllPages() {
+  document.querySelectorAll('.app-page,.history-page').forEach(function(e){ e.classList.remove('active','show'); });
+}
+function navigateTo(key) {
+  var def = PAGE_DEFS[key];
+  if (!def) return;
+  if (typeof closeResultOverlay === 'function') closeResultOverlay();
+  if (typeof closeSheet === 'function') closeSheet();
+  if (typeof closeModelDock === 'function') closeModelDock();
+  if (typeof closeUploadSheet === 'function') closeUploadSheet();
+  hideAllPages();
+  var el = document.getElementById(def.el);
+  if (el) el.classList.add(el.classList.contains('history-page') ? 'show' : 'active');
+  var t = document.getElementById('pageTitleTxt');
+  if (t) t.textContent = def.title;
+  document.querySelectorAll('.sb-item[data-page]').forEach(function(a){
+    a.classList.toggle('active', a.getAttribute('data-page') === key);
+  });
+  toggleSidebar(false);
+  currentPage = key;
+  if (typeof def.onEnter === 'function') def.onEnter();
 }
 
 // ══════════ ACCOUNT / SETTINGS SHEET (topbar right button) ══════════
@@ -2587,7 +2949,7 @@ function startGenerate() {
   var btn = document.getElementById('generateBtn');
 
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
-    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), dan Nano Banana Pro (Fast/Standard/Ultra).');
+    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Nano Banana Pro (Fast/Standard/Ultra), dan GPT Image 2 (Low/Standard/High).');
     return;
   }
   if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
@@ -2979,6 +3341,115 @@ function saveGenerationToHistory(res) {
   window.__lastResult = { url: rec.videoUrl || rec.imageUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
   renderLastResultCard();
 }
+
+function saveStoryboardToHistory(scenes, story) {
+  var rec = {
+    id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    family: 'storyboard',
+    scenes: scenes || [],
+    thumb: (scenes && scenes[0] && scenes[0].image_url) || '',
+    prompt: story || '',
+    model: 'Storyboard \u00b7 GPT Image 2',
+    quality: storyboardQuality,
+    duration: (scenes || []).length + ' scenes',
+    ratio: storyboardRatio,
+    createdAtLabel: formatClock(new Date()),
+    createdAtTs: Date.now(),
+    archived: false
+  };
+  var list = loadHistory();
+  list.unshift(rec);
+  if (list.length > 200) list = list.slice(0, 200);
+  saveHistoryList(list);
+  renderLastResultCard();
+  return rec;
+}
+
+var storyboardResultScenes = [];
+var storyboardResultIndex = 0;
+var storyboardResultRecordId = null;
+
+function openStoryboardResultPage(scenes, recordId) {
+  storyboardResultScenes = scenes || [];
+  storyboardResultIndex = 0;
+  storyboardResultRecordId = recordId || null;
+  window.__lastResult = { url: storyboardResultScenes[0] && storyboardResultScenes[0].image_url, isImage: true, id: recordId };
+  renderStoryboardResultScene();
+  hideAllPages();
+  document.getElementById('storyboardResultPage').classList.add('show');
+  var t = document.getElementById('pageTitleTxt'); if (t) t.textContent = 'Result';
+}
+function closeStoryboardResultPage() {
+  document.getElementById('storyboardResultPage').classList.remove('show');
+  navigateTo('storyboard');
+}
+function renderStoryboardResultScene() {
+  var s = storyboardResultScenes[storyboardResultIndex];
+  if (!s) return;
+  document.getElementById('storyboardResultImg').src = s.image_url;
+  document.getElementById('storyboardSceneCaption').textContent = s.prompt || '';
+  document.getElementById('storyboardSceneCounter').textContent = 'Scene ' + (storyboardResultIndex + 1) + '/' + storyboardResultScenes.length;
+  document.getElementById('storyboardDownloadBtn').href = s.image_url;
+}
+function storyboardResultNav(delta) {
+  var n = storyboardResultScenes.length;
+  if (n === 0) return;
+  storyboardResultIndex = (storyboardResultIndex + delta + n) % n;
+  renderStoryboardResultScene();
+}
+function archiveStoryboardResult() {
+  var id = storyboardResultRecordId || resolveCurrentResultId();
+  if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
+  updateHistoryRecord(id, { archived: true });
+  renderHistoryList();
+  renderArchiveList();
+  showToast('Tersimpan di Archive');
+}
+// Deletes ONLY the currently-viewed frame (per IMAGE GENERATION RULES).
+// Other frames in storyboardResultScenes are left completely untouched.
+function deleteStoryboardResult() {
+  if (storyboardResultScenes.length === 0) { closeStoryboardResultPage(); return; }
+  storyboardResultScenes.splice(storyboardResultIndex, 1);
+  if (storyboardResultScenes.length === 0) {
+    closeStoryboardResultPage();
+    return;
+  }
+  if (storyboardResultIndex >= storyboardResultScenes.length) {
+    storyboardResultIndex = storyboardResultScenes.length - 1;
+  }
+  var id = storyboardResultRecordId;
+  if (id) updateHistoryRecord(id, { scenes: storyboardResultScenes, thumb: storyboardResultScenes[0].image_url || '' });
+  renderStoryboardResultScene();
+  showToast('Frame dihapus');
+}
+// Regenerates ONLY the frame currently being viewed (storyboardResultIndex).
+// Every other frame's image_url in storyboardResultScenes is left untouched —
+// satisfies "regenerate must only regenerate the current image".
+function regenerateStoryboardFrame() {
+  var i = storyboardResultIndex;
+  var scene = storyboardResultScenes[i];
+  if (!scene) return;
+  var loadingEl = document.getElementById('storyboardFrameLoading');
+  var regenBtn = document.getElementById('storyboardRegenBtn');
+  loadingEl.style.display = 'flex';
+  regenBtn.disabled = true;
+  generateStoryboardFrame(scene.prompt)
+    .then(function(out) {
+      loadingEl.style.display = 'none';
+      regenBtn.disabled = false;
+      if (storyboardResultIndex !== i) return; // user navigated away mid-regenerate
+      storyboardResultScenes[i] = { image_url: out.image_url, prompt: scene.prompt };
+      var id = storyboardResultRecordId;
+      if (id) updateHistoryRecord(id, { scenes: storyboardResultScenes, thumb: storyboardResultScenes[0].image_url || '' });
+      renderStoryboardResultScene();
+      showToast('Frame ' + (i + 1) + ' diregenerate');
+    })
+    .catch(function(err) {
+      loadingEl.style.display = 'none';
+      regenBtn.disabled = false;
+      showError(err.message || 'Gagal regenerate frame');
+    });
+}
 function renderLastResultCard() {
   var list = loadHistory();
   var card = document.getElementById('lastResultCard');
@@ -2995,22 +3466,194 @@ function reopenLastResult() {
   openHistoryItem(list[0].id);
 }
 
-function openHistoryPage() {
-  closeSheet(); closeModelDock();
-  renderHistoryList();
-  document.getElementById('historyPage').classList.add('show');
+function openHistoryPage() { navigateTo('history'); }
+function closeHistoryPage() { navigateTo('dashboard'); }
+function openArchivePage() { navigateTo('archive'); }
+function closeArchivePage() { navigateTo('dashboard'); }
+
+// ══════════ STORYBOARD (character-consistent multi-scene, GPT Image 2) ══════════
+var storyboardCharacter = null;
+var storyboardSceneCount = 6;
+var storyboardQuality = 'STANDARD';
+var storyboardRatio = '1:1';
+var storyboardPollInterval = null;
+var storyboardTaskId = null;
+
+function renderStoryboardPills() {
+  var qRow = document.getElementById('storyboardQualityRow');
+  var rRow = document.getElementById('storyboardRatioRow');
+  var qualities = ['LOW', 'STANDARD', 'HIGH'];
+  var ratios = ['1:1', '3:4', '4:3', '9:16', '16:9', '21:9'];
+  qRow.innerHTML = qualities.map(function(q) {
+    return '<div class="chip' + (q === storyboardQuality ? ' active' : '') + '" onclick="setStoryboardQuality(\'' + q + '\')">' + q + '</div>';
+  }).join('');
+  rRow.innerHTML = ratios.map(function(r) {
+    return '<div class="chip' + (r === storyboardRatio ? ' active' : '') + '" onclick="setStoryboardRatio(\'' + r + '\')">' + r + '</div>';
+  }).join('');
 }
-function closeHistoryPage() {
-  document.getElementById('historyPage').classList.remove('show');
+function setStoryboardQuality(q) { storyboardQuality = q; renderStoryboardPills(); }
+function setStoryboardRatio(r) { storyboardRatio = r; renderStoryboardPills(); }
+
+function openStoryboardPage() { navigateTo('storyboard'); }
+function closeStoryboardPage() { navigateTo('dashboard'); }
+function adjustStoryboardScenes(delta) {
+  storyboardSceneCount = Math.max(1, Math.min(20, storyboardSceneCount + delta));
+  document.getElementById('storyboardSceneCount').textContent = storyboardSceneCount;
 }
-function openArchivePage() {
-  closeSheet(); closeModelDock();
-  renderArchiveList();
-  document.getElementById('archivePage').classList.add('show');
+document.getElementById('storyboardCharInput').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var previewUrl = URL.createObjectURL(file);
+  var img = document.getElementById('storyboardPreviewImg');
+  var card = document.getElementById('storyboardPreview');
+  var countEl = document.getElementById('storyboardCharCount');
+  var prev = storyboardCharacter;
+  if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
+    try { URL.revokeObjectURL(prev.previewUrl); } catch(_) {}
+  }
+  var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
+  storyboardCharacter = entry;
+  img.src = previewUrl;
+  img.style.display = 'block';
+  card.classList.add('has-media');
+  countEl.textContent = '1/1';
+  var fd = new FormData();
+  fd.append('file', file);
+  fetch('/api/aivideo/upload', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (storyboardCharacter !== entry) return;
+      if (data.ok) {
+        entry.url = data.url;
+        entry.uploading = false;
+      } else {
+        showError((data && data.error) || 'Upload gagal');
+        forgetUpload(entry);
+        storyboardCharacter = null;
+        img.style.display = 'none';
+        card.classList.remove('has-media');
+        countEl.textContent = '0/1';
+      }
+    })
+    .catch(function() {
+      if (storyboardCharacter !== entry) return;
+      showError('Upload gagal, cek koneksi');
+      storyboardCharacter = null;
+      img.style.display = 'none';
+      card.classList.remove('has-media');
+      countEl.textContent = '0/1';
+    });
+  e.target.value = '';
+});
+
+// Generates exactly ONE storyboard frame per request against the new,
+// isolated /api/aivideo/storyboard/frame endpoint (GPT Image 2 via Segmind).
+// Returns a Promise<{image_url}> and never touches the main /api/aivideo/generate
+// flow, Seedance/Kling/Nano Banana routing, or existing history/archive code.
+function generateStoryboardFrame(promptText) {
+  return fetch('/api/aivideo/storyboard/frame', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: promptText,
+      character_image_url: storyboardCharacter && storyboardCharacter.url,
+      aspect_ratio: storyboardRatio,
+      quality: storyboardQuality,
+    })
+  })
+  .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+  .then(function(res) {
+    if (!res.ok || !res.data.id) {
+      throw new Error((res.data && res.data.error) || 'Gagal memulai generate frame');
+    }
+    return pollStoryboardFrameTask(res.data.id);
+  });
 }
-function closeArchivePage() {
-  document.getElementById('archivePage').classList.remove('show');
+
+function pollStoryboardFrameTask(taskId) {
+  return new Promise(function(resolve, reject) {
+    var tries = 0;
+    var iv = setInterval(function() {
+      tries++;
+      fetch('/api/aivideo/task/' + taskId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 'completed') {
+            clearInterval(iv);
+            resolve({ image_url: data.output && data.output.image_url });
+          } else if (data.status === 'failed' || data.error) {
+            clearInterval(iv);
+            reject(new Error(data.error || 'Generate frame gagal'));
+          } else if (tries > 200) {
+            clearInterval(iv);
+            reject(new Error('Generate frame timeout'));
+          }
+        })
+        .catch(function() { /* keep polling through transient network errors */ });
+    }, 3000);
+  });
 }
+
+function startStoryboardGenerate() {
+  var story = document.getElementById('storyboardStoryInput').value.trim();
+  var btn = document.getElementById('storyboardGenBtn');
+  if (!storyboardCharacter || !storyboardCharacter.url) {
+    showError('Upload gambar reference karakter dulu');
+    return;
+  }
+  if (!story) {
+    showError('Ceritanya wajib diisi');
+    return;
+  }
+  btn.disabled = true;
+  btn.querySelector('.gen-txt').textContent = 'MENYUSUN STORYBOARD\u2026';
+  var statusEl = document.getElementById('storyboardStatus');
+  var statusTxt = document.getElementById('storyboardStatusTxt');
+  statusEl.style.display = 'flex';
+  window.__storyboardStory = story;
+
+  var n = storyboardSceneCount;
+  var scenes = [];
+  var i = 0;
+  var collapsedTxt = document.getElementById('storyboardCollapsedTxt');
+
+  function next() {
+    if (i >= n) {
+      resetStoryboardBtn();
+      statusEl.style.display = 'none';
+      statusTxt.textContent = '';
+      if (collapsedTxt) collapsedTxt.textContent = '';
+      var rec = saveStoryboardToHistory(scenes, story);
+      openStoryboardResultPage(scenes, rec.id);
+      return;
+    }
+    var pct = Math.round((i / n) * 100);
+    statusTxt.textContent = 'Generating\u2026 ' + pct + '% (frame ' + (i + 1) + ' of ' + n + ')';
+    if (collapsedTxt) collapsedTxt.textContent = pct + '%';
+    var scenePrompt = story + ' (scene ' + (i + 1) + ' of ' + n + ')';
+    generateStoryboardFrame(scenePrompt)
+      .then(function(out) {
+        scenes.push({ image_url: out.image_url, prompt: scenePrompt });
+        i++;
+        next();
+      })
+      .catch(function(err) {
+        // Keep going so one failed scene doesn't block the rest — the user
+        // can Regenerate that specific frame afterwards.
+        scenes.push({ image_url: '', prompt: scenePrompt, error: err.message });
+        i++;
+        next();
+      });
+  }
+  next();
+}
+
+function resetStoryboardBtn() {
+  var btn = document.getElementById('storyboardGenBtn');
+  btn.disabled = false;
+  btn.querySelector('.gen-txt').textContent = 'GENERATE STORYBOARD \u2726';
+}
+
 function buildHistItemRow(r) {
   var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
   return '<div class="hist-item">' +
@@ -3042,6 +3685,10 @@ function openHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   closeHistoryPage(); closeArchivePage();
+  if (r.family === 'storyboard') {
+    openStoryboardResultPage(r.scenes, r.id);
+    return;
+  }
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
   openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
@@ -3172,6 +3819,7 @@ updateCanvasPreview();
 updateGenerateButtonState();
 fetchCreditBalance();
 renderLastResultCard();
+navigateTo('dashboard');
 window.addEventListener('resize', updateModelDockPosition);
 </script>
 
