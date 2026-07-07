@@ -106,6 +106,7 @@ button{background:none;border:none;cursor:pointer}
 }
 
 .result-btn{flex:1;min-width:0;padding:10px 4px;border-radius:13px;border:1px solid var(--border);background:var(--card2);font-size:11.5px;font-weight:700;letter-spacing:.01em;cursor:pointer;text-decoration:none;text-align:center;transition:all .16s;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.result-btn.disabled{opacity:.35;pointer-events:none}
 .result-btn .rb-ico{font-size:17px;line-height:1}
 .result-btn .rb-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
 .failed-actions .result-btn .rb-lbl,.failed-actions .result-btn{font-size:16px;flex-direction:row}
@@ -165,7 +166,7 @@ button{background:none;border:none;cursor:pointer}
 @keyframes logoPulse{0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(255,32,64,.4)}50%{transform:scale(1.08);box-shadow:0 0 34px rgba(255,32,64,.65)}}
 /* Brand loading ring — same animation as the MII AI VIDEO lock screen
    (spinning conic ring + pulsing inner ring + breathing "M"). Reused for
-   every generate-in-progress state (main AI Video AND Storyboard) instead
+   every generate-in-progress state instead
    of a generic spinner. */
 .brand-ring{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
 .brand-ring::before{content:'';position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));animation:brandRingSpin 3.2s linear infinite}
@@ -173,6 +174,8 @@ button{background:none;border:none;cursor:pointer}
 .brand-ring-m{font-family:var(--disp);font-size:1.4rem;font-weight:900;color:#ff1638;text-shadow:0 0 16px rgba(255,0,48,.6);position:relative;z-index:1;animation:brandLogoBreathe 2.4s ease-in-out infinite}
 .brand-ring.small{width:44px;height:44px}
 .brand-ring.small .brand-ring-m{font-size:1rem}
+.brand-ring.large{width:92px;height:92px}
+.brand-ring.large .brand-ring-m{font-size:2rem}
 @keyframes brandRingSpin{to{transform:rotate(360deg)}}
 @keyframes brandRingPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
 @keyframes brandLogoBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
@@ -1023,10 +1026,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
     MII AI Video
   </a>
-  <a class="sb-item" data-page="storyboard" href="#" onclick="navigateTo('storyboard');return false">
-    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg>
-    Storyboard
-  </a>
   <a class="sb-item" href="#" onclick="return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     Voices
@@ -1099,11 +1098,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div>
           <div class="dash-card-title">MII AI Video</div>
           <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
-        </a>
-        <a class="dash-card" href="#" onclick="navigateTo('storyboard');return false">
-          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg></div>
-          <div class="dash-card-title">Storyboard</div>
-          <div class="dash-card-sub">Multi-scene generator, karakter konsisten</div>
         </a>
         <a class="dash-card" href="#" onclick="navigateTo('history');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
@@ -1309,109 +1303,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
 </div>
 
-<!-- STORYBOARD — character-consistent multi-scene generator (GPT Image 2) -->
-<div class="history-page" id="storyboardPage">
-
-  <div style="flex:1;overflow-y:auto;min-height:0;padding:4px 16px 16px">
-    <input type="file" id="storyboardCharInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
-    <div id="storyboardStatus" style="display:none;margin-top:14px;flex-direction:column;align-items:center;gap:10px;text-align:center;color:var(--text-dim);font-size:.85rem">
-      <div class="brand-ring small"><span class="brand-ring-m">M</span></div>
-      <span id="storyboardStatusTxt"></span>
-    </div>
-  </div>
-
-  <!-- FLOATING GENERATOR PANEL — identical component (.panel-wrap/.panel/.panel-handle)
-       to the one on MII AI Video. Same CSS, same corners, shadows, animation, red glow —
-       just a separate instance/id so it never touches the AI Video panel's own state. -->
-  <div class="panel-wrap">
-    <div class="panel" id="storyboardPanel">
-      <div class="panel-handle-wrap" id="storyboardPanelHandle" onclick="toggleStoryboardPanelCollapse()">
-        <div class="panel-handle"></div>
-      </div>
-      <div class="panel-collapsed-bar" onclick="toggleStoryboardPanelCollapse()">
-        <span class="panel-collapsed-model">STORYBOARD</span>
-        <span class="panel-collapsed-progress" id="storyboardCollapsedTxt"></span>
-        <span class="panel-collapsed-spacer"></span>
-        <span class="panel-collapsed-hint">Expand</span>
-      </div>
-
-      <div class="panel-body" id="storyboardPanelBody">
-        <div class="mp-title" style="margin-bottom:8px">Character Reference</div>
-        <div class="builder-input-row" style="margin-bottom:14px">
-          <div class="upload-row">
-            <div class="upload-card" id="storyboardPreview" onclick="document.getElementById('storyboardCharInput').click()">
-              <span class="uc-count" id="storyboardCharCount">0/1</span>
-              <img id="storyboardPreviewImg" class="uc-thumb" style="display:none" onerror="imgFallback(this)">
-              <svg class="uc-icon" id="storyboardPreviewIcon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
-              <span class="uc-label">CHAR</span>
-            </div>
-          </div>
-          <div style="flex:1;min-width:0;display:flex;align-items:center">
-            <span style="font-size:.76rem;color:var(--text-dim);line-height:1.35">Same reference image is reused for every frame, so the character stays consistent.</span>
-          </div>
-        </div>
-
-        <div class="mp-title" style="margin-bottom:8px">Story</div>
-        <textarea id="storyboardStoryInput" placeholder="Ceritakan urutan adegannya, mis: karakter bangun pagi di kamar, lalu berjalan ke dapur membuat kopi, lalu duduk di teras menikmati matahari terbit..." style="width:100%;min-height:76px;background:var(--card2,#1c1c1c);border:1px solid var(--border);border-radius:14px;color:#fff;padding:14px;font-size:.92rem;font-family:inherit;resize:vertical"></textarea>
-
-        <div class="mp-title" style="margin-bottom:8px">Quality</div>
-        <div class="settings-row" id="storyboardQualityRow"></div>
-
-        <div class="mp-title" style="margin-bottom:8px">Aspect Ratio</div>
-        <div class="settings-row" id="storyboardRatioRow"></div>
-
-        <div class="mp-title" style="margin-bottom:8px">Frames</div>
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
-          <button class="qty-btn" onclick="adjustStoryboardScenes(-1)">−</button>
-          <span id="storyboardSceneCount" style="font-size:1.1rem;font-weight:700;min-width:24px;text-align:center">6</span>
-          <button class="qty-btn" onclick="adjustStoryboardScenes(1)">+</button>
-          <span style="color:var(--text-dim);font-size:.78rem">frames (1–20)</span>
-        </div>
-
-        <button class="gen-btn" id="storyboardGenBtn" onclick="startStoryboardGenerate()" style="width:100%">
-          <span class="gen-txt">✨ GENERATE STORYBOARD</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- STORYBOARD RESULT — its own full page, styled exactly like the main generate result (merged canvas + action box) -->
-<div class="history-page" id="storyboardResultPage">
-  <div style="flex:1;overflow-y:auto;padding:16px">
-    <div class="canvas-result-wrap has-result" style="margin:0 auto">
-      <div class="canvas-preview" id="storyboardResultPreview" style="position:relative">
-        <img id="storyboardResultImg" class="canvas-preview-media" onerror="imgFallback(this)">
-        <div id="storyboardFrameLoading" style="display:none;position:absolute;inset:0;z-index:2;align-items:center;justify-content:center;background:rgba(12,12,12,.72);flex-direction:column;gap:10px">
-          <div class="brand-ring small"><span class="brand-ring-m">M</span></div>
-          <span style="font-size:.75rem;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Regenerating…</span>
-        </div>
-      </div>
-      <div class="canvas-result-box" id="storyboardResultBox" style="display:flex">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span id="storyboardSceneCounter" style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase;font-weight:700;letter-spacing:.06em">Scene 1/4</span>
-          <div style="display:flex;gap:8px">
-            <button class="icon-btn" style="width:34px;height:34px" onclick="storyboardResultNav(-1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button class="icon-btn" style="width:34px;height:34px" onclick="storyboardResultNav(1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-            </button>
-          </div>
-        </div>
-        <div id="storyboardSceneCaption" style="font-size:.85rem;color:#fff;line-height:1.4"></div>
-        <div class="canvas-result-actions">
-          <a class="result-btn primary" id="storyboardDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
-          <button class="result-btn" id="storyboardRegenBtn" onclick="regenerateStoryboardFrame()"><span class="rb-ico">⟳</span><span class="rb-lbl">Regenerate</span></button>
-          <button class="result-btn" onclick="archiveStoryboardResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
-          <button class="result-btn" onclick="deleteStoryboardResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
-          <button class="result-btn" onclick="closeStoryboardResultPage();openStoryboardPage()"><span class="rb-ico">↺</span><span class="rb-lbl">New</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
   <!-- PAGE: API PROVIDER -->
   <div class="app-page" id="pageApiProvider">
     <div style="flex:1;overflow-y:auto;padding:16px 18px 32px">
@@ -1427,7 +1318,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
           <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Credit Balance</span>
           <span id="apiCreditBalanceTxt" style="font-family:var(--mono);color:var(--accent-hover);font-size:13px">—</span>
         </div>
-        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Dipakai untuk generate video, image, dan storyboard.</div>
+        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Dipakai untuk generate video dan image.</div>
       </div>
     </div>
   </div>
@@ -1770,24 +1661,6 @@ function stepPanel(direction) {
 function togglePanelCollapse() {
   setPanelState(getPanelState() === 'collapsed' ? 'expanded' : 'collapsed');
 }
-// Isolated collapse toggle for the Storyboard panel — mirrors the AI Video
-// panel's collapsed/half/expanded states via the exact same CSS classes,
-// but operates only on #storyboardPanel so the AI Video panel's own
-// getPanelState()/setPanelState() are never touched.
-function getStoryboardPanelState() {
-  var panel = document.getElementById('storyboardPanel');
-  if (panel.classList.contains('collapsed')) return 'collapsed';
-  if (panel.classList.contains('half')) return 'half';
-  return 'expanded';
-}
-function setStoryboardPanelState(state) {
-  var panel = document.getElementById('storyboardPanel');
-  panel.classList.toggle('collapsed', state === 'collapsed');
-  panel.classList.toggle('half', state === 'half');
-}
-function toggleStoryboardPanelCollapse() {
-  setStoryboardPanelState(getStoryboardPanelState() === 'collapsed' ? 'expanded' : 'collapsed');
-}
 (function initPanelSwipe() {
   var handle = document.getElementById('panelHandle');
   var startY = null;
@@ -1858,7 +1731,6 @@ function toggleSidebar(open) {
 var PAGE_DEFS = {
   dashboard:   { el: 'pageDashboard',   title: 'Dashboard' },
   aivideo:     { el: 'pageAiVideo',     title: 'MII AI VIDEO' },
-  storyboard:  { el: 'storyboardPage',  title: 'Storyboard',  onEnter: function(){ renderStoryboardPills(); } },
   history:     { el: 'historyPage',     title: 'History',     onEnter: function(){ renderHistoryList(); } },
   archive:     { el: 'archivePage',     title: 'Archive',     onEnter: function(){ renderArchiveList(); } },
   apiprovider: { el: 'pageApiProvider', title: 'API Provider', onEnter: function(){ var e=document.getElementById('apiCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
@@ -3342,114 +3214,6 @@ function saveGenerationToHistory(res) {
   renderLastResultCard();
 }
 
-function saveStoryboardToHistory(scenes, story) {
-  var rec = {
-    id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    family: 'storyboard',
-    scenes: scenes || [],
-    thumb: (scenes && scenes[0] && scenes[0].image_url) || '',
-    prompt: story || '',
-    model: 'Storyboard \u00b7 GPT Image 2',
-    quality: storyboardQuality,
-    duration: (scenes || []).length + ' scenes',
-    ratio: storyboardRatio,
-    createdAtLabel: formatClock(new Date()),
-    createdAtTs: Date.now(),
-    archived: false
-  };
-  var list = loadHistory();
-  list.unshift(rec);
-  if (list.length > 200) list = list.slice(0, 200);
-  saveHistoryList(list);
-  renderLastResultCard();
-  return rec;
-}
-
-var storyboardResultScenes = [];
-var storyboardResultIndex = 0;
-var storyboardResultRecordId = null;
-
-function openStoryboardResultPage(scenes, recordId) {
-  storyboardResultScenes = scenes || [];
-  storyboardResultIndex = 0;
-  storyboardResultRecordId = recordId || null;
-  window.__lastResult = { url: storyboardResultScenes[0] && storyboardResultScenes[0].image_url, isImage: true, id: recordId };
-  renderStoryboardResultScene();
-  hideAllPages();
-  document.getElementById('storyboardResultPage').classList.add('show');
-  var t = document.getElementById('pageTitleTxt'); if (t) t.textContent = 'Result';
-}
-function closeStoryboardResultPage() {
-  document.getElementById('storyboardResultPage').classList.remove('show');
-  navigateTo('storyboard');
-}
-function renderStoryboardResultScene() {
-  var s = storyboardResultScenes[storyboardResultIndex];
-  if (!s) return;
-  document.getElementById('storyboardResultImg').src = s.image_url;
-  document.getElementById('storyboardSceneCaption').textContent = s.prompt || '';
-  document.getElementById('storyboardSceneCounter').textContent = 'Scene ' + (storyboardResultIndex + 1) + '/' + storyboardResultScenes.length;
-  document.getElementById('storyboardDownloadBtn').href = s.image_url;
-}
-function storyboardResultNav(delta) {
-  var n = storyboardResultScenes.length;
-  if (n === 0) return;
-  storyboardResultIndex = (storyboardResultIndex + delta + n) % n;
-  renderStoryboardResultScene();
-}
-function archiveStoryboardResult() {
-  var id = storyboardResultRecordId || resolveCurrentResultId();
-  if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
-  updateHistoryRecord(id, { archived: true });
-  renderHistoryList();
-  renderArchiveList();
-  showToast('Tersimpan di Archive');
-}
-// Deletes ONLY the currently-viewed frame (per IMAGE GENERATION RULES).
-// Other frames in storyboardResultScenes are left completely untouched.
-function deleteStoryboardResult() {
-  if (storyboardResultScenes.length === 0) { closeStoryboardResultPage(); return; }
-  storyboardResultScenes.splice(storyboardResultIndex, 1);
-  if (storyboardResultScenes.length === 0) {
-    closeStoryboardResultPage();
-    return;
-  }
-  if (storyboardResultIndex >= storyboardResultScenes.length) {
-    storyboardResultIndex = storyboardResultScenes.length - 1;
-  }
-  var id = storyboardResultRecordId;
-  if (id) updateHistoryRecord(id, { scenes: storyboardResultScenes, thumb: storyboardResultScenes[0].image_url || '' });
-  renderStoryboardResultScene();
-  showToast('Frame dihapus');
-}
-// Regenerates ONLY the frame currently being viewed (storyboardResultIndex).
-// Every other frame's image_url in storyboardResultScenes is left untouched —
-// satisfies "regenerate must only regenerate the current image".
-function regenerateStoryboardFrame() {
-  var i = storyboardResultIndex;
-  var scene = storyboardResultScenes[i];
-  if (!scene) return;
-  var loadingEl = document.getElementById('storyboardFrameLoading');
-  var regenBtn = document.getElementById('storyboardRegenBtn');
-  loadingEl.style.display = 'flex';
-  regenBtn.disabled = true;
-  generateStoryboardFrame(scene.prompt)
-    .then(function(out) {
-      loadingEl.style.display = 'none';
-      regenBtn.disabled = false;
-      if (storyboardResultIndex !== i) return; // user navigated away mid-regenerate
-      storyboardResultScenes[i] = { image_url: out.image_url, prompt: scene.prompt };
-      var id = storyboardResultRecordId;
-      if (id) updateHistoryRecord(id, { scenes: storyboardResultScenes, thumb: storyboardResultScenes[0].image_url || '' });
-      renderStoryboardResultScene();
-      showToast('Frame ' + (i + 1) + ' diregenerate');
-    })
-    .catch(function(err) {
-      loadingEl.style.display = 'none';
-      regenBtn.disabled = false;
-      showError(err.message || 'Gagal regenerate frame');
-    });
-}
 function renderLastResultCard() {
   var list = loadHistory();
   var card = document.getElementById('lastResultCard');
@@ -3464,194 +3228,6 @@ function reopenLastResult() {
   var list = loadHistory();
   if (list.length === 0) return;
   openHistoryItem(list[0].id);
-}
-
-function openHistoryPage() { navigateTo('history'); }
-function closeHistoryPage() { navigateTo('dashboard'); }
-function openArchivePage() { navigateTo('archive'); }
-function closeArchivePage() { navigateTo('dashboard'); }
-
-// ══════════ STORYBOARD (character-consistent multi-scene, GPT Image 2) ══════════
-var storyboardCharacter = null;
-var storyboardSceneCount = 6;
-var storyboardQuality = 'STANDARD';
-var storyboardRatio = '1:1';
-var storyboardPollInterval = null;
-var storyboardTaskId = null;
-
-function renderStoryboardPills() {
-  var qRow = document.getElementById('storyboardQualityRow');
-  var rRow = document.getElementById('storyboardRatioRow');
-  var qualities = ['LOW', 'STANDARD', 'HIGH'];
-  var ratios = ['1:1', '3:4', '4:3', '9:16', '16:9', '21:9'];
-  qRow.innerHTML = qualities.map(function(q) {
-    return '<div class="chip' + (q === storyboardQuality ? ' active' : '') + '" onclick="setStoryboardQuality(\'' + q + '\')">' + q + '</div>';
-  }).join('');
-  rRow.innerHTML = ratios.map(function(r) {
-    return '<div class="chip' + (r === storyboardRatio ? ' active' : '') + '" onclick="setStoryboardRatio(\'' + r + '\')">' + r + '</div>';
-  }).join('');
-}
-function setStoryboardQuality(q) { storyboardQuality = q; renderStoryboardPills(); }
-function setStoryboardRatio(r) { storyboardRatio = r; renderStoryboardPills(); }
-
-function openStoryboardPage() { navigateTo('storyboard'); }
-function closeStoryboardPage() { navigateTo('dashboard'); }
-function adjustStoryboardScenes(delta) {
-  storyboardSceneCount = Math.max(1, Math.min(20, storyboardSceneCount + delta));
-  document.getElementById('storyboardSceneCount').textContent = storyboardSceneCount;
-}
-document.getElementById('storyboardCharInput').addEventListener('change', function(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  var previewUrl = URL.createObjectURL(file);
-  var img = document.getElementById('storyboardPreviewImg');
-  var card = document.getElementById('storyboardPreview');
-  var countEl = document.getElementById('storyboardCharCount');
-  var prev = storyboardCharacter;
-  if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
-    try { URL.revokeObjectURL(prev.previewUrl); } catch(_) {}
-  }
-  var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
-  storyboardCharacter = entry;
-  img.src = previewUrl;
-  img.style.display = 'block';
-  card.classList.add('has-media');
-  countEl.textContent = '1/1';
-  var fd = new FormData();
-  fd.append('file', file);
-  fetch('/api/aivideo/upload', { method: 'POST', body: fd })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (storyboardCharacter !== entry) return;
-      if (data.ok) {
-        entry.url = data.url;
-        entry.uploading = false;
-      } else {
-        showError((data && data.error) || 'Upload gagal');
-        forgetUpload(entry);
-        storyboardCharacter = null;
-        img.style.display = 'none';
-        card.classList.remove('has-media');
-        countEl.textContent = '0/1';
-      }
-    })
-    .catch(function() {
-      if (storyboardCharacter !== entry) return;
-      showError('Upload gagal, cek koneksi');
-      storyboardCharacter = null;
-      img.style.display = 'none';
-      card.classList.remove('has-media');
-      countEl.textContent = '0/1';
-    });
-  e.target.value = '';
-});
-
-// Generates exactly ONE storyboard frame per request against the new,
-// isolated /api/aivideo/storyboard/frame endpoint (GPT Image 2 via Segmind).
-// Returns a Promise<{image_url}> and never touches the main /api/aivideo/generate
-// flow, Seedance/Kling/Nano Banana routing, or existing history/archive code.
-function generateStoryboardFrame(promptText) {
-  return fetch('/api/aivideo/storyboard/frame', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: promptText,
-      character_image_url: storyboardCharacter && storyboardCharacter.url,
-      aspect_ratio: storyboardRatio,
-      quality: storyboardQuality,
-    })
-  })
-  .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
-  .then(function(res) {
-    if (!res.ok || !res.data.id) {
-      throw new Error((res.data && res.data.error) || 'Gagal memulai generate frame');
-    }
-    return pollStoryboardFrameTask(res.data.id);
-  });
-}
-
-function pollStoryboardFrameTask(taskId) {
-  return new Promise(function(resolve, reject) {
-    var tries = 0;
-    var iv = setInterval(function() {
-      tries++;
-      fetch('/api/aivideo/task/' + taskId)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data.status === 'completed') {
-            clearInterval(iv);
-            resolve({ image_url: data.output && data.output.image_url });
-          } else if (data.status === 'failed' || data.error) {
-            clearInterval(iv);
-            reject(new Error(data.error || 'Generate frame gagal'));
-          } else if (tries > 200) {
-            clearInterval(iv);
-            reject(new Error('Generate frame timeout'));
-          }
-        })
-        .catch(function() { /* keep polling through transient network errors */ });
-    }, 3000);
-  });
-}
-
-function startStoryboardGenerate() {
-  var story = document.getElementById('storyboardStoryInput').value.trim();
-  var btn = document.getElementById('storyboardGenBtn');
-  if (!storyboardCharacter || !storyboardCharacter.url) {
-    showError('Upload gambar reference karakter dulu');
-    return;
-  }
-  if (!story) {
-    showError('Ceritanya wajib diisi');
-    return;
-  }
-  btn.disabled = true;
-  btn.querySelector('.gen-txt').textContent = 'MENYUSUN STORYBOARD\u2026';
-  var statusEl = document.getElementById('storyboardStatus');
-  var statusTxt = document.getElementById('storyboardStatusTxt');
-  statusEl.style.display = 'flex';
-  window.__storyboardStory = story;
-
-  var n = storyboardSceneCount;
-  var scenes = [];
-  var i = 0;
-  var collapsedTxt = document.getElementById('storyboardCollapsedTxt');
-
-  function next() {
-    if (i >= n) {
-      resetStoryboardBtn();
-      statusEl.style.display = 'none';
-      statusTxt.textContent = '';
-      if (collapsedTxt) collapsedTxt.textContent = '';
-      var rec = saveStoryboardToHistory(scenes, story);
-      openStoryboardResultPage(scenes, rec.id);
-      return;
-    }
-    var pct = Math.round((i / n) * 100);
-    statusTxt.textContent = 'Generating\u2026 ' + pct + '% (frame ' + (i + 1) + ' of ' + n + ')';
-    if (collapsedTxt) collapsedTxt.textContent = pct + '%';
-    var scenePrompt = story + ' (scene ' + (i + 1) + ' of ' + n + ')';
-    generateStoryboardFrame(scenePrompt)
-      .then(function(out) {
-        scenes.push({ image_url: out.image_url, prompt: scenePrompt });
-        i++;
-        next();
-      })
-      .catch(function(err) {
-        // Keep going so one failed scene doesn't block the rest — the user
-        // can Regenerate that specific frame afterwards.
-        scenes.push({ image_url: '', prompt: scenePrompt, error: err.message });
-        i++;
-        next();
-      });
-  }
-  next();
-}
-
-function resetStoryboardBtn() {
-  var btn = document.getElementById('storyboardGenBtn');
-  btn.disabled = false;
-  btn.querySelector('.gen-txt').textContent = 'GENERATE STORYBOARD \u2726';
 }
 
 function buildHistItemRow(r) {
@@ -3686,7 +3262,7 @@ function openHistoryItem(id) {
   if (!r) return;
   closeHistoryPage(); closeArchivePage();
   if (r.family === 'storyboard') {
-    openStoryboardResultPage(r.scenes, r.id);
+    showToast('Storyboard sudah tidak tersedia');
     return;
   }
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
