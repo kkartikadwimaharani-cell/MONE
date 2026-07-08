@@ -286,6 +286,7 @@
 .drawer-item-text {
   flex: 1;
   min-width: 0;
+  text-transform: uppercase;
 }
 
 .drawer-item-badge {
