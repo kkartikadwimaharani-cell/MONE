@@ -32,7 +32,7 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="{{ asset_url('img/owner.png') }}" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+      <img class="nav-logo-img" src="{{ asset_url('img/mii-fox-logo.png') }}" alt="MII STORE logo" draggable="false" oncontextmenu="return false" ondragstart="return false" />
       <span class="nav-brand-wrap"><span class="nav-brand">MII STORE</span></span>
     </div>
     <div class="nav-right">
@@ -53,7 +53,7 @@
   <aside class="app-drawer side-drawer mobile-drawer" id="sideDrawer" aria-hidden="true" role="navigation" aria-label="Main navigation">
     <div class="drawer-header">
       <div class="drawer-brand drawer-profile">
-        <img class="drawer-logo drawer-avatar" src="{{ asset_url('img/owner.png') }}" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
+        <img class="drawer-logo drawer-avatar" src="{{ asset_url('img/mii-fox-logo.png') }}" alt="MII STORE" draggable="false" oncontextmenu="return false" ondragstart="return false" />
         <div class="drawer-brand-info">
           <div class="drawer-title drawer-brand-title">MII STORE</div>
           <div class="drawer-subtitle drawer-brand-sub" data-i18n="drawer_subtitle">Digital Products • Creative Tech</div>
@@ -143,7 +143,7 @@
           <article class="project-card project-products"><span class="project-icon icon-products-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2 21 7v10l-9 5-9-5V7l9-5Zm0 2.3L5.2 8 12 11.7 18.8 8 12 4.3ZM5 9.8v6.6l6 3.3V13l-6-3.2Zm8 9.9 6-3.3V9.8L13 13v6.7Z"/></svg></span><h3>DIGITAL PRODUCTS</h3><a href="#social-media" data-i18n="viewProduct">LIHAT PRODUK</a></article>
           <article class="project-card bounty-card project-bounty"><span class="project-icon icon-bounty-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="m12 1.8 2.9 6 6.5.7-4.8 4.5 1.2 6.5L12 16.3l-5.8 3.2 1.2-6.5-4.8-4.5 6.5-.7 2.9-6Z"/></svg></span><h3>MII REWARD DRAW</h3><a href="/bounty" data-i18n="joinEvent">IKUTI DRAW</a></article>
           <article class="project-card project-community"><span class="project-icon icon-community-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="8.5" cy="7.5" r="3.3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 19.8c.4-4.2 2.8-6.5 6.5-6.5s6.1 2.3 6.5 6.5c0 .5-.3.9-.8.9H2.8c-.5 0-.8-.4-.8-.9Z"/><path d="M15.3 14c2.6.4 4.1 2.1 4.5 5.3.1.6-.3 1-.8 1h-2"/></svg></span><h3>{{ community_name or 'COMMUNITY' }}</h3>{% if community_link %}<a href="{{ community_link }}" target="_blank" rel="noopener noreferrer">{{ community_btn_label or 'GABUNG' }}</a>{% else %}<span class="btn-disabled">SEGERA HADIR</span>{% endif %}</article>
-          <article class="project-card project-telegram"><span class="project-icon icon-telegram-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm4.64 6.8-1.69 7.97c-.12.58-.48.72-.97.45l-2.67-1.97-1.29 1.24c-.14.14-.27.27-.55.27l.2-2.72 4.98-4.5c.22-.19-.05-.3-.33-.11L7.9 14.67l-2.62-.82c-.57-.18-.58-.57.12-.84l10.24-3.95c.47-.17.89.12.73.84Z"/></svg></span><h3>CHANNEL TELEGRAM</h3><a href="{{ telegram_channel_link or 'https://t.me/+L0mZsWxq30cxZmM1' }}" target="_blank" rel="noopener noreferrer">GABUNG</a></article>
+          <article class="project-card project-aivideo"><span class="project-icon icon-aivideo-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm13 5 5-3v10l-5-3v-4Z"/></svg></span><h3>MII AI VIDEO</h3><a href="/ai-video">BUKA MII AI VIDEO</a></article>
         </div>
       </section>
 
