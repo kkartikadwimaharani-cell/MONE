@@ -25,7 +25,7 @@ _gemini_model_cache = {}  # {model_name: GenerativeModel}
 _gemini_configured = False
 
 _MAKIMA_SYSTEM_INSTRUCTION = """
-Kamu adalah MAKIMA AI, asisten pribadi milik MII STORE.
+Kamu adalah MAKIMA AI, asisten pribadi milik MII NETWORK.
 Jawab dalam Bahasa Indonesia yang santai, jelas, tenang, elegan, dan profesional.
 Gunakan kata “kamu”, jangan “Anda”.
 Jangan bilang “sebagai AI”.
@@ -100,7 +100,7 @@ except Exception as e:
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
 
-APP_VERSION = "20260615-maintenance-v15"
+APP_VERSION = "20260709-mii-network-v16"
 
 
 def versioned_static(path):
@@ -931,7 +931,7 @@ def _admin_text(note=None):
     payload = _draw_status_payload(data)
     event_status = payload['draw_status'].upper()
     lines = [
-        '🛡 MII STORE ADMIN PANEL',
+        '🛡 MII NETWORK ADMIN PANEL',
         '',
         'Mode: MII REWARD DRAW',
         f'Web: {status}',
@@ -972,7 +972,7 @@ def refresh_admin_panel(chat_id, user=None, note=None):
 
 def _show_login_prompt(chat_id):
     with _BOT_SESSION_LOCK: _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
-    _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII STORE ADMIN PANEL.')
+    _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII NETWORK ADMIN PANEL.')
 
 
 def _format_stats():
@@ -3085,7 +3085,7 @@ def ghost_scan():
         'language': language,
         'vpn_status': vpn_status,
         'risk_level': risk_level,
-        'scan_mode': 'MII STORE OBSERVATION'
+        'scan_mode': 'MII NETWORK OBSERVATION'
     })
 
 
