@@ -2263,8 +2263,8 @@ body { background:#030204 !important; }
 @media(max-width:1100px){.project-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:560px){.project-grid{grid-template-columns:1fr!important}}
 .project-grid .project-card{min-width:0!important;max-width:none!important;width:100%!important}
-/* Telegram project card - red theme matching others */
-.project-telegram .icon-filled{
+/* MII AI VIDEO project card - red theme matching others */
+.project-aivideo .icon-filled{
   background:
     linear-gradient(155deg,rgba(255,255,255,.5) 0%,rgba(255,180,190,.18) 16%,transparent 30%),
     radial-gradient(circle at 30% 22%,rgba(255,90,110,.55),rgba(255,10,40,.30) 40%,rgba(30,0,8,.96) 78%)
@@ -2277,7 +2277,7 @@ body { background:#030204 !important; }
     !important;
   border:1px solid rgba(255,150,160,.45)!important;
 }
-.project-telegram .icon-filled svg{fill:url(#miiIconGrad3d)!important}
+.project-aivideo .icon-filled svg{fill:url(#miiIconGrad3d)!important}
 
 /* btn-disabled for community when no link set */
 .btn-disabled{display:inline-block;padding:8px 20px;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:.75rem;font-weight:700;letter-spacing:.08em;cursor:default;pointer-events:none}
@@ -3875,5 +3875,44 @@ html, body { max-width: 100% !important; overflow-x: hidden !important; }
   .section-heading h2 {
     font-size: clamp(1.6rem, 8.5vw, 2.4rem) !important;
     white-space: normal !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   20260708 FINAL FIX — "SIAP UPGRADE..." CTA, MOBILE
+   This section had ~20 conflicting .home-cta overrides
+   stacked up from earlier passes (some flex, some grid,
+   some centered, some not) fighting each other by source
+   order. This is the single rule meant to win: stacked
+   column layout, centered text, full-width button, no
+   more cramped/misaligned button on small screens.
+   ══════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .home-cta {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 20px !important;
+    padding: 28px 20px !important;
+  }
+  .cta-copy {
+    width: 100% !important;
+  }
+  .cta-copy h2 {
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    font-size: clamp(1.5rem, 7.5vw, 2.1rem) !important;
+    line-height: 1.15 !important;
+    letter-spacing: -.02em !important;
+    text-wrap: balance;
+  }
+  .cta-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 360px !important;
+    text-align: center !important;
+    justify-content: center !important;
   }
 }
