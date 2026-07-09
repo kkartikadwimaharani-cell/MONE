@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request, session
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request, session, redirect
 import yt_dlp
 import os
 import uuid
@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
+import aivideo_archive
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -99,8 +100,35 @@ except Exception as e:
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
+if not os.environ.get('FLASK_SECRET_KEY'):
+    app.logger.warning(
+        '[startup] FLASK_SECRET_KEY tidak diset di environment — session '
+        '(termasuk login /ai-video) akan ter-invalidate setiap kali proses '
+        'worker restart. Set FLASK_SECRET_KEY di Railway variables untuk '
+        'menghindari ini.'
+    )
 
 APP_VERSION = "20260709-mii-network-v16"
+
+
+@app.errorhandler(Exception)
+def _aivideo_json_error_handler(e):
+    """Make sure API routes (used by fetch()/polling on the frontend) never
+    fall through to Flask's default HTML error page. An HTML response body
+    can't be parsed by response.json() on the client, which surfaces as a
+    generic, misleading network-style failure (e.g. the AI Video status
+    poll showing "Gagal mengambil status task dari server" for what was
+    actually a server-side exception with a perfectly reachable server).
+    Non-API routes keep Flask's normal error handling."""
+    from werkzeug.exceptions import HTTPException
+    code = e.code if isinstance(e, HTTPException) else 500
+    if request.path.startswith('/api/'):
+        app.logger.error('[api][unhandled] %s %s -> %s', request.method, request.path, e, exc_info=True)
+        return jsonify({'error': str(e) if isinstance(e, HTTPException) else 'Internal server error'}), code
+    if isinstance(e, HTTPException):
+        return e
+    app.logger.error('[unhandled] %s %s -> %s', request.method, request.path, e, exc_info=True)
+    raise e
 
 
 def versioned_static(path):
@@ -111,6 +139,7 @@ def versioned_static(path):
     return f"{app.static_url_path}/{clean_path}?v={APP_VERSION}"
 
 analytics.init_db()
+aivideo_archive.init_db()
 
 
 # ---------------------------------------------------------------------------
@@ -2031,6 +2060,13 @@ DROPBOX_OAUTH_TOKEN_URL = 'https://api.dropbox.com/oauth2/token'
 _DROPBOX_TOKEN_LOCK = threading.Lock()
 _DROPBOX_TOKEN_CACHE = {'access_token': '', 'expires_at': 0}
 
+# Maps an issued Dropbox shareable/temp link -> the Dropbox path it points
+# to, so a later "remove this reference" action in the UI can actually
+# delete the file from Dropbox (not just hide it from the debug page).
+# In-memory only, same lifetime as AIVIDEO_TASKS / _AIVIDEO_DEBUG.
+_DROPBOX_URL_TO_PATH_LOCK = threading.Lock()
+_DROPBOX_URL_TO_PATH = {}
+
 # In-memory task store for the async generate/poll flow (single-process).
 AIVIDEO_TASKS = {}
 AIVIDEO_TASKS_LOCK = threading.Lock()
@@ -2196,7 +2232,50 @@ def _dropbox_temp_link(path_lower):
 
 def _dropbox_upload_and_link(file_bytes, filename):
     path_lower = _dropbox_upload_bytes(file_bytes, filename)
-    return _dropbox_temp_link(path_lower)
+    link = _dropbox_temp_link(path_lower)
+    # Remember which Dropbox path this shareable link points to, so that if
+    # the user later removes this reference in the UI we can actually
+    # delete the underlying file from Dropbox (files/delete_v2 needs the
+    # path — the temp link alone isn't enough to identify/delete it).
+    with _DROPBOX_URL_TO_PATH_LOCK:
+        _DROPBOX_URL_TO_PATH[link] = path_lower
+    return link
+
+
+def _dropbox_delete_path(path_lower):
+    """Delete a file from Dropbox by its lowercase path. Best-effort: a
+    'not_found' response from Dropbox is treated as already-deleted, not
+    an error, since the end state (file gone) is what we actually want."""
+    resp = _dropbox_request_with_retry(
+        'POST',
+        'https://api.dropboxapi.com/2/files/delete_v2',
+        headers={'Content-Type': 'application/json'},
+        json={'path': path_lower}, timeout=30,
+    )
+    if resp.status_code >= 400:
+        body = resp.text[:300]
+        if 'not_found' in body:
+            app.logger.info('[ai-video][dropbox] delete %s: already gone (not_found)', path_lower)
+            return True, 'already deleted'
+        app.logger.error('[ai-video][dropbox] delete %s FAILED: %s %s', path_lower, resp.status_code, body)
+        return False, body
+    app.logger.info('[ai-video][dropbox] deleted %s', path_lower)
+    return True, 'ok'
+
+
+def _dropbox_delete_by_url(url):
+    """Delete the Dropbox file behind a previously-issued shareable/temp
+    link, if we still know which path it maps to. Returns (ok, detail)."""
+    with _DROPBOX_URL_TO_PATH_LOCK:
+        path_lower = _DROPBOX_URL_TO_PATH.pop(url, None)
+    if not path_lower:
+        # Not one of ours (or already forgotten) — nothing to delete.
+        return None, 'no dropbox path tracked for this url'
+    try:
+        return _dropbox_delete_path(path_lower)
+    except Exception as e:
+        app.logger.error('[ai-video][dropbox] delete_by_url exception for %s: %s', path_lower, e)
+        return False, str(e)
 
 
 def _dropbox_status_check():
@@ -2530,6 +2609,8 @@ def aivideo_generate():
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
         }
+    app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
+                     task_id, family, model_key, endpoint)
     threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type), daemon=True).start()
 
     estimated_time = (duration * 12) if duration else 20
@@ -2557,7 +2638,14 @@ def aivideo_task_status(task_id):
         return jsonify({'error': 'unauthorized'}), 401
     resp = _aivideo_task_payload(task_id)
     if resp is None:
-        return jsonify({'error': 'Task tidak ditemukan'}), 404
+        # This means the in-memory AIVIDEO_TASKS dict has no record of this
+        # task_id at all — either it was never created on this process, or
+        # the process restarted (e.g. gunicorn worker timeout/crash) since
+        # the task was started, wiping all in-memory state. Log it clearly
+        # so this shows up as an explicit, diagnosable event rather than a
+        # silent 404.
+        app.logger.warning('[ai-video][status] task_id=%s not found in AIVIDEO_TASKS (process restarted or invalid id?)', task_id)
+        return jsonify({'error': 'Task tidak ditemukan (server mungkin baru saja restart). Coba generate ulang.'}), 404
     return jsonify(resp)
 
 
@@ -2619,21 +2707,122 @@ def aivideo_upload():
 @app.route('/api/aivideo/upload/forget', methods=['POST'])
 def aivideo_upload_forget():
     """Called by the client right when a reference/frame is removed from the
-    UI (the X button), so the debug snapshot stops showing an upload that no
-    longer exists anywhere else (state, preview, or the generate payload)."""
+    UI (the X button). Deletes the underlying file from Dropbox (so it can
+    never be re-fetched by Segmind even if a stale URL leaks somewhere),
+    and clears it from the debug snapshot so /ai-video/debug stops showing
+    an upload that no longer exists anywhere."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
     if not url:
         return jsonify({'ok': True})
+
+    deleted_ok, delete_detail = _dropbox_delete_by_url(url)
+    if deleted_ok is False:
+        # We know the path but Dropbox refused the delete — log it clearly
+        # so a stuck/orphaned file doesn't go unnoticed.
+        _aivideo_last_error('dropbox_delete', f'Gagal hapus file dari Dropbox untuk url={url}: {delete_detail}')
+    app.logger.info('[ai-video][upload][forget] url=%s dropbox_delete=%s (%s)', url, deleted_ok, delete_detail)
+
     with _AIVIDEO_DEBUG_LOCK:
         lst = _AIVIDEO_DEBUG.get('last_uploads') or []
         _AIVIDEO_DEBUG['last_uploads'] = [u for u in lst if u.get('url') != url]
         last = _AIVIDEO_DEBUG.get('last_upload')
         if last and last.get('url') == url:
             _AIVIDEO_DEBUG['last_upload'] = None
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'dropbox_deleted': deleted_ok})
+
+
+def _is_dropbox_url(url):
+    return 'dropbox.com' in url or 'dropboxusercontent.com' in url
+
+
+def _ensure_dropbox_url(url):
+    """Given a media URL that MIGHT be one of our own local
+    /static/aivideo_uploads/... paths (generated video/image output, which
+    is never sent to Segmind and must never be archived as-is either),
+    make sure it ends up on Dropbox. Already-Dropbox URLs are returned
+    untouched (no re-upload). Returns the (possibly new) URL."""
+    if not url:
+        return url
+    if _is_dropbox_url(url):
+        return url
+    # Treat anything relative, or pointing at our own static path, as local.
+    is_local = url.startswith('/static/') or '/static/aivideo_uploads/' in url
+    if not is_local:
+        # Unknown external URL (not ours, not Dropbox) — leave as-is rather
+        # than guessing; log so it's visible if it ever happens.
+        app.logger.warning('[ai-video][archive] media url is neither local nor Dropbox, leaving untouched: %s', url)
+        return url
+    rel_path = url.split('/static/', 1)[-1]
+    local_path = os.path.join(app.root_path, 'static', rel_path)
+    if not os.path.isfile(local_path):
+        raise RuntimeError(f'File hasil generate tidak ditemukan di server: {rel_path}')
+    with open(local_path, 'rb') as fh:
+        file_bytes = fh.read()
+    dropbox_url = _dropbox_upload_and_link(file_bytes, os.path.basename(local_path))
+    app.logger.info('[ai-video][archive] promoted local file to Dropbox: %s -> %s', rel_path, dropbox_url)
+    return dropbox_url
+
+
+@app.route('/api/aivideo/archive', methods=['GET'])
+def aivideo_archive_list():
+    """List all archived generations from the database (not the session /
+    browser localStorage) — this is what survives a closed browser or a
+    server restart."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        return jsonify({'ok': True, 'items': aivideo_archive.list_archive()})
+    except Exception as e:
+        app.logger.error('[ai-video][archive] list failed: %s', e, exc_info=True)
+        return jsonify({'error': f'Gagal memuat arsip: {e}'}), 500
+
+
+@app.route('/api/aivideo/archive', methods=['POST'])
+def aivideo_archive_save():
+    """Persist a generation to the server-side Archive. Uploads the media
+    to Dropbox first if it isn't already there (e.g. a fresh generation
+    output living at /static/aivideo_uploads/...), then stores the Dropbox
+    URL + metadata in the database."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    rec = request.get_json(silent=True) or {}
+    rec_id = str(rec.get('id') or '').strip()
+    if not rec_id:
+        return jsonify({'error': 'id wajib diisi'}), 400
+    if not rec.get('videoUrl') and not rec.get('imageUrl'):
+        return jsonify({'error': 'videoUrl atau imageUrl wajib diisi'}), 400
+    try:
+        if rec.get('videoUrl'):
+            rec['videoUrl'] = _ensure_dropbox_url(rec['videoUrl'])
+        if rec.get('imageUrl'):
+            rec['imageUrl'] = _ensure_dropbox_url(rec['imageUrl'])
+        aivideo_archive.upsert_archive(rec)
+        app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s',
+                         rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')))
+        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', '')})
+    except Exception as e:
+        app.logger.error('[ai-video][archive] save failed id=%s: %s', rec_id, e, exc_info=True)
+        _aivideo_last_error('archive', str(e))
+        return jsonify({'error': f'Gagal menyimpan ke Archive: {e}'}), 500
+
+
+@app.route('/api/aivideo/archive/<archive_id>', methods=['DELETE'])
+def aivideo_archive_delete(archive_id):
+    """Remove a record from the server-side Archive (used when the user
+    unarchives or deletes a history item, to keep the database in sync).
+    Note: this does not delete the file from Dropbox — an archived file is
+    a deliberate long-term save, unlike a removed reference image."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        aivideo_archive.delete_archive(archive_id)
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('[ai-video][archive] delete failed id=%s: %s', archive_id, e, exc_info=True)
+        return jsonify({'error': f'Gagal hapus dari Archive: {e}'}), 500
 
 
 
