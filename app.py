@@ -1988,12 +1988,21 @@ def event_page():
     return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_format_reward_info(data).replace('🎁 Info Hadiah\n', ''), maintenance=get_site_status().get('maintenance'))
 
 
-MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', 'MYBINI02')
+MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', '')
 AIVIDEO_LOCKOUT_THRESHOLD = 3
 AIVIDEO_LOCKOUT_SECONDS = 5 * 60
+if not MII_AIVIDEO_PASSWORD:
+    app.logger.warning('[startup] MII_AIVIDEO_PASSWORD tidak diset di environment — lock screen /ai-video tidak bisa dibuka siapa pun sampai variable ini diisi di Railway.')
 
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
-SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '') or 'SG_405b95643623374c'
+# IMPORTANT: no hardcoded fallback key here on purpose. A real API key was
+# previously committed directly in this file as a fallback value, which
+# means it is permanently visible in this repo's git history even after
+# being removed from the current version — if that was ever pushed
+# anywhere, rotate/regenerate that key in the Segmind dashboard.
+SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '')
+if not SEGMIND_API_KEY:
+    app.logger.warning('[startup] SEGMIND_API_KEY tidak diset di environment — semua generate akan gagal sampai variable ini diisi di Railway.')
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
