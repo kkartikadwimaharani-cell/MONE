@@ -3133,18 +3133,37 @@ function useResultAsReference() {
     closeResultOverlay();
     return;
   }
-  // Fallback (no history record available): just add media as a reference
-  if (r.isImage) {
-    if (media.image.length >= maxCounts.image) { showError('Reference limit reached'); return; }
-    media.image.push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
-  } else {
-    if (media.video.length >= maxCounts.video) { showError('Video reference limit reached'); return; }
-    media.video.push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
+  var type = r.isImage ? 'image' : 'video';
+  if (media[type].length >= maxCounts[type]) {
+    showError((r.isImage ? 'Reference' : 'Video reference') + ' limit reached');
+    return;
   }
-  renderUploadGrid();
-  switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
+  // r.url here is our own generate-result URL (served from
+  // /static/aivideo_uploads/... on this domain), never a Dropbox URL.
+  // Segmind must NEVER receive a makima.cloud URL as a reference — only
+  // Dropbox URLs are allowed — so re-upload it through the same Dropbox
+  // upload pipeline used for every other reference before it can be used
+  // again as an input. (If it's already a Dropbox URL for some reason,
+  // skip straight to using it — no need to re-upload.)
+  if (r.url.indexOf('dropbox.com') !== -1 || r.url.indexOf('dropboxusercontent.com') !== -1) {
+    media[type].push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
+    renderUploadGrid();
+    switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
+    closeResultOverlay();
+    setPanelCollapsed(false);
+    return;
+  }
   closeResultOverlay();
+  switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
   setPanelCollapsed(false);
+  fetch(r.url)
+    .then(function(resp) { return resp.blob(); })
+    .then(function(blob) {
+      var ext = r.isImage ? 'png' : 'mp4';
+      var file = new File([blob], 'result-reuse-' + Date.now() + '.' + ext, { type: blob.type || (r.isImage ? 'image/png' : 'video/mp4') });
+      uploadFile(file, type, r.url); // uploadFile() posts to /api/aivideo/upload and fills in the real Dropbox url
+    })
+    .catch(function() { showError('Gagal menyiapkan hasil ini sebagai reference'); });
 }
 
 // ══════════ FAILURE RECOVERY (keeps prompt / media / settings intact) ══════════
@@ -3183,6 +3202,57 @@ function updateHistoryRecord(id, patch) {
 function deleteHistoryRecord(id) {
   saveHistoryList(loadHistory().filter(function(r) { return r.id !== id; }));
 }
+
+// ══════════ SERVER-SIDE ARCHIVE SYNC (database, not session/localStorage) ══════════
+// localStorage stays as the instant local cache (so the UI never waits on
+// a network round-trip to show something), but the actual source of truth
+// for "is this archived" now lives in the server database, keyed by the
+// same record id, so it survives a cleared browser or a server restart.
+function syncArchiveToServer(rec) {
+  if (!rec || !rec.id) return;
+  fetch('/api/aivideo/archive', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(rec)
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data || data.error) { showError((data && data.error) || 'Gagal menyimpan ke Archive di server'); return; }
+      // The server may have promoted a local /static/... output URL to a
+      // real Dropbox URL — keep the local record in sync so a future
+      // "Use as reference" never points at our own domain.
+      var patch = {};
+      if (data.videoUrl) patch.videoUrl = data.videoUrl;
+      if (data.imageUrl) patch.imageUrl = data.imageUrl;
+      if (Object.keys(patch).length) updateHistoryRecord(rec.id, patch);
+    })
+    .catch(function() { showError('Gagal menyimpan ke Archive, cek koneksi'); });
+}
+function removeArchiveFromServer(id) {
+  if (!id) return;
+  fetch('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }).catch(function() {});
+}
+function mergeServerArchiveIntoLocal(items) {
+  if (!items || !items.length) return;
+  var list = loadHistory();
+  items.forEach(function(srv) {
+    var idx = list.findIndex(function(r) { return r.id === srv.id; });
+    var merged = Object.assign({}, srv, { archived: true });
+    if (idx > -1) list[idx] = Object.assign({}, list[idx], merged);
+    else list.unshift(merged);
+  });
+  saveHistoryList(list);
+}
+function refreshArchiveFromServer(onDone) {
+  fetch('/api/aivideo/archive')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.ok && data.items) mergeServerArchiveIntoLocal(data.items);
+      if (onDone) onDone();
+    })
+    .catch(function() {});
+}
+
 function saveGenerationToHistory(res) {
   var hasTier = selectedFamily.qualities.length > 1;
   var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
@@ -3256,7 +3326,10 @@ function renderHistTypeList(archived, listId, emptyId) {
   el.innerHTML = list.map(buildHistItemRow).join('');
 }
 function renderHistoryList() { renderHistTypeList(false, 'historyList', 'historyEmpty'); }
-function renderArchiveList() { renderHistTypeList(true, 'archiveList', 'archiveEmpty'); }
+function renderArchiveList() {
+  renderHistTypeList(true, 'archiveList', 'archiveEmpty');
+  refreshArchiveFromServer(function() { renderHistTypeList(true, 'archiveList', 'archiveEmpty'); });
+}
 function openHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
@@ -3327,7 +3400,10 @@ function reuseHistoryItem(id) {
 function toggleArchiveItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
-  updateHistoryRecord(id, { archived: !r.archived });
+  var nowArchived = !r.archived;
+  updateHistoryRecord(id, { archived: nowArchived });
+  if (nowArchived) syncArchiveToServer(Object.assign({}, r, { archived: true }));
+  else removeArchiveFromServer(id);
   renderHistoryList();
   renderArchiveList();
 }
@@ -3338,6 +3414,8 @@ function confirmDeleteHistoryItem(id) {
   document.getElementById('confirmSub').textContent = 'This only removes it from your history. The file itself is not deleted.';
   var btn = document.getElementById('confirmActionBtn');
   btn.onclick = function() {
+    var rec = findHistoryRecord(pendingDeleteId);
+    if (rec && rec.archived) removeArchiveFromServer(pendingDeleteId);
     deleteHistoryRecord(pendingDeleteId);
     renderHistoryList();
     renderArchiveList();
@@ -3371,6 +3449,8 @@ function archiveCurrentResult() {
   var id = resolveCurrentResultId();
   if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
   updateHistoryRecord(id, { archived: true });
+  var r = findHistoryRecord(id);
+  if (r) syncArchiveToServer(r);
   renderHistoryList();
   renderArchiveList();
   showToast('Tersimpan di Archive');
