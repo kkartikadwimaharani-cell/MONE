@@ -130,6 +130,16 @@ button{background:none;border:none;cursor:pointer}
 .canvas-result-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;margin:0 auto}
 .canvas-result-wrap.has-result{gap:0}
 .canvas-result-wrap.has-result .canvas-preview{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none}
+.canvas-result-wrap.has-result{position:relative;border-radius:22px;isolation:isolate}
+.canvas-result-wrap.has-result::before{
+  content:'';position:absolute;inset:-2px;border-radius:24px;padding:2px;
+  background:conic-gradient(from var(--chase-angle,0deg),rgba(255,51,85,.6) 0%,rgba(255,51,85,.6) 70%,#ffd6dc 85%,rgba(255,51,85,.6) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  animation:canvasBorderChase 2.6s linear infinite;pointer-events:none;z-index:5;
+}
+@property --chase-angle{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes canvasBorderChase{to{--chase-angle:360deg}}
 .canvas-result-wrap.has-result .canvas-preview-media{background:transparent}
 .canvas-result-wrap.has-result .canvas-preview::before{
   content:'';position:absolute;inset:0;z-index:0;
@@ -2904,7 +2914,7 @@ function startGenerate() {
     var taskId = res.data.id;
     var taskInfo = res.data.task_info || {};
     document.getElementById('taskEta').textContent = formatEta(taskInfo.estimated_time);
-    pollTask(taskId);
+    pollTask(taskId, { meta: body });
   })
   .catch(function() {
     showError('Request gagal, cek koneksi');
@@ -2940,8 +2950,8 @@ function formatEta(seconds) {
   return '~' + m + 'm ' + (s > 0 ? s + 's' : '');
 }
 var ACTIVE_TASK_KEY = 'mii_ai_video_active_task_v1';
-function saveActiveTask(taskId) {
-  try { localStorage.setItem(ACTIVE_TASK_KEY, JSON.stringify({ taskId: taskId, ts: Date.now(), mode: activeMode })); } catch(_) {}
+function saveActiveTask(taskId, meta) {
+  try { localStorage.setItem(ACTIVE_TASK_KEY, JSON.stringify({ taskId: taskId, ts: Date.now(), mode: activeMode, meta: meta || null })); } catch(_) {}
 }
 function clearActiveTask() {
   try { localStorage.removeItem(ACTIVE_TASK_KEY); } catch(_) {}
@@ -2953,7 +2963,7 @@ function loadActiveTask() {
 function pollTask(taskId, opts) {
   if (pollInterval) clearInterval(pollInterval);
   currentTaskId = taskId;
-  saveActiveTask(taskId);
+  saveActiveTask(taskId, opts && opts.meta);
   var requestInFlight = false;
   var consecutiveNetworkFailures = 0;
   // The generation itself runs entirely on the server (Segmind is called
@@ -3055,8 +3065,8 @@ function pollTask(taskId, opts) {
           // Transient blip (weak signal, wifi<->data handoff, tab backgrounded,
           // etc). The task itself keeps running/finishes server-side either
           // way — just keep polling, don't lose the result over this.
-          var statusEl = document.getElementById('taskStatusTxt');
-          if (statusEl) { statusEl.textContent = 'Reconnecting…'; statusEl.className = 'task-status-txt'; }
+          var stageEl = document.getElementById('taskStage');
+          if (stageEl) stageEl.textContent = 'Reconnecting…';
           return;
         }
         clearInterval(pollInterval);
@@ -3092,6 +3102,33 @@ function resumeActiveTaskIfAny() {
   if (ageMs > 30 * 60 * 1000) { clearActiveTask(); return; } // stale beyond any realistic generation time
   activeMode = saved.mode || activeMode;
   window.__genStartTs = saved.ts;
+
+  // Rebuild the form state from what was actually submitted, so that if
+  // this task finishes now, saveGenerationToHistory() records the real
+  // prompt/model/references instead of whatever the (now-empty, freshly
+  // reloaded) form happens to contain.
+  var meta = saved.meta;
+  if (meta) {
+    try {
+      if (promptInput && meta.prompt) promptInput.value = meta.prompt;
+      var fam = null, families = modelFamilies[activeMode] || modelFamilies.video;
+      if (meta.family) fam = families.find(function(f) { return f.key === meta.family; });
+      if (fam) {
+        var qIdx = fam.qualities.findIndex(function(q) { return q.label === meta.model; });
+        pickFamily(fam, qIdx > -1 ? qIdx : 0);
+      }
+      if (meta.resolution) { selectedResolution = meta.resolution; var rl = document.getElementById('resolutionLabel'); if (rl) rl.textContent = meta.resolution; }
+      if (meta.aspect_ratio) { selectedRatio = meta.aspect_ratio; var ral = document.getElementById('ratioLabel'); if (ral) ral.textContent = meta.aspect_ratio; }
+      if (meta.duration) { selectedDuration = meta.duration; var dl = document.getElementById('durationLabel'); if (dl) dl.textContent = meta.duration + 's'; }
+      media.image = (meta.image_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+      media.video = (meta.video_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+      media.audio = (meta.audio_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+      if (meta.first_frame_url) frames.first = { file: null, previewUrl: meta.first_frame_url, url: meta.first_frame_url, uploading: false };
+      if (meta.last_frame_url) frames.last = { file: null, previewUrl: meta.last_frame_url, url: meta.last_frame_url, uploading: false };
+      renderUploadGrid();
+    } catch (e) { /* best-effort restore — even if this fails, polling below still works */ }
+  }
+
   document.getElementById('taskStatusTxt').textContent = 'Checking…';
   document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
   document.getElementById('taskStage').textContent = 'Reconnecting to your generation…';
@@ -3101,7 +3138,7 @@ function resumeActiveTaskIfAny() {
   btn.classList.add('loading');
   lockGenerateForm(true);
   setPanelCollapsed(true);
-  pollTask(saved.taskId);
+  pollTask(saved.taskId, { meta: meta });
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', resumeActiveTaskIfAny);
