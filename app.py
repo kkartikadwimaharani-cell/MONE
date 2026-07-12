@@ -220,6 +220,7 @@ def get_site_status():
         status.setdefault('extension_image_url_3', '')
         status.setdefault('extension_zip_url', '')
         status.setdefault('extension_tutorial', [])
+        status.setdefault('vault_locked', True)
         return status
 
 
@@ -867,7 +868,8 @@ def _admin_keyboard():
         ['🏆 Winner List', '📊 Status'],
         ['♻️ Reset Event', '🎁 Info Hadiah'],
         ['🔗 Community Link', '📢 Telegram Channel'],
-        ['🧩 Extension Page', '🏠 Menu Utama'],
+        ['🧩 Extension Page', '🔐 Private Vault'],
+        ['🏠 Menu Utama'],
         ['🔐 Logout'],
     ])
 
@@ -1288,6 +1290,7 @@ def _normalize_bot_action(data):
         'LOGOUT': 'logout', '/logout': 'logout', '/admin': 'admin_login',
         'COMMUNITY LINK': 'community_link', 'TELEGRAM CHANNEL': 'telegram_channel',
         'EXTENSION PAGE': 'extension_page',
+        'PRIVATE VAULT': 'vault_page',
         'HAPUS FOTO 1': 'ext_del_img1', 'HAPUS FOTO 2': 'ext_del_img2', 'HAPUS FOTO 3': 'ext_del_img3',
         'EDIT TEKS': 'ext_edit_text', 'UPLOAD GAMBAR': 'ext_upload_img',
         'SET ZIP URL': 'ext_set_zip', 'EDIT TUTORIAL': 'ext_edit_tutorial',
@@ -1379,6 +1382,7 @@ def process_telegram_update(update):
         'reward_generate', 'reward_stock', 'view_reward_stock', 'event_manual_token',
         'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3',
         'ext_edit_text', 'ext_upload_img', 'ext_set_zip', 'ext_edit_tutorial', 'ext_back',
+        'vault_page', 'vault_lock', 'vault_unlock',
         'logout', 'admin_login',
     }
     if state in admin_input_states and data in recognized_actions:
@@ -1431,7 +1435,7 @@ def process_telegram_update(update):
             _telegram_send_message(chat_id, '🔐 Logout berhasil.', _user_keyboard())
         return
 
-    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3'}
+    admin_actions = {'event_stats', 'event_users', 'reward_codes', 'claim_history', 'event_settings', 'reward_generate', 'reward_stock', 'view_reward_stock', 'maintenance_on', 'maintenance_off', 'event_manual_token', 'event_lock', 'event_active', 'draw_start', 'draw_status', 'list_token', 'winner_list', 'reset_draw', 'reward_info', 'extension_page', 'ext_lock', 'ext_unlock', 'ext_del_img1', 'ext_del_img2', 'ext_del_img3', 'vault_page', 'vault_lock', 'vault_unlock'}
     if data in admin_actions and not _is_admin_chat(uid):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
@@ -1628,6 +1632,27 @@ def process_telegram_update(update):
             _save_site_status(status)
             label = '🔒 LOCKED' if locked else '🔓 UNLOCKED'
             _telegram_send_message(chat_id, f'✅ Extension page sekarang {label}.', _admin_keyboard())
+            return
+        if data == 'vault_page':
+            status = get_site_status()
+            locked = status.get('vault_locked', True)
+            lock_btn = '🔓 Unlock Vault' if locked else '🔒 Lock Vault'
+            vault_kb = _reply_keyboard([
+                [lock_btn],
+                ['🔙 Kembali'],
+            ])
+            _telegram_send_message(chat_id,
+                f'🔐 *PRIVATE VAULT*\n\nStatus: {"🔒 LOCKED" if locked else "🔓 UNLOCKED"}\n\n'
+                'Saat locked, halaman Private Vault di web tidak bisa diakses siapa pun selain admin.\n\nPilih aksi:',
+                vault_kb, parse_mode='Markdown')
+            return
+        if data in ('vault_lock', 'vault_unlock') or raw_data in ('🔒 Lock Vault', '🔓 Unlock Vault'):
+            status = get_site_status()
+            locked = raw_data == '🔒 Lock Vault' or data == 'vault_lock'
+            status['vault_locked'] = locked
+            _save_site_status(status)
+            label = '🔒 LOCKED' if locked else '🔓 UNLOCKED'
+            _telegram_send_message(chat_id, f'✅ Private Vault sekarang {label}.', _admin_keyboard())
             return
         if data in ('ext_del_img1', 'ext_del_img2', 'ext_del_img3'):
             slot_map = {'ext_del_img1': 'extension_image_url', 'ext_del_img2': 'extension_image_url_2', 'ext_del_img3': 'extension_image_url_3'}
@@ -1965,7 +1990,8 @@ def index():
         community_name=status.get('community_name', 'COMMUNITY'),
         community_link=status.get('community_link', ''),
         community_btn_label=status.get('community_btn_label', 'GABUNG'),
-        telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
+        telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1'),
+        vault_locked=status.get('vault_locked', True)
     )
 
 
@@ -1976,7 +2002,8 @@ def ai_view():
         community_name=status.get('community_name', 'COMMUNITY'),
         community_link=status.get('community_link', ''),
         community_btn_label=status.get('community_btn_label', 'GABUNG'),
-        telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
+        telegram_channel_link=status.get('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1'),
+        vault_locked=status.get('vault_locked', True)
     )
 
 
@@ -2226,7 +2253,10 @@ def _dropbox_upload_bytes(file_bytes, filename):
 
 
 def _dropbox_temp_link(path_lower):
-    """Get a direct, temporary (4h) download URL for a Dropbox path."""
+    """Get a direct, temporary (4h) download URL for a Dropbox path.
+    NOTE: kept only for reference/back-compat — do not use for anything
+    that needs to keep working later (Archive, saved history, reused
+    references). Use _dropbox_permanent_link for those."""
     resp = _dropbox_request_with_retry(
         'POST',
         'https://api.dropboxapi.com/2/files/get_temporary_link',
@@ -2239,9 +2269,59 @@ def _dropbox_temp_link(path_lower):
     return resp.json()['link']
 
 
+def _to_direct_dropbox_url(shared_url):
+    """Turn a www.dropbox.com/s/.../file?dl=0 share link into a direct,
+    raw-content URL (dl.dropboxusercontent.com) so it works as a plain
+    <video>/<img> src or a Segmind reference_images entry, with no
+    redirect and — critically — no expiry."""
+    direct = shared_url.replace('://www.dropbox.com', '://dl.dropboxusercontent.com').replace('://dropbox.com', '://dl.dropboxusercontent.com')
+    direct = re.sub(r'([?&])dl=\d', r'\1raw=1', direct)
+    if 'raw=1' not in direct:
+        sep = '&' if '?' in direct else '?'
+        direct += sep + 'raw=1'
+    return direct
+
+
+def _dropbox_permanent_link(path_lower):
+    """Create (or reuse) a PERMANENT Dropbox shared link for a file. Unlike
+    get_temporary_link, this never expires — required for anything we
+    archive, save to history, or might reference again later, since a
+    dead 4h link is exactly what made archived videos stop playing."""
+    resp = _dropbox_request_with_retry(
+        'POST',
+        'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings',
+        headers={'Content-Type': 'application/json'},
+        json={'path': path_lower}, timeout=30,
+    )
+    if resp.status_code == 409:
+        # A shared link already exists for this path — Dropbox won't create
+        # a second one; look up the existing one instead.
+        existing_url = None
+        try:
+            existing_url = resp.json().get('error', {}).get('shared_link_already_exists', {}).get('metadata', {}).get('url')
+        except Exception:
+            existing_url = None
+        if not existing_url:
+            list_resp = _dropbox_request_with_retry(
+                'POST', 'https://api.dropboxapi.com/2/sharing/list_shared_links',
+                headers={'Content-Type': 'application/json'},
+                json={'path': path_lower, 'direct_only': True}, timeout=30,
+            )
+            if list_resp.status_code < 400:
+                links = list_resp.json().get('links', [])
+                if links:
+                    existing_url = links[0].get('url')
+        if not existing_url:
+            raise RuntimeError(f'Dropbox: gagal membuat/menemukan permanent link untuk {path_lower}')
+        return _to_direct_dropbox_url(existing_url)
+    if resp.status_code >= 400:
+        raise RuntimeError(f'Dropbox permanent link gagal ({resp.status_code}): {resp.text[:300]}')
+    return _to_direct_dropbox_url(resp.json()['url'])
+
+
 def _dropbox_upload_and_link(file_bytes, filename):
     path_lower = _dropbox_upload_bytes(file_bytes, filename)
-    link = _dropbox_temp_link(path_lower)
+    link = _dropbox_permanent_link(path_lower)
     # Remember which Dropbox path this shareable link points to, so that if
     # the user later removes this reference in the UI we can actually
     # delete the underlying file from Dropbox (files/delete_v2 needs the
