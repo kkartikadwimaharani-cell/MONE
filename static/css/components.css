@@ -1936,6 +1936,7 @@ img.preview-thumb-fallback {
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.25;
+  text-transform: uppercase;
 }
 
 .vault-tool-desc {
