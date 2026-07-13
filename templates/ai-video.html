@@ -255,13 +255,13 @@ button{background:none;border:none;cursor:pointer}
 @keyframes tabFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .tab-content.active.fading{animation:tabFadeIn .22s ease}
 
-/* Compact vertical media rail — Dreamkreat style, sits attached to the LEFT of the
-   prompt input row in the main panel (not buried inside the fullscreen editor). */
+/* Media row — Dreamkreat style, horizontal row of IMAGE/VIDEO/AUDIO cards
+   sitting to the LEFT of the PROMPT bar in the main panel. */
 .builder-input-row{display:flex;gap:8px;align-items:stretch}
-.upload-row{display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:52px}
+.upload-row{display:flex;flex-direction:row;gap:8px;flex-shrink:0}
 .upload-card{
-  position:relative;border-radius:14px;border:1px solid var(--border);background:var(--btn);
-  width:52px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  position:relative;border-radius:16px;border:1px solid var(--border);background:var(--btn);
+  width:64px;height:64px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   overflow:hidden;transition:border-color .15s,transform .12s;
 }
 .upload-card:active{transform:scale(.94)}
@@ -270,8 +270,8 @@ button{background:none;border:none;cursor:pointer}
 .upload-card.pop{animation:cardPop .32s cubic-bezier(.16,1,.3,1)}
 .upload-card .uc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .upload-card .uc-thumb-dim{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.75) 100%)}
-.uc-icon{width:19px;height:19px;opacity:.75;z-index:1}
-.uc-label{display:none}
+.uc-icon{width:20px;height:20px;opacity:.8;z-index:1}
+.uc-label{display:block;font-size:9.5px;font-weight:800;letter-spacing:.04em;z-index:1}
 .upload-card.has-media .uc-label{display:none}
 .upload-card.has-media .uc-icon{display:none}
 .uc-count{position:absolute;top:3px;right:3px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.14);font-family:var(--mono);font-size:.56rem;font-weight:700;z-index:2;display:flex;align-items:center;justify-content:center}
@@ -487,13 +487,31 @@ input[type=file].hidden-input{display:none}
 .pe-header-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pe-title{font-family:var(--disp);font-size:18px;font-weight:800;line-height:1.1;letter-spacing:.06em;text-transform:uppercase}
 .pe-subtitle{font-size:11.5px;opacity:.55;line-height:1.3;letter-spacing:.02em}
+.pe-attach-counts{display:flex;gap:6px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.pe-attach-counts::-webkit-scrollbar{display:none}
+.pe-attach-item{display:flex;align-items:center;gap:5px;padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);flex-shrink:0;font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text-dim);letter-spacing:.02em}
+.pe-attach-item svg{width:14px;height:14px;opacity:.75;flex-shrink:0}
+.pe-enhance-btn{display:flex;align-items:center;gap:5px;padding:8px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(190,110,255,.16),rgba(140,60,255,.08));border:1px solid rgba(190,110,255,.35);color:#c9a4ff;font-size:.72rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;flex-shrink:0;transition:background .2s ease,transform .15s ease}
+.pe-enhance-btn:hover{background:linear-gradient(180deg,rgba(190,110,255,.24),rgba(140,60,255,.12))}
+.pe-enhance-btn:active{transform:scale(.96)}
+.pe-enhance-btn svg{width:13px;height:13px;flex-shrink:0}
 .pe-done{padding:9px 20px;border-radius:12px;background:var(--accent);font-size:14px;font-weight:800;transition:background .15s,transform .12s;flex-shrink:0;letter-spacing:.04em;text-transform:uppercase}
 .pe-done:active{background:var(--accent-hover);transform:scale(.96)}
+.prompt-overlay.pe-fullscreen{top:env(safe-area-inset-top,0px);max-height:none!important;height:100%;border-radius:0;box-shadow:none}
+.pe-expand-btn{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;margin-right:10px;transition:background .2s ease,transform .15s ease}
+.pe-expand-btn:hover{background:rgba(255,255,255,.1)}
+.pe-expand-btn:active{transform:scale(.94)}
 .pe-body{flex:0 1 auto;min-height:0;padding:12px 16px 6px;overflow-y:auto;display:flex;flex-direction:column;width:100%;gap:10px}
-.pe-input-wrap{position:relative;flex:0 0 auto;min-height:96px;display:block}
+.pe-input-wrap{position:relative;flex:0 0 auto;min-height:180px;display:block}
 .pe-highlight{position:absolute;inset:0;padding:0;margin:0;font-family:inherit;font-size:16px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow:hidden;pointer-events:none;color:transparent;letter-spacing:normal}
 .pe-highlight .tag{background:rgba(255,32,64,.16);color:transparent;border-radius:6px;padding:1px 4px;margin:0 -2px;box-shadow:0 0 0 1px rgba(255,32,64,.35) inset}
-.pe-textarea{position:relative;width:100%;min-height:96px;background:transparent;border:none;outline:none;resize:none;font-size:16px;line-height:1.55;color:#fff;padding:0;letter-spacing:normal}
+.pe-textarea{position:relative;width:100%;min-height:180px;background:transparent;border:none;outline:none;resize:none;font-size:16px;line-height:1.55;color:#fff;padding:0;letter-spacing:normal}
+
+/* Fullscreen mode: let the textarea actually fill all the available height
+   instead of staying pinned to its collapsed min-height with empty space below. */
+.prompt-overlay.pe-fullscreen .pe-body{flex:1 1 auto;min-height:0}
+.prompt-overlay.pe-fullscreen .pe-input-wrap{flex:1 1 auto;min-height:0;display:flex}
+.prompt-overlay.pe-fullscreen .pe-textarea{flex:1;height:100%;min-height:0}
 .pe-textarea::placeholder{color:var(--text-faint)}
 .pe-textarea::selection{background:rgba(255,32,64,.35)}
 .pe-tags-label{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);padding-top:4px;display:none}
@@ -508,8 +526,8 @@ input[type=file].hidden-input{display:none}
 .pe-at-btn{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-family:var(--disp);font-size:1rem;font-weight:700;color:var(--accent-hover);transition:background .2s ease,transform .15s ease}
 .pe-at-btn:hover{background:rgba(255,255,255,.1)}
 .pe-at-btn:active{transform:scale(.94)}
-.pe-clear-btn{height:auto;padding:11px 16px;border-radius:14px;background:#1b1b1b;border:1px solid rgba(255,255,255,.08);font-size:.82rem;font-weight:600;color:#fff;transition:background .2s ease,transform .15s ease;flex-shrink:0}
-.pe-clear-btn:hover{background:#242424}
+.pe-clear-btn{height:auto;padding:11px 20px;border-radius:14px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.35);font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#ff5470;transition:background .2s ease,transform .15s ease,border-color .2s ease;flex-shrink:0}
+.pe-clear-btn:hover{background:rgba(255,32,64,.2);border-color:rgba(255,32,64,.5)}
 .pe-clear-btn:active{transform:scale(.96)}
 .pe-char-count{margin-left:auto;font-family:var(--mono);font-size:.72rem;color:var(--text-faint);font-weight:600}
 
@@ -991,16 +1009,13 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 }
 @media(max-width:360px){.model-dock-grid{grid-template-columns:1fr}.dock-feature-card{min-height:auto}.upload-card,.frame-card{height:82px}.prompt-btn-txt{font-size:16px}.credit-chip-sep{display:none}}
 
-/* ============ FIX: pin media rail to compact icon size, above earlier polish layers ============ */
-.upload-row{gap:6px!important;flex-direction:column!important;width:52px!important}
-.upload-row .upload-card{
-  width:52px!important;height:44px!important;border-radius:14px!important;aspect-ratio:auto!important;
-  background:var(--btn)!important;
-}
-.upload-row .upload-card .uc-label{display:none!important}
-.upload-row .upload-card .uc-icon{width:19px!important;height:19px!important;position:static!important;opacity:.75!important}
-.upload-row .upload-card.has-media .uc-icon{display:none!important}
-@media(max-width:360px){.upload-row .upload-card{height:44px!important}}
+/* Media row now matches Dreamkreat's horizontal layout — see .upload-row rules above.
+   Extra-specific overrides below so the shared .upload-card,.frame-card "polish" rule
+   (used mainly for the big Frames-tab drop zones) doesn't inflate these small cards. */
+.upload-row .upload-card{width:64px;height:64px;border-radius:16px}
+.upload-row .upload-card .uc-label{font-size:9.5px;font-weight:800;letter-spacing:.04em}
+.upload-row .upload-card .uc-icon{width:20px;height:20px}
+@media(max-width:360px){.upload-row .upload-card{width:56px!important;height:56px!important}}
 /* ============ SUCCESS TOAST — "Added N reference image", matches Dreamkreat behavior ============ */
 .toast-wrap{position:fixed;top:calc(12px + var(--safe-t));left:0;right:0;z-index:250;display:flex;justify-content:center;pointer-events:none;padding:0 16px}
 .toast{display:flex;align-items:center;gap:9px;padding:11px 18px;border-radius:999px;background:rgba(20,28,20,.92);border:1px solid rgba(80,220,140,.4);box-shadow:0 14px 34px -14px rgba(0,0,0,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateY(-14px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s ease;max-width:90vw}
@@ -1513,11 +1528,27 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 <div class="prompt-backdrop" id="promptBackdrop" onclick="closePromptEditor()"></div>
 <div class="prompt-overlay" id="promptOverlay">
   <div class="pe-header">
-    <div class="pe-header-text">
-      <div class="pe-title">PROMPT</div>
-      <div class="pe-subtitle">Reference uploaded assets and describe your scene.</div>
+    <div class="pe-attach-counts" id="peAttachCounts">
+      <div class="pe-attach-item" id="peImageItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span id="peImageCount">0/9</span>
+      </div>
+      <div class="pe-attach-item" id="peVideoItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+        <span id="peVideoCount">0/3</span>
+      </div>
+      <div class="pe-attach-item" id="peAudioItem" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        <span id="peAudioCount">0/3</span>
+      </div>
     </div>
-    <button class="pe-done" onclick="closePromptEditor()">Done</button>
+    <button class="pe-enhance-btn" onclick="handlePromptEnhanceClick()" title="Enhance prompt with AI">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z"/></svg>
+      Enhance
+    </button>
+    <button class="pe-expand-btn" id="peExpandBtn" onclick="togglePromptExpand()" title="Perbesar/perkecil" aria-label="Perbesar/perkecil">
+      <svg id="peExpandIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </button>
   </div>
   <div class="pe-body">
     <div class="pe-input-wrap">
@@ -1531,6 +1562,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <button class="pe-at-btn" onclick="toggleMentionPopup(true)">@</button>
     <button class="pe-clear-btn" onclick="clearPrompt()">Clear</button>
     <span class="pe-char-count" id="charCount">0 chars</span>
+    <button class="pe-done" onclick="closePromptEditor()">Done</button>
 
 
     <div class="mention-popup" id="mentionPopup">
@@ -1986,15 +2018,21 @@ function applyModelCapabilities() {
   // Image upload slot: hide if model accepts no images
   var cardImage = document.getElementById('cardImage');
   if (cardImage) cardImage.style.display = caps.image > 0 ? '' : 'none';
+  var peImageItem = document.getElementById('peImageItem');
+  if (peImageItem) peImageItem.style.display = caps.image > 0 ? '' : 'none';
 
   // Video upload slot: hide if model accepts no video refs
   var cardVideo = document.getElementById('cardVideo');
   if (cardVideo) cardVideo.style.display = caps.video > 0 ? '' : 'none';
+  var peVideoItem = document.getElementById('peVideoItem');
+  if (peVideoItem) peVideoItem.style.display = caps.video > 0 ? '' : 'none';
 
   // Audio upload slot
   var cardAudio = document.getElementById('cardAudio');
   var audioSupported = (caps.audio || 0) > 0;
   if (cardAudio) cardAudio.style.display = audioSupported ? '' : 'none';
+  var peAudioItem = document.getElementById('peAudioItem');
+  if (peAudioItem) peAudioItem.style.display = audioSupported ? '' : 'none';
   maxCounts.audio = caps.audio || 0;
 
   // Upload row spans full width when only one slot is visible
@@ -2243,6 +2281,8 @@ function updateCardPreview(type) {
   var countEl = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
   countEl.textContent = count + '/' + maxCounts[type];
   countEl.classList.toggle('has', count > 0);
+  var peCountEl = document.getElementById('pe' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
+  if (peCountEl) peCountEl.textContent = count + '/' + maxCounts[type];
   var card = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1));
   var existingThumb = card.querySelector('.uc-thumb');
   var existingDim = card.querySelector('.uc-thumb-dim');
@@ -2607,6 +2647,23 @@ var promptInput = document.getElementById('promptInput');
 var peHighlight = document.getElementById('peHighlight');
 var peOverlay = document.getElementById('promptOverlay');
 var peBackdrop = document.getElementById('promptBackdrop');
+var promptExpanded = false;
+var PE_ICON_EXPAND = '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/>';
+var PE_ICON_COLLAPSE = '<path d="M9 3v3a2 2 0 0 1-2 2H4M20 8h-3a2 2 0 0 1-2-2V3M4 16h3a2 2 0 0 1 2 2v3M15 21v-3a2 2 0 0 1 2-2h3"/>';
+// Enhance is visual-only for now — no AI rewrite wired up yet.
+// Hook this up to a real backend call whenever that's ready.
+function handlePromptEnhanceClick() {
+  showToast('Enhance segera hadir ✨');
+}
+
+function togglePromptExpand() {
+  promptExpanded = !promptExpanded;
+  peOverlay.classList.toggle('pe-fullscreen', promptExpanded);
+  var icon = document.getElementById('peExpandIcon');
+  if (icon) icon.innerHTML = promptExpanded ? PE_ICON_COLLAPSE : PE_ICON_EXPAND;
+  autosizePrompt();
+  applyKeyboardHeight();
+}
 
 function openPromptEditor() {
   if (window.__generating) return; // locked while a task is in progress
@@ -2718,6 +2775,14 @@ function syncPromptHighlight() {
 }
 function autosizePrompt() {
   if (!promptInput) return;
+  if (promptExpanded) {
+    // Fullscreen mode: the textarea fills all available space via CSS
+    // flex (see .prompt-overlay.pe-fullscreen rules), so don't fight
+    // that with a fixed inline pixel height computed for the collapsed sheet.
+    promptInput.style.height = '';
+    if (peHighlight) peHighlight.style.height = '';
+    return;
+  }
   promptInput.style.height = 'auto';
   var maxH = Math.max(120, Math.round((window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.32));
   var h = Math.min(Math.max(promptInput.scrollHeight, 96), maxH);
@@ -2731,11 +2796,12 @@ function applyKeyboardHeight() {
     var vv = window.visualViewport;
     var keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     peOverlay.style.bottom = keyboardOffset + 'px';
-    // Cap max-height so the sheet always fits above the keyboard
-    peOverlay.style.maxHeight = Math.min(640, vv.height - 24) + 'px';
+    // Cap max-height so the sheet always fits above the keyboard, unless
+    // fullscreen mode is on, in which case let it use all available space.
+    peOverlay.style.maxHeight = promptExpanded ? (vv.height - 24) + 'px' : Math.min(640, vv.height - 24) + 'px';
   } else {
     peOverlay.style.bottom = '0px';
-    peOverlay.style.maxHeight = 'min(640px, 88vh)';
+    peOverlay.style.maxHeight = promptExpanded ? '100vh' : 'min(640px, 88vh)';
   }
   autosizePrompt();
 }
