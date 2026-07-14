@@ -1297,6 +1297,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         </div>
         <div class="chip" id="ratioChip" onclick="openSheet('ratio')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
         <div class="chip" id="resolutionChip" onclick="openSheet('resolution')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
+        <div class="chip" id="bitrateChip" onclick="openSheet('bitrate')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
         <div class="chip" id="durationChip" onclick="openSheet('duration')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
         <div class="chip" id="motionChip" onclick="openSheet('motion')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
       </div>
@@ -1672,6 +1673,7 @@ var selectedRatio = '16:9';
 var selectedResolution = '720p';
 var selectedDuration = 5;
 var selectedMotion = 'Dynamic';
+var selectedBitrate = 'high'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
@@ -1914,6 +1916,15 @@ var sheetDefs = {
     desc: function(v){ return v==='Static'?'Locked frame':v==='Subtle'?'Gentle drift':v==='Dynamic'?'Cinematic movement':'Fast, energetic'; },
     get: function(){ return selectedMotion; },
     set: function(v){ selectedMotion = v; document.getElementById('motionLabel').textContent = v; }
+  },
+  bitrate: {
+    title: 'Bitrate',
+    // Segmind's seedance-2.0 (PRO) docs: 'standard' = smaller/faster files,
+    // 'high' = ~5-6x higher bitrate, better fidelity, larger files. Same price.
+    options: ['Standard','High'],
+    desc: function(v){ return v==='High' ? '~5-6x bitrate · larger file, same price' : 'Smaller file, faster download'; },
+    get: function(){ return selectedBitrate === 'high' ? 'High' : 'Standard'; },
+    set: function(v){ selectedBitrate = v.toLowerCase(); document.getElementById('bitrateLabel').textContent = v; }
   }
 };
 
@@ -2061,10 +2072,25 @@ function applyModelCapabilities() {
   var resChip = document.getElementById('resolutionChip');
   var durChip = document.getElementById('durationChip');
   var motionChip = document.getElementById('motionChip');
+  var bitrateChip = document.getElementById('bitrateChip');
   if (ratioChip)  ratioChip.style.display  = caps.ratio      ? '' : 'none';
   if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
   if (durChip)    durChip.style.display    = caps.duration   ? '' : 'none';
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
+  // Bitrate control: confirmed via Segmind's official docs only for
+  // seedance-2.0 (PRO). For Fast/Mini it's unconfirmed either way — no
+  // official parameter list found for Mini, and Fast's docs page doesn't
+  // list it. We still show the chip and let the backend try it on every
+  // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
+  // see _run_segmind_task), so the option is available everywhere without
+  // ever risking a failed generation.
+  var bitrateSupported = selectedFamily && selectedFamily.key === 'seedance';
+  if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
+  if (!bitrateSupported) {
+    selectedBitrate = 'high';
+    var bitrateLabelEl = document.getElementById('bitrateLabel');
+    if (bitrateLabelEl) bitrateLabelEl.textContent = 'High';
+  }
 
   // Aspect ratio: Kling 3.0 only supports 16:9 / 9:16 / 1:1 (per Segmind's
   // published API docs), narrower than Seedance's set.
@@ -2901,7 +2927,7 @@ function showFailOverlay(errMsg) {
 // ══════════ GENERATE ══════════
 function lockGenerateForm(locked) {
   window.__generating = locked;
-  ['modelSelectBtn', 'qualityChip', 'ratioChip', 'resolutionChip', 'durationChip', 'motionChip',
+  ['modelSelectBtn', 'qualityChip', 'ratioChip', 'resolutionChip', 'bitrateChip', 'durationChip', 'motionChip',
    'promptBtn', 'promptBtnFrames', 'cardImage', 'cardVideo', 'cardAudio', 'cardFirstFrame', 'cardLastFrame'
   ].forEach(function(id) {
     var el = document.getElementById(id);
@@ -2911,6 +2937,7 @@ function lockGenerateForm(locked) {
 }
 
 function startGenerate() {
+  if (window.__generating) { showToast('Video sedang diproses, tunggu sampai selesai'); return; }
   var prompt = promptInput.value.trim();
   var btn = document.getElementById('generateBtn');
 
@@ -2942,6 +2969,11 @@ function startGenerate() {
     resolution: selectedResolution,
     aspect_ratio: selectedRatio,
   };
+  // Sent for every Seedance tier now — backend validates + auto-retries
+  // without it if a given tier actually rejects the field.
+  if (selectedFamily.key === 'seedance') {
+    body.bitrate_mode = selectedBitrate;
+  }
 
   btn.disabled = true;
   btn.classList.add('loading');
@@ -2980,6 +3012,11 @@ function startGenerate() {
     var taskId = res.data.id;
     var taskInfo = res.data.task_info || {};
     document.getElementById('taskEta').textContent = formatEta(taskInfo.estimated_time);
+    // Request accepted — rendering continues on the server in the
+    // background. Release the button's own busy/loading look right here
+    // so the app stays usable; the settings panel stays locked (via
+    // lockGenerateForm, set above) until the task actually finishes.
+    clearGenerateButtonBusy();
     pollTask(taskId, { meta: body });
   })
   .catch(function() {
@@ -2988,6 +3025,16 @@ function startGenerate() {
     document.getElementById('taskBox').classList.remove('show');
     showFailOverlay('Request ke server gagal — cek koneksi internet kamu lalu coba lagi.');
   });
+}
+
+function clearGenerateButtonBusy() {
+  // Only clears the button's own spinner/disabled look — does NOT touch
+  // lockGenerateForm/window.__generating, so the settings panel stays
+  // locked until the task truly finishes (see resetGenBtn for that).
+  var btn = document.getElementById('generateBtn');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.classList.remove('loading');
 }
 
 function resetGenBtn() {
@@ -3472,6 +3519,7 @@ function saveGenerationToHistory(res) {
     refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
     modelKey: selectedFamily.key,
     modelTier: selectedModelTier,
+    bitrate: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
     archived: false
   };
   var list = loadHistory();
@@ -3531,11 +3579,11 @@ function renderArchiveList() {
 function openHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
-  closeHistoryPage(); closeArchivePage();
   if (r.family === 'storyboard') {
     showToast('Storyboard sudah tidak tersedia');
     return;
   }
+  navigateTo('aivideo');
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
   openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
@@ -3560,6 +3608,11 @@ function restoreFromRecord(r) {
   if (r.duration) {
     var d = parseInt(r.duration, 10);
     if (d) { selectedDuration = d; var durEl = document.getElementById('durationLabel'); if (durEl) durEl.textContent = d + 's'; }
+  }
+  if (r.bitrate) {
+    selectedBitrate = r.bitrate;
+    var bitrateLabelEl2 = document.getElementById('bitrateLabel');
+    if (bitrateLabelEl2) bitrateLabelEl2.textContent = r.bitrate === 'high' ? 'High' : 'Standard';
   }
   // Restore prompt
   promptInput.value = r.prompt || '';
@@ -3592,8 +3645,7 @@ function reuseHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   restoreFromRecord(r);
-  closeHistoryPage(); closeArchivePage();
-  closeResultOverlay();
+  navigateTo('aivideo');
 }
 function toggleArchiveItem(id) {
   var r = findHistoryRecord(id);
@@ -3615,9 +3667,18 @@ function confirmDeleteHistoryItem(id) {
     var rec = findHistoryRecord(pendingDeleteId);
     if (rec && rec.archived) removeArchiveFromServer(pendingDeleteId);
     deleteHistoryRecord(pendingDeleteId);
+    // If the deleted item is the one currently shown in the result overlay
+    // (or set as "last result"), close/clear it — otherwise the overlay
+    // keeps showing the just-deleted video and it looks like nothing happened.
+    var wasShowingDeleted = window.__lastResult && window.__lastResult.id === pendingDeleteId;
+    if (wasShowingDeleted) {
+      window.__lastResult = null;
+      closeResultOverlay();
+    }
     renderHistoryList();
     renderArchiveList();
     renderLastResultCard();
+    showToast('Video dihapus');
     closeConfirm();
   };
   document.getElementById('confirmBackdrop').classList.add('show');
