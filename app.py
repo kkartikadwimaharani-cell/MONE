@@ -2033,6 +2033,18 @@ if not SEGMIND_API_KEY:
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
+# ⚠️ 'MINI' -> 'seedance-2.0-mini': could NOT confirm this is a real, live
+# Segmind endpoint. Segmind's own blog post ("How to Access Seedance 2.0")
+# explicitly lists "5 Seedance models live on Segmind today: 2.0 Fast, 1.0
+# Pro, 1.5 Pro, 2.0, 1.5 Pro Fast" — no Mini. Segmind's Bytedance catalog
+# page (segmind.com/models/all/bytedance) also only lists Seedance 2.0 and
+# Seedance 2.0 Fast. "Seedance 2.0 Mini" appears to be either an unreleased
+# ByteDance tier (per several third-party trackers, as of mid-2026 it has
+# "no official spec sheet, no model page, no launch date") or a name used by
+# unrelated third-party resellers — not something confirmed to exist at
+# Segmind's own `seedance-2.0-mini` slug. Calling this endpoint may simply
+# 404. Left unchanged here since this needs to be verified against a real
+# Segmind account/API response rather than assumed — see chat notes.
 SEGMIND_MODEL_MAP = {
     'MINI': 'seedance-2.0-mini',
     'FAST': 'seedance-2.0-fast',
@@ -2432,6 +2444,26 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
             headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
             json=body, timeout=600,
         )
+        # We optimistically send bitrate_mode on every Seedance tier even
+        # though it's only confirmed in Segmind's docs for the PRO endpoint.
+        # If a tier doesn't actually support it, Segmind is expected to
+        # reject the request with a 400 — retry once, stripped of that one
+        # field, instead of failing the whole generation over an optional
+        # quality knob. (This also doubles as a live test of whether Fast/
+        # Mini accept it: check the logs for this warning to find out.)
+        if resp.status_code == 400 and 'bitrate_mode' in body:
+            app.logger.warning('%s endpoint=%s got 400 with bitrate_mode set (body snippet: %s) — retrying once without it',
+                                log_prefix, endpoint, resp.text[:300])
+            retry_body = dict(body)
+            retry_body.pop('bitrate_mode', None)
+            resp = requests_lib.post(
+                f'{SEGMIND_BASE}/{endpoint}',
+                headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
+                json=retry_body, timeout=600,
+            )
+            if resp.status_code < 400:
+                app.logger.info('%s endpoint=%s confirmed: bitrate_mode is NOT supported on this endpoint (retry without it succeeded)',
+                                 log_prefix, endpoint)
         _set(progress=80)
         content_type = resp.headers.get('Content-Type', '')
         app.logger.info('%s response status=%s content-type=%s content-length=%s',
@@ -2616,6 +2648,27 @@ def aivideo_generate():
             'return_last_frame': False,
             'skip_moderation': False,
         }
+        # bitrate_mode: confirmed in Segmind's official seedance-2.0 docs
+        # (segmind.com/models/seedance-2.0/api) — 'standard' (default) or
+        # 'high' (~5-6x bitrate, no price difference). NOT listed in the
+        # published parameter set for seedance-2.0-fast, and seedance-2.0-mini
+        # doesn't appear to be a real, live Segmind model at all (Segmind's
+        # own blog lists only 5 live Seedance models and Mini isn't one of
+        # them) — so only send this on the PRO tier to avoid risking a 400
+        # from an undocumented/unsupported param on the other tiers.
+        # bitrate_mode: confirmed in Segmind's official seedance-2.0 (PRO)
+        # docs — 'standard' (default) or 'high' (~5-6x bitrate, no price
+        # difference). NOT documented for seedance-2.0-fast, and there's no
+        # official Segmind docs page found for seedance-2.0-mini's parameter
+        # list either. The user wants max quality (least compression) across
+        # every tier, so we optimistically send bitrate_mode='high' on all
+        # three — if a tier actually rejects it, _run_segmind_task retries
+        # once automatically without the field (see below), so generation
+        # never fails just because of this optional quality knob.
+        bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
+        if bitrate_mode not in ('standard', 'high'):
+            bitrate_mode = 'high'
+        body['bitrate_mode'] = bitrate_mode
         if first_frame_url:
             body['first_frame_url'] = first_frame_url
         if last_frame_url:
