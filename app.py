@@ -2133,6 +2133,58 @@ _AIVIDEO_DEBUG = {
 }
 _AIVIDEO_DEBUG_MAX_UPLOADS = 30
 
+# Rolling log of *every* outbound API call (Segmind, Dropbox token refresh,
+# etc) with the fields needed to actually debug a failure from the Debug
+# page: request body, response body, status code, provider, error source,
+# error detail, timestamp, duration, retry count. Previously the debug page
+# only ever showed the single "last" request/response/error, which is
+# useless once a second request comes in — this keeps real history.
+_AIVIDEO_REQUEST_LOG_LOCK = threading.Lock()
+_AIVIDEO_REQUEST_LOG = []
+_AIVIDEO_REQUEST_LOG_MAX = 50
+
+
+def _aivideo_log_request(provider, endpoint, status_code=None, duration_ms=None,
+                          retry_count=0, request_body=None, response_body=None,
+                          error_source=None, error_detail=None, task_id=None):
+    """Append one entry to the rolling API request log shown on /ai-video/debug."""
+    def _trim(v, n=800):
+        if v is None:
+            return None
+        try:
+            s = v if isinstance(v, str) else json.dumps(v, default=str)
+        except Exception:
+            s = str(v)
+        return (s[:n] + '…(truncated)') if len(s) > n else s
+
+    entry = {
+        'at': _utc_timestamp(),
+        'provider': provider,
+        'endpoint': endpoint,
+        'task_id': task_id,
+        'status_code': status_code,
+        'duration_ms': duration_ms,
+        'retry_count': retry_count,
+        'request_body': _trim(request_body),
+        'response_body': _trim(response_body),
+        'error_source': error_source,
+        'error_detail': _trim(error_detail, 1000),
+        'ok': (status_code is not None and status_code < 400 and not error_source),
+    }
+    with _AIVIDEO_REQUEST_LOG_LOCK:
+        _AIVIDEO_REQUEST_LOG.append(entry)
+        del _AIVIDEO_REQUEST_LOG[:-_AIVIDEO_REQUEST_LOG_MAX]
+
+
+def _aivideo_request_log_snapshot():
+    with _AIVIDEO_REQUEST_LOG_LOCK:
+        log = list(reversed(_AIVIDEO_REQUEST_LOG))
+    total = len(log)
+    errors = sum(1 for e in log if not e['ok'])
+    durations = [e['duration_ms'] for e in log if isinstance(e.get('duration_ms'), (int, float))]
+    avg_duration = round(sum(durations) / len(durations), 1) if durations else None
+    return {'entries': log, 'total': total, 'errors': errors, 'avg_duration_ms': avg_duration}
+
 
 def _aivideo_debug_append_upload(entry):
     # `last_upload` only ever held the single most recent file, so uploading
@@ -2436,6 +2488,8 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
     _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
 
     is_image = (output_type == 'image')
+    retry_count = 0
+    call_started = time.time()
 
     try:
         _set(status='processing', progress=15)
@@ -2456,6 +2510,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
                                 log_prefix, endpoint, resp.text[:300])
             retry_body = dict(body)
             retry_body.pop('bitrate_mode', None)
+            retry_count += 1
             resp = requests_lib.post(
                 f'{SEGMIND_BASE}/{endpoint}',
                 headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
@@ -2464,6 +2519,26 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
             if resp.status_code < 400:
                 app.logger.info('%s endpoint=%s confirmed: bitrate_mode is NOT supported on this endpoint (retry without it succeeded)',
                                  log_prefix, endpoint)
+
+        # Segmind's own infra occasionally returns a transient 502/503/504
+        # (upstream gateway hiccup, nothing to do with our request). Failing
+        # the whole generation over that is unnecessary — retry a couple of
+        # times with a short backoff before giving up. Capped at 2 extra
+        # attempts so a genuinely-down upstream still fails within ~10s
+        # instead of hanging the task indefinitely.
+        _TRANSIENT_CODES = (502, 503, 504)
+        _max_transient_retries = 2
+        while resp.status_code in _TRANSIENT_CODES and retry_count < _max_transient_retries + 1:
+            backoff = 1.5 * (retry_count + 1)
+            app.logger.warning('%s endpoint=%s got transient %s, retrying in %.1fs (attempt %d/%d)',
+                                log_prefix, endpoint, resp.status_code, backoff, retry_count + 1, _max_transient_retries)
+            time.sleep(backoff)
+            retry_count += 1
+            resp = requests_lib.post(
+                f'{SEGMIND_BASE}/{endpoint}',
+                headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
+                json=body, timeout=600,
+            )
         _set(progress=80)
         content_type = resp.headers.get('Content-Type', '')
         app.logger.info('%s response status=%s content-type=%s content-length=%s',
@@ -2518,13 +2593,26 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
             snippet=(resp.text[:500] if ('application/json' in content_type or resp.status_code >= 400)
                      else f'<binary {len(resp.content)} bytes>'),
         )
+        duration_ms = round((time.time() - call_started) * 1000)
 
         if upstream_error or not result_bytes:
             kind = 'gambar' if is_image else 'video'
             msg = upstream_error or f'Segmind tidak mengembalikan {kind} (response kosong)'
             _aivideo_last_error('segmind', msg)
+            _aivideo_log_request(
+                provider='segmind', endpoint=endpoint, status_code=resp.status_code,
+                duration_ms=duration_ms, retry_count=retry_count, request_body=logged_body,
+                response_body=(resp.text[:500] if 'application/json' in content_type or resp.status_code >= 400 else f'<binary {len(resp.content)} bytes>'),
+                error_source='segmind', error_detail=msg, task_id=task_id,
+            )
             _set(status='failed', error=msg, progress=100)
             return
+
+        _aivideo_log_request(
+            provider='segmind', endpoint=endpoint, status_code=resp.status_code,
+            duration_ms=duration_ms, retry_count=retry_count, request_body=logged_body,
+            response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
+        )
 
         # Store the generated media via Dropbox-adjacent local static storage
         # (keeps our own storage stateless on Railway) and serve it back
@@ -2542,9 +2630,28 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
+        _aivideo_log_request(
+            provider='segmind', endpoint=endpoint, duration_ms=round((time.time() - call_started) * 1000),
+            retry_count=retry_count, request_body=logged_body,
+            error_source='timeout', error_detail=msg, task_id=task_id,
+        )
+        _set(status='failed', error=msg, progress=100)
+    except requests_lib.exceptions.RequestException as e:
+        msg = f'Network error menghubungi Segmind: {e}'
+        _aivideo_last_error('segmind', msg)
+        _aivideo_log_request(
+            provider='segmind', endpoint=endpoint, duration_ms=round((time.time() - call_started) * 1000),
+            retry_count=retry_count, request_body=logged_body,
+            error_source='network', error_detail=msg, task_id=task_id,
+        )
         _set(status='failed', error=msg, progress=100)
     except Exception as e:
         _aivideo_last_error('segmind', str(e))
+        _aivideo_log_request(
+            provider='segmind', endpoint=endpoint, duration_ms=round((time.time() - call_started) * 1000),
+            retry_count=retry_count, request_body=logged_body,
+            error_source='internal', error_detail=str(e), task_id=task_id,
+        )
         _set(status='failed', error=str(e), progress=100)
 
 
@@ -2980,6 +3087,8 @@ def ai_video_debug_clear():
         _AIVIDEO_DEBUG['last_request'] = None
         _AIVIDEO_DEBUG['last_segmind_response'] = None
         _AIVIDEO_DEBUG['last_error'] = None
+    with _AIVIDEO_REQUEST_LOG_LOCK:
+        _AIVIDEO_REQUEST_LOG.clear()
 
     return redirect('/ai-video/debug')
 
@@ -2992,6 +3101,7 @@ def ai_video_debug_page():
     segmind_ok = bool(SEGMIND_API_KEY)
     _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
     snap = _aivideo_debug_snapshot()
+    log = _aivideo_request_log_snapshot()
     return render_template(
         'ai-video-debug.html',
         dropbox=snap.get('dropbox'),
@@ -3001,6 +3111,10 @@ def ai_video_debug_page():
         last_request=snap.get('last_request'),
         last_segmind_response=snap.get('last_segmind_response'),
         last_error=snap.get('last_error'),
+        request_log=log['entries'],
+        request_log_total=log['total'],
+        request_log_errors=log['errors'],
+        request_log_avg_ms=log['avg_duration_ms'],
         dropbox_mode=('refresh_token' if (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN)
                       else ('legacy_static' if DROPBOX_ACCESS_TOKEN else 'not_configured')),
     )
@@ -3013,7 +3127,9 @@ def ai_video_debug_data():
     dropbox_ok, dropbox_detail = _dropbox_status_check()
     segmind_ok = bool(SEGMIND_API_KEY)
     _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
-    return jsonify(_aivideo_debug_snapshot())
+    snap = _aivideo_debug_snapshot()
+    snap['request_log'] = _aivideo_request_log_snapshot()
+    return jsonify(snap)
 
 
 @app.route('/ai-video/dropbox-token')
