@@ -163,6 +163,29 @@ button{background:none;border:none;cursor:pointer}
 .canvas-task{width:100%;max-width:480px;display:none;flex-direction:column;gap:14px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
 
+.gen-queue{width:100%;display:flex;flex-direction:column;gap:10px}
+.gen-queue:empty{display:none}
+.gen-q-item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--card);animation:workspaceIn .3s var(--ease-spring) both}
+.gen-q-item.failed{border-color:rgba(255,32,64,.5);background:rgba(255,32,64,.06)}
+.gen-q-item.done{border-color:rgba(60,255,176,.4)}
+.gen-q-ring{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
+.gen-q-ring::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:brandRingSpin 3.2s linear infinite}
+.gen-q-item.done .gen-q-ring::before,.gen-q-item.failed .gen-q-ring::before{animation:none;background:none}
+.gen-q-ring-m{font-family:var(--disp);font-size:.72rem;font-weight:900;color:#ff1638;position:relative;z-index:1}
+.gen-q-item.done .gen-q-ring-m{color:#3cffb0}
+.gen-q-item.failed .gen-q-ring-m{color:var(--accent-hover)}
+.gen-q-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.gen-q-title{font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-stage{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-stage.err{color:var(--accent-hover)}
+.gen-q-bar{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
+.gen-q-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .5s ease}
+.gen-q-eta{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);flex-shrink:0}
+.gen-q-actions{display:flex;gap:6px;flex-shrink:0}
+.gen-q-btn{background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.gen-q-btn.primary{background:linear-gradient(135deg,#ff2040,#c4001c)}
+.gen-q-dismiss{background:none;border:none;color:var(--text-faint);font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0}
+
 /* Always-16:9 animated preview shown while generating, regardless of output ratio */
 .task-preview{position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:radial-gradient(ellipse 90% 70% at 50% 30%,rgba(255,32,64,.16),transparent 65%),#0c0c0c}
 .task-preview::before,.task-preview::after{content:'';position:absolute;border-radius:50%;filter:blur(34px);opacity:.55}
@@ -402,6 +425,10 @@ input[type=file].hidden-input{display:none}
 .result-overlay.show{transform:translateY(0)}
 .result-body{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
 .result-video-full{width:100%;border-radius:18px;border:1px solid var(--border);background:#000;max-height:52vh;display:block}
+.video-fail-state{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:160px;border-radius:18px;background:#141414;border:1px solid var(--border);padding:20px;text-align:center}
+.video-fail-msg{color:#c9c9c9;font-size:13px;line-height:1.5}
+.video-fail-retry{background:linear-gradient(135deg,#ff2040,#c4001c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
+.video-fail-retry:active{transform:scale(.96)}
 .result-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .result-meta-item{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
 .result-meta-label{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint)}
@@ -457,7 +484,8 @@ input[type=file].hidden-input{display:none}
 .history-list{flex:1;overflow-y:auto;padding:0 18px 24px;display:flex;flex-direction:column;gap:10px}
 .history-empty{text-align:center;color:var(--text-dim,#999);font-size:13px;padding:40px 0 24px}
 .hist-item{display:flex;gap:12px;padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
-.hist-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010)}
+.hist-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010);display:flex;align-items:center;justify-content:center}
+.hist-thumb-glyph{color:rgba(255,255,255,.65);font-size:16px}
 .hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .hist-prompt{font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hist-meta{font-size:10.5px;color:var(--text-dim,#999)}
@@ -1019,6 +1047,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 /* ============ SUCCESS TOAST — "Added N reference image", matches Dreamkreat behavior ============ */
 .toast-wrap{position:fixed;top:calc(12px + var(--safe-t));left:0;right:0;z-index:250;display:flex;justify-content:center;pointer-events:none;padding:0 16px}
 .toast{display:flex;align-items:center;gap:9px;padding:11px 18px;border-radius:999px;background:rgba(20,28,20,.92);border:1px solid rgba(80,220,140,.4);box-shadow:0 14px 34px -14px rgba(0,0,0,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateY(-14px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s ease;max-width:90vw}
+.toast-action{background:rgba(255,255,255,.14);border:none;color:#fff;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;border-radius:999px;padding:5px 12px;cursor:pointer;flex-shrink:0}
 .toast.show{transform:translateY(0);opacity:1}
 .toast-check{width:18px;height:18px;border-radius:50%;background:#3cd97e;display:grid;place-items:center;flex-shrink:0}
 .toast-check svg{width:11px;height:11px}
@@ -1031,6 +1060,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="toast" id="toast">
     <div class="toast-check"><svg viewBox="0 0 24 24" fill="none" stroke="#08130c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <span class="toast-text" id="toastText">Added 1 reference image</span>
+    <button class="toast-action" id="toastAction" style="display:none"></button>
   </div>
 </div>
 
@@ -1167,7 +1197,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <div class="canvas-result-wrap" id="canvasResultWrap">
       <div class="canvas-preview" id="canvasPreview" style="display:none">
         <img class="canvas-preview-media" id="canvasPreviewImg" style="display:none" onerror="imgFallback(this)">
-        <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline></video>
+        <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline preload="metadata" onerror="videoFailed('canvasPreviewVideo')" onloadeddata="videoRecovered('canvasPreviewVideo')"></video>
+        <div class="video-fail-state" id="canvasPreviewVideoFail" style="display:none">
+          <div class="video-fail-msg">Video gagal dimuat</div>
+          <button type="button" class="video-fail-retry" onclick="retryVideoLoad('canvasPreviewVideo')">Coba lagi</button>
+        </div>
       </div>
 
       <div class="canvas-result-box" id="canvasResultBox" style="display:none">
@@ -1181,20 +1215,10 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       </div>
     </div>
 
-    <div class="canvas-task" id="taskBox">
-      <div class="task-preview">
-        <div class="task-preview-inner">
-          <div class="brand-ring"><span class="brand-ring-m">M</span></div>
-          <div class="task-preview-title" id="taskPreviewTitle">Generating Video</div>
-          <div class="task-preview-stage" id="taskStage">Preparing…</div>
-        </div>
-      </div>
-      <div class="task-row">
-        <span class="task-status-txt pending" id="taskStatusTxt">Pending</span>
-        <span class="task-eta" id="taskEta"></span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    </div>
+    <!-- Multiple generations can run at once now — each gets its own compact
+         card here instead of one box that used to take over the whole
+         canvas and lock every setting until it finished. -->
+    <div class="gen-queue" id="genQueueList"></div>
 
     <div class="error-box" id="errorBox"></div>
   </div>
@@ -1488,7 +1512,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <span style="width:40px"></span>
   </div>
   <div class="result-body">
-    <video class="result-video-full" id="resultVideoFull" controls playsinline style="display:none"></video>
+    <video class="result-video-full" id="resultVideoFull" controls playsinline preload="metadata" style="display:none" onerror="videoFailed('resultVideoFull')" onloadeddata="videoRecovered('resultVideoFull')"></video>
+    <div class="video-fail-state" id="resultVideoFullFail" style="display:none">
+      <div class="video-fail-msg">Video gagal dimuat — coba refresh koneksi lalu tekan tombol di bawah</div>
+      <button type="button" class="video-fail-retry" onclick="retryVideoLoad('resultVideoFull')">Coba lagi</button>
+    </div>
     <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" />
     <div class="result-meta-grid" id="resultMetaGrid"></div>
     <div>
@@ -1586,6 +1614,37 @@ var IMG_FALLBACK = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
 );
 function imgFallback(el) { el.onerror = null; el.src = IMG_FALLBACK; }
 
+// A <video> whose src 404s, times out, or is an unplayable format fires
+// `error` but otherwise just sits there black with no feedback — the user
+// has no way to know it's broken vs. still loading. Show a clear message
+// + retry button instead, mirroring what imgFallback does for images.
+function videoFailed(videoElId) {
+  var vEl = document.getElementById(videoElId);
+  var failEl = document.getElementById(videoElId + 'Fail');
+  if (vEl) vEl.style.display = 'none';
+  if (failEl) failEl.style.display = 'flex';
+}
+function videoRecovered(videoElId) {
+  var vEl = document.getElementById(videoElId);
+  var failEl = document.getElementById(videoElId + 'Fail');
+  if (failEl) failEl.style.display = 'none';
+  if (vEl) vEl.style.display = 'block';
+}
+function retryVideoLoad(videoElId) {
+  var vEl = document.getElementById(videoElId);
+  if (!vEl) return;
+  var src = vEl.getAttribute('src') || vEl.currentSrc;
+  if (!src) return;
+  var failEl = document.getElementById(videoElId + 'Fail');
+  if (failEl) failEl.style.display = 'none';
+  vEl.style.display = 'block';
+  // Cache-bust so a transient network blip / stale CDN edge isn't retried
+  // with the exact same failed request.
+  var sep = src.indexOf('?') === -1 ? '?' : '&';
+  vEl.src = src.split('#')[0].split('?')[0] + sep + '_retry=' + Date.now();
+  vEl.load();
+}
+
 // ══════════ STATE ══════════
 var media = { image: [], video: [], audio: [] };
 var frames = { first: null, last: null };
@@ -1677,8 +1736,6 @@ var selectedBitrate = 'high'; // 'standard' | 'high' — Seedance PRO only (Segm
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
-var pollInterval = null;
-var currentTaskId = null;
 var mentionAutoTriggered = false;
 
 // ══════════ BUILDER 3-STATE PANEL (collapsed / half / expanded) — swipe or tap the handle ══════════
@@ -1929,7 +1986,6 @@ var sheetDefs = {
 };
 
 function openSheet(key) {
-  if (window.__generating) return; // locked while a task is in progress
   closeModelDock();
   var def = sheetDefs[key];
   document.getElementById('sheetTitle').textContent = def.title;
@@ -2001,6 +2057,7 @@ function pickFamily(family, qualityIdx) {
     if (resLabelEl0) resLabelEl0.textContent = selectedResolution;
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
+  updateCollapsedBar(family.name + (family.qualities.length > 1 ? ' ' + q.label : ''));
   applyQualityBadge();
   renderQualityChip();
   applyModelCapabilities();
@@ -2172,7 +2229,6 @@ function pickQuality(idx) {
   closeSheet();
 }
 function openQualitySheet() {
-  if (window.__generating) return; // locked while a task is in progress
   closeModelDock();
   var isRenderQuality = selectedFamily.qualities.some(function(q){ return q.label === 'MINI' || q.label === 'FAST' || q.label === 'PRO'; });
   document.getElementById('sheetTitle').textContent = isRenderQuality ? 'Quality' : 'Version';
@@ -2220,7 +2276,6 @@ function closeModelDock() {
 }
 
 function openModelDock() {
-  if (window.__generating) return; // locked while a task is in progress
   var families = modelFamilies[activeMode === 'image' ? 'image' : 'video'];
   closeSheet();
   updateModelDockPosition();
@@ -2255,7 +2310,6 @@ function openModelDock() {
 
 // ══════════ UPLOAD SHEET + MEDIA ══════════
 function openUploadSheet(type) {
-  if (window.__generating) return; // locked while a task is in progress
   closeModelDock();
   currentUploadType = type;
   document.getElementById('uploadSheetTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1);
@@ -2345,11 +2399,6 @@ function updateCanvasPreview() {
   var imgEl = document.getElementById('canvasPreviewImg');
   var vidEl = document.getElementById('canvasPreviewVideo');
   if (!wrap) return;
-  // Don't fight the loading card or the empty state while a task is showing.
-  if (document.getElementById('taskBox').classList.contains('show')) {
-    wrap.style.display = 'none';
-    return;
-  }
   // This just shows a reference/input preview, not a generated result —
   // so any leftover result action buttons / ref thumbs should be hidden.
   hideCanvasResultUI();
@@ -2375,6 +2424,7 @@ function showCanvasResult(videoUrl, imageUrl) {
   document.getElementById('emptyState').style.display = 'none';
   if (videoUrl) {
     imgEl.style.display = 'none';
+    videoRecovered('canvasPreviewVideo');
     vidEl.src = videoUrl;
     vidEl.style.display = 'block';
   } else if (imageUrl) {
@@ -2592,14 +2642,26 @@ var toastTimer = null;
 function showToast(msg) {
   var toast = document.getElementById('toast');
   document.getElementById('toastText').textContent = msg;
+  var actionBtn = document.getElementById('toastAction');
+  if (actionBtn) actionBtn.style.display = 'none';
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 2200);
 }
+function showToastAction(msg, actionLabel, onAction) {
+  var toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  var actionBtn = document.getElementById('toastAction');
+  actionBtn.textContent = actionLabel;
+  actionBtn.style.display = 'block';
+  actionBtn.onclick = function() { toast.classList.remove('show'); clearTimeout(toastTimer); if (onAction) onAction(); };
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toast.classList.remove('show'); actionBtn.style.display = 'none'; }, 4500);
+}
 
 // ══════════ FRAMES ══════════
 function openFrameInput(which) {
-  if (window.__generating) return; // locked while a task is in progress
   document.getElementById(which === 'first' ? 'firstFrameInput' : 'lastFrameInput').click();
 }
 var FRAME_CARD_PLACEHOLDER = '<svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg><span class="uc-label">__LABEL__</span>';
@@ -2692,7 +2754,6 @@ function togglePromptExpand() {
 }
 
 function openPromptEditor() {
-  if (window.__generating) return; // locked while a task is in progress
   closeModelDock();
   renderPeTagsRow();
   syncPromptHighlight();
@@ -2901,6 +2962,29 @@ function toggleMentionPopup(forceOpen) {
   }
 }
 
+// ══════════ SHARED FETCH HELPERS ══════════
+// Wraps fetch() with an actual timeout (plain fetch never times out on its
+// own — a stalled connection would hang forever) so slow/dead requests
+// fail predictably instead of leaving the UI stuck on "Processing".
+function fetchWithTimeout(url, options, timeoutMs) {
+  options = options || {};
+  timeoutMs = timeoutMs || 30000;
+  var controller = ('AbortController' in window) ? new AbortController() : null;
+  if (controller) options.signal = controller.signal;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, timeoutMs) : null;
+  return fetch(url, options).finally(function() { if (timer) clearTimeout(timer); });
+}
+// Turns a raw fetch() rejection into one of the specific messages the audit
+// asked for (Timeout / Network Error / API Error / Invalid response)
+// instead of a bare "Unknown Error" / "Failed to fetch".
+function classifyFetchError(err, prefix) {
+  prefix = prefix ? (prefix + ': ') : '';
+  if (err && err.name === 'AbortError') return prefix + 'Timeout — server tidak merespons, coba lagi.';
+  if (err && err.name === 'SyntaxError') return prefix + 'Invalid response — server mengembalikan data yang tidak bisa dibaca.';
+  if (!navigator.onLine) return prefix + 'Network Error — perangkat sedang offline.';
+  return prefix + 'Network Error — cek koneksi internet lalu coba lagi.';
+}
+
 // ══════════ ERROR ══════════
 function showError(msg) {
   var box = document.getElementById('errorBox');
@@ -2925,21 +3009,46 @@ function showFailOverlay(errMsg) {
 }
 
 // ══════════ GENERATE ══════════
-function lockGenerateForm(locked) {
-  window.__generating = locked;
-  ['modelSelectBtn', 'qualityChip', 'ratioChip', 'resolutionChip', 'bitrateChip', 'durationChip', 'motionChip',
-   'promptBtn', 'promptBtnFrames', 'cardImage', 'cardVideo', 'cardAudio', 'cardFirstFrame', 'cardLastFrame'
-  ].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.toggle('gen-locked', locked);
-  });
-  if (promptInput) promptInput.disabled = locked;
+// Settings (model/duration/quality/prompt/references) are never locked
+// during generation anymore — several generations can run at once, each
+// tracked independently below (see activeGens / pollQueueTask), so there's
+// nothing left to lock the form for. Kept as a harmless no-op in case
+// anything still calls it.
+function lockGenerateForm(locked) { window.__generating = false; }
+
+// taskId -> { meta, startTs, interval, requestInFlight, consecutiveNetworkFailures, tick }
+var activeGens = {};
+
+function refreshQueueBadge() {
+  var n = Object.keys(activeGens).length;
+  var progressTxt = document.getElementById('collapsedProgressTxt');
+  if (progressTxt) progressTxt.textContent = n > 0 ? (n + ' diproses') : '';
+}
+
+function genQueueItemHtml(taskId, title) {
+  return (
+    '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
+      '<div class="gen-q-ring"><span class="gen-q-ring-m">M</span></div>' +
+      '<div class="gen-q-info">' +
+        '<div class="gen-q-title">' + escapeHtml(title) + '</div>' +
+        '<div class="gen-q-stage" id="genqStage_' + taskId + '">Uploading Assets</div>' +
+        '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
+      '</div>' +
+      '<span class="gen-q-eta" id="genqEta_' + taskId + '">Estimating…</span>' +
+      '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div>' +
+      '<button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Sembunyikan" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">\u2715</button>' +
+    '</div>'
+  );
+}
+function dismissGenQueueItem(taskId) {
+  var el = document.getElementById('genq_' + taskId);
+  if (el) el.remove();
+  delete activeGens[taskId]; refreshQueueBadge();
+  removeActiveTaskEntry(taskId);
 }
 
 function startGenerate() {
-  if (window.__generating) { showToast('Video sedang diproses, tunggu sampai selesai'); return; }
   var prompt = promptInput.value.trim();
-  var btn = document.getElementById('generateBtn');
 
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
     showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Nano Banana Pro (Fast/Standard/Ultra), dan GPT Image 2 (Low/Standard/High).');
@@ -2975,80 +3084,59 @@ function startGenerate() {
     body.bitrate_mode = selectedBitrate;
   }
 
-  btn.disabled = true;
-  btn.classList.add('loading');
-  lockGenerateForm(true);
-  window.__genStartTs = Date.now();
-  document.getElementById('errorBox').classList.remove('show');
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('canvasPreview').style.display = 'none';
-  hideCanvasResultUI();
-  document.getElementById('failOverlay').classList.remove('show');
-  document.getElementById('taskStatusTxt').textContent = 'Pending';
-  document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
-  document.getElementById('taskStage').textContent = 'Uploading Assets';
-  document.getElementById('taskEta').textContent = 'Estimating…';
-  document.getElementById('taskPreviewTitle').textContent = activeMode === 'image' ? 'Generating Image' : 'Generating Video';
-  document.getElementById('progressFill').style.width = '0%';
-  document.getElementById('taskBox').classList.add('show');
-  updateCollapsedBar(selectedModelName);
-  setPanelCollapsed(true);
+  // Snapshot everything needed to render + save THIS job later. From this
+  // point on, this job's queue card and its eventual History record read
+  // only from `meta` — never from live panel globals again. That's what
+  // keeps a result's prompt/model/settings permanently locked to it even
+  // though you're free to change the panel for the next job immediately.
+  var hasTier = selectedFamily.qualities.length > 1;
+  var meta = Object.assign({}, body, {
+    activeMode: activeMode,
+    modelDisplayName: selectedModelName,
+    fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
+    bitrateSnapshot: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
+    thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
+  });
 
-  fetch('/api/aivideo/generate', {
+  // Debounces only the literal double-tap of *this* click — does not block
+  // starting a different generation a moment later.
+  var btn = document.getElementById('generateBtn');
+  if (btn) {
+    btn.disabled = true;
+    setTimeout(function() { updateGenerateButtonState(); }, 900);
+  }
+  document.getElementById('errorBox').classList.remove('show');
+
+  fetchWithTimeout('/api/aivideo/generate', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body)
-  })
+  }, 30000)
   .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
   .then(function(res) {
     if (res.status >= 400) {
-      var errMsg = res.data.error || 'Gagal membuat task';
-      showError(errMsg);
-      resetGenBtn();
-      document.getElementById('taskBox').classList.remove('show');
-      showFailOverlay(errMsg);
+      showError((res.data && res.data.error) || ('API Error (' + res.status + ') — gagal membuat task'));
       return;
     }
     var taskId = res.data.id;
     var taskInfo = res.data.task_info || {};
-    document.getElementById('taskEta').textContent = formatEta(taskInfo.estimated_time);
-    // Request accepted — rendering continues on the server in the
-    // background. Release the button's own busy/loading look right here
-    // so the app stays usable; the settings panel stays locked (via
-    // lockGenerateForm, set above) until the task actually finishes.
-    clearGenerateButtonBusy();
-    pollTask(taskId, { meta: body });
+    var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : '');
+    var list = document.getElementById('genQueueList');
+    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, titleLabel));
+    var etaEl = document.getElementById('genqEta_' + taskId);
+    if (etaEl) etaEl.textContent = formatEta(taskInfo.estimated_time);
+    activeGens[taskId] = { meta: meta, startTs: Date.now() };
+    saveActiveTaskEntry(taskId, meta);
+    refreshQueueBadge();
+    pollQueueTask(taskId);
   })
-  .catch(function() {
-    showError('Request gagal, cek koneksi');
-    resetGenBtn();
-    document.getElementById('taskBox').classList.remove('show');
-    showFailOverlay('Request ke server gagal — cek koneksi internet kamu lalu coba lagi.');
+  .catch(function(err) {
+    showError(classifyFetchError(err, 'Generate gagal'));
   });
-}
-
-function clearGenerateButtonBusy() {
-  // Only clears the button's own spinner/disabled look — does NOT touch
-  // lockGenerateForm/window.__generating, so the settings panel stays
-  // locked until the task truly finishes (see resetGenBtn for that).
-  var btn = document.getElementById('generateBtn');
-  if (!btn) return;
-  btn.disabled = false;
-  btn.classList.remove('loading');
-}
-
-function resetGenBtn() {
-  var btn = document.getElementById('generateBtn');
-  btn.disabled = false;
-  btn.classList.remove('loading');
-  lockGenerateForm(false);
-  updateGenerateButtonState();
-  updateCanvasPreview();
 }
 
 function stageForProgress(p) {
   if (p < 10) return 'Uploading Assets';
-  if (p < 30) return 'Preparing Model';
   if (p < 60) return 'Preparing Model';
   if (p < 85) return 'Generating Motion';
   if (p < 100) return 'Rendering Video';
@@ -3062,196 +3150,219 @@ function formatEta(seconds) {
   var s = seconds % 60;
   return '~' + m + 'm ' + (s > 0 ? s + 's' : '');
 }
-var ACTIVE_TASK_KEY = 'mii_ai_video_active_task_v1';
-function saveActiveTask(taskId, meta) {
-  try { localStorage.setItem(ACTIVE_TASK_KEY, JSON.stringify({ taskId: taskId, ts: Date.now(), mode: activeMode, meta: meta || null })); } catch(_) {}
+
+// ══════════ MULTI-TASK ACTIVE QUEUE PERSISTENCE ══════════
+// A list now (previously a single object) — several generations can be in
+// flight at once and each needs to survive a page close/reopen on its own,
+// without ever overwriting the live form (that overwrite was the actual bug
+// behind descriptions "following" the generate page instead of staying
+// locked to their own result).
+var ACTIVE_TASKS_KEY = 'mii_ai_video_active_tasks_v2';
+function loadActiveTaskEntries() {
+  try { return JSON.parse(localStorage.getItem(ACTIVE_TASKS_KEY) || '[]'); } catch(_) { return []; }
 }
-function clearActiveTask() {
-  try { localStorage.removeItem(ACTIVE_TASK_KEY); } catch(_) {}
+function saveActiveTaskEntry(taskId, meta) {
+  try {
+    var list = loadActiveTaskEntries().filter(function(t) { return t.taskId !== taskId; });
+    list.push({ taskId: taskId, ts: Date.now(), meta: meta || null });
+    localStorage.setItem(ACTIVE_TASKS_KEY, JSON.stringify(list));
+  } catch(_) {}
 }
-function loadActiveTask() {
-  try { return JSON.parse(localStorage.getItem(ACTIVE_TASK_KEY) || 'null'); } catch(_) { return null; }
+function removeActiveTaskEntry(taskId) {
+  try {
+    var list = loadActiveTaskEntries().filter(function(t) { return t.taskId !== taskId; });
+    localStorage.setItem(ACTIVE_TASKS_KEY, JSON.stringify(list));
+  } catch(_) {}
 }
 
-function pollTask(taskId, opts) {
-  if (pollInterval) clearInterval(pollInterval);
-  currentTaskId = taskId;
-  saveActiveTask(taskId, opts && opts.meta);
-  var requestInFlight = false;
-  var consecutiveNetworkFailures = 0;
-  // The generation itself runs entirely on the server (Segmind is called
-  // from Railway, not from this phone) — the phone's own connection is
-  // only needed to check status. A single dropped connection therefore
-  // should never lose a result: this only gives up after ~10 minutes of
-  // being completely unreachable, and every time the tab/screen comes
-  // back (resumeActiveTaskIfAny / visibilitychange below) it re-checks
-  // immediately regardless of how long it was away.
+function pollQueueTask(taskId, opts) {
+  var state = activeGens[taskId] || (activeGens[taskId] = { meta: (opts && opts.meta) || {}, startTs: Date.now() });
+  var meta = state.meta || {};
+  state.requestInFlight = false;
+  state.consecutiveNetworkFailures = 0;
+  // The generation itself runs entirely on the server — the phone's own
+  // connection is only needed to check status, so a dropped connection
+  // never loses a result: this only gives up after being unreachable for a
+  // very long time, and visibilitychange below re-checks immediately the
+  // moment the tab/screen comes back regardless of how long it was away.
   var MAX_CONSECUTIVE_NETWORK_FAILURES = 200;
 
+  function els() {
+    return {
+      item: document.getElementById('genq_' + taskId),
+      stage: document.getElementById('genqStage_' + taskId),
+      bar: document.getElementById('genqBar_' + taskId),
+      eta: document.getElementById('genqEta_' + taskId),
+      actions: document.getElementById('genqActions_' + taskId),
+      dismiss: document.getElementById('genqDismiss_' + taskId),
+    };
+  }
+  function markDone() {
+    var e = els();
+    if (e.item) e.item.classList.add('done');
+    if (e.dismiss) e.dismiss.style.display = 'block';
+  }
+  function markFailed(msg) {
+    var e = els();
+    if (e.item) e.item.classList.add('failed');
+    if (e.stage) { e.stage.textContent = msg || 'Generate gagal'; e.stage.classList.add('err'); }
+    if (e.bar) e.bar.style.width = '0%';
+    if (e.eta) e.eta.textContent = '';
+    if (e.dismiss) e.dismiss.style.display = 'block';
+    if (e.actions) e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="retryQueueItem(\'' + taskId + '\')">Coba Lagi</button>';
+  }
+
   function tick() {
-    if (requestInFlight) return;
-    requestInFlight = true;
-    fetch('/api/aivideo/task/' + taskId)
+    if (state.requestInFlight) return;
+    state.requestInFlight = true;
+    fetchWithTimeout('/api/aivideo/task/' + taskId, {}, 20000)
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        requestInFlight = false;
-        consecutiveNetworkFailures = 0; // any successful round-trip resets the counter
-        // A newer generation may have started (and reassigned
-        // currentTaskId/pollInterval) while this request was in flight.
-        // Discard the response so it can never overwrite the newer result.
-        if (taskId !== currentTaskId) return;
+        state.requestInFlight = false;
+        state.consecutiveNetworkFailures = 0;
+        if (!activeGens[taskId]) return; // dismissed / retried while this request was in flight
+        var e = els();
         if (data.error) {
-          clearInterval(pollInterval);
-          clearActiveTask();
-          resetGenBtn();
-          document.getElementById('taskBox').classList.remove('show');
-          showFailOverlay(data.error);
+          if (state.interval) clearInterval(state.interval);
+          removeActiveTaskEntry(taskId);
+          markFailed(data.error);
           return;
         }
         var status = data.status;
         var progress = data.progress || 0;
-        var statusEl = document.getElementById('taskStatusTxt');
-        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-        statusEl.className = 'task-status-txt ' + status;
-        document.getElementById('progressFill').style.width = progress + '%';
-        document.getElementById('taskStage').textContent = stageForProgress(progress);
-        document.getElementById('taskPreviewTitle').textContent = activeMode === 'image' ? 'Generating Image' : 'Generating Video';
-        updateCollapsedBar(selectedModelName);
-        // ETA reconciliation: the server's estimate (from task_info /
-        // eta_seconds) is only a starting guess and can be far off for
-        // fast/turbo tiers. Once we have real progress, recompute the ETA
-        // from the actual pace observed so far (elapsed / progress) and
-        // blend it with the server value so displayed time tracks reality
-        // instead of staying stuck on an inaccurate initial number.
+        if (e.bar) e.bar.style.width = progress + '%';
+        if (e.stage) e.stage.textContent = stageForProgress(progress);
+
+        // ETA reconciliation: blend the server's initial estimate with the
+        // pace actually observed so far, so the displayed time tracks
+        // reality instead of staying stuck on an inaccurate initial number.
         var serverRemaining = data.eta_seconds != null ? data.eta_seconds
           : (data.task_info && data.task_info.estimated_time != null ? data.task_info.estimated_time : null);
-        if (progress > 0 && window.__genStartTs) {
-          var elapsedSec = (Date.now() - window.__genStartTs) / 1000;
+        if (progress > 0 && state.startTs) {
+          var elapsedSec = (Date.now() - state.startTs) / 1000;
           var pacedTotal = elapsedSec / (progress / 100);
           var pacedRemaining = Math.max(pacedTotal - elapsedSec, 0);
           var remaining = serverRemaining != null ? (pacedRemaining * 0.7 + serverRemaining * 0.3) : pacedRemaining;
-          document.getElementById('taskEta').textContent = formatEta(remaining);
-        } else if (serverRemaining != null) {
-          document.getElementById('taskEta').textContent = formatEta(serverRemaining);
+          if (e.eta) e.eta.textContent = formatEta(remaining);
+        } else if (serverRemaining != null && e.eta) {
+          e.eta.textContent = formatEta(serverRemaining);
         }
 
         if (status === 'completed') {
-          clearInterval(pollInterval);
-          clearActiveTask();
-          resetGenBtn();
-          document.getElementById('taskBox').classList.remove('show');
+          if (state.interval) clearInterval(state.interval);
+          removeActiveTaskEntry(taskId);
           var out = data.output || data.result || {};
           var videoUrl = out.video_url || (out.type === 'video' ? out.url : '') || '';
           var imageUrl = out.image_url || (out.type === 'image' ? out.url : '') || '';
           if (!videoUrl && !imageUrl && out.url) {
-            // fallback: infer from active mode
-            if (activeMode === 'image') imageUrl = out.url; else videoUrl = out.url;
+            if (meta.activeMode === 'image') imageUrl = out.url; else videoUrl = out.url;
           }
           if (videoUrl || imageUrl) {
-            showCanvasResult(videoUrl, imageUrl);
-            var elapsedMs = window.__genStartTs ? (Date.now() - window.__genStartTs) : 0;
-            var genAtLabel = formatClock(new Date());
-            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, elapsedMs: elapsedMs, generatedAt: genAtLabel };
-            // Stay on the canvas with the result + its own action buttons —
-            // don't force-navigate into the fullscreen Result/description
-            // page. The user can still open it via the "Details" button.
-            showCanvasResultUI(resultPayload);
-            saveGenerationToHistory(resultPayload);
+            var elapsedMs = state.startTs ? (Date.now() - state.startTs) : 0;
+            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
+            // Saved using THIS job's own snapshotted meta — never live
+            // panel state — so the History entry can never end up
+            // mismatched with whatever you've since changed the panel to.
+            var rec = saveGenerationToHistory(resultPayload, meta);
+            if (e.stage) e.stage.textContent = 'Tersimpan di History';
+            markDone();
+            delete activeGens[taskId]; refreshQueueBadge();
+            showToastAction('Video selesai — tersimpan di History', 'Lihat', function() {
+              if (rec) openHistoryItem(rec.id);
+            });
+            setTimeout(function() { var el = document.getElementById('genq_' + taskId); if (el) el.remove(); }, 3500);
           } else {
-            showError('Selesai tapi URL tidak ditemukan di response');
-            updateCanvasPreview();
-            document.getElementById('emptyState').style.display = 'flex';
+            delete activeGens[taskId]; refreshQueueBadge();
+            markFailed('Selesai tapi URL tidak ditemukan di response (Invalid response)');
           }
         } else if (status === 'failed') {
-          clearInterval(pollInterval);
-          clearActiveTask();
-          resetGenBtn();
-          document.getElementById('taskBox').classList.remove('show');
-          showFailOverlay(data.error || 'Segmind tidak mengembalikan detail error.');
+          if (state.interval) clearInterval(state.interval);
+          removeActiveTaskEntry(taskId);
+          delete activeGens[taskId]; refreshQueueBadge();
+          markFailed(data.error || 'Segmind tidak mengembalikan detail error.');
         }
       })
       .catch(function() {
-        requestInFlight = false;
-        if (taskId !== currentTaskId) return;
-        consecutiveNetworkFailures++;
-        if (consecutiveNetworkFailures < MAX_CONSECUTIVE_NETWORK_FAILURES) {
-          // Transient blip (weak signal, wifi<->data handoff, tab backgrounded,
-          // etc). The task itself keeps running/finishes server-side either
-          // way — just keep polling, don't lose the result over this.
-          var stageEl = document.getElementById('taskStage');
-          if (stageEl) stageEl.textContent = 'Reconnecting…';
+        state.requestInFlight = false;
+        if (!activeGens[taskId]) return;
+        state.consecutiveNetworkFailures = (state.consecutiveNetworkFailures || 0) + 1;
+        if (state.consecutiveNetworkFailures < MAX_CONSECUTIVE_NETWORK_FAILURES) {
+          var e = els();
+          if (e.stage) e.stage.textContent = 'Reconnecting…';
           return;
         }
-        clearInterval(pollInterval);
-        resetGenBtn();
-        document.getElementById('taskBox').classList.remove('show');
-        showFailOverlay('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
+        if (state.interval) clearInterval(state.interval);
+        delete activeGens[taskId]; refreshQueueBadge();
+        markFailed('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
       });
   }
 
-  window.__pollTick = tick; // exposed so visibility/resume handlers can force an immediate check
+  state.tick = tick;
   if (!(opts && opts.silentResume)) tick(); // check right away instead of waiting for the first 3s tick
-  pollInterval = setInterval(tick, 3000);
+  state.interval = setInterval(tick, 3000);
+}
+
+function retryQueueItem(taskId) {
+  var g = activeGens[taskId];
+  var el = document.getElementById('genq_' + taskId);
+  if (el) el.remove();
+  delete activeGens[taskId]; refreshQueueBadge();
+  removeActiveTaskEntry(taskId);
+  if (!g || !g.meta) return;
+  // Re-runs with the exact snapshotted settings from the original attempt
+  // — not whatever the live panel has now — since a retry means "try that
+  // same job again", not "start a new job with today's settings".
+  fetchWithTimeout('/api/aivideo/generate', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(g.meta)
+  }, 30000)
+    .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
+    .then(function(res) {
+      if (res.status >= 400) { showError((res.data && res.data.error) || 'Retry gagal'); return; }
+      var taskId2 = res.data.id;
+      var list = document.getElementById('genQueueList');
+      list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId2, g.meta.fullModelLabel || 'Generating'));
+      activeGens[taskId2] = { meta: g.meta, startTs: Date.now() };
+      saveActiveTaskEntry(taskId2, g.meta);
+      refreshQueueBadge();
+      pollQueueTask(taskId2);
+    })
+    .catch(function(err) { showError(classifyFetchError(err, 'Retry gagal')); });
 }
 
 // If the phone locked, the tab got backgrounded, or the app was closed
-// entirely mid-generation, the video may already be finished waiting on
-// the server. Re-check immediately the moment the page becomes visible
-// again, instead of relying on a background timer mobile browsers throttle
-// or pause outright.
+// entirely mid-generation, results may already be finished waiting on the
+// server. Re-check every still-active task immediately the moment the page
+// becomes visible again, instead of relying on a background timer mobile
+// browsers throttle or pause outright.
 document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible' && currentTaskId && window.__pollTick) {
-    window.__pollTick();
-  }
+  if (document.visibilityState !== 'visible') return;
+  Object.keys(activeGens).forEach(function(taskId) {
+    var g = activeGens[taskId];
+    if (g && g.tick) g.tick();
+  });
 });
 
 // On a fresh page load (tab was fully closed and reopened, or the app was
-// force-killed), resume tracking whatever generation was last in flight —
-// it likely already finished on the server while we were away.
+// force-killed), resume tracking every generation that was still in flight.
+// Each resumes with its OWN snapshotted settings and never touches the live
+// form — whatever you're configuring right now stays exactly as you left it.
 function resumeActiveTaskIfAny() {
-  var saved = loadActiveTask();
-  if (!saved || !saved.taskId) return;
-  var ageMs = Date.now() - (saved.ts || 0);
-  if (ageMs > 30 * 60 * 1000) { clearActiveTask(); return; } // stale beyond any realistic generation time
-  activeMode = saved.mode || activeMode;
-  window.__genStartTs = saved.ts;
-
-  // Rebuild the form state from what was actually submitted, so that if
-  // this task finishes now, saveGenerationToHistory() records the real
-  // prompt/model/references instead of whatever the (now-empty, freshly
-  // reloaded) form happens to contain.
-  var meta = saved.meta;
-  if (meta) {
-    try {
-      if (promptInput && meta.prompt) promptInput.value = meta.prompt;
-      var fam = null, families = modelFamilies[activeMode] || modelFamilies.video;
-      if (meta.family) fam = families.find(function(f) { return f.key === meta.family; });
-      if (fam) {
-        var qIdx = fam.qualities.findIndex(function(q) { return q.label === meta.model; });
-        pickFamily(fam, qIdx > -1 ? qIdx : 0);
-      }
-      if (meta.resolution) { selectedResolution = meta.resolution; var rl = document.getElementById('resolutionLabel'); if (rl) rl.textContent = meta.resolution; }
-      if (meta.aspect_ratio) { selectedRatio = meta.aspect_ratio; var ral = document.getElementById('ratioLabel'); if (ral) ral.textContent = meta.aspect_ratio; }
-      if (meta.duration) { selectedDuration = meta.duration; var dl = document.getElementById('durationLabel'); if (dl) dl.textContent = meta.duration + 's'; }
-      media.image = (meta.image_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
-      media.video = (meta.video_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
-      media.audio = (meta.audio_urls || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
-      if (meta.first_frame_url) frames.first = { file: null, previewUrl: meta.first_frame_url, url: meta.first_frame_url, uploading: false };
-      if (meta.last_frame_url) frames.last = { file: null, previewUrl: meta.last_frame_url, url: meta.last_frame_url, uploading: false };
-      renderUploadGrid();
-    } catch (e) { /* best-effort restore — even if this fails, polling below still works */ }
-  }
-
-  document.getElementById('taskStatusTxt').textContent = 'Checking…';
-  document.getElementById('taskStatusTxt').className = 'task-status-txt pending';
-  document.getElementById('taskStage').textContent = 'Reconnecting to your generation…';
-  document.getElementById('taskBox').classList.add('show');
-  var btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.classList.add('loading');
-  lockGenerateForm(true);
-  setPanelCollapsed(true);
-  pollTask(saved.taskId, { meta: meta });
+  var entries = loadActiveTaskEntries();
+  if (!entries.length) return;
+  var now = Date.now();
+  var list = document.getElementById('genQueueList');
+  entries.forEach(function(saved) {
+    var ageMs = now - (saved.ts || 0);
+    if (ageMs > 30 * 60 * 1000) { removeActiveTaskEntry(saved.taskId); return; } // stale beyond any realistic generation time
+    var meta = saved.meta || {};
+    var titleLabel = (meta.fullModelLabel || meta.model || 'Generating') + (meta.activeMode === 'image' ? ' · Image' : '');
+    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(saved.taskId, titleLabel));
+    var stageEl = document.getElementById('genqStage_' + saved.taskId);
+    if (stageEl) stageEl.textContent = 'Reconnecting to your generation…';
+    activeGens[saved.taskId] = { meta: meta, startTs: saved.ts };
+    pollQueueTask(saved.taskId, { meta: meta });
+  });
+  refreshQueueBadge();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', resumeActiveTaskIfAny);
@@ -3259,11 +3370,12 @@ if (document.readyState === 'loading') {
   resumeActiveTaskIfAny();
 }
 
+
+
 function copyPrompt() {
   navigator.clipboard.writeText(promptInput.value).catch(function(){});
 }
 function resetForm() {
-  document.getElementById('taskBox').classList.remove('show');
   document.getElementById('failOverlay').classList.remove('show');
   closeResultOverlay();
   hideCanvasResultUI();
@@ -3303,6 +3415,7 @@ function openResultOverlay(payload) {
     iEl.style.display = 'block'; iEl.src = imageUrl;
   } else {
     iEl.style.display = 'none'; iEl.removeAttribute('src');
+    videoRecovered('resultVideoFull');
     vEl.style.display = 'block'; vEl.src = videoUrl;
   }
 
@@ -3453,16 +3566,25 @@ function deleteHistoryRecord(id) {
 // a network round-trip to show something), but the actual source of truth
 // for "is this archived" now lives in the server database, keyed by the
 // same record id, so it survives a cleared browser or a server restart.
+// Returns a Promise<boolean> (true = actually saved server-side) instead of
+// firing-and-forgetting — callers need to know whether the save really
+// succeeded before treating the item as archived, otherwise a failed sync
+// left the item looking archived locally forever while never actually
+// existing in the server database (so it "worked" once, then vanished).
 function syncArchiveToServer(rec) {
-  if (!rec || !rec.id) return;
-  fetch('/api/aivideo/archive', {
+  if (!rec || !rec.id) return Promise.resolve(false);
+  return fetchWithTimeout('/api/aivideo/archive', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(rec)
-  })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (!data || data.error) { showError((data && data.error) || 'Gagal menyimpan ke Archive di server'); return; }
+  }, 20000)
+    .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
+    .then(function(res) {
+      var data = res.data;
+      if (res.status >= 400 || !data || data.error) {
+        showError((data && data.error) || 'Gagal menyimpan ke Archive di server (' + res.status + ')');
+        return false;
+      }
       // The server may have promoted a local /static/... output URL to a
       // real Dropbox URL — keep the local record in sync so a future
       // "Use as reference" never points at our own domain.
@@ -3470,64 +3592,165 @@ function syncArchiveToServer(rec) {
       if (data.videoUrl) patch.videoUrl = data.videoUrl;
       if (data.imageUrl) patch.imageUrl = data.imageUrl;
       if (Object.keys(patch).length) updateHistoryRecord(rec.id, patch);
+      return true;
     })
-    .catch(function() { showError('Gagal menyimpan ke Archive, cek koneksi'); });
+    .catch(function(err) {
+      showError(classifyFetchError(err, 'Gagal menyimpan ke Archive'));
+      return false;
+    });
 }
 function removeArchiveFromServer(id) {
-  if (!id) return;
-  fetch('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }).catch(function() {});
+  if (!id) return Promise.resolve(false);
+  return fetchWithTimeout('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }, 15000)
+    .then(function(r) { return r.ok; })
+    .catch(function(err) {
+      showError(classifyFetchError(err, 'Gagal menghapus dari Archive'));
+      return false;
+    });
 }
 function mergeServerArchiveIntoLocal(items) {
-  if (!items || !items.length) return;
+  if (!items) return;
   var list = loadHistory();
+  var serverIds = {};
   items.forEach(function(srv) {
+    serverIds[srv.id] = true;
     var idx = list.findIndex(function(r) { return r.id === srv.id; });
     var merged = Object.assign({}, srv, { archived: true });
     if (idx > -1) list[idx] = Object.assign({}, list[idx], merged);
     else list.unshift(merged);
   });
+  // Trust the server as the source of truth for archive membership: a local
+  // record flagged archived=true that the server doesn't actually have
+  // means a previous sync failed silently — without this it stayed hidden
+  // from History forever while never truly being in the Archive either.
+  list.forEach(function(r) {
+    if (r.archived && !serverIds[r.id]) r.archived = false;
+  });
   saveHistoryList(list);
 }
 function refreshArchiveFromServer(onDone) {
-  fetch('/api/aivideo/archive')
+  fetchWithTimeout('/api/aivideo/archive', {}, 15000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.ok && data.items) mergeServerArchiveIntoLocal(data.items);
+      else if (data && data.error) showError(data.error);
       if (onDone) onDone();
     })
-    .catch(function() {});
+    .catch(function(err) {
+      showError(classifyFetchError(err, 'Gagal memuat Archive'));
+      if (onDone) onDone();
+    });
 }
 
-function saveGenerationToHistory(res) {
-  var hasTier = selectedFamily.qualities.length > 1;
-  var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
-  var rec = {
-    id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    videoUrl: res.videoUrl || '',
-    imageUrl: res.imageUrl || '',
-    thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
-    prompt: promptInput.value.trim(),
-    model: fullModelLabel,
-    quality: selectedResolution,
-    duration: activeMode === 'image' ? '' : (selectedDuration + 's'),
-    ratio: selectedRatio,
-    elapsedMs: res.elapsedMs || 0,
-    genTime: formatElapsed(res.elapsedMs || 0),
-    createdAtLabel: res.generatedAt || formatClock(new Date()),
-    createdAtTs: Date.now(),
-    refImages: media.image.map(function(m) { return m.url; }).filter(Boolean),
-    refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
-    modelKey: selectedFamily.key,
-    modelTier: selectedModelTier,
-    bitrate: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
-    archived: false
+// Pure text-to-video (or video-to-video with no image reference) generations
+// have nothing to use as a History/Archive thumbnail, so the row previously
+// rendered as a plain empty color block — looking like the thumbnail failed
+// to load. Grab an actual frame from the finished video client-side instead.
+function captureVideoThumbnail(videoUrl, callback) {
+  if (!videoUrl) { callback(null); return; }
+  var done = false;
+  var finish = function(dataUrl) {
+    if (done) return;
+    done = true;
+    try { v.pause(); v.src = ''; v.load(); } catch(_) {}
+    callback(dataUrl);
   };
+  var v = document.createElement('video');
+  v.crossOrigin = 'anonymous';
+  v.muted = true;
+  v.preload = 'auto';
+  v.src = videoUrl;
+  var timeoutId = setTimeout(function() { finish(null); }, 8000);
+  v.addEventListener('loadeddata', function() {
+    try { v.currentTime = Math.min(0.4, (v.duration || 1) / 4); } catch(_) { finish(null); }
+  });
+  v.addEventListener('seeked', function() {
+    clearTimeout(timeoutId);
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = v.videoWidth || 320;
+      canvas.height = v.videoHeight || 180;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+      finish(canvas.toDataURL('image/jpeg', 0.7));
+    } catch(_) {
+      finish(null); // e.g. CORS-tainted canvas — fail quietly, keep the color-block fallback
+    }
+  });
+  v.addEventListener('error', function() { clearTimeout(timeoutId); finish(null); });
+}
+
+function saveGenerationToHistory(res, meta) {
+  var rec;
+  if (meta) {
+    // Snapshot path (used by the processing queue): every field comes from
+    // what was actually submitted for THIS job, never from the live panel
+    // — which may already reflect a completely different job by the time
+    // this one finishes.
+    rec = {
+      id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      videoUrl: res.videoUrl || '',
+      imageUrl: res.imageUrl || '',
+      thumb: meta.thumbSeed || res.imageUrl || '',
+      prompt: (meta.prompt || '').trim(),
+      model: meta.fullModelLabel || meta.modelDisplayName || '',
+      quality: meta.resolution || '',
+      duration: meta.activeMode === 'image' ? '' : ((meta.duration || '') + 's'),
+      ratio: meta.aspect_ratio || '',
+      elapsedMs: res.elapsedMs || 0,
+      genTime: formatElapsed(res.elapsedMs || 0),
+      createdAtLabel: res.generatedAt || formatClock(new Date()),
+      createdAtTs: Date.now(),
+      refImages: meta.image_urls || [],
+      refVideos: meta.video_urls || [],
+      modelKey: meta.family || '',
+      modelTier: meta.model || '',
+      bitrate: meta.bitrateSnapshot || '',
+      archived: false
+    };
+  } else {
+    // Back-compat path for any caller that doesn't pass a snapshot — reads
+    // the live panel, same as the old single-task behavior.
+    var hasTier = selectedFamily.qualities.length > 1;
+    var fullModelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
+    rec = {
+      id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      videoUrl: res.videoUrl || '',
+      imageUrl: res.imageUrl || '',
+      thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
+      prompt: promptInput.value.trim(),
+      model: fullModelLabel,
+      quality: selectedResolution,
+      duration: activeMode === 'image' ? '' : (selectedDuration + 's'),
+      ratio: selectedRatio,
+      elapsedMs: res.elapsedMs || 0,
+      genTime: formatElapsed(res.elapsedMs || 0),
+      createdAtLabel: res.generatedAt || formatClock(new Date()),
+      createdAtTs: Date.now(),
+      refImages: media.image.map(function(m) { return m.url; }).filter(Boolean),
+      refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
+      modelKey: selectedFamily.key,
+      modelTier: selectedModelTier,
+      bitrate: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
+      archived: false
+    };
+  }
   var list = loadHistory();
   list.unshift(rec);
   if (list.length > 200) list = list.slice(0, 200);
   saveHistoryList(list);
   window.__lastResult = { url: rec.videoUrl || rec.imageUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
   renderLastResultCard();
+
+  if (!rec.thumb && rec.videoUrl) {
+    captureVideoThumbnail(rec.videoUrl, function(dataUrl) {
+      if (!dataUrl) return;
+      updateHistoryRecord(rec.id, { thumb: dataUrl });
+      renderLastResultCard();
+      renderHistoryList(); // local-only re-render; Archive page re-fetches on its own onEnter
+    });
+  }
+  return rec;
 }
 
 function renderLastResultCard() {
@@ -3548,8 +3771,9 @@ function reopenLastResult() {
 
 function buildHistItemRow(r) {
   var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
+  var thumbGlyph = r.thumb ? '' : (r.videoUrl ? '\u25b6' : (r.imageUrl ? '\u25a4' : ''));
   return '<div class="hist-item">' +
-    '<div class="hist-thumb"' + thumbStyle + '></div>' +
+    '<div class="hist-thumb"' + thumbStyle + '>' + (thumbGlyph ? '<span class="hist-thumb-glyph">' + thumbGlyph + '</span>' : '') + '</div>' +
     '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
       '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
       '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + '</span>' +
@@ -3583,7 +3807,10 @@ function openHistoryItem(id) {
     showToast('Storyboard sudah tidak tersedia');
     return;
   }
-  navigateTo('aivideo');
+  // The result overlay is a fixed, full-screen layer (see .result-overlay)
+  // — it doesn't need the generate canvas underneath it, so opening a
+  // History item no longer routes through the generate page first. Closing
+  // it now lands you right back on History/Archive/wherever you came from.
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
   openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
@@ -3651,11 +3878,19 @@ function toggleArchiveItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   var nowArchived = !r.archived;
-  updateHistoryRecord(id, { archived: nowArchived });
-  if (nowArchived) syncArchiveToServer(Object.assign({}, r, { archived: true }));
-  else removeArchiveFromServer(id);
-  renderHistoryList();
-  renderArchiveList();
+  var btn = document.querySelector('[onclick="toggleArchiveItem(\'' + id + '\')"]');
+  if (btn) btn.disabled = true;
+  var settle = function(ok) {
+    if (btn) btn.disabled = false;
+    if (ok) {
+      updateHistoryRecord(id, { archived: nowArchived });
+      showToast(nowArchived ? 'Tersimpan di Archive' : 'Dikembalikan ke History');
+    }
+    renderHistoryList();
+    renderArchiveList();
+  };
+  if (nowArchived) syncArchiveToServer(Object.assign({}, r, { archived: true })).then(settle);
+  else removeArchiveFromServer(id).then(settle);
 }
 var pendingDeleteId = null;
 function confirmDeleteHistoryItem(id) {
@@ -3707,12 +3942,16 @@ function deleteCurrentResult() {
 function archiveCurrentResult() {
   var id = resolveCurrentResultId();
   if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
-  updateHistoryRecord(id, { archived: true });
   var r = findHistoryRecord(id);
-  if (r) syncArchiveToServer(r);
-  renderHistoryList();
-  renderArchiveList();
-  showToast('Tersimpan di Archive');
+  if (!r) { showToast('Belum ada hasil untuk diarsipkan'); return; }
+  showToast('Menyimpan ke Archive…');
+  syncArchiveToServer(Object.assign({}, r, { archived: true })).then(function(ok) {
+    if (!ok) return; // syncArchiveToServer already surfaced the specific error
+    updateHistoryRecord(id, { archived: true });
+    renderHistoryList();
+    renderArchiveList();
+    showToast('Tersimpan di Archive');
+  });
 }
 function openImagePreview(url) {
   document.getElementById('imgPreviewFull').src = url;
