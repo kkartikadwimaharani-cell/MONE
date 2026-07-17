@@ -2033,18 +2033,9 @@ if not SEGMIND_API_KEY:
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
-# ⚠️ 'MINI' -> 'seedance-2.0-mini': could NOT confirm this is a real, live
-# Segmind endpoint. Segmind's own blog post ("How to Access Seedance 2.0")
-# explicitly lists "5 Seedance models live on Segmind today: 2.0 Fast, 1.0
-# Pro, 1.5 Pro, 2.0, 1.5 Pro Fast" — no Mini. Segmind's Bytedance catalog
-# page (segmind.com/models/all/bytedance) also only lists Seedance 2.0 and
-# Seedance 2.0 Fast. "Seedance 2.0 Mini" appears to be either an unreleased
-# ByteDance tier (per several third-party trackers, as of mid-2026 it has
-# "no official spec sheet, no model page, no launch date") or a name used by
-# unrelated third-party resellers — not something confirmed to exist at
-# Segmind's own `seedance-2.0-mini` slug. Calling this endpoint may simply
-# 404. Left unchanged here since this needs to be verified against a real
-# Segmind account/API response rather than assumed — see chat notes.
+# 'seedance-2.0-mini' confirmed live and working: user's own Segmind
+# dashboard request history shows successful (200) calls against this exact
+# endpoint. Treat it as a real, active tier — not unverified.
 SEGMIND_MODEL_MAP = {
     'MINI': 'seedance-2.0-mini',
     'FAST': 'seedance-2.0-fast',
@@ -2061,23 +2052,40 @@ SEGMIND_DURATIONS = (4, 5, 6, 8, 10, 12, 15)
 SEGMIND_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive')
 
 # Kling 3.0 — real endpoints per Segmind's published API docs
-# (segmind.com/models/kling-3-standard-image2video and kling-3-pro-image2video).
-# Image-to-video only: requires a single start_image_url, optional end_image_url.
-# Unlike Seedance, it does NOT support an arbitrary omni-reference array or a
-# discrete `resolution` param — output resolution is fixed per tier.
-KLING_MODEL_MAP = {
+# (segmind.com/models/kling-3-standard-image2video, kling-3-pro-image2video).
+# Confirmed BOTH tiers also have a separate text-to-video endpoint
+# (segmind.com/models/kling-3-standard-text2video,
+# .../kling-3-pro-text2video/pricing) — plain prompt, no image required. The
+# app picks image2video vs text2video per-request based on whether a start
+# frame/reference image was actually provided (see aivideo_generate below).
+KLING_IMAGE2VIDEO_MAP = {
     'STANDARD': 'kling-3-standard-image2video',
     'PRO': 'kling-3-pro-image2video',
 }
+KLING_TEXT2VIDEO_MAP = {
+    'STANDARD': 'kling-3-standard-text2video',
+    'PRO': 'kling-3-pro-text2video',
+}
+# Back-compat alias (some older code paths may still reference this name).
+KLING_MODEL_MAP = KLING_IMAGE2VIDEO_MAP
 KLING_DURATION_RANGE = {
-    # Segmind's Pro doc explicitly confirms 3-15s. Standard isn't clearly
-    # confirmed at the same ceiling in public docs (some third-party sources
-    # suggest non-Pro Kling 3.0 tops out around 10s) — capped conservatively
-    # here until a real test confirms the actual limit.
-    'STANDARD': (3, 10),
+    # 3-15s confirmed for both tiers (Segmind's own Pro doc, and Kling 3.0's
+    # general spec sheet mirrored across third-party API resellers — kie.ai,
+    # fal.ai — all list "3 to 15 seconds" with no distinction by tier).
+    'STANDARD': (3, 15),
     'PRO': (3, 15),
 }
 KLING_RATIOS = ('16:9', '9:16', '1:1')
+
+# Kling O3 Video-to-Video Edit (segmind.com/models/kling-o3-video2video-edit)
+# — "character swap" mode: takes an existing video + a character/object
+# reference image (frontal_image_url) and swaps it in via @Element1-style
+# element injection, or restyles backgrounds/scenes via @Image1-style
+# reference images. std = fast/cheap iteration, pro = max quality.
+KLING_SWAP_ENDPOINT = 'kling-o3-video2video-edit'
+KLING_SWAP_MODES = ('std', 'pro')
+KLING_SWAP_DURATION_RANGE = (3, 15)
+KLING_SWAP_RATIOS = ('16:9', '9:16', '1:1')
 
 # Nano Banana Pro (Google/Gemini 3 Pro image model) — one real Segmind
 # endpoint (segmind.com/models/nano-banana-pro). It doesn't expose separate
@@ -2086,6 +2094,46 @@ KLING_RATIOS = ('16:9', '9:16', '1:1')
 # there are 3 distinct models.
 NANOBANANA_RESOLUTION_BY_TIER = {'FAST': '1K', 'STANDARD': '2K', 'ULTRA': '4K'}
 NANOBANANA_RATIOS = ('1:1', '2:3', '3:2', '4:3', '3:4', '4:5', '5:4', '16:9', '9:16', '21:9')
+
+# GPT Image 2 (segmind.com/models/gpt-image-2) — one real Segmind endpoint,
+# confirmed against Segmind's own blog post + sibling gpt-image-1/1.5 docs
+# (same request shape: prompt, optional image_urls to switch into edit/
+# reference mode, size, quality, output_format). The app's LOW/STANDARD/HIGH
+# tiers map onto Segmind's actual quality enum, which is low/medium/high —
+# NOT low/standard/high, that was never a real value this endpoint accepts.
+GPTIMAGE2_QUALITY_BY_TIER = {'LOW': 'low', 'STANDARD': 'medium', 'HIGH': 'high'}
+# GPT Image 2 only supports 3 fixed output sizes (plus "auto") — not
+# arbitrary aspect ratios like Seedance/Kling. Snap whatever ratio the UI
+# sent to the closest real size instead of pretending it's freeform.
+GPTIMAGE2_SIZE_BY_RATIO = {
+    '1:1': '1024x1024',
+    '3:2': '1536x1024', '4:3': '1536x1024', '16:9': '1536x1024', '21:9': '1536x1024',
+    '2:3': '1024x1536', '3:4': '1024x1536', '9:16': '1024x1536',
+}
+
+# Seedream 5.0 Pro (segmind.com/models/seedream-5-pro) — ByteDance's
+# region-precise, grounded image editing model. Confirmed against Segmind's
+# own API docs/sample code: prompt + optional image_input (up to 10 refs,
+# NOT image_urls — different field name than GPT Image 2/Kling), aspect_ratio
+# (8 presets), size ('1K'/'2K'), output_format, watermark. Synchronous, one
+# image per request (n is fixed to 1 on this model).
+SEEDREAM5PRO_RATIOS = ('1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16', '21:9')
+SEEDREAM5PRO_SIZES = ('1K', '2K')
+
+# Flux (Black Forest Labs) — 3 real Segmind endpoints, confirmed against
+# Segmind's own docs. Deliberately NOT the same endpoint with different
+# params: each tier is a genuinely different model with its own request
+# shape, picked to match Segmind's own recommended tiering (Schnell/Dev for
+# iteration, 1.1 Pro Ultra for hero/final assets). None of the three accept
+# reference images — that needs a distinct model (flux-kontext-pro /
+# flux-depth-dev), not exposed here to avoid a reference upload slot that
+# silently does nothing for 2 of 3 tiers.
+FLUX_ENDPOINT_BY_TIER = {
+    'SCHNELL': 'fast-flux-schnell',
+    'DEV': 'flux-dev',
+    'PRO': 'flux-1.1-pro-ultra',
+}
+FLUX_RATIOS = ('1:1', '4:3', '3:4', '16:9', '9:16', '21:9')
 
 # ── Dropbox (media relay so our own domain is never sent to Segmind) ───
 # NOTE: Dropbox "permanent" access tokens (the classic single Bearer token
@@ -2614,9 +2662,8 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
             response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
         )
 
-        # Store the generated media via Dropbox-adjacent local static storage
-        # (keeps our own storage stateless on Railway) and serve it back
-        # through our own domain to the user.
+        # Save locally first (always works, and lets the result play back
+        # immediately without waiting on a second network hop to Dropbox).
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
         os.makedirs(upload_dir, exist_ok=True)
         ext = 'png' if is_image else 'mp4'
@@ -2624,9 +2671,24 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
         with open(os.path.join(upload_dir, fname), 'wb') as f:
             f.write(result_bytes)
         app.logger.info('%s completed, wrote %d bytes to %s', log_prefix, len(result_bytes), fname)
+        local_url = f'/static/aivideo_uploads/{fname}'
+
+        # Then push it to Dropbox for durable storage — Railway's local disk
+        # is NOT persistent across redeploys/restarts (a previous version of
+        # this code claimed to do this in a comment but never actually
+        # called Dropbox, so every result silently depended on the
+        # container's disk surviving, and vanished on any redeploy or
+        # worker recycle). If Dropbox itself is having a bad moment, fall
+        # back to the local URL rather than failing a finished generation.
+        final_url = local_url
+        try:
+            final_url = _dropbox_upload_and_link(result_bytes, fname)
+        except Exception as dbx_err:
+            app.logger.warning('%s Dropbox upload failed, falling back to local static URL: %s', log_prefix, dbx_err)
+            _aivideo_last_error('dropbox', f'Upload hasil generate ke Dropbox gagal (pakai local storage sementara): {dbx_err}')
+
         output_key = 'image_url' if is_image else 'video_url'
-        _set(status='completed', progress=100,
-             output={output_key: f'/static/aivideo_uploads/{fname}'})
+        _set(status='completed', progress=100, output={output_key: final_url})
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
@@ -2727,8 +2789,14 @@ def aivideo_generate():
             return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
         endpoint = SEGMIND_MODEL_MAP[model_key]
 
-        if not image_urls and not video_urls and not first_frame_url:
-            return jsonify({'error': 'Minimal 1 gambar atau video referensi diperlukan'}), 400
+        # Seedance 2.0 / 2.0 Fast / Mini all support plain text-to-video —
+        # per Segmind's own docs and sample code, prompt is the only
+        # required input; image/video/first_frame references are optional.
+        # The one real constraint (confirmed in Segmind's Seedance error
+        # guide): reference_audios cannot be the *only* reference — it needs
+        # at least one image or video alongside it for context.
+        if audio_urls and not image_urls and not video_urls and not first_frame_url:
+            return jsonify({'error': 'Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup untuk Seedance)'}), 400
 
         # Resolution: snap to whatever this tier actually supports (never 4K
         # outside PRO).
@@ -2755,23 +2823,14 @@ def aivideo_generate():
             'return_last_frame': False,
             'skip_moderation': False,
         }
-        # bitrate_mode: confirmed in Segmind's official seedance-2.0 docs
-        # (segmind.com/models/seedance-2.0/api) — 'standard' (default) or
-        # 'high' (~5-6x bitrate, no price difference). NOT listed in the
-        # published parameter set for seedance-2.0-fast, and seedance-2.0-mini
-        # doesn't appear to be a real, live Segmind model at all (Segmind's
-        # own blog lists only 5 live Seedance models and Mini isn't one of
-        # them) — so only send this on the PRO tier to avoid risking a 400
-        # from an undocumented/unsupported param on the other tiers.
         # bitrate_mode: confirmed in Segmind's official seedance-2.0 (PRO)
         # docs — 'standard' (default) or 'high' (~5-6x bitrate, no price
-        # difference). NOT documented for seedance-2.0-fast, and there's no
-        # official Segmind docs page found for seedance-2.0-mini's parameter
-        # list either. The user wants max quality (least compression) across
-        # every tier, so we optimistically send bitrate_mode='high' on all
-        # three — if a tier actually rejects it, _run_segmind_task retries
-        # once automatically without the field (see below), so generation
-        # never fails just because of this optional quality knob.
+        # difference). Not documented for seedance-2.0-fast or -mini, but the
+        # user wants max quality (least compression) across every tier, so
+        # we optimistically send bitrate_mode='high' on all three — if a
+        # tier actually rejects it, _run_segmind_task retries once
+        # automatically without the field, so generation never fails just
+        # because of this optional quality knob.
         bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
         if bitrate_mode not in ('standard', 'high'):
             bitrate_mode = 'high'
@@ -2788,19 +2847,19 @@ def aivideo_generate():
             body['reference_audios'] = audio_urls
 
     elif family == 'kling':
-        if model_key not in KLING_MODEL_MAP:
+        # Accept either the dedicated Frames-mode first_frame_url, or fall
+        # back to the first uploaded reference image if the user used
+        # Elements mode. Neither is required anymore — Kling 3.0 has a
+        # confirmed separate text-to-video endpoint per tier.
+        start_image_url = first_frame_url or (image_urls[0] if image_urls else '')
+        end_image_url = last_frame_url
+
+        model_map = KLING_IMAGE2VIDEO_MAP if start_image_url else KLING_TEXT2VIDEO_MAP
+        if model_key not in model_map:
             # Frontend sends the tier label as e.g. 'STANDARD'/'PRO'; anything
             # else (or a stale Seedance tier like 'MINI') isn't a real Kling tier.
             return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
-        endpoint = KLING_MODEL_MAP[model_key]
-
-        # Kling 3.0 is image-to-video only: needs one start frame. Accept
-        # either the dedicated Frames-mode first_frame_url, or fall back to
-        # the first uploaded reference image if the user used Elements mode.
-        start_image_url = first_frame_url or (image_urls[0] if image_urls else '')
-        end_image_url = last_frame_url
-        if not start_image_url:
-            return jsonify({'error': 'Kling 3.0 butuh minimal 1 gambar awal (start frame)'}), 400
+        endpoint = model_map[model_key]
 
         try:
             duration = int(payload.get('duration', 5))
@@ -2812,17 +2871,55 @@ def aivideo_generate():
 
         body = {
             'prompt': prompt,
-            'start_image_url': start_image_url,
             'duration': str(duration),
             'aspect_ratio': aspect_ratio,
             'cfg_scale': float(payload.get('cfg_scale', 0.5)),
             'generate_audio': bool(payload.get('generate_audio', True)),
         }
-        if end_image_url:
-            body['end_image_url'] = end_image_url
+        if start_image_url:
+            body['start_image_url'] = start_image_url
+            if end_image_url:
+                body['end_image_url'] = end_image_url
         negative_prompt = str(payload.get('negative_prompt') or '').strip()
         if negative_prompt:
             body['negative_prompt'] = negative_prompt
+
+    elif family == 'klingswap':
+        # "Character swap" mode — Kling O3 Video-to-Video Edit. Needs an
+        # existing video to edit; a character/object reference image
+        # (frontal_image_url) is what actually triggers a face/character
+        # swap via Kling's @Element injection, everything else in image_urls
+        # is treated as @Image-style style/scene reference only.
+        video_url = video_urls[0] if video_urls else ''
+        if not video_url:
+            return jsonify({'error': 'Kling Swap butuh 1 video sumber untuk diedit'}), 400
+        swap_mode = str(payload.get('swap_mode') or model_key or 'std').lower()
+        if swap_mode not in KLING_SWAP_MODES:
+            swap_mode = 'std'
+        endpoint = KLING_SWAP_ENDPOINT
+
+        try:
+            duration = int(payload.get('duration', 5))
+        except (TypeError, ValueError):
+            duration = 5
+        duration = max(KLING_SWAP_DURATION_RANGE[0], min(KLING_SWAP_DURATION_RANGE[1], duration))
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in KLING_SWAP_RATIOS else '16:9'
+
+        body = {
+            'prompt': prompt,
+            'video_url': video_url,
+            'mode': swap_mode,
+            'duration': str(duration),
+            'aspect_ratio': aspect_ratio,
+            'keep_audio': bool(payload.get('keep_audio', False)),
+        }
+        # First reference image = the character/face to swap in
+        # (frontal_image_url triggers @Element-style injection); any
+        # additional images are passed as @Image-style scene/style refs.
+        if image_urls:
+            body['frontal_image_url'] = image_urls[0]
+            if len(image_urls) > 1:
+                body['image_urls'] = image_urls[1:5]
 
     elif family == 'nanobanana':
         endpoint = 'nano-banana-pro'
@@ -2845,12 +2942,71 @@ def aivideo_generate():
             body['image_urls'] = image_urls[:14]
         duration = 0  # not applicable to image generation
 
+    elif family == 'gptimage':
+        endpoint = 'gpt-image-2'
+        if model_key not in GPTIMAGE2_QUALITY_BY_TIER:
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        quality = GPTIMAGE2_QUALITY_BY_TIER[model_key]
+        size = GPTIMAGE2_SIZE_BY_RATIO.get(aspect_ratio_in, 'auto')
+        body = {
+            'prompt': prompt,
+            'size': size,
+            'quality': quality,
+            'output_format': 'png',
+        }
+        # Providing image_urls switches this same endpoint from text-to-image
+        # into edit/reference mode (confirmed pattern shared with Segmind's
+        # gpt-image-1-edit / gpt-image-1.5-edit siblings).
+        if image_urls:
+            body['image_urls'] = image_urls[:10]
+        duration = 0  # not applicable to image generation
+
+    elif family == 'seedream':
+        if model_key not in ('PRO',):
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = 'seedream-5-pro'
+        # Single-tier model (just "Pro") — resolution (1K/2K) is the real
+        # user-facing control, same pattern as Nano Banana Pro.
+        size = payload.get('resolution') if payload.get('resolution') in SEEDREAM5PRO_SIZES else '2K'
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in SEEDREAM5PRO_RATIOS else '1:1'
+        body = {
+            'prompt': prompt,
+            'aspect_ratio': aspect_ratio,
+            'size': size,
+            'output_format': 'png',
+            'watermark': False,
+        }
+        # image_input (NOT image_urls) is Seedream 5 Pro's actual field name
+        # for reference/edit images — confirmed in Segmind's own docs.
+        if image_urls:
+            body['image_input'] = image_urls[:10]
+        duration = 0  # not applicable to image generation
+
+    elif family == 'flux':
+        if model_key not in FLUX_ENDPOINT_BY_TIER:
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = FLUX_ENDPOINT_BY_TIER[model_key]
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in FLUX_RATIOS else '1:1'
+
+        if model_key == 'SCHNELL':
+            body = {'prompt': prompt, 'aspect_ratio': aspect_ratio, 'steps': 4, 'base64': False}
+        elif model_key == 'DEV':
+            body = {
+                'prompt': prompt, 'aspect_ratio': aspect_ratio, 'samples': 1,
+                'guidance': 3.5, 'steps': 25, 'output_format': 'png', 'output_quality': 95,
+            }
+        else:  # PRO -> flux-1.1-pro-ultra
+            body = {'prompt': prompt, 'aspect_ratio': aspect_ratio, 'output_format': 'png',
+                     'raw': False, 'safety_tolerance': 2}
+        duration = 0  # not applicable to image generation
+
     else:
         return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini. '
                                   f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Kling 3.0 (STANDARD/PRO), '
-                                  f'dan Nano Banana Pro (FAST/STANDARD/ULTRA).'}), 501
+                                  f'Kling Swap (STD/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
+                                  f'GPT Image 2 (LOW/STANDARD/HIGH), Seedream 5.0 Pro, dan Flux (SCHNELL/DEV/PRO).'}), 501
 
-    output_type = 'image' if family == 'nanobanana' else 'video'
+    output_type = 'image' if family in ('nanobanana', 'gptimage', 'seedream', 'flux') else 'video'
 
     task_id = uuid.uuid4().hex
     with AIVIDEO_TASKS_LOCK:
