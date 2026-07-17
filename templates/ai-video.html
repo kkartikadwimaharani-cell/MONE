@@ -424,7 +424,9 @@ input[type=file].hidden-input{display:none}
 @keyframes pageFadeSlide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
 .result-overlay.show{transform:translateY(0)}
 .result-body{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
-.result-video-full{width:100%;border-radius:18px;border:1px solid var(--border);background:#000;max-height:52vh;display:block}
+.result-video-full{width:100%;border-radius:18px;border:1px solid var(--border);background:#000;max-height:52vh;display:block;object-fit:contain}
+.result-video-full.is-portrait{max-height:72vh}
+#resultImageFull{background:radial-gradient(ellipse at center, #1c1c1c, #0a0a0a);box-shadow:0 18px 40px -18px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.03);padding:0;object-fit:contain}
 .video-fail-state{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:160px;border-radius:18px;background:#141414;border:1px solid var(--border);padding:20px;text-align:center}
 .video-fail-msg{color:#c9c9c9;font-size:13px;line-height:1.5}
 .video-fail-retry{background:linear-gradient(135deg,#ff2040,#c4001c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
@@ -438,6 +440,20 @@ input[type=file].hidden-input{display:none}
 .result-prompt-text{font-size:16px;line-height:1.6;color:var(--text-dim);background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px}
 .result-refs-row{display:flex;gap:8px;overflow-x:auto}
 .result-ref-thumb{width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border2);flex-shrink:0}
+
+.result-compare-block{background:linear-gradient(180deg,rgba(255,32,64,.07),transparent 60%);border:1px solid var(--border2);border-radius:18px;padding:14px}
+.result-compare-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.result-compare-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;position:relative}
+.result-compare-video{width:100%;height:220px;object-fit:contain;border-radius:14px;background:#000;border:1px solid var(--border2);box-shadow:0 10px 26px -14px rgba(0,0,0,.6)}
+.result-compare-badge{align-self:flex-start;font-size:.66rem;font-weight:800;letter-spacing:.08em;padding:4px 10px;border-radius:999px;text-transform:uppercase}
+.result-compare-badge.before{background:rgba(255,255,255,.08);color:var(--text-faint)}
+.result-compare-badge.after{background:linear-gradient(135deg,var(--accent),var(--accent-hover));color:#fff;box-shadow:0 4px 14px -4px rgba(255,32,64,.6)}
+.result-compare-arrow{flex-shrink:0;font-size:1.1rem;color:var(--accent);font-weight:900;align-self:center;margin-top:14px}
+@media (max-width:360px){
+  .result-compare-row{flex-direction:column}
+  .result-compare-arrow{transform:rotate(90deg);margin:-2px 0}
+  .result-compare-col{width:100%}
+}
 .result-footer{display:flex;gap:8px;padding:14px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);flex-shrink:0}
 
 /* LAST RESULT CARD */
@@ -484,7 +500,7 @@ input[type=file].hidden-input{display:none}
 .history-list{flex:1;overflow-y:auto;padding:0 18px 24px;display:flex;flex-direction:column;gap:10px}
 .history-empty{text-align:center;color:var(--text-dim,#999);font-size:13px;padding:40px 0 24px}
 .hist-item{display:flex;gap:12px;padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
-.hist-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010);display:flex;align-items:center;justify-content:center}
+.hist-thumb{width:56px;height:56px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010);background-size:cover;background-position:center;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center}
 .hist-thumb-glyph{color:rgba(255,255,255,.65);font-size:16px}
 .hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .hist-prompt{font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1519,6 +1535,20 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </div>
     <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" />
     <div class="result-meta-grid" id="resultMetaGrid"></div>
+    <div class="result-compare-block" id="resultCompareBlock" style="display:none">
+      <div class="result-section-label"><span>Sebelum &amp; Sesudah</span></div>
+      <div class="result-compare-row">
+        <div class="result-compare-col">
+          <video class="result-compare-video" id="resultCompareBefore" muted loop playsinline controls></video>
+          <span class="result-compare-badge before">SEBELUM</span>
+        </div>
+        <div class="result-compare-arrow">&#8594;</div>
+        <div class="result-compare-col">
+          <video class="result-compare-video" id="resultCompareAfter" muted loop playsinline controls></video>
+          <span class="result-compare-badge after">SESUDAH</span>
+        </div>
+      </div>
+    </div>
     <div>
       <div class="result-section-label">
         <span>Prompt</span>
@@ -1536,7 +1566,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
     <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
     <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
-    <button class="result-btn" onclick="openHistoryPage()"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
+    <button class="result-btn" onclick="closeResultOverlay(); navigateTo('history');"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
   </div>
 </div>
 
@@ -1664,11 +1694,20 @@ var modelFamilies = {
     },
     {
       key: 'kling', brand: 'KLING', name: 'KLING 3.0', featured: true,
-      desc: 'Image-to-video with start/end frame control and cinematic motion.',
+      desc: 'Text-to-video or image-to-video, with start/end frame control and cinematic motion.',
       caps: { image: 0, video: 0, audio: 0, frames: true, elements: false, ratio: true, resolution: false, resolutionSet: 'video', duration: true, motion: false },
       qualities: [
         { id: 'kling-3.0-std', label: 'STANDARD' },
         { id: 'kling-3.0-pro', label: 'PRO' }
+      ]
+    },
+    {
+      key: 'klingswap', brand: 'KLING', name: 'KLING SWAP', featured: true,
+      desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
+      caps: { image: 4, video: 1, audio: 0, frames: false, elements: true, ratio: true, resolution: false, resolutionSet: 'video', duration: true, motion: false },
+      qualities: [
+        { id: 'STD', label: 'STD' },
+        { id: 'PRO', label: 'PRO' }
       ]
     }
   ],
@@ -1694,19 +1733,17 @@ var modelFamilies = {
       ]
     },
     {
-      key: 'seedream', brand: 'SEEDREAM', name: 'SEEDREAM', featured: false,
-      desc: 'Fast, versatile image generation with image references.',
-      caps: { image: 6, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
+      key: 'seedream', brand: 'SEEDREAM', name: 'SEEDREAM 5.0 PRO', featured: true,
+      desc: 'Region-precise, grounded image editing with multilingual text rendering — up to 10 reference images.',
+      caps: { image: 10, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
       qualities: [
-        { id: 'seedream-fast',     label: 'FAST' },
-        { id: 'seedream-standard', label: 'STANDARD' },
-        { id: 'seedream-pro',      label: 'PRO' }
+        { id: 'seedream-5-pro', label: 'PRO' }
       ]
     },
     {
-      key: 'flux', brand: 'FLUX', name: 'FLUX', featured: false,
-      desc: 'Open-weight image generation with fine control.',
-      caps: { image: 4, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
+      key: 'flux', brand: 'FLUX', name: 'FLUX', featured: true,
+      desc: 'Black Forest Labs — Schnell for fast drafts, Dev for stronger detail, Pro Ultra for 4MP hero shots. Text-to-image only.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: false, resolutionSet: 'image', duration: false, motion: false },
       qualities: [
         { id: 'flux-schnell', label: 'SCHNELL' },
         { id: 'flux-dev',     label: 'DEV' },
@@ -1718,10 +1755,11 @@ var modelFamilies = {
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
-var CONNECTED_FAMILIES = ['seedance', 'kling', 'nanobanana', 'gptimage'];
+var CONNECTED_FAMILIES = ['seedance', 'kling', 'klingswap', 'nanobanana', 'gptimage', 'seedream', 'flux'];
 // Families where a reference image/video/frame is mandatory. Nano Banana Pro
 // (and other pure text-to-image models) can generate from prompt alone.
-var FAMILIES_REQUIRING_MEDIA = ['seedance', 'kling'];
+var FAMILIES_REQUIRING_MEDIA = []; // Seedance AND Kling 3.0 both confirmed to support plain text-to-video against Segmind's own docs/sample code
+var FAMILIES_REQUIRING_VIDEO = ['klingswap']; // Character Swap is fundamentally video-to-video — needs a source video specifically, not just any reference
 var activeMode = 'video';
 var selectedFamily = modelFamilies.video[0];
 var selectedQualityIdx = 0;
@@ -1949,7 +1987,7 @@ var sheetDefs = {
     options: ['1:1','3:4','4:3','9:16','16:9','21:9'],
     desc: function(v){ return ratioDesc[v]; },
     get: function(){ return selectedRatio; },
-    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; }
+    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; syncCanvasPreviewAspect(); }
   },
   resolution: {
     title: 'Resolution',
@@ -2149,10 +2187,10 @@ function applyModelCapabilities() {
     if (bitrateLabelEl) bitrateLabelEl.textContent = 'High';
   }
 
-  // Aspect ratio: Kling 3.0 only supports 16:9 / 9:16 / 1:1 (per Segmind's
-  // published API docs), narrower than Seedance's set.
+  // Aspect ratio: Kling 3.0 and Kling Character Swap only support 16:9 / 9:16
+  // / 1:1 (per Segmind's published API docs), narrower than Seedance's set.
   if (sheetDefs && sheetDefs.ratio) {
-    if (selectedFamily && selectedFamily.key === 'kling') {
+    if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.ratio.options = ['1:1','9:16','16:9'];
     } else {
       sheetDefs.ratio.options = ['1:1','3:4','4:3','9:16','16:9','21:9'];
@@ -2162,14 +2200,15 @@ function applyModelCapabilities() {
       var ratioLabelEl = document.getElementById('ratioLabel');
       if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
     }
+    syncCanvasPreviewAspect();
   }
 
-  // Duration: Kling 3.0 Pro allows a flexible 3-15s range (confirmed in
-  // Segmind's docs); Standard is capped more conservatively at 10s since
-  // public docs don't clearly confirm the same ceiling for that tier.
+  // Duration: confirmed 3-15s for both Kling 3.0 tiers (Segmind's own Pro
+  // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
+  // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
   if (sheetDefs && sheetDefs.duration) {
-    if (selectedFamily && selectedFamily.key === 'kling') {
-      sheetDefs.duration.options = (selectedModelTier === 'PRO' ? [3,4,5,6,8,10,12,15] : [3,4,5,6,8,10]).map(function(s){ return s+'s'; });
+    if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
+      sheetDefs.duration.options = [3,4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
     } else {
       sheetDefs.duration.options = [4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
     }
@@ -2187,7 +2226,7 @@ function applyModelCapabilities() {
   if (sheetDefs && sheetDefs.resolution) {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
-      sheetDefs.resolution.disabled = [];
+      sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
     } else if (selectedFamily && selectedFamily.key === 'seedance') {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
@@ -2394,6 +2433,20 @@ function updateCardPreview(type) {
 // Shows: uploaded image / first-frame preview while idle, nothing while a
 // task is running (the loading card takes over), and the finished video
 // once generation completes.
+// The preview box used to be pinned at a fixed 16:9 shape no matter what
+// ratio was actually selected — pick 9:16 (or anything else) and the real
+// video/photo would render tiny in the middle of a mostly-empty box. Keep
+// the box's own shape matched to the selection so it always fills properly,
+// consistently across every model/family.
+function syncCanvasPreviewAspect() {
+  var wrap = document.getElementById('canvasPreview');
+  if (!wrap || !selectedRatio) return;
+  var parts = selectedRatio.split(':');
+  if (parts.length === 2 && +parts[0] > 0 && +parts[1] > 0) {
+    wrap.style.aspectRatio = parts[0] + ' / ' + parts[1];
+  }
+}
+
 function updateCanvasPreview() {
   var wrap = document.getElementById('canvasPreview');
   var imgEl = document.getElementById('canvasPreviewImg');
@@ -2481,7 +2534,9 @@ function updateGenerateButtonState() {
   }
   var hasPrompt = !!(promptInput && promptInput.value.trim());
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
-  var hasMedia = !needsMedia || media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url);
+  var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
+  var hasMedia = (!needsMedia || media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url))
+    && (!needsVideo || media.video.length > 0);
   btn.disabled = !(hasPrompt && hasMedia);
   if (txt) txt.textContent = 'GENERATE \u2726';
 }
@@ -3051,14 +3106,24 @@ function startGenerate() {
   var prompt = promptInput.value.trim();
 
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
-    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Nano Banana Pro (Fast/Standard/Ultra), dan GPT Image 2 (Low/Standard/High).');
+    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Kling Swap (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, dan Flux (Schnell/Dev/Pro).');
     return;
   }
   if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
   var hasFirstFrame = !!(frames.first && frames.first.url);
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
+  var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
   if (needsMedia && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
     showError('Minimal 1 gambar atau video referensi diperlukan');
+    return;
+  }
+  if (needsVideo && media.video.length === 0) {
+    showError('Kling Swap butuh 1 video sumber untuk diedit');
+    return;
+  }
+  if (selectedFamily && selectedFamily.key === 'seedance' && media.audio.length > 0
+      && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
+    showError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup)');
     return;
   }
   var pendingUpload = media.image.concat(media.video, media.audio).some(function(m) { return m.uploading; })
@@ -3408,24 +3473,40 @@ function openResultOverlay(payload) {
   var isImage = !!imageUrl && !videoUrl;
   var mediaUrl = isImage ? imageUrl : videoUrl;
 
-  var vEl = document.getElementById('resultVideoFull');
-  var iEl = document.getElementById('resultImageFull');
-  if (isImage) {
-    vEl.style.display = 'none'; vEl.removeAttribute('src'); vEl.pause && vEl.pause();
-    iEl.style.display = 'block'; iEl.src = imageUrl;
-  } else {
-    iEl.style.display = 'none'; iEl.removeAttribute('src');
-    videoRecovered('resultVideoFull');
-    vEl.style.display = 'block'; vEl.src = videoUrl;
-  }
-
-  document.getElementById('downloadBtnFull').href = mediaUrl;
-
   // Always prefer the actual history record's snapshotted settings over the
   // live generate panel — the panel may have been changed to a different
   // model/quality/duration/ratio since this specific video was generated,
   // and this page must stay "locked" to what was really used.
   var rec = payload.reopenRecord || (window.__lastResult && window.__lastResult.id ? findHistoryRecord(window.__lastResult.id) : null);
+
+  // Kling Swap shows a before/after pair further down the page — the result
+  // video in that pair (labeled SESUDAH) already IS this same video, so
+  // showing it a second time as its own big standalone player up top was
+  // just the same clip floating twice, disconnected from its own caption.
+  var sourceVideoUrl = rec && rec.modelKey === 'klingswap' && rec.refVideos && rec.refVideos[0];
+  var showTopMedia = !(sourceVideoUrl && videoUrl);
+
+  var vEl = document.getElementById('resultVideoFull');
+  var iEl = document.getElementById('resultImageFull');
+  if (!showTopMedia) {
+    vEl.style.display = 'none'; vEl.removeAttribute('src'); vEl.pause && vEl.pause();
+    iEl.style.display = 'none'; iEl.removeAttribute('src');
+    var failEl = document.getElementById('resultVideoFullFail');
+    if (failEl) failEl.style.display = 'none';
+  } else if (isImage) {
+    vEl.style.display = 'none'; vEl.removeAttribute('src'); vEl.pause && vEl.pause();
+    iEl.style.display = 'block'; iEl.src = imageUrl;
+  } else {
+    iEl.style.display = 'none'; iEl.removeAttribute('src');
+    videoRecovered('resultVideoFull');
+    vEl.classList.remove('is-portrait');
+    vEl.onloadedmetadata = function() {
+      if (vEl.videoHeight > vEl.videoWidth) vEl.classList.add('is-portrait');
+    };
+    vEl.style.display = 'block'; vEl.src = videoUrl;
+  }
+
+  document.getElementById('downloadBtnFull').href = mediaUrl;
 
   document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
 
@@ -3470,6 +3551,20 @@ function openResultOverlay(payload) {
     refsBlock.style.display = 'none';
   }
 
+  // Kling Swap edits an existing video rather than generating from
+  // scratch — showing the original alongside the result makes that
+  // actually visible instead of just implied by the prompt text.
+  var compareBlock = document.getElementById('resultCompareBlock');
+  if (compareBlock) {
+    if (sourceVideoUrl && videoUrl) {
+      document.getElementById('resultCompareBefore').src = sourceVideoUrl;
+      document.getElementById('resultCompareAfter').src = videoUrl;
+      compareBlock.style.display = 'block';
+    } else {
+      compareBlock.style.display = 'none';
+    }
+  }
+
   window.__lastResult = { url: mediaUrl, isImage: isImage, id: (rec && rec.id) || (window.__lastResult && window.__lastResult.id) };
   document.getElementById('resultOverlay').classList.add('show');
 }
@@ -3477,6 +3572,8 @@ function closeResultOverlay() {
   document.getElementById('resultOverlay').classList.remove('show');
   var v = document.getElementById('resultVideoFull');
   try { v.pause(); } catch(_) {}
+  try { document.getElementById('resultCompareBefore').pause(); } catch(_) {}
+  try { document.getElementById('resultCompareAfter').pause(); } catch(_) {}
 }
 function regenerateVideo() {
   closeResultOverlay();
@@ -3832,6 +3929,7 @@ function restoreFromRecord(r) {
   selectedRatio = r.ratio || selectedRatio;
   var ratioLabelEl = document.getElementById('ratioLabel');
   if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
+  syncCanvasPreviewAspect();
   if (r.duration) {
     var d = parseInt(r.duration, 10);
     if (d) { selectedDuration = d; var durEl = document.getElementById('durationLabel'); if (durEl) durEl.textContent = d + 's'; }
@@ -3969,6 +4067,7 @@ applyQualityBadge();
 renderQualityChip();
 applyModelCapabilities();
 updateModeUI();
+syncCanvasPreviewAspect();
 updateCanvasPreview();
 updateGenerateButtonState();
 fetchCreditBalance();
