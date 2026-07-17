@@ -169,6 +169,7 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-item.failed{border-color:rgba(255,32,64,.5);background:rgba(255,32,64,.06)}
 .gen-q-item.done{border-color:rgba(60,255,176,.4)}
 .gen-q-ring{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
+.gen-q-thumb{width:34px;height:34px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2);animation:workspaceIn .25s var(--ease-spring) both}
 .gen-q-ring::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:brandRingSpin 3.2s linear infinite}
 .gen-q-item.done .gen-q-ring::before,.gen-q-item.failed .gen-q-ring::before{animation:none;background:none}
 .gen-q-ring-m{font-family:var(--disp);font-size:.72rem;font-weight:900;color:#ff1638;position:relative;z-index:1}
@@ -368,7 +369,7 @@ button{background:none;border:none;cursor:pointer}
 input[type=file].hidden-input{display:none}
 
 /* ============ BOTTOM SHEETS (model / ratio / resolution / duration) ============ */
-.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:120;display:none;backdrop-filter:blur(3px)}
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:120;display:none}
 .sheet-overlay.show{display:block;animation:fadeIn .18s ease}
 .sheet{
   position:fixed;left:0;right:0;bottom:0;z-index:130;max-width:640px;margin:0 auto;
@@ -498,6 +499,8 @@ input[type=file].hidden-input{display:none}
 .hist-tab{flex:1;padding:9px 16px;border:none;background:transparent;color:var(--text-dim,#999);font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:9px;cursor:pointer;transition:all .15s}
 .hist-tab.active{background:var(--accent);color:#fff}
 .history-list{flex:1;overflow-y:auto;padding:0 18px 24px;display:flex;flex-direction:column;gap:10px}
+.history-list.grid-mode{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px 24px}
+.hist-grid-item{position:relative;aspect-ratio:1/1;border-radius:14px;background-size:cover;background-position:center;background-color:var(--card2);border:1px solid var(--border);cursor:pointer;animation:sheetRowIn .28s var(--ease-out-soft) both}
 .history-empty{text-align:center;color:var(--text-dim,#999);font-size:13px;padding:40px 0 24px}
 .hist-item{display:flex;gap:12px;padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
 .hist-thumb{width:56px;height:56px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010);background-size:cover;background-position:center;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center}
@@ -510,7 +513,7 @@ input[type=file].hidden-input{display:none}
 .hist-act:active{transform:scale(.92)}
 
 /* CONFIRM DIALOG */
-.confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
+.confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
 .confirm-backdrop.show{opacity:1;pointer-events:auto}
 .confirm-box{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.94);width:min(320px,86vw);background:var(--card,#161616);border:1px solid var(--border);border-radius:18px;padding:20px;z-index:901;opacity:0;pointer-events:none;transition:all .2s var(--ease-out-soft,ease)}
 .confirm-box.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
@@ -523,7 +526,7 @@ input[type=file].hidden-input{display:none}
 .img-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:950;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;padding:24px}
 .img-preview-overlay.show{opacity:1;pointer-events:auto}
 .img-preview-overlay img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
-.prompt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:149;opacity:0;pointer-events:none;transition:opacity .22s ease}
+.prompt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:149;opacity:0;pointer-events:none;transition:opacity .22s ease}
 .prompt-backdrop.show{opacity:1;pointer-events:auto}
 .prompt-overlay{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:min(640px,88vh);height:auto;background:var(--bg);z-index:150;display:flex;flex-direction:column;opacity:0;transform:translateY(28px);transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1);pointer-events:none;overflow:hidden;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px -20px rgba(0,0,0,.7),0 -1px 0 rgba(255,255,255,.05) inset}
 .prompt-overlay.show{opacity:1;transform:translateY(0);pointer-events:auto}
@@ -1014,13 +1017,38 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .gen-btn{min-height:64px;border-radius:23px;background:linear-gradient(180deg,#ff2142 0%,#bf001e 100%)!important;box-shadow:0 18px 38px -16px rgba(255,32,64,.95),0 1px 0 rgba(255,255,255,.2) inset!important;position:relative;overflow:hidden}
 .gen-txt{position:relative;z-index:1}
 
-.sheet-overlay{z-index:120;background:rgba(0,0,0,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.sheet-overlay{z-index:120;background:rgba(0,0,0,.68)}
 .sheet{z-index:130;border-radius:28px 28px 0 0;max-height:76vh;background:linear-gradient(180deg,#202020,#101010);box-shadow:0 -32px 80px -16px rgba(0,0,0,.85),0 -12px 46px -28px rgba(255,32,64,.45);animation:none}
 .sheet.show{animation:dreamSheetIn .48s var(--ease-pop) both}
 @keyframes dreamSheetIn{0%{transform:translateY(104%) scale(.98)}76%{transform:translateY(-8px) scale(1.005)}100%{transform:translateY(0) scale(1)}}
 .sheet-handle{width:44px;height:5px;background:rgba(255,255,255,.26)}
 .sheet-title{font-size:24px;padding-bottom:14px}
 .sheet-list{display:flex;flex-direction:column;flex-wrap:nowrap;gap:8px}
+
+/* Scroll-wheel picker (Duration) — native momentum scroll + CSS snap does
+   all the physics; JS only reads which row ends up centered and fades the
+   others by distance, like an iOS/Android spinner. */
+.wheel-picker{position:relative;height:220px}
+.wheel-picker-band{
+  position:absolute;left:14px;right:14px;top:50%;height:48px;transform:translateY(-50%);
+  border-radius:14px;background:rgba(255,32,64,.08);
+  border-top:1px solid rgba(255,255,255,.14);border-bottom:1px solid rgba(255,255,255,.14);
+  pointer-events:none;z-index:1;
+}
+.wheel-picker-track{
+  height:100%;overflow-y:auto;scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:86px 0;
+}
+.wheel-picker-track::-webkit-scrollbar{display:none}
+.wheel-row{
+  height:48px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:600;color:var(--text-faint);
+  transition:font-size .16s var(--ease-out-soft),color .16s var(--ease-out-soft),opacity .16s var(--ease-out-soft),transform .16s var(--ease-out-soft);
+  cursor:pointer;user-select:none;
+}
+.wheel-row.wheel-center{font-size:24px;font-weight:800;color:#fff}
+.wheel-row.wheel-near{font-size:19px;color:var(--text-dim);opacity:.75}
+.wheel-row.wheel-far{opacity:.35}
 .sheet-list .sheet-opt{scroll-snap-align:start;flex:0 0 auto;width:100%;min-width:0}
 .sheet-opt{min-height:58px;border-radius:18px;padding:13px 14px;background:rgba(255,255,255,.018)}
 .sheet-opt:hover{background:rgba(255,255,255,.055)}.sheet-opt.selected{background:linear-gradient(90deg,rgba(255,32,64,.22),rgba(255,32,64,.055));box-shadow:0 0 0 1px rgba(255,32,64,.24) inset}
@@ -1222,7 +1250,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
       <div class="canvas-result-box" id="canvasResultBox" style="display:none">
         <div class="canvas-result-actions" id="canvasResultActions">
-          <a class="result-btn primary" id="canvasDownloadBtn" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+          <a class="result-btn primary" id="canvasDownloadBtn" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
           <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
           <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
           <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico">ℹ</span><span class="rb-lbl">Details</span></button>
@@ -1360,12 +1388,20 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
 <!-- HISTORY — FULLSCREEN PAGE (own page, not a floating sheet) -->
 <div class="history-page" id="historyPage">
+  <div class="modebar" role="tablist" aria-label="Filter by type">
+    <div class="mode-btn active" data-type="video" onclick="setHistTypeFilter('history','video',this)" role="tab">VIDEO</div>
+    <div class="mode-btn" data-type="image" onclick="setHistTypeFilter('history','image',this)" role="tab">IMAGE</div>
+  </div>
   <div class="history-list" id="historyList"></div>
   <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
 </div>
 
 <!-- ARCHIVE — FULLSCREEN PAGE, entirely separate from History (own page, not a floating sheet) -->
 <div class="history-page" id="archivePage">
+  <div class="modebar" role="tablist" aria-label="Filter by type">
+    <div class="mode-btn active" data-type="video" onclick="setHistTypeFilter('archive','video',this)" role="tab">VIDEO</div>
+    <div class="mode-btn" data-type="image" onclick="setHistTypeFilter('archive','image',this)" role="tab">IMAGE</div>
+  </div>
   <div class="history-list" id="archiveList"></div>
   <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
 </div>
@@ -1503,6 +1539,10 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="sheet-handle"></div>
   <div class="sheet-title" id="sheetTitle">Aspect Ratio</div>
   <div class="sheet-list" id="sheetList"></div>
+  <div class="wheel-picker" id="wheelPicker" style="display:none">
+    <div class="wheel-picker-band"></div>
+    <div class="wheel-picker-track" id="wheelTrack"></div>
+  </div>
 </div>
 
 <!-- UPLOAD SHEET (media grid) -->
@@ -1562,7 +1602,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </div>
   </div>
   <div class="result-footer">
-    <a class="result-btn primary" id="downloadBtnFull" href="#" download><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+    <a class="result-btn primary" id="downloadBtnFull" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
     <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
     <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
     <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
@@ -1999,6 +2039,7 @@ var sheetDefs = {
   },
   duration: {
     title: 'Duration',
+    wheel: true,
     // Seedance 2.0 only accepts these exact durations (not a continuous range)
     options: [4,5,6,8,10,12,15].map(function(s){ return s+'s'; }),
     desc: function(v){ return durDesc(parseInt(v,10)); },
@@ -2028,34 +2069,93 @@ function openSheet(key) {
   var def = sheetDefs[key];
   document.getElementById('sheetTitle').textContent = def.title;
   var list = document.getElementById('sheetList');
-  list.innerHTML = '';
+  var wheel = document.getElementById('wheelPicker');
   var disabledSet = def.disabled || [];
-  // Show only what this model/tier actually supports — no greyed-out
-  // options from other tiers stacked in the same list.
   var visibleOptions = def.options.filter(function(opt) { return disabledSet.indexOf(opt) === -1; });
-  visibleOptions.forEach(function(opt, i) {
-    var row = document.createElement('div');
-    row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '');
-    row.style.animation = 'sheetRowIn .2s var(--ease-out-soft) both';
-    row.style.animationDelay = (i * 12) + 'ms';
-    var descTxt = def.desc ? def.desc(opt) : '';
-    row.innerHTML = '<div class="sheet-opt-main"><span>' + opt + '</span>' +
-      (descTxt ? '<span class="sheet-opt-desc">' + descTxt + '</span>' : '') +
-      '</div><span class="sheet-opt-check"></span>';
-    row.onclick = function() {
-      def.set(opt);
-      closeSheet();
-    };
-    list.appendChild(row);
-  });
+
+  if (def.wheel) {
+    list.style.display = 'none';
+    wheel.style.display = 'block';
+    renderWheelPicker(def, visibleOptions);
+  } else {
+    wheel.style.display = 'none';
+    list.style.display = 'flex';
+    list.innerHTML = '';
+    // Show only what this model/tier actually supports — no greyed-out
+    // options from other tiers stacked in the same list.
+    visibleOptions.forEach(function(opt, i) {
+      var row = document.createElement('div');
+      row.className = 'sheet-opt' + (opt === def.get() ? ' selected' : '');
+      row.style.animation = 'sheetRowIn .2s var(--ease-out-soft) both';
+      row.style.animationDelay = (i * 12) + 'ms';
+      var descTxt = def.desc ? def.desc(opt) : '';
+      row.innerHTML = '<div class="sheet-opt-main"><span>' + opt + '</span>' +
+        (descTxt ? '<span class="sheet-opt-desc">' + descTxt + '</span>' : '') +
+        '</div><span class="sheet-opt-check"></span>';
+      row.onclick = function() {
+        def.set(opt);
+        closeSheet();
+      };
+      list.appendChild(row);
+    });
+  }
+
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById('sheet').classList.add('show');
   setModelSelectOpen(false);
   requestAnimationFrame(function() {
+    if (def.wheel) return; // wheel picker scrolls itself into position on render
     var sel = list.querySelector('.sheet-opt.selected');
     if (sel) sel.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
   });
 }
+
+// ══════════ WHEEL PICKER (Duration) ══════════
+var wheelScrollTimer = null;
+function renderWheelPicker(def, options) {
+  var track = document.getElementById('wheelTrack');
+  track.innerHTML = options.map(function(opt) {
+    return '<div class="wheel-row" data-val="' + opt + '">' + opt + '</div>';
+  }).join('');
+  var rows = track.querySelectorAll('.wheel-row');
+  rows.forEach(function(row) {
+    row.onclick = function() {
+      var idx = Array.prototype.indexOf.call(rows, row);
+      track.scrollTo({ top: idx * 48, behavior: 'smooth' });
+    };
+  });
+
+  function applyHighlight() {
+    var centerIdx = Math.round(track.scrollTop / 48);
+    rows.forEach(function(row, i) {
+      row.classList.remove('wheel-center', 'wheel-near', 'wheel-far');
+      var dist = Math.abs(i - centerIdx);
+      if (dist === 0) row.classList.add('wheel-center');
+      else if (dist === 1) row.classList.add('wheel-near');
+      else row.classList.add('wheel-far');
+    });
+    return centerIdx;
+  }
+
+  track.onscroll = function() {
+    applyHighlight();
+    clearTimeout(wheelScrollTimer);
+    // Momentum scrolling fires many scroll events — only commit the value
+    // once scrolling has actually settled (feels the same as a native
+    // iOS/Android wheel picker committing on release+snap).
+    wheelScrollTimer = setTimeout(function() {
+      var idx = applyHighlight();
+      idx = Math.max(0, Math.min(options.length - 1, idx));
+      def.set(options[idx]);
+    }, 120);
+  };
+
+  // Jump straight to the currently-selected value, no animation on open.
+  var startIdx = Math.max(0, options.indexOf(def.get()));
+  track.scrollTop = startIdx * 48;
+  requestAnimationFrame(applyHighlight);
+}
+
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');
@@ -2455,19 +2555,16 @@ function updateCanvasPreview() {
   // This just shows a reference/input preview, not a generated result —
   // so any leftover result action buttons / ref thumbs should be hidden.
   hideCanvasResultUI();
-  var firstFrame = frames.first && frames.first.previewUrl;
-  var firstImage = media.image[0] && media.image[0].previewUrl;
-  var src = firstFrame || firstImage;
-  if (src) {
-    vidEl.pause && vidEl.pause();
-    vidEl.style.display = 'none';
-    imgEl.src = src;
-    imgEl.style.display = 'block';
-    wrap.style.display = 'flex';
-    document.getElementById('emptyState').style.display = 'none';
-  } else {
-    wrap.style.display = 'none';
-  }
+  // A full-width canvas preview of the reference image/video used to take
+  // over most of the screen the moment you uploaded anything — the small
+  // upload strip (with its own thumbnail + remove-x) already shows what's
+  // attached, so this big duplicate was just eating space for nothing.
+  // Keep the empty state as the canvas's only look now, for every model.
+  vidEl.pause && vidEl.pause();
+  vidEl.style.display = 'none';
+  imgEl.style.display = 'none';
+  wrap.style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
 }
 function showCanvasResult(videoUrl, imageUrl) {
   var wrap = document.getElementById('canvasPreview');
@@ -3041,6 +3138,34 @@ function classifyFetchError(err, prefix) {
 }
 
 // ══════════ ERROR ══════════
+// The plain <a download href="..."> pattern only actually triggers a
+// download for same-origin URLs — for a cross-origin URL (which is exactly
+// what every result is now, since it's a Dropbox link) browsers silently
+// ignore the `download` attribute and just navigate to the file instead.
+// Fetching it as a blob first sidesteps that entirely.
+function downloadResult(url, suggestedName) {
+  if (!url) return;
+  showToast('Menyiapkan download…');
+  fetchWithTimeout(url, {}, 60000)
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+    .then(function(blob) {
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = suggestedName || ('mii-ai-video-' + Date.now());
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 10000);
+    })
+    .catch(function(err) {
+      showError(classifyFetchError(err, 'Download gagal'));
+      // Last-resort fallback: at least open it in a new tab so the user can
+      // long-press/save manually instead of the button doing nothing.
+      window.open(url, '_blank');
+    });
+}
+
 function showError(msg) {
   var box = document.getElementById('errorBox');
   box.textContent = msg;
@@ -3083,7 +3208,8 @@ function refreshQueueBadge() {
 function genQueueItemHtml(taskId, title) {
   return (
     '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
-      '<div class="gen-q-ring"><span class="gen-q-ring-m">M</span></div>' +
+      '<div class="gen-q-ring" id="genqRing_' + taskId + '"><span class="gen-q-ring-m">M</span></div>' +
+      '<img class="gen-q-thumb" id="genqThumb_' + taskId + '" style="display:none" alt="">' +
       '<div class="gen-q-info">' +
         '<div class="gen-q-title">' + escapeHtml(title) + '</div>' +
         '<div class="gen-q-stage" id="genqStage_' + taskId + '">Uploading Assets</div>' +
@@ -3332,7 +3458,24 @@ function pollQueueTask(taskId, opts) {
             if (e.stage) e.stage.textContent = 'Tersimpan di History';
             markDone();
             delete activeGens[taskId]; refreshQueueBadge();
-            showToastAction('Video selesai — tersimpan di History', 'Lihat', function() {
+            var isImageResult = !!imageUrl && !videoUrl;
+            var thumbEl = document.getElementById('genqThumb_' + taskId);
+            var ringEl = document.getElementById('genqRing_' + taskId);
+            if (thumbEl && ringEl) {
+              if (isImageResult) {
+                thumbEl.src = imageUrl;
+                thumbEl.style.display = 'block';
+                ringEl.style.display = 'none';
+              } else if (videoUrl) {
+                captureVideoThumbnail(videoUrl, function(dataUrl) {
+                  if (!dataUrl || !thumbEl.isConnected) return; // card may already be gone by the time this resolves
+                  thumbEl.src = dataUrl;
+                  thumbEl.style.display = 'block';
+                  ringEl.style.display = 'none';
+                });
+              }
+            }
+            showToastAction((isImageResult ? 'Gambar selesai' : 'Video selesai') + ' — tersimpan di History', 'Lihat', function() {
               if (rec) openHistoryItem(rec.id);
             });
             setTimeout(function() { var el = document.getElementById('genq_' + taskId); if (el) el.remove(); }, 3500);
@@ -3506,7 +3649,9 @@ function openResultOverlay(payload) {
     vEl.style.display = 'block'; vEl.src = videoUrl;
   }
 
-  document.getElementById('downloadBtnFull').href = mediaUrl;
+  var dlBtnFull = document.getElementById('downloadBtnFull');
+  dlBtnFull.setAttribute('data-url', mediaUrl);
+  dlBtnFull.setAttribute('data-filename', 'mii-ai-video-' + Date.now() + (isImage ? '.png' : '.mp4'));
 
   document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
 
@@ -3866,6 +4011,11 @@ function reopenLastResult() {
   openHistoryItem(list[0].id);
 }
 
+function buildHistGridItem(r) {
+  var bg = r.thumb || r.imageUrl || '';
+  var style = bg ? ' style="background-image:url(\'' + bg + '\')"' : '';
+  return '<div class="hist-grid-item"' + style + ' onclick="openHistoryItem(\'' + r.id + '\')"></div>';
+}
 function buildHistItemRow(r) {
   var thumbStyle = r.thumb ? ' style="background-image:url(\'' + r.thumb + '\')"' : '';
   var thumbGlyph = r.thumb ? '' : (r.videoUrl ? '\u25b6' : (r.imageUrl ? '\u25a4' : ''));
@@ -3883,19 +4033,42 @@ function buildHistItemRow(r) {
     '</div>' +
   '</div>';
 }
-function renderHistTypeList(archived, listId, emptyId) {
+// Video and image results used to render mixed together in one
+// chronological feed — Video/Image tabs (mirroring the main generate
+// page's own mode toggle) keep them properly separated instead.
+var historyTypeFilter = 'video';
+var archiveTypeFilter = 'video';
+function setHistTypeFilter(page, type, el) {
+  if (page === 'history') historyTypeFilter = type; else archiveTypeFilter = type;
+  var bar = el.parentElement;
+  bar.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  if (page === 'history') renderHistoryList(); else renderArchiveList();
+}
+function recordMediaType(r) {
+  return r.videoUrl ? 'video' : 'image';
+}
+function renderHistTypeList(archived, listId, emptyId, typeFilter) {
   var el = document.getElementById(listId);
   var empty = document.getElementById(emptyId);
   if (!el || !empty) return; // that page's markup isn't present — nothing to refresh
-  var list = loadHistory().filter(function(r) { return archived ? !!r.archived : !r.archived; });
-  if (list.length === 0) { el.innerHTML = ''; empty.style.display = 'block'; return; }
+  var list = loadHistory().filter(function(r) {
+    return (archived ? !!r.archived : !r.archived) && recordMediaType(r) === typeFilter;
+  });
+  el.classList.toggle('grid-mode', typeFilter === 'image');
+  if (list.length === 0) {
+    el.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = (archived ? 'No archived ' : 'No ') + (typeFilter === 'video' ? 'videos' : 'images') + ' yet';
+    return;
+  }
   empty.style.display = 'none';
-  el.innerHTML = list.map(buildHistItemRow).join('');
+  el.innerHTML = list.map(typeFilter === 'image' ? buildHistGridItem : buildHistItemRow).join('');
 }
-function renderHistoryList() { renderHistTypeList(false, 'historyList', 'historyEmpty'); }
+function renderHistoryList() { renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter); }
 function renderArchiveList() {
-  renderHistTypeList(true, 'archiveList', 'archiveEmpty');
-  refreshArchiveFromServer(function() { renderHistTypeList(true, 'archiveList', 'archiveEmpty'); });
+  renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter);
+  refreshArchiveFromServer(function() { renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter); });
 }
 function openHistoryItem(id) {
   var r = findHistoryRecord(id);
