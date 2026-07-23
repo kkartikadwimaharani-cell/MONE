@@ -12,6 +12,8 @@ import subprocess
 import hashlib
 import base64
 import hmac
+import tempfile
+import math
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
@@ -2522,7 +2524,266 @@ def _segmind_extract_error(resp):
     return f'[Segmind {resp.status_code}] {msg}'
 
 
-def _run_segmind_task(task_id, endpoint, body, output_type='video'):
+# ── Motion Control (user-facing name for the "Kling Swap" / Kling O3 ───────
+# Video-to-Video Edit feature) — mandatory video metadata read, validation
+# and auto-resize helper. Every Motion Control generate request goes
+# through validateVideo() below before it's allowed to reach Segmind, so a
+# video that doesn't meet Kling O3's width requirement (700-4553px) never
+# gets sent in the first place — it's auto-resized first.
+MOTION_CONTROL_MIN_WIDTH = 700
+MOTION_CONTROL_MAX_WIDTH = 4553
+MOTION_CONTROL_MIN_DURATION = 3
+MOTION_CONTROL_MAX_DURATION = 15
+MOTION_CONTROL_RATIOS = ('16:9', '9:16', '1:1')
+
+
+def _ffprobe_metadata(path):
+    """Read width/height/duration/fps/rotation/codec/bitrate from a local
+    video file using ffprobe. Raises RuntimeError (Indonesian message) on
+    failure so callers can surface it directly to the user."""
+    try:
+        out = subprocess.check_output(
+            ['ffprobe', '-v', 'error', '-print_format', 'json',
+             '-show_format', '-show_streams', path],
+            timeout=60, stderr=subprocess.STDOUT,
+        )
+    except Exception as e:
+        raise RuntimeError(f'FFprobe gagal membaca metadata video: {e}')
+    try:
+        data = json.loads(out.decode('utf-8', errors='replace'))
+    except Exception as e:
+        raise RuntimeError(f'FFprobe mengembalikan output tidak valid: {e}')
+
+    video_stream = next((s for s in data.get('streams', []) if s.get('codec_type') == 'video'), None)
+    if not video_stream:
+        raise RuntimeError('File ini tidak memiliki video stream yang valid')
+
+    width = int(video_stream.get('width') or 0)
+    height = int(video_stream.get('height') or 0)
+
+    rotation = 0
+    try:
+        rotation = int((video_stream.get('tags') or {}).get('rotate', 0))
+    except (TypeError, ValueError):
+        rotation = 0
+    if not rotation:
+        for sd in (video_stream.get('side_data_list') or []):
+            if 'rotation' in sd:
+                try:
+                    rotation = int(sd.get('rotation') or 0)
+                except (TypeError, ValueError):
+                    rotation = 0
+
+    # Effective (post-rotation) width/height — a 90°/270°-rotated phone
+    # video reports its raw sensor dimensions, not what actually plays back.
+    eff_width, eff_height = width, height
+    if abs(rotation) in (90, 270):
+        eff_width, eff_height = height, width
+
+    fmt = data.get('format', {})
+    try:
+        duration = float(video_stream.get('duration') or fmt.get('duration') or 0)
+    except (TypeError, ValueError):
+        duration = 0.0
+
+    fps = 0.0
+    rate = video_stream.get('avg_frame_rate') or video_stream.get('r_frame_rate') or '0/1'
+    try:
+        num, den = rate.split('/')
+        num, den = float(num), float(den)
+        fps = round(num / den, 3) if den else 0.0
+    except Exception:
+        fps = 0.0
+
+    try:
+        bitrate = int(video_stream.get('bit_rate') or fmt.get('bit_rate') or 0)
+    except (TypeError, ValueError):
+        bitrate = 0
+
+    g = math.gcd(eff_width, eff_height) if eff_width and eff_height else 1
+    aspect_ratio_raw = f'{eff_width // g}:{eff_height // g}' if (eff_width and eff_height and g) else ''
+
+    return {
+        'width': width, 'height': height,
+        'effective_width': eff_width, 'effective_height': eff_height,
+        'duration': round(duration, 2), 'fps': fps, 'rotation': rotation,
+        'codec': video_stream.get('codec_name') or '', 'bitrate': bitrate,
+        'aspect_ratio_raw': aspect_ratio_raw,
+        'orientation': 'portrait' if eff_height > eff_width else ('landscape' if eff_width > eff_height else 'square'),
+    }
+
+
+def _snap_aspect_ratio(raw_ratio, allowed=MOTION_CONTROL_RATIOS):
+    """Snap a raw wxh-derived ratio string (e.g. '19:32') to the closest
+    ratio Kling O3 actually accepts (16:9 / 9:16 / 1:1)."""
+    if raw_ratio in allowed:
+        return raw_ratio
+    try:
+        w, h = raw_ratio.split(':')
+        val = float(w) / float(h)
+    except Exception:
+        return '16:9'
+    targets = {'16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1.0}
+    return min(targets, key=lambda k: abs(targets[k] - val))
+
+
+def _download_to_temp(url, suffix='.mp4'):
+    resp = requests_lib.get(url, timeout=120, stream=True)
+    if resp.status_code >= 400:
+        raise RuntimeError(f'Gagal download video sumber dari Dropbox ({resp.status_code})')
+    fd, path = tempfile.mkstemp(suffix=suffix, prefix='mc_src_')
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=262144):
+                if chunk:
+                    f.write(chunk)
+    except Exception:
+        if os.path.exists(path):
+            os.remove(path)
+        raise
+    return path
+
+
+def _ffmpeg_resize_video(src_path, target_width):
+    """Resize a video so its width == target_width (clamped into Kling O3's
+    700-4553px window), height auto-computed via -2 to preserve aspect
+    ratio and stay even (required by libx264). Rounds DOWN to the nearest
+    even number when target_width is odd — rounding up would push a
+    max-width clamp (4553, odd) to 4554, one pixel past the provider's
+    actual upper bound."""
+    if target_width % 2:
+        target_width -= 1
+    dst_path = src_path + f'.resized_{target_width}.mp4'
+    cmd = ['ffmpeg', '-y', '-i', src_path, '-vf', f"scale={target_width}:-2",
+           '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac',
+           '-movflags', '+faststart', dst_path]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=300)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'FFmpeg gagal resize video: {(e.stderr or b"").decode(errors="replace")[:300]}')
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('FFmpeg resize video timeout (video terlalu besar/panjang)')
+    return dst_path
+
+
+def validateVideo(dropbox_url):
+    """Motion Control's mandatory video-validation helper (per spec: every
+    Motion Control generate request must go through this). Downloads the
+    source video from its Dropbox URL, reads real metadata via ffprobe,
+    validates/clamps it against Kling O3's known limits (width 700-4553px,
+    duration 3-15s, aspect ratio 16:9/9:16/1:1), auto-resizes via ffmpeg
+    when the width is out of range, re-uploads the resized file back to
+    Dropbox, and returns everything needed both to build the provider
+    request and to populate the UI / debug page.
+
+    Raises RuntimeError with a user-friendly Indonesian message on failure.
+    Never sends a local path or a non-Dropbox URL to the provider — the
+    returned dropbox_url_processed is always a valid Dropbox direct link.
+    """
+    started = time.time()
+    local_path = None
+    resized_path = None
+    try:
+        local_path = _download_to_temp(dropbox_url, suffix='.mp4')
+        meta = _ffprobe_metadata(local_path)
+
+        eff_w, eff_h = meta['effective_width'], meta['effective_height']
+        if not eff_w or not eff_h:
+            raise RuntimeError('Tidak bisa membaca resolusi video. Coba upload ulang video referensi.')
+
+        aspect_ratio = _snap_aspect_ratio(meta['aspect_ratio_raw'])
+        duration = meta['duration']
+
+        resized = False
+        final_w, final_h = eff_w, eff_h
+        final_path = local_path
+
+        if eff_w < MOTION_CONTROL_MIN_WIDTH or eff_w > MOTION_CONTROL_MAX_WIDTH:
+            target_w = max(MOTION_CONTROL_MIN_WIDTH, min(eff_w, MOTION_CONTROL_MAX_WIDTH))
+            resized_path = _ffmpeg_resize_video(local_path, target_w)
+            resized = True
+            final_path = resized_path
+            try:
+                processed_meta = _ffprobe_metadata(resized_path)
+                final_w = processed_meta['effective_width'] or target_w
+                final_h = processed_meta['effective_height'] or eff_h
+            except Exception:
+                final_w, final_h = target_w, eff_h
+
+        duration_clamped = (max(MOTION_CONTROL_MIN_DURATION, min(MOTION_CONTROL_MAX_DURATION, duration))
+                             if duration else MOTION_CONTROL_MIN_DURATION)
+
+        dropbox_url_processed = dropbox_url
+        if resized:
+            with open(final_path, 'rb') as f:
+                file_bytes = f.read()
+            dropbox_url_processed = _dropbox_upload_and_link(file_bytes, f'motion-control-{uuid.uuid4().hex}.mp4')
+
+        result = {
+            'original': {
+                'width': meta['width'], 'height': meta['height'],
+                'duration': meta['duration'], 'fps': meta['fps'],
+                'aspect_ratio': meta['aspect_ratio_raw'] or aspect_ratio,
+                'rotation': meta['rotation'], 'codec': meta['codec'], 'bitrate': meta['bitrate'],
+            },
+            'processed': {
+                'width': final_w, 'height': final_h,
+                'duration': duration_clamped, 'aspect_ratio': aspect_ratio,
+            },
+            'dropbox_url_original': dropbox_url,
+            'dropbox_url_processed': dropbox_url_processed,
+            'resized': resized,
+            'elapsed_ms': round((time.time() - started) * 1000),
+        }
+        _aivideo_debug_set(
+            'motion_control',
+            original_width=meta['width'], original_height=meta['height'],
+            original_duration=meta['duration'], original_fps=meta['fps'],
+            original_aspect_ratio=meta['aspect_ratio_raw'] or aspect_ratio,
+            processed_width=final_w, processed_height=final_h,
+            processed_duration=duration_clamped, processed_aspect_ratio=aspect_ratio,
+            dropbox_url_original=dropbox_url, dropbox_url_processed=dropbox_url_processed,
+            resized=resized, elapsed_ms=result['elapsed_ms'], provider='segmind (kling-o3)',
+            error=None,
+        )
+        return result
+    except RuntimeError as e:
+        _aivideo_debug_set('motion_control', error=str(e), at_step='validateVideo')
+        raise
+    except Exception as e:
+        friendly = f'Gagal memvalidasi video: {e}'
+        _aivideo_debug_set('motion_control', error=friendly, at_step='validateVideo')
+        raise RuntimeError(friendly)
+    finally:
+        for p in (local_path, resized_path):
+            if p and os.path.exists(p):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+
+
+def _friendly_motion_control_error(raw_msg):
+    """Translate a raw provider error (e.g. Segmind's width validation
+    message) into an easy-to-understand Indonesian message. Used as a
+    last-resort safety net — validateVideo() should normally catch this
+    before the request ever reaches the provider."""
+    if not raw_msg:
+        return raw_msg
+    low = raw_msg.lower()
+    if 'width' in low and 'px' in low:
+        return (f'Video terlalu kecil atau terlalu besar. Lebar video harus antara '
+                 f'{MOTION_CONTROL_MIN_WIDTH}px dan {MOTION_CONTROL_MAX_WIDTH}px. '
+                 f'Video sedang diproses ulang agar sesuai — silakan coba generate lagi.')
+    if 'duration' in low and ('should' in low or 'must' in low or 'range' in low):
+        return (f'Durasi video di luar batas yang didukung ({MOTION_CONTROL_MIN_DURATION}-'
+                 f'{MOTION_CONTROL_MAX_DURATION} detik). Coba video lain atau potong durasinya.')
+    if 'prediction failed' in low:
+        return 'Video sedang diproses agar sesuai dengan persyaratan provider. Silakan coba generate lagi.'
+    return raw_msg
+
+
+def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -2646,6 +2907,12 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video'):
         if upstream_error or not result_bytes:
             kind = 'gambar' if is_image else 'video'
             msg = upstream_error or f'Segmind tidak mengembalikan {kind} (response kosong)'
+            if family == 'klingswap':
+                # Never show the raw provider error (e.g. "Prediction failed:
+                # The video width should not be less than 700px...") straight
+                # to the user — translate it into plain Indonesian. The raw
+                # message is still kept in the request log for debugging.
+                msg = _friendly_motion_control_error(msg)
             _aivideo_last_error('segmind', msg)
             _aivideo_log_request(
                 provider='segmind', endpoint=endpoint, status_code=resp.status_code,
@@ -2774,7 +3041,7 @@ def aivideo_generate():
     family = str(payload.get('family', 'seedance')).lower()
 
     prompt = str(payload.get('prompt', '')).strip()
-    if not prompt:
+    if not prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
     image_urls = [u for u in (payload.get('image_urls') or []) if u][:9]
@@ -2885,28 +3152,46 @@ def aivideo_generate():
             body['negative_prompt'] = negative_prompt
 
     elif family == 'klingswap':
-        # "Character swap" mode — Kling O3 Video-to-Video Edit. Needs an
-        # existing video to edit; a character/object reference image
-        # (frontal_image_url) is what actually triggers a face/character
-        # swap via Kling's @Element injection, everything else in image_urls
-        # is treated as @Image-style style/scene reference only.
+        # "Motion Control" in the UI — Kling O3 Video-to-Video Edit under
+        # the hood. Needs an existing video to edit; a character/object
+        # reference image (frontal_image_url) is what actually triggers a
+        # face/character swap via Kling's @Element injection, everything
+        # else in image_urls is treated as @Image-style style/scene
+        # reference only.
         video_url = video_urls[0] if video_urls else ''
         if not video_url:
-            return jsonify({'error': 'Kling Swap butuh 1 video sumber untuk diedit'}), 400
+            return jsonify({'error': 'Motion Control butuh 1 video sumber untuk diedit'}), 400
         swap_mode = str(payload.get('swap_mode') or model_key or 'std').lower()
         if swap_mode not in KLING_SWAP_MODES:
             swap_mode = 'std'
         endpoint = KLING_SWAP_ENDPOINT
 
+        # Every Motion Control request is mandatory-routed through
+        # validateVideo(): reads real metadata (width/height/duration/fps/
+        # aspect ratio) via FFprobe, auto-resizes via FFmpeg if the width is
+        # outside Kling O3's 700-4553px window, and re-uploads the result to
+        # Dropbox. Duration/aspect ratio are then auto-filled from the
+        # (possibly resized) video, not left to a client-sent default.
         try:
-            duration = int(payload.get('duration', 5))
-        except (TypeError, ValueError):
-            duration = 5
+            mc = validateVideo(video_url)
+        except RuntimeError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            app.logger.error('[ai-video][motion-control] validateVideo unexpected error: %s', e)
+            return jsonify({'error': 'Gagal memproses video referensi. Coba upload ulang.'}), 400
+
+        video_url = mc['dropbox_url_processed']
+        duration = int(round(mc['processed']['duration']))
         duration = max(KLING_SWAP_DURATION_RANGE[0], min(KLING_SWAP_DURATION_RANGE[1], duration))
-        aspect_ratio = aspect_ratio_in if aspect_ratio_in in KLING_SWAP_RATIOS else '16:9'
+        aspect_ratio = mc['processed']['aspect_ratio']
+
+        # Prompt is optional for Motion Control — the reference video (and
+        # character image, if given) already carries most of the intent.
+        # Never send Segmind an empty prompt string though.
+        effective_prompt = prompt or 'Apply the reference character and style naturally onto the video, preserving the original background, camera movement, and motion.'
 
         body = {
-            'prompt': prompt,
+            'prompt': effective_prompt,
             'video_url': video_url,
             'mode': swap_mode,
             'duration': str(duration),
@@ -3003,7 +3288,7 @@ def aivideo_generate():
     else:
         return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini. '
                                   f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Kling 3.0 (STANDARD/PRO), '
-                                  f'Kling Swap (STD/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
+                                  f'Motion Control (STD/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
                                   f'GPT Image 2 (LOW/STANDARD/HIGH), Seedream 5.0 Pro, dan Flux (SCHNELL/DEV/PRO).'}), 501
 
     output_type = 'image' if family in ('nanobanana', 'gptimage', 'seedream', 'flux') else 'video'
@@ -3016,7 +3301,7 @@ def aivideo_generate():
         }
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
                      task_id, family, model_key, endpoint)
-    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type), daemon=True).start()
+    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family), daemon=True).start()
 
     estimated_time = (duration * 12) if duration else 20
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
@@ -3107,6 +3392,31 @@ def aivideo_upload():
         _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
+
+
+@app.route('/api/aivideo/motion-control/analyze', methods=['POST'])
+def aivideo_motion_control_analyze():
+    """Motion Control (Kling Swap) — called right after a reference video
+    finishes uploading to Dropbox. Runs the video through validateVideo()
+    immediately (metadata read + auto-resize if needed) so the UI can
+    auto-fill and lock resolution/duration/aspect-ratio before the user
+    even taps Generate, instead of only discovering a problem at generate
+    time. Uses the exact same helper aivideo_generate() uses for klingswap,
+    so what the UI shows always matches what will actually be sent."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    url = str(payload.get('url') or '').strip()
+    if not url:
+        return jsonify({'error': 'URL video tidak ditemukan'}), 400
+    try:
+        mc = validateVideo(url)
+        return jsonify({'ok': True, **mc})
+    except RuntimeError as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+    except Exception as e:
+        app.logger.error('[ai-video][motion-control][analyze] unexpected error: %s', e)
+        return jsonify({'ok': False, 'error': 'Gagal membaca metadata video. Coba upload ulang.'}), 400
 
 
 @app.route('/api/aivideo/upload/forget', methods=['POST'])
@@ -3243,6 +3553,7 @@ def ai_video_debug_clear():
         _AIVIDEO_DEBUG['last_request'] = None
         _AIVIDEO_DEBUG['last_segmind_response'] = None
         _AIVIDEO_DEBUG['last_error'] = None
+        _AIVIDEO_DEBUG['motion_control'] = None
     with _AIVIDEO_REQUEST_LOG_LOCK:
         _AIVIDEO_REQUEST_LOG.clear()
 
@@ -3267,6 +3578,7 @@ def ai_video_debug_page():
         last_request=snap.get('last_request'),
         last_segmind_response=snap.get('last_segmind_response'),
         last_error=snap.get('last_error'),
+        motion_control=snap.get('motion_control'),
         request_log=log['entries'],
         request_log_total=log['total'],
         request_log_errors=log['errors'],
