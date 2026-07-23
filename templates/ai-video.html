@@ -344,6 +344,16 @@ button{background:none;border:none;cursor:pointer}
 .chip:active{border-color:var(--border2)}
 .chip-car{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4.5px solid var(--text-faint)}
 
+/* Motion Control — auto-detected video metadata panel + locked chip state */
+.mc-meta-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:1px;margin-bottom:8px}
+.mc-meta-row::-webkit-scrollbar{display:none}
+.mc-meta-chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 13px;border-radius:12px;background:var(--btn);border:1px solid var(--border);flex-shrink:0;white-space:nowrap}
+.mc-meta-chip .mc-meta-k{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-faint);text-transform:uppercase}
+.mc-meta-chip .mc-meta-v{font-size:14px;font-weight:700;color:var(--text)}
+.mc-meta-chip.mc-resized .mc-meta-v{color:#ff3c5a}
+.chip.mc-locked{position:relative;opacity:.6;pointer-events:none}
+.chip.mc-locked::after{content:'🔒';font-size:11px;margin-left:2px}
+
 /* Qty + Generate */
 .action-row{display:flex;align-items:center;gap:10px}
 .qty-stepper{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:14px;background:var(--btn);border:1px solid var(--border);flex-shrink:0}
@@ -379,8 +389,8 @@ input[type=file].hidden-input{display:none}
 }
 .sheet.show{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);margin:4px auto 14px}
-.sheet-title{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:0 2px 12px}
-.sheet-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;flex:1 1 128px;gap:2px;padding:14px 34px 14px 14px;border-radius:13px;font-size:18px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);transition:background .12s,color .12s}
+.sheet-title{font-family:var(--disp);font-size:17px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:0 2px 10px}
+.sheet-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;flex:1 1 108px;gap:2px;padding:11px 30px 11px 12px;border-radius:12px;font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);transition:background .12s,color .12s}
 .sheet-opt:active{background:rgba(255,255,255,.05)}
 .sheet-opt.selected{color:#fff;background:var(--accent-dim)}
 .sheet-opt-check{width:16px;height:16px;position:absolute;top:12px;right:12px;flex-shrink:0}
@@ -1010,8 +1020,8 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .prompt-btn{min-height:58px;border-radius:22px;padding:16px;background:linear-gradient(180deg,#262626,#1b1b1b);box-shadow:0 1px 0 rgba(255,255,255,.055) inset}
 .prompt-btn-icon{width:26px;height:26px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.04);color:var(--accent-hover);font-size:15px}.prompt-btn-txt{font-size:18px;font-weight:700;letter-spacing:.02em}
 
-.settings-row{gap:9px;padding-bottom:2px;scroll-snap-type:x proximity}
-.chip{scroll-snap-align:start;border-radius:16px;min-height:48px;padding:11px 14px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset;font-size:16px}
+.settings-row{gap:7px;padding-bottom:2px;scroll-snap-type:x proximity}
+.chip{scroll-snap-align:start;border-radius:13px;min-height:38px;padding:8px 11px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset;font-size:13px}
 .credit-chip{min-width:0;border-color:rgba(255,32,64,.42);background:linear-gradient(180deg,rgba(255,32,64,.16),rgba(255,32,64,.045));box-shadow:0 12px 28px -20px rgba(255,32,64,.7),0 1px 0 rgba(255,255,255,.06) inset}
 .action-row{gap:12px}.qty-stepper{min-height:58px;border-radius:20px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset}.qty-btn{width:26px;height:26px;border-radius:10px;background:rgba(255,255,255,.035)}
 .gen-btn{min-height:64px;border-radius:23px;background:linear-gradient(180deg,#ff2142 0%,#bf001e 100%)!important;box-shadow:0 18px 38px -16px rgba(255,32,64,.95),0 1px 0 rgba(255,255,255,.2) inset!important;position:relative;overflow:hidden}
@@ -1022,35 +1032,35 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.show{animation:dreamSheetIn .48s var(--ease-pop) both}
 @keyframes dreamSheetIn{0%{transform:translateY(104%) scale(.98)}76%{transform:translateY(-8px) scale(1.005)}100%{transform:translateY(0) scale(1)}}
 .sheet-handle{width:44px;height:5px;background:rgba(255,255,255,.26)}
-.sheet-title{font-size:24px;padding-bottom:14px}
-.sheet-list{display:flex;flex-direction:column;flex-wrap:nowrap;gap:8px}
+.sheet-title{font-size:18px;padding-bottom:10px}
+.sheet-list{display:flex;flex-direction:column;flex-wrap:nowrap;gap:6px}
 
 /* Scroll-wheel picker (Duration) — native momentum scroll + CSS snap does
    all the physics; JS only reads which row ends up centered and fades the
    others by distance, like an iOS/Android spinner. */
-.wheel-picker{position:relative;height:220px}
+.wheel-picker{position:relative;height:168px}
 .wheel-picker-band{
-  position:absolute;left:14px;right:14px;top:50%;height:48px;transform:translateY(-50%);
-  border-radius:14px;background:rgba(255,32,64,.08);
+  position:absolute;left:14px;right:14px;top:50%;height:40px;transform:translateY(-50%);
+  border-radius:12px;background:rgba(255,32,64,.08);
   border-top:1px solid rgba(255,255,255,.14);border-bottom:1px solid rgba(255,255,255,.14);
   pointer-events:none;z-index:1;
 }
 .wheel-picker-track{
   height:100%;overflow-y:auto;scroll-snap-type:y mandatory;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:86px 0;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:64px 0;
 }
 .wheel-picker-track::-webkit-scrollbar{display:none}
 .wheel-row{
-  height:48px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:600;color:var(--text-faint);
+  height:40px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;color:var(--text-faint);
   transition:font-size .16s var(--ease-out-soft),color .16s var(--ease-out-soft),opacity .16s var(--ease-out-soft),transform .16s var(--ease-out-soft);
   cursor:pointer;user-select:none;
 }
-.wheel-row.wheel-center{font-size:24px;font-weight:800;color:#fff}
-.wheel-row.wheel-near{font-size:19px;color:var(--text-dim);opacity:.75}
+.wheel-row.wheel-center{font-size:19px;font-weight:800;color:#fff}
+.wheel-row.wheel-near{font-size:15px;color:var(--text-dim);opacity:.75}
 .wheel-row.wheel-far{opacity:.35}
 .sheet-list .sheet-opt{scroll-snap-align:start;flex:0 0 auto;width:100%;min-width:0}
-.sheet-opt{min-height:58px;border-radius:18px;padding:13px 14px;background:rgba(255,255,255,.018)}
+.sheet-opt{min-height:44px;border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.018)}
 .sheet-opt:hover{background:rgba(255,255,255,.055)}.sheet-opt.selected{background:linear-gradient(90deg,rgba(255,32,64,.22),rgba(255,32,64,.055));box-shadow:0 0 0 1px rgba(255,32,64,.24) inset}
 
 .model-dock-overlay{position:fixed;inset:0;z-index:32;display:none;background:transparent}.model-dock-overlay.show{display:block}
@@ -1064,11 +1074,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .model-dock.show{display:block;animation:modelDockIn .46s var(--ease-pop) both}
 @keyframes modelDockIn{0%{opacity:0;transform:translateY(22px) scale(.94)}74%{opacity:1;transform:translateY(-5px) scale(1.01)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .model-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 12px}.model-dock-title{font-family:var(--disp);font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--accent-hover);text-transform:uppercase}.model-dock-close{width:30px;height:30px;border-radius:12px;background:rgba(255,255,255,.055);display:grid;place-items:center;color:#fff}
-.model-dock-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:12px}.model-dock-col{min-width:0;display:flex;flex-direction:column;gap:8px}.dock-label{font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:0 4px 2px}.dock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.25);color:#ff6d80;font-size:.58rem;font-weight:900;letter-spacing:.08em}
+.model-dock-grid{display:flex;flex-direction:column;gap:8px}.model-dock-col{min-width:0;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dock-label{grid-column:1/-1;font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:0 4px 2px}.dock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.25);color:#ff6d80;font-size:.58rem;font-weight:900;letter-spacing:.08em}
 .dock-feature-card,.dock-list-row{position:relative;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#202020,#151515);box-shadow:0 1px 0 rgba(255,255,255,.045) inset;cursor:pointer;overflow:hidden;transition:transform .16s var(--ease-pop),border-color .18s ease,background .18s ease,box-shadow .22s ease}
-.dock-feature-card{border-radius:20px;padding:13px;min-height:116px;display:flex;flex-direction:column;gap:9px}.dock-list-row{border-radius:16px;min-height:48px;padding:10px 11px;display:flex;align-items:center;gap:10px}
+.dock-feature-card{border-radius:20px;padding:13px;min-height:116px;display:flex;flex-direction:column;gap:9px}.dock-list-row{border-radius:14px;min-height:auto;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
 .dock-feature-card:hover,.dock-list-row:hover{transform:translateY(-1px);border-color:rgba(255,60,90,.32)}.dock-feature-card.selected,.dock-list-row.selected{background:linear-gradient(90deg,rgba(255,32,64,.20),rgba(255,32,64,.055));border-color:rgba(255,32,64,.55);box-shadow:0 10px 26px -18px rgba(255,32,64,.75),0 0 0 1px rgba(255,32,64,.18) inset}
-.dock-icon{width:30px;height:30px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.82rem;box-shadow:0 10px 20px -12px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.035em;text-transform:uppercase;color:#fff;font-size:.86rem}.dock-desc{font-size:.68rem;color:var(--text-faint);line-height:1.42}.dock-arrow{margin-left:auto;color:var(--text-faint);font-weight:900}.dock-list-main{min-width:0;display:flex;flex-direction:column;gap:1px}.dock-list-sub{font-size:.62rem;color:var(--text-faint);font-weight:700}.model-dock.show .dock-feature-card,.model-dock.show .dock-list-row{animation:dockRowIn .34s var(--ease-dream) both}.model-dock.show .dock-list-row:nth-child(2),.model-dock.show .dock-feature-card:nth-child(2){animation-delay:.04s}.model-dock.show .dock-list-row:nth-child(3),.model-dock.show .dock-feature-card:nth-child(3){animation-delay:.08s}.model-dock.show .dock-list-row:nth-child(4){animation-delay:.12s}.model-dock.show .dock-list-row:nth-child(n+5){animation-delay:.16s}
+.dock-icon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.72rem;box-shadow:0 8px 16px -10px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;font-size:.66rem;line-height:1.18}.dock-desc{font-size:.68rem;color:var(--text-faint);line-height:1.42}.dock-arrow{display:none}.dock-list-main{min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px}.dock-list-sub{font-size:.54rem;color:var(--text-faint);font-weight:700}.model-dock.show .dock-feature-card,.model-dock.show .dock-list-row{animation:dockRowIn .34s var(--ease-dream) both}.model-dock.show .dock-list-row:nth-child(2),.model-dock.show .dock-feature-card:nth-child(2){animation-delay:.03s}.model-dock.show .dock-list-row:nth-child(3),.model-dock.show .dock-feature-card:nth-child(3){animation-delay:.06s}.model-dock.show .dock-list-row:nth-child(4){animation-delay:.09s}.model-dock.show .dock-list-row:nth-child(5){animation-delay:.12s}.model-dock.show .dock-list-row:nth-child(n+6){animation-delay:.15s}
 @keyframes dockRowIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 .prompt-overlay{z-index:150;background:linear-gradient(180deg,#0b0b0b,#080808);transition:opacity .26s ease,transform .34s var(--ease-dream)}.prompt-overlay.show{animation:promptLift .34s var(--ease-dream) both}@keyframes promptLift{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -1077,9 +1087,9 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 @media(max-width:430px){
   .topbar{height:58px;padding-left:12px;padding-right:12px}.tb-title{font-size:18px}.tb-badge{font-size:.56rem;padding:2px 7px}.icon-btn{width:38px;height:38px;border-radius:14px}
   .mode-btn{min-width:70px;padding:9px 17px}.canvas{padding:16px 14px 4px}.canvas-title{font-size:31px}.canvas-sub{font-size:13px}
-  .panel-wrap{padding-left:8px;padding-right:8px}.panel{padding:10px 12px calc(12px + var(--safe-b));border-radius:28px 28px 22px 22px}.model-select{min-height:50px}.model-select-txt{font-size:16px}.model-select-icon{width:29px;height:29px}.el-tab{font-size:16px;padding:10px 6px}.upload-row{gap:10px}.upload-card,.frame-card{border-radius:20px;height:88px}.uc-label{font-size:14px}.prompt-btn{min-height:52px;border-radius:20px}.chip{min-height:42px;font-size:14px}.qty-stepper{min-height:52px}.gen-btn{min-height:56px;border-radius:20px}.model-dock{left:8px;right:8px;padding:12px;border-radius:24px}.model-dock-grid{gap:9px}.dock-feature-card{min-height:96px;padding:11px}.dock-list-row{min-height:44px;padding:9px}.dock-desc{font-size:.64rem}.dock-name{font-size:.78rem}
+  .panel-wrap{padding-left:8px;padding-right:8px}.panel{padding:10px 12px calc(12px + var(--safe-b));border-radius:28px 28px 22px 22px}.model-select{min-height:50px}.model-select-txt{font-size:16px}.model-select-icon{width:29px;height:29px}.el-tab{font-size:16px;padding:10px 6px}.upload-row{gap:10px}.upload-card,.frame-card{border-radius:20px;height:88px}.uc-label{font-size:14px}.prompt-btn{min-height:52px;border-radius:20px}.chip{min-height:36px;font-size:13px}.qty-stepper{min-height:52px}.gen-btn{min-height:56px;border-radius:20px}.model-dock{left:8px;right:8px;padding:12px;border-radius:24px}.model-dock-grid{gap:9px}.dock-feature-card{min-height:96px;padding:11px}.dock-list-row{padding:8px 4px 7px}.dock-desc{font-size:.64rem}.dock-name{font-size:.62rem}
 }
-@media(max-width:360px){.model-dock-grid{grid-template-columns:1fr}.dock-feature-card{min-height:auto}.upload-card,.frame-card{height:82px}.prompt-btn-txt{font-size:16px}.credit-chip-sep{display:none}}
+@media(max-width:360px){.dock-feature-card{min-height:auto}.upload-card,.frame-card{height:82px}.prompt-btn-txt{font-size:16px}.credit-chip-sep{display:none}}
 
 /* Media row now matches Dreamkreat's horizontal layout — see .upload-row rules above.
    Extra-specific overrides below so the shared .upload-card,.frame-card "polish" rule
@@ -1356,6 +1366,14 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
       <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
 
+      <div class="mc-meta-row" id="mcMetaRow" style="display:none">
+        <div class="mc-meta-chip" id="mcMetaResChip"><span class="mc-meta-k">Resolution</span><span class="mc-meta-v" id="mcMetaRes">-</span></div>
+        <div class="mc-meta-chip" id="mcMetaDurChip"><span class="mc-meta-k">Duration</span><span class="mc-meta-v" id="mcMetaDur">-</span></div>
+        <div class="mc-meta-chip"><span class="mc-meta-k">FPS</span><span class="mc-meta-v" id="mcMetaFps">-</span></div>
+        <div class="mc-meta-chip"><span class="mc-meta-k">Aspect Ratio</span><span class="mc-meta-v" id="mcMetaRatio">-</span></div>
+        <div class="mc-meta-chip"><span class="mc-meta-k">Est. Credits</span><span class="mc-meta-v" id="mcMetaCredits">-</span></div>
+      </div>
+
       <div class="settings-row">
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -1512,7 +1530,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <button class="model-dock-close" onclick="closeModelDock()" aria-label="Close model picker">×</button>
   </div>
   <div class="model-dock-grid">
-    <div class="model-dock-col" id="modelDockFeatured"></div>
     <div class="model-dock-col" id="modelDockAll"></div>
   </div>
 </div>
@@ -1742,9 +1759,9 @@ var modelFamilies = {
       ]
     },
     {
-      key: 'klingswap', brand: 'KLING', name: 'KLING SWAP', featured: true,
+      key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
-      caps: { image: 4, video: 1, audio: 0, frames: false, elements: true, ratio: true, resolution: false, resolutionSet: 'video', duration: true, motion: false },
+      caps: { image: 4, video: 1, audio: 0, frames: false, elements: true, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
       qualities: [
         { id: 'STD', label: 'STD' },
         { id: 'PRO', label: 'PRO' }
@@ -1810,6 +1827,11 @@ var selectedRatio = '16:9';
 var selectedResolution = '720p';
 var selectedDuration = 5;
 var selectedMotion = 'Dynamic';
+// Motion Control (Kling Swap) — set once a reference video has been
+// analyzed via /api/aivideo/motion-control/analyze. When non-null, ratio +
+// duration are auto-filled from the video and locked in the UI (spec:
+// user doesn't pick these manually once a video is selected).
+var motionControlMeta = null;
 var selectedBitrate = 'high'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
@@ -2065,6 +2087,10 @@ var sheetDefs = {
 };
 
 function openSheet(key) {
+  if ((key === 'ratio' || key === 'duration') && selectedFamily && selectedFamily.key === 'klingswap') {
+    showToast('Mengikuti video referensi (otomatis)');
+    return;
+  }
   closeModelDock();
   var def = sheetDefs[key];
   document.getElementById('sheetTitle').textContent = def.title;
@@ -2121,12 +2147,12 @@ function renderWheelPicker(def, options) {
   rows.forEach(function(row) {
     row.onclick = function() {
       var idx = Array.prototype.indexOf.call(rows, row);
-      track.scrollTo({ top: idx * 48, behavior: 'smooth' });
+      track.scrollTo({ top: idx * 40, behavior: 'smooth' });
     };
   });
 
   function applyHighlight() {
-    var centerIdx = Math.round(track.scrollTop / 48);
+    var centerIdx = Math.round(track.scrollTop / 40);
     rows.forEach(function(row, i) {
       row.classList.remove('wheel-center', 'wheel-near', 'wheel-far');
       var dist = Math.abs(i - centerIdx);
@@ -2152,7 +2178,7 @@ function renderWheelPicker(def, options) {
 
   // Jump straight to the currently-selected value, no animation on open.
   var startIdx = Math.max(0, options.indexOf(def.get()));
-  track.scrollTop = startIdx * 48;
+  track.scrollTop = startIdx * 40;
   requestAnimationFrame(applyHighlight);
 }
 
@@ -2175,7 +2201,10 @@ function applyQualityBadge() {
 function renderQualityChip() {
   var chip = document.getElementById('qualityChip');
   if (!chip) return;
-  if (selectedFamily.qualities.length > 1) {
+  // Motion Control: quality follows the provider default automatically,
+  // never shown as a manual choice. Every other model keeps the normal
+  // Quality chip when it has more than one tier.
+  if (selectedFamily.key !== 'klingswap' && selectedFamily.qualities.length > 1) {
     document.getElementById('qualityLabel').textContent = selectedModelTier;
     chip.style.display = '';
   } else {
@@ -2350,6 +2379,16 @@ function applyModelCapabilities() {
   }
   if (typeof renderUploadGrid === 'function') renderUploadGrid();
   if (typeof renderAssetsStrip === 'function') renderAssetsStrip();
+
+  // Motion Control: ratio/duration stay locked to "Auto" the entire time
+  // klingswap is selected (spec #16/#17 — never manual). Detected metadata
+  // itself is cleared once its video reference is gone or a different
+  // model is picked, so a stale panel never lingers.
+  if (!(selectedFamily && selectedFamily.key === 'klingswap') || media.video.length === 0) {
+    if (motionControlMeta) clearMotionControlMeta();
+  }
+  applyMotionControlLock();
+  renderMotionControlMeta();
 }
 function pickQuality(idx) {
   selectedQualityIdx = idx;
@@ -2419,26 +2458,15 @@ function openModelDock() {
   closeSheet();
   updateModelDockPosition();
   document.getElementById('modelDockTitle').textContent = activeMode === 'image' ? 'Image Models' : 'Video Models';
-  var featured = document.getElementById('modelDockFeatured');
   var all = document.getElementById('modelDockAll');
-  featured.innerHTML = '<div class="dock-label">Featured <span class="dock-badge">Elements</span></div>';
   all.innerHTML = '<div class="dock-label">All Models</div>';
   setModelSelectOpen(true);
-
-  families.filter(function(f){ return f.featured; }).forEach(function(family, idx) {
-    var card = document.createElement('div');
-    card.className = 'dock-feature-card' + (family.key === selectedFamily.key ? ' selected' : '');
-    card.innerHTML = '<div class="dock-feature-top"><span class="dock-icon">' + family.name.charAt(0) + '</span><span class="dock-name">' + family.name + '</span></div>' +
-      '<div class="dock-desc">' + family.desc + '</div>';
-    card.onclick = function() { pickFamily(family, 0); };
-    featured.appendChild(card);
-  });
 
   families.forEach(function(family, idx) {
     var row = document.createElement('div');
     row.className = 'dock-list-row' + (family.key === selectedFamily.key ? ' selected' : '');
-    var versionsTxt = family.qualities.length > 1 ? family.qualities.length + ' versions' : '1 version';
-    row.innerHTML = '<span class="dock-icon">' + family.brand.charAt(0) + '</span><span class="dock-list-main"><span class="dock-name">' + family.brand + '</span><span class="dock-list-sub">' + versionsTxt + '</span></span><span class="dock-arrow">›</span>';
+    var versionsTxt = family.qualities.length > 1 ? family.qualities.length + 'x' : '';
+    row.innerHTML = '<span class="dock-icon">' + family.brand.charAt(0) + '</span><span class="dock-list-main"><span class="dock-name">' + family.brand + '</span>' + (versionsTxt ? '<span class="dock-list-sub">' + versionsTxt + '</span>' : '') + '</span>';
     row.onclick = function() { pickFamily(family, 0); };
     all.appendChild(row);
   });
@@ -2630,11 +2658,14 @@ function updateGenerateButtonState() {
     return;
   }
   var hasPrompt = !!(promptInput && promptInput.value.trim());
+  // Motion Control: prompt is optional — the video reference alone is
+  // enough to edit/swap; text just refines it further.
+  var promptOptional = selectedFamily && selectedFamily.key === 'klingswap';
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var hasMedia = (!needsMedia || media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url))
     && (!needsVideo || media.video.length > 0);
-  btn.disabled = !(hasPrompt && hasMedia);
+  btn.disabled = !((hasPrompt || promptOptional) && hasMedia);
   if (txt) txt.textContent = 'GENERATE \u2726';
 }
 
@@ -2691,6 +2722,9 @@ function removeMedia(type, idx) {
   // reference would keep appearing there even though it's gone everywhere
   // else and can never be sent to the provider again.
   forgetUpload(removed);
+  if (type === 'video' && selectedFamily && selectedFamily.key === 'klingswap') {
+    clearMotionControlMeta();
+  }
   renderUploadGrid();
   renderPeTagsRow();
   updateCanvasPreview();
@@ -2775,6 +2809,12 @@ function uploadFile(file, type, previewUrl) {
         entry.url = data.url;
         entry.uploading = false;
         showToast('Added 1 reference ' + type);
+        // Motion Control: auto-detect metadata (width/height/duration/fps/
+        // aspect ratio) the instant the video finishes uploading, so the
+        // UI can auto-fill + lock ratio/duration before Generate is tapped.
+        if (type === 'video' && selectedFamily && selectedFamily.key === 'klingswap') {
+          analyzeMotionControlVideo(entry);
+        }
       } else {
         showError(data.error || 'Upload gagal');
         media[type].splice(i, 1);
@@ -2788,6 +2828,107 @@ function uploadFile(file, type, previewUrl) {
       media[type].splice(i, 1);
       renderUploadGrid();
     });
+}
+
+// ══════════ MOTION CONTROL — auto-detect / auto-fill / lock ══════════
+// Calls the server right after a reference video finishes uploading to
+// Dropbox. The server reads real metadata via FFprobe, auto-resizes via
+// FFmpeg if the width is outside the provider's supported range, and
+// returns both the original and the (possibly resized) processed video —
+// which is what actually gets sent on Generate.
+function analyzeMotionControlVideo(entry) {
+  showToast('Menganalisa video referensi…');
+  fetch('/api/aivideo/motion-control/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: entry.url })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (media.video.indexOf(entry) === -1) return; // removed/replaced meanwhile — discard silently
+      if (!data.ok) {
+        showError(data.error || 'Gagal membaca metadata video');
+        motionControlMeta = null;
+        applyMotionControlLock();
+        renderMotionControlMeta();
+        return;
+      }
+      // Backend may have auto-resized the video to fit the provider's
+      // width window — swap the reference to the processed Dropbox URL so
+      // Generate sends the already-valid file, not the original.
+      entry.url = data.dropbox_url_processed;
+      motionControlMeta = { original: data.original, processed: data.processed, resized: data.resized, locked: true };
+      selectedRatio = data.processed.aspect_ratio;
+      selectedDuration = Math.round(data.processed.duration);
+      var ratioLabelEl = document.getElementById('ratioLabel');
+      if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
+      var durLabelEl = document.getElementById('durationLabel');
+      if (durLabelEl) durLabelEl.textContent = selectedDuration + 's';
+      if (typeof syncCanvasPreviewAspect === 'function') syncCanvasPreviewAspect();
+      applyMotionControlLock();
+      renderMotionControlMeta();
+      updateCreditEstimate();
+      showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan provider' : 'Video referensi terdeteksi otomatis');
+    })
+    .catch(function() {
+      if (media.video.indexOf(entry) === -1) return;
+      showError('Gagal menganalisa video, cek koneksi');
+      motionControlMeta = null;
+      applyMotionControlLock();
+      renderMotionControlMeta();
+    });
+}
+
+// Lock the ratio/duration chips (visually + functionally) for Motion
+// Control — these are never picked manually for this model; they always
+// follow the reference video. Shows "Auto" until a video has been
+// analyzed, then the real detected value. Unlocks automatically for every
+// other model.
+function applyMotionControlLock() {
+  var isMotionControl = !!(selectedFamily && selectedFamily.key === 'klingswap');
+  var ratioChip = document.getElementById('ratioChip');
+  var durChip = document.getElementById('durationChip');
+  if (ratioChip) ratioChip.classList.toggle('mc-locked', isMotionControl);
+  if (durChip) durChip.classList.toggle('mc-locked', isMotionControl);
+  if (isMotionControl && !motionControlMeta) {
+    var ratioLabelEl = document.getElementById('ratioLabel');
+    var durLabelEl = document.getElementById('durationLabel');
+    if (ratioLabelEl) ratioLabelEl.textContent = 'Auto';
+    if (durLabelEl) durLabelEl.textContent = 'Auto';
+  }
+}
+
+function renderMotionControlMeta() {
+  var metaRow = document.getElementById('mcMetaRow');
+  if (!metaRow) return;
+  var isMotionControl = !!(selectedFamily && selectedFamily.key === 'klingswap');
+  if (!isMotionControl || !motionControlMeta) {
+    metaRow.style.display = 'none';
+    return;
+  }
+  var p = motionControlMeta.processed, o = motionControlMeta.original;
+  var resEl = document.getElementById('mcMetaRes');
+  if (resEl) resEl.textContent = p.width + '\u00d7' + p.height;
+  var durEl = document.getElementById('mcMetaDur');
+  if (durEl) durEl.textContent = p.duration + 's';
+  var fpsEl = document.getElementById('mcMetaFps');
+  if (fpsEl) fpsEl.textContent = o.fps ? o.fps : '-';
+  var ratioEl = document.getElementById('mcMetaRatio');
+  if (ratioEl) ratioEl.textContent = p.aspect_ratio;
+  var creditsEl = document.getElementById('mcMetaCredits');
+  if (creditsEl) creditsEl.textContent = estimateCredits();
+  var resChipEl = document.getElementById('mcMetaResChip');
+  if (resChipEl) resChipEl.classList.toggle('mc-resized', !!motionControlMeta.resized);
+  metaRow.style.display = 'flex';
+}
+
+// Clears Motion Control's auto-detected state — called when the video
+// reference is removed or a different model is selected, so a stale lock
+// / stale metadata panel never lingers for a video that's no longer there.
+function clearMotionControlMeta() {
+  motionControlMeta = null;
+  applyMotionControlLock();
+  renderMotionControlMeta();
 }
 
 var toastTimer = null;
@@ -3232,7 +3373,7 @@ function startGenerate() {
   var prompt = promptInput.value.trim();
 
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
-    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Kling Swap (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, dan Flux (Schnell/Dev/Pro).');
+    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, dan Flux (Schnell/Dev/Pro).');
     return;
   }
   if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
@@ -3244,7 +3385,7 @@ function startGenerate() {
     return;
   }
   if (needsVideo && media.video.length === 0) {
-    showError('Kling Swap butuh 1 video sumber untuk diedit');
+    showError('Motion Control butuh 1 video sumber untuk diedit');
     return;
   }
   if (selectedFamily && selectedFamily.key === 'seedance' && media.audio.length > 0
