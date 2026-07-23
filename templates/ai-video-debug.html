@@ -189,6 +189,34 @@
       <div class="row"><span class="k">Detail</span><span class="v" id="segmindDetail">{{ segmind.detail if segmind else '-' }}</span></div>
     </div>
 
+    <div class="panel" id="panelMotionControl" style="animation-delay:.065s">
+      <span class="br-tr"></span><span class="br-bl"></span>
+      <h2>Motion Control (Video Validation)</h2>
+      <div id="motionControlBody">
+      {% if motion_control %}
+      <div class="row"><span class="k">Original Width</span><span class="v">{{ motion_control.original_width if motion_control.original_width is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Original Height</span><span class="v">{{ motion_control.original_height if motion_control.original_height is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Original Duration</span><span class="v">{{ (motion_control.original_duration ~ 's') if motion_control.original_duration is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Original FPS</span><span class="v">{{ motion_control.original_fps if motion_control.original_fps is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Original Aspect Ratio</span><span class="v">{{ motion_control.original_aspect_ratio or '-' }}</span></div>
+      <div class="row"><span class="k">Processed Width</span><span class="v">{{ motion_control.processed_width if motion_control.processed_width is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Processed Height</span><span class="v">{{ motion_control.processed_height if motion_control.processed_height is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Processed Duration</span><span class="v">{{ (motion_control.processed_duration ~ 's') if motion_control.processed_duration is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Resized</span><span class="v"><span class="badge {{ 'ok' if motion_control.resized else '' }}">{{ 'YES' if motion_control.resized else 'NO' }}</span></span></div>
+      <div class="row"><span class="k">Dropbox URL Original</span><span class="v">{% if motion_control.dropbox_url_original %}<a href="{{ motion_control.dropbox_url_original }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
+      <div class="row"><span class="k">Dropbox URL Processed</span><span class="v">{% if motion_control.dropbox_url_processed %}<a href="{{ motion_control.dropbox_url_processed }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
+      <div class="row"><span class="k">Elapsed Time</span><span class="v">{{ (motion_control.elapsed_ms ~ ' ms') if motion_control.elapsed_ms is not none else '-' }}</span></div>
+      <div class="row"><span class="k">Provider</span><span class="v">{{ motion_control.provider or '-' }}</span></div>
+      {% if motion_control.error %}
+      <div class="row"><span class="k">Error</span><span class="v err-txt">{{ motion_control.error }}</span></div>
+      {% endif %}
+      <div class="row"><span class="k">At</span><span class="v">{{ motion_control.at }}</span></div>
+      {% else %}
+      <div class="empty">Belum ada video Motion Control yang divalidasi sejak server terakhir restart.</div>
+      {% endif %}
+      </div>
+    </div>
+
     <div class="panel" id="panelSummary" style="animation-delay:.07s">
       <span class="br-tr"></span><span class="br-bl"></span>
       <h2>Request Log Summary</h2>
@@ -412,6 +440,30 @@ function applySnapshot(data) {
       errPanel.classList.remove('alert');
       errDot.className = 'dot unk';
       errBody.innerHTML = '<div class="empty">Belum ada error tercatat sejak server terakhir restart.</div>';
+    }
+  }
+  var mc = data.motion_control;
+  var mcBody = document.getElementById('motionControlBody');
+  if (mcBody) {
+    if (mc) {
+      mcBody.innerHTML =
+        '<div class="row"><span class="k">Original Width</span><span class="v">' + (mc.original_width != null ? mc.original_width : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Original Height</span><span class="v">' + (mc.original_height != null ? mc.original_height : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Original Duration</span><span class="v">' + (mc.original_duration != null ? mc.original_duration + 's' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Original FPS</span><span class="v">' + (mc.original_fps != null ? mc.original_fps : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Original Aspect Ratio</span><span class="v">' + esc(mc.original_aspect_ratio || '-') + '</span></div>' +
+        '<div class="row"><span class="k">Processed Width</span><span class="v">' + (mc.processed_width != null ? mc.processed_width : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Processed Height</span><span class="v">' + (mc.processed_height != null ? mc.processed_height : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Processed Duration</span><span class="v">' + (mc.processed_duration != null ? mc.processed_duration + 's' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Resized</span><span class="v"><span class="badge ' + (mc.resized ? 'ok' : '') + '">' + (mc.resized ? 'YES' : 'NO') + '</span></span></div>' +
+        '<div class="row"><span class="k">Dropbox URL Original</span><span class="v">' + (mc.dropbox_url_original ? '<a href="' + esc(mc.dropbox_url_original) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Dropbox URL Processed</span><span class="v">' + (mc.dropbox_url_processed ? '<a href="' + esc(mc.dropbox_url_processed) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Elapsed Time</span><span class="v">' + (mc.elapsed_ms != null ? mc.elapsed_ms + ' ms' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Provider</span><span class="v">' + esc(mc.provider || '-') + '</span></div>' +
+        (mc.error ? '<div class="row"><span class="k">Error</span><span class="v err-txt">' + esc(mc.error) + '</span></div>' : '') +
+        '<div class="row"><span class="k">At</span><span class="v">' + esc(mc.at) + '</span></div>';
+    } else {
+      mcBody.innerHTML = '<div class="empty">Belum ada video Motion Control yang divalidasi sejak server terakhir restart.</div>';
     }
   }
 }
