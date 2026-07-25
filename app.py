@@ -3272,7 +3272,13 @@ def aivideo_generate():
             'duration': duration,
             'resolution': resolution,
             'aspect_ratio': aspect_ratio,
-            'generate_audio': bool(payload.get('generate_audio', True)),
+            # When mute_audio is on, tell Segmind not to generate audio at
+            # all rather than generating it and stripping it afterward —
+            # generating audio still runs it through Segmind's own
+            # sensitive-content moderation, which can reject the ENTIRE
+            # generation (OutputAudioSensitiveContentDetected) even though
+            # the user never wanted the audio in the first place.
+            'generate_audio': False if mute_audio else bool(payload.get('generate_audio', True)),
             'return_last_frame': False,
             'skip_moderation': False,
         }
@@ -3327,7 +3333,7 @@ def aivideo_generate():
             'duration': str(duration),
             'aspect_ratio': aspect_ratio,
             'cfg_scale': float(payload.get('cfg_scale', 0.5)),
-            'generate_audio': bool(payload.get('generate_audio', True)),
+            'generate_audio': False if mute_audio else bool(payload.get('generate_audio', True)),
         }
         if start_image_url:
             body['start_image_url'] = start_image_url
