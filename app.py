@@ -255,6 +255,45 @@ def _save_site_status(status):
             json.dump(status, f, ensure_ascii=False, indent=2)
 
 
+def _cloudflare_purge_cache():
+    """Purge Cloudflare's cache for this zone after a maintenance toggle.
+
+    Confirmed symptom this fixes: the bot's own status readback shows the
+    new state correctly (it reads site_status.json fresh, same as the
+    guard does) — so the write is real and consistent. But a browser
+    hitting the live domain right after can still see the OLD page. That
+    combination (backend state correct, edge response stale) is the
+    signature of Cloudflare serving a cached copy of the homepage without
+    ever reaching this origin at all, rather than an application bug —
+    the Flask app already sends Cache-Control: no-store on every HTML
+    response (see set_security_headers), but an aggressive "Cache
+    Everything" style setting on the Cloudflare side can override that
+    from the origin's respective.
+
+    No-ops (logs and returns) if CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID
+    aren't set — this is opt-in hardening, not a hard requirement, since
+    not every deployment sits behind Cloudflare with API access configured.
+    """
+    token = os.environ.get('CLOUDFLARE_API_TOKEN', '').strip()
+    zone_id = os.environ.get('CLOUDFLARE_ZONE_ID', '').strip()
+    if not token or not zone_id:
+        app.logger.info('[maintenance] Cloudflare purge skipped — CLOUDFLARE_API_TOKEN/CLOUDFLARE_ZONE_ID not configured.')
+        return
+    try:
+        resp = requests_lib.post(
+            f'https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache',
+            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+            json={'purge_everything': True},
+            timeout=10,
+        )
+        if resp.status_code == 200 and resp.json().get('success'):
+            app.logger.info('[maintenance] Cloudflare cache purged successfully.')
+        else:
+            app.logger.warning('[maintenance] Cloudflare purge returned %s: %s', resp.status_code, resp.text[:300])
+    except Exception as e:
+        app.logger.warning('[maintenance] Cloudflare purge request failed: %s', e)
+
+
 def set_maintenance_status(enabled):
     with _STATUS_LOCK:
         _ensure_status_file()
@@ -270,7 +309,12 @@ def set_maintenance_status(enabled):
         status['updated_at'] = _utc_timestamp()
         with open(SITE_STATUS_FILE, 'w', encoding='utf-8') as f:
             json.dump(status, f, ensure_ascii=False, indent=2)
-        return status
+    # Purge OUTSIDE the lock — it's a network call (Cloudflare API), and
+    # holding a threading.Lock() across a network round-trip would block
+    # every other maintenance/status read for however long that request
+    # takes (or times out) instead of just the fast local file write.
+    _cloudflare_purge_cache()
+    return status
 
 
 def _default_event_data():
@@ -3388,7 +3432,14 @@ def aivideo_generate():
             'mode': swap_mode,
             'duration': str(duration),
             'aspect_ratio': aspect_ratio,
-            'keep_audio': bool(payload.get('keep_audio', False)),
+            # Previously this always defaulted to False regardless of user
+            # intent (the frontend never sent a keep_audio field at all) —
+            # meaning Motion Control never actually preserved the source
+            # video's audio even when the "Audio On" toggle was left at its
+            # default. Now mute_audio drives it directly: off = keep the
+            # source audio, on = don't even ask Segmind to include it (the
+            # ffmpeg -an strip further down is then just a safety net).
+            'keep_audio': not mute_audio,
         }
         # First reference image = the character/face to swap in
         # (frontal_image_url triggers @Element-style injection); any
@@ -5144,6 +5195,62 @@ def photo_proxy():
         )
     except Exception:
         return '', 502
+
+
+@app.route('/api/aivideo/download')
+def aivideo_download():
+    """Same-origin download proxy for generated video/image results. The
+    frontend previously fetched the Dropbox URL directly from the browser
+    — when that cross-origin fetch failed (Dropbox not sending permissive
+    CORS headers for every URL/region), the only fallback was
+    window.open(dropboxUrl), which took the user to a completely separate
+    page instead of downloading. Routing through our own origin sidesteps
+    CORS entirely (server-to-server fetches aren't subject to it), and
+    Content-Disposition: attachment guarantees a real download rather than
+    an in-browser video/image viewer taking over the tab."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+
+    url = request.args.get('url', '').strip()
+    filename = request.args.get('filename', 'mii-ai-video').strip()
+    if not url:
+        return jsonify({'error': 'URL parameter required'}), 400
+    if not _is_allowed_video_source_url(url):
+        return jsonify({'error': 'Invalid URL'}), 400
+
+    client_ip = _aivideo_client_ip()
+    if not _check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Too many requests'}), 429
+
+    filename = re.sub(r'[^\w\-_.]', '_', filename)
+    if not filename.endswith(('.mp4', '.mov', '.png', '.jpg', '.jpeg', '.webp')):
+        filename += '.mp4'
+
+    MAX_PROXY_BYTES = 200 * 1024 * 1024  # 200 MB — generous headroom over any realistic generated clip
+
+    try:
+        resp = requests_lib.get(url, timeout=30, stream=True, allow_redirects=False)
+        if resp.status_code != 200:
+            return jsonify({'error': f'Gagal mengunduh file ({resp.status_code})'}), 502
+
+        content_type = resp.headers.get('Content-Type', 'application/octet-stream')
+
+        def generate():
+            bytes_sent = 0
+            for chunk in resp.iter_content(chunk_size=65536):
+                bytes_sent += len(chunk)
+                if bytes_sent > MAX_PROXY_BYTES:
+                    break
+                yield chunk
+
+        return Response(
+            generate(),
+            content_type=content_type,
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        app.logger.warning('[ai-video][download] proxy failed for %s: %s', url, e)
+        return jsonify({'error': 'Gagal mengunduh file'}), 502
 
 
 @app.route('/download-photo')
