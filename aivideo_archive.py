@@ -53,6 +53,14 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        # This table used to hold ONLY explicitly-archived items. It now
+        # backs every generation (server-side History), with `archived`
+        # distinguishing the two — existing rows predate the column and are
+        # real archived items, so they default to 1 (archived) on upgrade,
+        # which is the correct historical value for anything already there.
+        existing_cols = [r[1] for r in conn.execute('PRAGMA table_info(aivideo_archive)').fetchall()]
+        if 'archived' not in existing_cols:
+            conn.execute('ALTER TABLE aivideo_archive ADD COLUMN archived INTEGER DEFAULT 1')
         conn.commit()
 
 
@@ -66,8 +74,8 @@ def upsert_archive(rec):
             INSERT INTO aivideo_archive
                 (id, media_type, video_url, image_url, thumb, prompt, model, quality,
                  duration, ratio, created_at_label, created_at_ts, ref_images, ref_videos,
-                 model_key, model_tier)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 model_key, model_tier, archived)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 media_type=excluded.media_type, video_url=excluded.video_url,
                 image_url=excluded.image_url, thumb=excluded.thumb, prompt=excluded.prompt,
@@ -75,7 +83,7 @@ def upsert_archive(rec):
                 ratio=excluded.ratio, created_at_label=excluded.created_at_label,
                 created_at_ts=excluded.created_at_ts, ref_images=excluded.ref_images,
                 ref_videos=excluded.ref_videos, model_key=excluded.model_key,
-                model_tier=excluded.model_tier
+                model_tier=excluded.model_tier, archived=excluded.archived
         ''', (
             rec.get('id'),
             rec.get('media_type') or ('video' if rec.get('videoUrl') else 'image'),
@@ -93,14 +101,25 @@ def upsert_archive(rec):
             json.dumps(rec.get('refVideos') or []),
             rec.get('modelKey') or '',
             rec.get('modelTier') or '',
+            1 if rec.get('archived', True) else 0,
         ))
         conn.commit()
 
 
-def list_archive():
+def list_archive(archived=None):
+    """archived=True -> only archived items (existing Archive-page
+    behavior). archived=False -> only non-archived. archived=None -> every
+    row (used to hydrate the History page, which then splits by the flag
+    itself)."""
     conn = _get_conn()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM aivideo_archive ORDER BY created_at_ts DESC, created_at DESC')
+    if archived is None:
+        cur.execute('SELECT * FROM aivideo_archive ORDER BY created_at_ts DESC, created_at DESC')
+    else:
+        cur.execute(
+            'SELECT * FROM aivideo_archive WHERE archived = ? ORDER BY created_at_ts DESC, created_at DESC',
+            (1 if archived else 0,)
+        )
     out = []
     for row in cur.fetchall():
         d = dict(row)
@@ -112,6 +131,7 @@ def list_archive():
         d['createdAtTs'] = d.pop('created_at_ts')
         d['modelKey'] = d.pop('model_key')
         d['modelTier'] = d.pop('model_tier')
+        d['archived'] = bool(d.get('archived'))
         out.append(d)
     return out
 
