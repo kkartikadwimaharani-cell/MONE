@@ -1384,6 +1384,10 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         <div class="chip" id="bitrateChip" onclick="openSheet('bitrate')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
         <div class="chip" id="durationChip" onclick="openSheet('duration')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
         <div class="chip" id="motionChip" onclick="openSheet('motion')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
+        <div class="chip" id="muteAudioChip" onclick="toggleMuteAudio()" style="display:none" title="Hapus audio dari video hasil">
+          <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          <span id="muteAudioLabel">Audio On</span>
+        </div>
       </div>
 
       <div class="action-row">
@@ -1859,6 +1863,7 @@ var selectedMotion = 'Dynamic';
 // user doesn't pick these manually once a video is selected).
 var motionControlMeta = null;
 var selectedBitrate = 'high'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
+var muteAudioEnabled = false; // Seedance + Motion Control only — strips the audio track from the generated video server-side (ffmpeg -an), not just a client-side player mute.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
@@ -2342,6 +2347,19 @@ function applyModelCapabilities() {
     if (bitrateLabelEl) bitrateLabelEl.textContent = 'High';
   }
 
+  // Mute-audio: only meaningful for the two video-output families that can
+  // actually carry audio (Seedance generates its own; Motion Control can
+  // inherit the source video's track). Reset the toggle when switching
+  // away so it can't silently apply to a family the user never chose it
+  // for.
+  var muteAudioSupported = selectedFamily && (selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap');
+  var muteAudioChip = document.getElementById('muteAudioChip');
+  if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported ? '' : 'none';
+  if (!muteAudioSupported) {
+    muteAudioEnabled = false;
+    renderMuteAudioChip();
+  }
+
   // Aspect ratio: Kling 3.0 and Kling Character Swap only support 16:9 / 9:16
   // / 1:1 (per Segmind's published API docs), narrower than Seedance's set.
   if (sheetDefs && sheetDefs.ratio) {
@@ -2432,6 +2450,27 @@ function pickQuality(idx) {
   updateCreditEstimate();
   closeSheet();
 }
+function renderMuteAudioChip() {
+  var chip = document.getElementById('muteAudioChip');
+  var label = document.getElementById('muteAudioLabel');
+  var icon = document.getElementById('muteAudioIcon');
+  if (!chip) return;
+  chip.classList.toggle('active', muteAudioEnabled);
+  chip.setAttribute('data-active', muteAudioEnabled ? 'true' : 'false');
+  if (label) label.textContent = muteAudioEnabled ? 'Audio Off' : 'Audio On';
+  // Swap the speaker glyph itself (not just the label) so the toggled
+  // state reads clearly even at a glance / for the icon-only mobile width.
+  if (icon) {
+    icon.innerHTML = muteAudioEnabled
+      ? '<path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+      : '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+  }
+}
+function toggleMuteAudio() {
+  muteAudioEnabled = !muteAudioEnabled;
+  renderMuteAudioChip();
+}
+
 function openQualitySheet() {
   closeModelDock();
   var isRenderQuality = selectedFamily.qualities.some(function(q){ return q.label === 'MINI' || q.label === 'FAST' || q.label === 'PRO'; });
@@ -3452,6 +3491,9 @@ function startGenerate() {
   // without it if a given tier actually rejects the field.
   if (selectedFamily.key === 'seedance') {
     body.bitrate_mode = selectedBitrate;
+  }
+  if ((selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap') && muteAudioEnabled) {
+    body.mute_audio = true;
   }
 
   // Snapshot everything needed to render + save THIS job later. From this
