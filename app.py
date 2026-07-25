@@ -2089,7 +2089,20 @@ _AIVIDEO_UNLOCK_LOCK = threading.Lock()
 
 
 def _aivideo_client_ip():
-    return request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    # CF-Connecting-IP first: this app sits behind Cloudflare, and that
+    # header is the one Cloudflare sets reliably to the true client IP.
+    # X-Forwarded-For alone was NOT stable across requests in this deploy
+    # (confirmed: refreshing the lock screen reset the lockout, because
+    # each request was landing in the dict under a different apparent
+    # "IP") — same reasoning already applied to /api/ghost-scan elsewhere
+    # in this file, just not reused here originally.
+    ip = request.headers.get('CF-Connecting-IP')
+    if ip:
+        return ip.strip()
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or ''
 
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
 # IMPORTANT: no hardcoded fallback key here on purpose. A real API key was
@@ -2788,6 +2801,32 @@ def _ffmpeg_resize_video(src_path, target_width):
     return dst_path
 
 
+def _strip_video_audio(video_bytes):
+    """Remove the audio track from a video entirely (ffmpeg -an), used by
+    the "Matikan Audio" toggle for Seedance/Motion Control generations.
+    Re-muxes the video stream only — no re-encode (-c:v copy) so this is
+    fast and lossless for the visual content. Operates on in-memory bytes
+    since the caller already has the raw Segmind response, not a file."""
+    fd_in, path_in = tempfile.mkstemp(suffix='.mp4', prefix='mute_in_')
+    path_out = path_in + '.muted.mp4'
+    try:
+        with os.fdopen(fd_in, 'wb') as f:
+            f.write(video_bytes)
+        cmd = ['ffmpeg', '-y', '-i', path_in, '-c:v', 'copy', '-an', '-movflags', '+faststart', path_out]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, timeout=180)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f'FFmpeg gagal menghapus audio: {(e.stderr or b"").decode(errors="replace")[:300]}')
+        except subprocess.TimeoutExpired:
+            raise RuntimeError('FFmpeg timeout saat menghapus audio')
+        with open(path_out, 'rb') as f:
+            return f.read()
+    finally:
+        for p in (path_in, path_out):
+            if os.path.exists(p):
+                os.remove(p)
+
+
 def validateVideo(dropbox_url):
     """Motion Control's mandatory video-validation helper (per spec: every
     Motion Control generate request must go through this). Downloads the
@@ -2905,7 +2944,7 @@ def _friendly_motion_control_error(raw_msg):
     return raw_msg
 
 
-def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None):
+def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None, mute_audio=False):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -3051,6 +3090,17 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None)
             response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
         )
 
+        if mute_audio and not is_image:
+            try:
+                before_len = len(result_bytes)
+                result_bytes = _strip_video_audio(result_bytes)
+                app.logger.info('%s mute_audio: stripped audio track (%d -> %d bytes)', log_prefix, before_len, len(result_bytes))
+            except Exception as mute_err:
+                # Don't fail a finished generation just because the
+                # audio-strip step had a hiccup — ship the result with
+                # audio still attached rather than losing the output.
+                app.logger.warning('%s mute_audio requested but ffmpeg strip failed, keeping original audio: %s', log_prefix, mute_err)
+
         # Save locally first (always works, and lets the result play back
         # immediately without waiting on a second network hop to Dropbox).
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
@@ -3174,6 +3224,7 @@ def aivideo_generate():
 
     model_key = str(payload.get('model', 'MINI')).upper()
     family = str(payload.get('family', 'seedance')).lower()
+    mute_audio = bool(payload.get('mute_audio', False))
 
     prompt = str(payload.get('prompt', '')).strip()
     if not prompt and family != 'klingswap':
@@ -3436,7 +3487,7 @@ def aivideo_generate():
         }
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
                      task_id, family, model_key, endpoint)
-    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family), daemon=True).start()
+    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family, mute_audio), daemon=True).start()
 
     estimated_time = (duration * 12) if duration else 20
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
