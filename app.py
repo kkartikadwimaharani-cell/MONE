@@ -12,6 +12,7 @@ import subprocess
 import hashlib
 import base64
 import hmac
+import secrets
 import tempfile
 import math
 from datetime import datetime, timezone
@@ -109,6 +110,19 @@ if not os.environ.get('FLASK_SECRET_KEY'):
         'worker restart. Set FLASK_SECRET_KEY di Railway variables untuk '
         'menghindari ini.'
     )
+
+# Session cookie hardening. SESSION_COOKIE_SECURE=False is allowed only for
+# local plain-HTTP development (set FLASK_ENV=development) — in any real
+# deployment (Railway/Cloudflare, always HTTPS) this must be True or the
+# session cookie that gates /ai-video could in principle be sent over an
+# unencrypted connection. SameSite=Lax stops the cookie being attached to
+# cross-site POSTs at all, which is a real (if partial) CSRF defense.
+_IS_DEV = os.environ.get('FLASK_ENV', '').lower() == 'development'
+app.config.update(
+    SESSION_COOKIE_SECURE=not _IS_DEV,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
 
 APP_VERSION = "20260709-mii-network-v16"
 
@@ -1899,6 +1913,35 @@ def _is_allowed_cdn_url(url):
         return False
 
 
+# Motion Control's validateVideo() downloads whatever URL it's given
+# server-side (via requests) to run ffprobe/ffmpeg on it. Without this
+# allowlist a client could point it at an internal/private address (cloud
+# metadata endpoint, internal Railway service, localhost) and get the
+# server to fetch it — classic SSRF. Only Dropbox URLs are ever legitimate
+# here (every reference video reaches this function via our own upload
+# step), so the allowlist is intentionally narrow.
+_ALLOWED_VIDEO_SOURCE_SUFFIXES = ('.dropbox.com', '.dropboxusercontent.com')
+
+
+def _is_allowed_video_source_url(url):
+    """Check that a URL is HTTPS and points to Dropbox — the only source
+    validateVideo()/_download_to_temp() should ever be allowed to fetch."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme != 'https':
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        hostname = hostname.lower()
+        for suffix in _ALLOWED_VIDEO_SOURCE_SUFFIXES:
+            if hostname == suffix.lstrip('.') or hostname.endswith(suffix):
+                return True
+        return False
+    except Exception:
+        return False
+
+
 def _is_valid_tiktok_url(url):
     try:
         parsed = urlparse(url)
@@ -1921,14 +1964,28 @@ def set_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    # HSTS: force HTTPS for a full year (with subdomains) once a browser has
+    # seen it once, even if a future request somehow reaches this app over
+    # plain HTTP (stale bookmark, captive portal, direct Railway origin
+    # bypassing Cloudflare). This was previously missing entirely.
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
+        # NOTE: 'unsafe-inline' on script-src is a known, deliberate gap —
+        # the frontend currently relies on inline onclick="..." handlers
+        # and inline <script> blocks throughout templates/ai-video.html.
+        # Removing it here would break every button in the app; migrating
+        # to nonce-based CSP + addEventListener is tracked as a separate,
+        # larger refactor rather than something to change incidentally.
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
         "img-src 'self' data: blob: https:; "
-        "media-src 'self' blob:;"
+        "media-src 'self' blob:; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'none';"
     )
     # No-cache headers for HTML responses
     content_type = response.headers.get('Content-Type', '')
@@ -2021,7 +2078,18 @@ MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', '')
 AIVIDEO_LOCKOUT_THRESHOLD = 3
 AIVIDEO_LOCKOUT_SECONDS = 5 * 60
 if not MII_AIVIDEO_PASSWORD:
-    app.logger.warning('[startup] MII_AIVIDEO_PASSWORD tidak diset di environment — lock screen /ai-video tidak bisa dibuka siapa pun sampai variable ini diisi di Railway.')
+    app.logger.error('[startup] MII_AIVIDEO_PASSWORD tidak diset di environment — /ai-video akan MENOLAK SEMUA login (fail-closed) sampai variable ini diisi di Railway. Ini BUKAN mode terbuka.')
+
+# Brute-force lockout keyed by client IP (not the session cookie) — a
+# session-scoped lockout can be trivially bypassed by simply dropping the
+# cookie (fresh incognito tab / curl without a cookie jar) on every
+# attempt, which defeats the whole point of a lockout.
+_AIVIDEO_UNLOCK_ATTEMPTS = {}  # ip -> [fail_count, locked_until]
+_AIVIDEO_UNLOCK_LOCK = threading.Lock()
+
+
+def _aivideo_client_ip():
+    return request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
 
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
 # IMPORTANT: no hardcoded fallback key here on purpose. A real API key was
@@ -2268,6 +2336,58 @@ def _aivideo_last_error(source, message):
 
 def _aivideo_authed():
     return bool(session.get('mii_aivideo_auth'))
+
+
+# ---------------------------------------------------------------------------
+# CSRF protection (double-submit token) for the ai-video tool
+# ---------------------------------------------------------------------------
+# No CSRF protection previously existed anywhere in the app — every mutating
+# /api/aivideo/* and /ai-video/* endpoint relied solely on the session
+# cookie, which a malicious page can cause a victim's browser to send
+# automatically. This issues a random token into the session (server-side)
+# and a matching *readable* cookie (not HttpOnly) for the frontend JS to
+# read and echo back as a header — a page on another origin cannot read our
+# cookies (same-origin policy) so it cannot produce a valid header value.
+_AIVIDEO_CSRF_COOKIE = 'mii_csrf'
+_AIVIDEO_CSRF_HEADER = 'X-CSRF-Token'
+_AIVIDEO_CSRF_EXEMPT_ENDPOINTS = {'ai_video_unlock', 'ai_video_view'}
+
+
+def _aivideo_ensure_csrf_token():
+    tok = session.get('mii_csrf')
+    if not tok:
+        tok = secrets.token_urlsafe(32)
+        session['mii_csrf'] = tok
+    return tok
+
+
+@app.before_request
+def _aivideo_csrf_guard():
+    path = request.path or ''
+    if not (path.startswith('/api/aivideo/') or path.startswith('/ai-video/')):
+        return None
+    if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        return None
+    if request.endpoint in _AIVIDEO_CSRF_EXEMPT_ENDPOINTS:
+        return None
+    if not _aivideo_authed():
+        return None  # the route itself will return 401; nothing to protect yet
+    expected = session.get('mii_csrf')
+    got = request.headers.get(_AIVIDEO_CSRF_HEADER, '')
+    if not expected or not got or not hmac.compare_digest(expected, got):
+        return jsonify({'error': 'CSRF token tidak valid atau hilang. Muat ulang halaman.'}), 403
+    return None
+
+
+@app.after_request
+def _aivideo_csrf_cookie(response):
+    if _aivideo_authed() and request.path.startswith('/ai-video'):
+        tok = _aivideo_ensure_csrf_token()
+        response.set_cookie(
+            _AIVIDEO_CSRF_COOKIE, tok,
+            secure=not _IS_DEV, httponly=False, samesite='Lax', max_age=60 * 60 * 12,
+        )
+    return response
 
 
 def _dropbox_refresh_access_token():
@@ -2628,7 +2748,9 @@ def _snap_aspect_ratio(raw_ratio, allowed=MOTION_CONTROL_RATIOS):
 
 
 def _download_to_temp(url, suffix='.mp4'):
-    resp = requests_lib.get(url, timeout=120, stream=True)
+    if not _is_allowed_video_source_url(url):
+        raise RuntimeError('URL video sumber tidak valid (harus link Dropbox hasil upload).')
+    resp = requests_lib.get(url, timeout=120, stream=True, allow_redirects=False)
     if resp.status_code >= 400:
         raise RuntimeError(f'Gagal download video sumber dari Dropbox ({resp.status_code})')
     fd, path = tempfile.mkstemp(suffix=suffix, prefix='mc_src_')
@@ -2987,7 +3109,8 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None)
 @app.route('/ai-video')
 def ai_video_view():
     if not _aivideo_authed():
-        locked_until = session.get('mii_aivideo_locked_until') or 0
+        with _AIVIDEO_UNLOCK_LOCK:
+            _, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(_aivideo_client_ip(), (0, 0))
         retry_after = max(int(locked_until - time.time()), 0)
         return render_template('ai-video-lock.html', retry_after=retry_after)
     return render_template('ai-video.html')
@@ -2995,28 +3118,40 @@ def ai_video_view():
 
 @app.route('/ai-video/unlock', methods=['POST'])
 def ai_video_unlock():
+    # Fail CLOSED, not open: if the password isn't configured, refuse every
+    # login attempt instead of letting `pw == ''` succeed against an unset
+    # (empty-string-default) env var.
+    if not MII_AIVIDEO_PASSWORD:
+        return jsonify({'ok': False, 'error': 'Fitur ini belum dikonfigurasi di server.'}), 503
+
+    ip = _aivideo_client_ip()
     now = time.time()
-    locked_until = session.get('mii_aivideo_locked_until') or 0
+    with _AIVIDEO_UNLOCK_LOCK:
+        fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
     if locked_until > now:
         return jsonify({'ok': False, 'locked': True, 'retry_after': int(locked_until - now),
-                         'error': 'Terlalu banyak percobaan salah. Perangkat ini dikunci sementara.'}), 423
+                         'error': 'Terlalu banyak percobaan salah. IP ini dikunci sementara.'}), 423
 
     data = request.get_json(silent=True) or {}
     pw = str(data.get('password', ''))
-    if pw == MII_AIVIDEO_PASSWORD:
+    # Constant-time comparison — plain `==` short-circuits on the first
+    # differing byte, which is a (low-severity but free-to-fix) timing
+    # side channel for a shared-secret password.
+    if pw and hmac.compare_digest(pw, MII_AIVIDEO_PASSWORD):
         session['mii_aivideo_auth'] = True
-        session.pop('mii_aivideo_fails', None)
-        session.pop('mii_aivideo_locked_until', None)
+        with _AIVIDEO_UNLOCK_LOCK:
+            _AIVIDEO_UNLOCK_ATTEMPTS.pop(ip, None)
         return jsonify({'ok': True})
 
-    fails = int(session.get('mii_aivideo_fails') or 0) + 1
-    if fails >= AIVIDEO_LOCKOUT_THRESHOLD:
-        session['mii_aivideo_fails'] = 0
-        session['mii_aivideo_locked_until'] = now + AIVIDEO_LOCKOUT_SECONDS
-        return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
-                         'error': 'Password salah 3 kali. Perangkat ini dikunci sementara.'}), 423
-
-    session['mii_aivideo_fails'] = fails
+    with _AIVIDEO_UNLOCK_LOCK:
+        fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
+        fails += 1
+        if fails >= AIVIDEO_LOCKOUT_THRESHOLD:
+            locked_until = now + AIVIDEO_LOCKOUT_SECONDS
+            _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (0, locked_until)
+            return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
+                             'error': 'Password salah 3 kali. IP ini dikunci sementara.'}), 423
+        _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (fails, 0)
     return jsonify({'ok': False, 'attempts_left': AIVIDEO_LOCKOUT_THRESHOLD - fails, 'error': 'Password salah'}), 401
 
 
@@ -3353,6 +3488,32 @@ def aivideo_task_result(task_id):
     return jsonify({'status': 'completed', 'output': t.get('output')})
 
 
+def _sniff_upload_matches_ext(file_bytes, ext):
+    """Verify the file's actual magic bytes match the claimed extension,
+    instead of trusting the client-supplied filename alone. Deliberately
+    stdlib-only (no python-magic/libmagic dependency) so it doesn't require
+    touching the Dockerfile's system packages."""
+    head = file_bytes[:16]
+    if ext in ('.jpg', '.jpeg'):
+        return head[:3] == b'\xff\xd8\xff'
+    if ext == '.png':
+        return head[:8] == b'\x89PNG\r\n\x1a\n'
+    if ext == '.webp':
+        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
+    if ext in ('.mp4', '.mov'):
+        # ISO base media file format: box size (4 bytes) + 'ftyp' at offset 4.
+        # Covers mp4/mov/m4v/qt — the only container types we accept here.
+        return file_bytes[4:8] == b'ftyp'
+    if ext == '.wav':
+        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE'
+    if ext == '.mp3':
+        if head[:3] == b'ID3':
+            return True
+        # Frameless MP3 (no ID3 tag): starts with an MPEG audio frame sync.
+        return len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0
+    return False
+
+
 @app.route('/api/aivideo/upload', methods=['POST'])
 def aivideo_upload():
     """Terima file upload dari browser dan relay ke Dropbox, lalu kembalikan
@@ -3380,6 +3541,9 @@ def aivideo_upload():
     app.logger.info('[ai-video][upload] received file=%s size=%d ext=%s', f.filename, len(file_bytes), ext)
     if len(file_bytes) > 50 * 1024 * 1024:
         return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
+    if not _sniff_upload_matches_ext(file_bytes, ext):
+        app.logger.warning('[ai-video][upload] rejected file %s: content does not match extension %s', f.filename, ext)
+        return jsonify({'error': f'Isi file tidak sesuai dengan ekstensinya ({ext})'}), 400
     try:
         url = _dropbox_upload_and_link(file_bytes, f.filename)
         app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
@@ -3483,13 +3647,17 @@ def _ensure_dropbox_url(url):
 
 @app.route('/api/aivideo/archive', methods=['GET'])
 def aivideo_archive_list():
-    """List all archived generations from the database (not the session /
-    browser localStorage) — this is what survives a closed browser or a
-    server restart."""
+    """List generations from the database (not the session / browser
+    localStorage) — this is what survives a closed browser or a server
+    restart. ?scope=archived (default) returns only explicitly-archived
+    items, same as before; ?scope=all returns every generation regardless
+    of archived state, used to hydrate the History page from the server."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    scope = (request.args.get('scope') or 'archived').strip().lower()
+    archived_filter = None if scope == 'all' else True
     try:
-        return jsonify({'ok': True, 'items': aivideo_archive.list_archive()})
+        return jsonify({'ok': True, 'items': aivideo_archive.list_archive(archived=archived_filter)})
     except Exception as e:
         app.logger.error('[ai-video][archive] list failed: %s', e, exc_info=True)
         return jsonify({'error': f'Gagal memuat arsip: {e}'}), 500
@@ -3497,10 +3665,14 @@ def aivideo_archive_list():
 
 @app.route('/api/aivideo/archive', methods=['POST'])
 def aivideo_archive_save():
-    """Persist a generation to the server-side Archive. Uploads the media
-    to Dropbox first if it isn't already there (e.g. a fresh generation
-    output living at /static/aivideo_uploads/...), then stores the Dropbox
-    URL + metadata in the database."""
+    """Persist a generation to the server-side store (History and Archive
+    both live in the same table now, distinguished by `archived`). Uploads
+    the media to Dropbox first if it isn't already there (e.g. a fresh
+    generation output living at /static/aivideo_uploads/...), then stores
+    the Dropbox URL + metadata in the database. This runs automatically
+    right after every generation (archived=false) as well as when the user
+    explicitly taps Archive (archived=true) — either way the media ends up
+    on Dropbox instead of only in a browser-local blob/temp URL."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
     rec = request.get_json(silent=True) or {}
@@ -3515,8 +3687,8 @@ def aivideo_archive_save():
         if rec.get('imageUrl'):
             rec['imageUrl'] = _ensure_dropbox_url(rec['imageUrl'])
         aivideo_archive.upsert_archive(rec)
-        app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s',
-                         rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')))
+        app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s archived=%s',
+                         rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')), bool(rec.get('archived', True)))
         return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', '')})
     except Exception as e:
         app.logger.error('[ai-video][archive] save failed id=%s: %s', rec_id, e, exc_info=True)
