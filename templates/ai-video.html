@@ -346,6 +346,7 @@ button{background:none;border:none;cursor:pointer}
 
 /* Motion Control — auto-detected video metadata panel + locked chip state */
 .mc-meta-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:1px;margin-bottom:8px}
+.mc-duration-warn{background:linear-gradient(180deg,rgba(255,180,0,.14),rgba(255,180,0,.05));border:1px solid rgba(255,180,0,.35);color:#ffd166;font-size:12px;line-height:1.5;padding:9px 12px;border-radius:12px;margin-bottom:8px}
 .mc-meta-row::-webkit-scrollbar{display:none}
 .mc-meta-chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 13px;border-radius:12px;background:var(--btn);border:1px solid var(--border);flex-shrink:0;white-space:nowrap}
 .mc-meta-chip .mc-meta-k{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-faint);text-transform:uppercase}
@@ -1371,6 +1372,9 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         <div class="mc-meta-chip"><span class="mc-meta-k">Aspect Ratio</span><span class="mc-meta-v" id="mcMetaRatio">-</span></div>
         <div class="mc-meta-chip"><span class="mc-meta-k">Est. Credits</span><span class="mc-meta-v" id="mcMetaCredits">-</span></div>
       </div>
+      <div class="mc-duration-warn" id="mcDurationWarn" style="display:none">
+        \u26a0 Video referensi lebih dari 15 detik — Motion Control cuma mendukung maks 15 detik, jadi hasilnya akan dipotong ke 15 detik pertama.
+      </div>
 
       <div class="settings-row">
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
@@ -1735,21 +1739,41 @@ function imgFallback(el) { el.onerror = null; el.src = IMG_FALLBACK; }
 // `error` but otherwise just sits there black with no feedback — the user
 // has no way to know it's broken vs. still loading. Show a clear message
 // + retry button instead, mirroring what imgFallback does for images.
+var _videoAutoRetryCount = {}; // videoElId -> how many silent auto-retries already attempted
 function videoFailed(videoElId) {
   var vEl = document.getElementById(videoElId);
   var failEl = document.getElementById(videoElId + 'Fail');
+  var attempts = _videoAutoRetryCount[videoElId] || 0;
+  var src = vEl && (vEl.getAttribute('src') || vEl.currentSrc);
+  // A freshly-finished generation's Dropbox link can occasionally fail to
+  // load on the very first try (CDN edge propagation, a slow/flaky mobile
+  // connection) even though the file itself is fine — confirmed by the
+  // same URL playing correctly moments later. Silently retry a couple of
+  // times before bothering the user with a "failed to load" state.
+  if (src && attempts < 2) {
+    _videoAutoRetryCount[videoElId] = attempts + 1;
+    setTimeout(function() {
+      if (!vEl) return;
+      var sep = src.indexOf('?') === -1 ? '?' : '&';
+      vEl.src = src.split('#')[0].split('?')[0] + sep + '_autoretry=' + Date.now();
+      vEl.load();
+    }, 700 * (attempts + 1));
+    return;
+  }
   if (vEl) vEl.style.display = 'none';
   if (failEl) failEl.style.display = 'flex';
 }
 function videoRecovered(videoElId) {
   var vEl = document.getElementById(videoElId);
   var failEl = document.getElementById(videoElId + 'Fail');
+  _videoAutoRetryCount[videoElId] = 0;
   if (failEl) failEl.style.display = 'none';
   if (vEl) vEl.style.display = 'block';
 }
 function retryVideoLoad(videoElId) {
   var vEl = document.getElementById(videoElId);
   if (!vEl) return;
+  _videoAutoRetryCount[videoElId] = 0; // manual retry gets its own fresh auto-retry budget too
   var src = vEl.getAttribute('src') || vEl.currentSrc;
   if (!src) return;
   var failEl = document.getElementById(videoElId + 'Fail');
@@ -2684,8 +2708,12 @@ function showCanvasResult(videoUrl, imageUrl) {
 // to do anything with what was just generated.
 function showCanvasResultUI(payload) {
   var mediaUrl = payload.videoUrl || payload.imageUrl || '';
+  var isImg = !!payload.imageUrl && !payload.videoUrl;
   var dlBtn = document.getElementById('canvasDownloadBtn');
-  if (dlBtn) dlBtn.href = mediaUrl;
+  if (dlBtn) {
+    dlBtn.setAttribute('data-url', mediaUrl);
+    dlBtn.setAttribute('data-filename', 'mii-ai-video-' + Date.now() + (isImg ? '.png' : '.mp4'));
+  }
 
   var boxEl = document.getElementById('canvasResultBox');
   if (boxEl) boxEl.style.display = 'flex';
@@ -2847,6 +2875,19 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   input.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
+    // Picking a new file while already at the family's cap (e.g. Motion
+    // Control allows only 1 reference video) must REPLACE the existing
+    // one, not append a second entry. Appending silently left stale state
+    // behind: motionControlMeta (locked ratio/duration) stayed pointed at
+    // the OLD video, the old upload kept showing in /ai-video/debug, and
+    // the generate payload could end up sending the wrong reference —
+    // all of which previously only got cleaned up by manually deleting
+    // the old chip first (or hitting "Clear Debug"). Removing via
+    // removeMedia() reuses its existing cleanup (clearMotionControlMeta,
+    // forgetUpload, prompt tag renumbering) so replacing "just works".
+    while (media[type].length >= (maxCounts[type] || 1)) {
+      removeMedia(type, 0);
+    }
     var previewUrl = URL.createObjectURL(file);
     uploadFile(file, type, previewUrl);
     e.target.value = '';
@@ -2933,7 +2974,11 @@ function analyzeMotionControlVideo(entry) {
       applyMotionControlLock();
       renderMotionControlMeta();
       updateCreditEstimate();
-      showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan provider' : 'Video referensi terdeteksi otomatis');
+      if (data.original.duration > 15) {
+        showToast('Video lebih dari 15 detik — akan dipotong ke 15 detik pertama');
+      } else {
+        showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan provider' : 'Video referensi terdeteksi otomatis');
+      }
     })
     .catch(function() {
       if (media.video.indexOf(entry) === -1) return;
@@ -2965,13 +3010,16 @@ function applyMotionControlLock() {
 
 function renderMotionControlMeta() {
   var metaRow = document.getElementById('mcMetaRow');
+  var warnEl = document.getElementById('mcDurationWarn');
   if (!metaRow) return;
   var isMotionControl = !!(selectedFamily && selectedFamily.key === 'klingswap');
   if (!isMotionControl || !motionControlMeta) {
     metaRow.style.display = 'none';
+    if (warnEl) warnEl.style.display = 'none';
     return;
   }
   var p = motionControlMeta.processed, o = motionControlMeta.original;
+  if (warnEl) warnEl.style.display = (o.duration > 15) ? 'block' : 'none';
   var resEl = document.getElementById('mcMetaRes');
   if (resEl) resEl.textContent = p.width + '\u00d7' + p.height;
   var durEl = document.getElementById('mcMetaDur');
@@ -3364,23 +3412,33 @@ function classifyFetchError(err, prefix) {
 function downloadResult(url, suggestedName) {
   if (!url) return;
   showToast('Menyiapkan download…');
-  fetchWithTimeout(url, {}, 60000)
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+  var filename = suggestedName || ('mii-ai-video-' + Date.now());
+  // Same-origin proxy (not a direct cross-origin fetch of the Dropbox URL)
+  // — Dropbox doesn't reliably send CORS headers for every URL, and when
+  // a direct fetch failed here before, the only fallback was navigating
+  // the whole tab to the raw Dropbox URL instead of downloading. Our own
+  // server has no CORS restriction fetching Dropbox, so this always
+  // works the same way regardless of Dropbox's headers.
+  var proxyUrl = '/api/aivideo/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
+  fetchWithTimeout(proxyUrl, {}, 60000)
+    .then(function(r) {
+      if (!r.ok) return r.json().catch(function() { return {}; }).then(function(d) { throw new Error(d.error || ('HTTP ' + r.status)); });
+      return r.blob();
+    })
     .then(function(blob) {
       var blobUrl = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = blobUrl;
-      a.download = suggestedName || ('mii-ai-video-' + Date.now());
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 10000);
     })
     .catch(function(err) {
-      showError(classifyFetchError(err, 'Download gagal'));
-      // Last-resort fallback: at least open it in a new tab so the user can
-      // long-press/save manually instead of the button doing nothing.
-      window.open(url, '_blank');
+      // Even the last-resort fallback stays same-origin/in-app — never
+      // navigate the user away to a raw Dropbox page again.
+      showError(classifyFetchError(err, 'Download gagal, coba lagi'));
     });
 }
 
@@ -3679,6 +3737,17 @@ function pollQueueTask(taskId, opts) {
             if (e.stage) e.stage.textContent = 'Tersimpan di History';
             markDone();
             delete activeGens[taskId]; refreshQueueBadge();
+            // Show the result inline on the Generate canvas right away —
+            // previously nothing called showCanvasResult/showCanvasResultUI
+            // even though both existed, so the canvas stayed empty and the
+            // fullscreen Result page (via the toast's "Lihat" button or
+            // History) was the only place to actually see what finished.
+            // This is harmless even if the user has since navigated away
+            // or started composing something new: updateCanvasPreview()
+            // (called on every media/prompt change) already hides this via
+            // hideCanvasResultUI(), so a stale preview can't linger.
+            showCanvasResult(videoUrl, imageUrl);
+            showCanvasResultUI(resultPayload);
             var isImageResult = !!imageUrl && !videoUrl;
             var thumbEl = document.getElementById('genqThumb_' + taskId);
             var ringEl = document.getElementById('genqRing_' + taskId);
@@ -4461,6 +4530,8 @@ function confirmDeleteHistoryItem(id) {
     if (wasShowingDeleted) {
       window.__lastResult = null;
       closeResultOverlay();
+      hideCanvasResultUI();
+      updateCanvasPreview();
     }
     renderHistoryList();
     renderArchiveList();
