@@ -2262,6 +2262,45 @@ FLUX_ENDPOINT_BY_TIER = {
 }
 FLUX_RATIOS = ('1:1', '4:3', '3:4', '16:9', '9:16', '21:9')
 
+# Veo 3.1 (Google DeepMind) — 3 real Segmind endpoints, confirmed against
+# Segmind's own API docs (segmind.com/models/veo-3.1/api, veo-3.1-fast/api,
+# veo-3.1-lite). All three share one request shape: prompt (required),
+# aspect_ratio (16:9 | 9:16 ONLY — narrower than Seedance), duration
+# (4 | 6 | 8), resolution (720p | 1080p), generate_audio, image (start
+# frame URI), last_frame (end frame URI), reference_images (string[], for
+# subject consistency), negative_prompt, seed.
+VEO_ENDPOINT_BY_TIER = {
+    'LITE': 'veo-3.1-lite',
+    'FAST': 'veo-3.1-fast',
+    'PRO':  'veo-3.1',
+}
+VEO_DURATIONS = (4, 6, 8)
+VEO_RATIOS = ('16:9', '9:16')
+VEO_RESOLUTIONS = ('720p', '1080p')
+
+# Imagen 4 (Google) — one real Segmind endpoint (segmind.com/models/
+# imagen-4/api). Minimal request shape confirmed in the docs: prompt
+# (required), aspect_ratio (5 presets), negative_prompt. No reference
+# images, no size/quality knobs — deliberately no upload slot in the UI.
+IMAGEN4_RATIOS = ('1:1', '4:3', '3:4', '9:16', '16:9')
+
+# Qwen Image (Alibaba) — one real Segmind endpoint (segmind.com/models/
+# qwen-image/api). Confirmed shape: prompt, negative_prompt, aspect_ratio
+# (7 presets incl. 3:2/2:3), steps (default 30), guidance (default 3.5),
+# image_format, quality, base64, seed. Text-to-image only.
+QWENIMAGE_RATIOS = ('1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3')
+
+# Seed Audio 1.0 (ByteDance) — one real Segmind endpoint (segmind.com/models/
+# seed-audio-1.0/api). Confirmed shape: text_prompt (required, <=2048 chars),
+# format (wav|mp3|pcm|ogg_opus), sample_rate (8000..48000), speech_rate/
+# loudness_rate/pitch_rate, reference_audio_urls (up to 3, cited as
+# @Audio1..3), image_url (single mood-reference image — CANNOT be combined
+# with reference audio per Segmind's own docs). Returns: Audio.
+SEEDAUDIO_ENDPOINT = 'seed-audio-1.0'
+SEEDAUDIO_FORMATS = ('wav', 'mp3', 'pcm', 'ogg_opus')
+SEEDAUDIO_SAMPLE_RATES = (8000, 16000, 24000, 32000, 44100, 48000)
+SEEDAUDIO_EXT_BY_FORMAT = {'wav': 'wav', 'mp3': 'mp3', 'pcm': 'pcm', 'ogg_opus': 'ogg'}
+
 # ── Dropbox (media relay so our own domain is never sent to Segmind) ───
 # NOTE: Dropbox "permanent" access tokens (the classic single Bearer token
 # generated once from the App Console) are deprecated by Dropbox — since
@@ -2524,9 +2563,16 @@ def _dropbox_request_with_retry(method, url, **kwargs):
     return resp
 
 
-def _dropbox_upload_bytes(file_bytes, filename):
-    """Upload raw bytes to Dropbox and return the lowercase path."""
-    dbx_path = '/mii-aivideo/' + uuid.uuid4().hex + '_' + re.sub(r'[^A-Za-z0-9._-]', '_', filename)
+def _dropbox_upload_bytes(file_bytes, filename, folder='refs'):
+    """Upload raw bytes to Dropbox and return the lowercase path.
+
+    folder='refs'    -> /mii-aivideo/refs/    : file referensi (sementara,
+                        disapu otomatis oleh _storage_sweeper setelah 3 jam)
+    folder='results' -> /mii-aivideo/results/ : hasil generate (permanen,
+                        hidup selama record History/Archive-nya masih ada)
+    """
+    sub_dir = 'results' if folder == 'results' else 'refs'
+    dbx_path = '/mii-aivideo/' + sub_dir + '/' + uuid.uuid4().hex + '_' + re.sub(r'[^A-Za-z0-9._-]', '_', filename)
     app.logger.info('[ai-video][dropbox] uploading %s (%d bytes) -> %s', filename, len(file_bytes), dbx_path)
     resp = _dropbox_request_with_retry(
         'POST',
@@ -2610,8 +2656,8 @@ def _dropbox_permanent_link(path_lower):
     return _to_direct_dropbox_url(resp.json()['url'])
 
 
-def _dropbox_upload_and_link(file_bytes, filename):
-    path_lower = _dropbox_upload_bytes(file_bytes, filename)
+def _dropbox_upload_and_link(file_bytes, filename, folder='refs'):
+    path_lower = _dropbox_upload_bytes(file_bytes, filename, folder=folder)
     link = _dropbox_permanent_link(path_lower)
     # Remember which Dropbox path this shareable link points to, so that if
     # the user later removes this reference in the UI we can actually
@@ -2656,6 +2702,152 @@ def _dropbox_delete_by_url(url):
     except Exception as e:
         app.logger.error('[ai-video][dropbox] delete_by_url exception for %s: %s', path_lower, e)
         return False, str(e)
+
+
+def _dropbox_path_from_shared_link(url):
+    """Resolve a shared link WE issued back to its Dropbox path via
+    sharing/get_shared_link_metadata. Returns path_lower or None. Only
+    trusted for links under our own /mii-aivideo/ tree."""
+    try:
+        resp = _dropbox_request_with_retry(
+            'POST',
+            'https://api.dropboxapi.com/2/sharing/get_shared_link_metadata',
+            headers={'Content-Type': 'application/json'},
+            json={'url': url.split('?')[0]}, timeout=30,
+        )
+        if resp.status_code >= 400:
+            return None
+        p = (resp.json().get('path_lower') or '')
+        return p if p.startswith('/mii-aivideo/') else None
+    except Exception:
+        return None
+
+
+def _dropbox_delete_result_url(url):
+    """Delete the Dropbox file behind a RESULT link (used when the user
+    deletes a History/Archive item). Best-effort: resolves the path from
+    the in-memory map first, then from Dropbox's own shared-link metadata
+    (which survives server restarts). Never touches anything outside
+    /mii-aivideo/."""
+    if not url or 'dropbox' not in url:
+        return None, 'not a dropbox url'
+    ok, detail = _dropbox_delete_by_url(url)
+    if ok is not None:
+        return ok, detail
+    path_lower = _dropbox_path_from_shared_link(url)
+    if not path_lower:
+        return None, 'path not resolvable'
+    return _dropbox_delete_path(path_lower)
+
+
+AIVIDEO_REFS_TTL_SECONDS = 60 * 60            # referensi Dropbox: 1 jam
+AIVIDEO_LOCAL_TTL_SECONDS = 24 * 60 * 60      # salinan lokal hasil: 24 jam
+_SWEEPER_INTERVAL_SECONDS = 60 * 60           # cek tiap jam
+
+
+def _sweep_dropbox_refs():
+    """Hapus semua file di /mii-aivideo/refs yang lebih tua dari TTL.
+    Hanya menyentuh folder refs — hasil di /mii-aivideo/results dan file
+    legacy di root tidak pernah disentuh."""
+    deleted = 0
+    try:
+        cursor = None
+        entries = []
+        while True:
+            if cursor:
+                resp = _dropbox_request_with_retry(
+                    'POST', 'https://api.dropboxapi.com/2/files/list_folder/continue',
+                    headers={'Content-Type': 'application/json'},
+                    json={'cursor': cursor}, timeout=30)
+            else:
+                resp = _dropbox_request_with_retry(
+                    'POST', 'https://api.dropboxapi.com/2/files/list_folder',
+                    headers={'Content-Type': 'application/json'},
+                    json={'path': '/mii-aivideo/refs', 'recursive': False}, timeout=30)
+            if resp.status_code >= 400:
+                if 'not_found' in resp.text:
+                    return 0  # folder belum ada — belum ada upload sejak update ini
+                app.logger.warning('[sweeper] list refs failed: %s %s', resp.status_code, resp.text[:200])
+                return 0
+            data = resp.json()
+            entries.extend(data.get('entries', []))
+            if not data.get('has_more'):
+                break
+            cursor = data.get('cursor')
+        now = time.time()
+        for e in entries:
+            if e.get('.tag') != 'file':
+                continue
+            ts = e.get('server_modified') or e.get('client_modified') or ''
+            try:
+                age = now - datetime.strptime(ts, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp()
+            except Exception:
+                continue
+            if age > AIVIDEO_REFS_TTL_SECONDS:
+                ok, _detail = _dropbox_delete_path(e['path_lower'])
+                if ok:
+                    deleted += 1
+        if deleted:
+            app.logger.info('[sweeper] Dropbox refs: %d file kadaluarsa dihapus', deleted)
+    except Exception as e:
+        app.logger.warning('[sweeper] refs sweep error: %s', e)
+    return deleted
+
+
+def _sweep_local_uploads():
+    """Hapus salinan lokal hasil generate yang lebih tua dari TTL — Dropbox
+    sudah memegang salinan permanennya, jadi disk container tidak menumpuk."""
+    removed = 0
+    try:
+        upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
+        if not os.path.isdir(upload_dir):
+            return 0
+        now = time.time()
+        for name in os.listdir(upload_dir):
+            p = os.path.join(upload_dir, name)
+            try:
+                if os.path.isfile(p) and (now - os.path.getmtime(p)) > AIVIDEO_LOCAL_TTL_SECONDS:
+                    os.remove(p)
+                    removed += 1
+            except OSError:
+                pass
+        if removed:
+            app.logger.info('[sweeper] lokal: %d file lama dihapus dari static/aivideo_uploads', removed)
+    except Exception as e:
+        app.logger.warning('[sweeper] local sweep error: %s', e)
+    return removed
+
+
+def _storage_sweeper_loop():
+    # Tunggu sebentar setelah boot supaya tidak berebut dengan startup.
+    time.sleep(90)
+    while True:
+        try:
+            has_creds = bool((DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN) or DROPBOX_ACCESS_TOKEN)
+            if has_creds:
+                _sweep_dropbox_refs()
+            _sweep_local_uploads()
+            try:
+                aivideo_archive.prune_tasks(7 * 24 * 60 * 60)  # task >7 hari dibuang
+            except Exception:
+                pass
+        except Exception as e:
+            app.logger.warning('[sweeper] loop error: %s', e)
+        time.sleep(_SWEEPER_INTERVAL_SECONDS)
+
+
+# Boot: task dari kehidupan server sebelumnya yang belum selesai tidak
+# mungkin lanjut (thread-nya ikut mati) — tandai failed dengan pesan jelas.
+try:
+    _n_interrupted = aivideo_archive.mark_interrupted_tasks(
+        'Server di-restart saat task berjalan. Hasil tidak sempat tersimpan — coba generate ulang.')
+    if _n_interrupted:
+        app.logger.info('[ai-video][boot] %d task terputus ditandai failed', _n_interrupted)
+except Exception as _e:
+    app.logger.warning('[ai-video][boot] gagal menandai task terputus: %s', _e)
+
+# Satu worker gunicorn (lihat start.py), jadi thread ini hanya hidup sekali.
+threading.Thread(target=_storage_sweeper_loop, daemon=True).start()
 
 
 def _dropbox_status_check():
@@ -2988,11 +3180,29 @@ def _friendly_motion_control_error(raw_msg):
     return raw_msg
 
 
+def _persist_task(task_id):
+    """Simpan snapshot task ke SQLite (best-effort). Dengan ini hasil
+    generate selamat dari redeploy Railway — dulu semua state task hanya
+    hidup di memori dan lenyap tiap restart ('Task tidak ditemukan')."""
+    try:
+        with AIVIDEO_TASKS_LOCK:
+            t = AIVIDEO_TASKS.get(task_id)
+            snap = dict(t) if t else None
+        if snap is not None:
+            aivideo_archive.save_task(task_id, snap)
+    except Exception as e:
+        app.logger.warning('[ai-video][persist] gagal simpan task %s: %s', task_id, e)
+
+
 def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None, mute_audio=False):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
                 AIVIDEO_TASKS[task_id].update(kw)
+        # Progress berubah tiap detik — cukup persist saat ada perubahan
+        # yang menentukan nasib task (status/hasil/error).
+        if 'status' in kw or 'output' in kw or 'error' in kw:
+            _persist_task(task_id)
 
     log_prefix = f'[ai-video][segmind][{task_id}]'
     logged_body = dict(body)
@@ -3002,6 +3212,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
     _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
 
     is_image = (output_type == 'image')
+    is_audio = (output_type == 'audio')
     retry_count = 0
     call_started = time.time()
 
@@ -3063,8 +3274,8 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
 
         if resp.status_code >= 400:
             upstream_error = _segmind_extract_error(resp)
-        elif (('image' in content_type and is_image) or 'video' in content_type
-              or 'application/octet-stream' in content_type):
+        elif (('image' in content_type and is_image) or ('audio' in content_type and is_audio)
+              or 'video' in content_type or 'application/octet-stream' in content_type):
             result_bytes = resp.content
         elif 'application/json' in content_type or resp.text.strip()[:1] == '{':
             try:
@@ -3077,6 +3288,9 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
                     out_url = (data.get('image_url') or data.get('output') or data.get('url')
                                or (data.get('images')[0] if isinstance(data.get('images'), list) and data.get('images') else None))
                     b64 = data.get('image') or data.get('image_base64') or data.get('base64')
+                elif is_audio:
+                    out_url = data.get('audio_url') or data.get('output') or data.get('url')
+                    b64 = data.get('audio') or data.get('audio_base64') or data.get('base64')
                 else:
                     out_url = data.get('video_url') or data.get('output') or data.get('url')
                     b64 = data.get('video') or data.get('video_base64') or data.get('base64')
@@ -3093,7 +3307,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
                     except Exception as be:
                         upstream_error = f'Gagal decode base64 hasil Segmind: {be}'
                 else:
-                    kind = 'gambar' if is_image else 'video'
+                    kind = 'gambar' if is_image else ('audio' if is_audio else 'video')
                     upstream_error = (
                         data.get('error') or data.get('message')
                         or f'Segmind sukses (200) tapi tidak ada field {kind} di response: {json.dumps(data)[:300]}'
@@ -3110,7 +3324,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         duration_ms = round((time.time() - call_started) * 1000)
 
         if upstream_error or not result_bytes:
-            kind = 'gambar' if is_image else 'video'
+            kind = 'gambar' if is_image else ('audio' if is_audio else 'video')
             msg = upstream_error or f'Segmind tidak mengembalikan {kind} (response kosong)'
             if family == 'klingswap':
                 # Never show the raw provider error (e.g. "Prediction failed:
@@ -3134,7 +3348,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
             response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
         )
 
-        if mute_audio and not is_image:
+        if mute_audio and not is_image and not is_audio:
             try:
                 before_len = len(result_bytes)
                 result_bytes = _strip_video_audio(result_bytes)
@@ -3149,7 +3363,12 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         # immediately without waiting on a second network hop to Dropbox).
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
         os.makedirs(upload_dir, exist_ok=True)
-        ext = 'png' if is_image else 'mp4'
+        if is_image:
+            ext = 'png'
+        elif is_audio:
+            ext = SEEDAUDIO_EXT_BY_FORMAT.get(str(body.get('format') or 'mp3').lower(), 'mp3')
+        else:
+            ext = 'mp4'
         fname = f'{task_id}.{ext}'
         with open(os.path.join(upload_dir, fname), 'wb') as f:
             f.write(result_bytes)
@@ -3165,13 +3384,14 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         # back to the local URL rather than failing a finished generation.
         final_url = local_url
         try:
-            final_url = _dropbox_upload_and_link(result_bytes, fname)
+            final_url = _dropbox_upload_and_link(result_bytes, fname, folder='results')
         except Exception as dbx_err:
             app.logger.warning('%s Dropbox upload failed, falling back to local static URL: %s', log_prefix, dbx_err)
             _aivideo_last_error('dropbox', f'Upload hasil generate ke Dropbox gagal (pakai local storage sementara): {dbx_err}')
 
-        output_key = 'image_url' if is_image else 'video_url'
-        _set(status='completed', progress=100, output={output_key: final_url})
+        output_key = 'image_url' if is_image else ('audio_url' if is_audio else 'video_url')
+        # size_bytes lets the frontend show the saved file size in History
+        _set(status='completed', progress=100, output={output_key: final_url, 'size_bytes': len(result_bytes)})
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
@@ -3253,6 +3473,54 @@ def ai_video_unlock():
 def ai_video_logout():
     session.pop('mii_aivideo_auth', None)
     return jsonify({'ok': True})
+
+
+_ENHANCE_SYSTEM = (
+    "You are a prompt engineer for AI generative models. Rewrite the user's rough prompt "
+    "into a single, vivid, production-quality prompt for the target mode. Rules: "
+    "(1) Output ONLY the rewritten prompt — no preamble, quotes, markdown, or explanations. "
+    "(2) Preserve every @image1/@video2/@audio3-style reference tag EXACTLY as written, in a natural position. "
+    "(3) Write in English for best model performance, but keep any quoted dialogue lines in their original language. "
+    "(4) VIDEO mode: describe subject + action, camera movement, shot type, lighting, atmosphere, and style; under 850 characters. "
+    "(5) IMAGE mode: describe subject, composition, style, lighting, color palette, and detail level; under 850 characters. "
+    "(6) AUDIO mode: describe the full audio scene — ambience, music style/tempo, sound effects, and any spoken lines with speaker cues; under 1900 characters. "
+    "(7) Never invent new reference tags that the user did not include."
+)
+
+
+@app.route('/api/aivideo/enhance', methods=['POST'])
+def aivideo_enhance():
+    """Perbaiki prompt user via Gemini (tombol Enhance di editor prompt)."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    raw = (data.get('prompt') or '').strip()
+    mode = (data.get('mode') or 'video').lower()
+    if mode not in ('video', 'image', 'audio'):
+        mode = 'video'
+    if not raw:
+        return jsonify({'error': 'Prompt masih kosong'}), 400
+    api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'GEMINI_API_KEY belum di-set di server'}), 501
+    try:
+        global _gemini_configured
+        if not _gemini_configured:
+            genai.configure(api_key=api_key)
+            _gemini_configured = True
+        # Model terpisah dari persona chat (tanpa system instruction Makima).
+        model = genai.GenerativeModel('gemini-2.0-flash', system_instruction=_ENHANCE_SYSTEM)
+        target_model = (data.get('family') or '') + ' ' + (data.get('model') or '')
+        msg = 'Target mode: ' + mode.upper() + '. Target model: ' + target_model.strip() + '.\nUser prompt:\n' + raw[:4000]
+        resp = model.generate_content(msg, request_options={'timeout': 45})
+        out = (getattr(resp, 'text', '') or '').strip().strip('"').strip()
+        if not out:
+            return jsonify({'error': 'Gemini tidak mengembalikan teks'}), 502
+        limit = 2000 if mode == 'audio' else 900
+        return jsonify({'ok': True, 'prompt': out[:limit]})
+    except Exception as e:
+        app.logger.warning('[ai-video][enhance] gagal: %s', e)
+        return jsonify({'error': 'Enhance gagal: ' + str(e)[:140]}), 502
 
 
 @app.route('/api/aivideo/generate', methods=['POST'])
@@ -3528,13 +3796,125 @@ def aivideo_generate():
                      'raw': False, 'safety_tolerance': 2}
         duration = 0  # not applicable to image generation
 
+    elif family == 'veo':
+        # Veo 3.1 — text-to-video or image-to-video; per Segmind's own docs
+        # prompt is the only required field. first_frame_url -> image (start
+        # frame), last_frame_url -> last_frame, image_urls -> reference_images
+        # (subject-consistency refs — a distinct concept from the start frame).
+        if model_key not in VEO_ENDPOINT_BY_TIER:
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = VEO_ENDPOINT_BY_TIER[model_key]
+
+        try:
+            duration = int(payload.get('duration', 8))
+        except (TypeError, ValueError):
+            duration = 8
+        if duration not in VEO_DURATIONS:
+            duration = min(VEO_DURATIONS, key=lambda d: abs(d - duration))
+
+        resolution = payload.get('resolution') or '1080p'
+        if resolution not in VEO_RESOLUTIONS:
+            resolution = '1080p'
+
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in VEO_RATIOS else '16:9'
+
+        body = {
+            'prompt': prompt,
+            'duration': duration,
+            'resolution': resolution,
+            'aspect_ratio': aspect_ratio,
+            # Same moderation rationale as Seedance: when the user muted
+            # audio, tell the model not to generate it at all instead of
+            # generating then stripping it afterward.
+            'generate_audio': False if mute_audio else bool(payload.get('generate_audio', True)),
+        }
+        if first_frame_url:
+            body['image'] = first_frame_url
+        if last_frame_url:
+            body['last_frame'] = last_frame_url
+        if image_urls:
+            body['reference_images'] = image_urls[:3]
+        negative_prompt = str(payload.get('negative_prompt') or '').strip()
+        if negative_prompt:
+            body['negative_prompt'] = negative_prompt
+
+    elif family == 'seedaudio':
+        # Mode Audio — Seed Audio 1.0 (text-to-audio scene: dialog, musik,
+        # ambience, SFX; voice cloning via referensi audio).
+        if model_key not in ('STANDARD',):
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = SEEDAUDIO_ENDPOINT
+
+        audio_format = str(payload.get('audio_format') or 'wav').lower()
+        if audio_format not in SEEDAUDIO_FORMATS:
+            audio_format = 'wav'
+        try:
+            sample_rate = int(payload.get('sample_rate', 44100))
+        except (TypeError, ValueError):
+            sample_rate = 44100
+        if sample_rate not in SEEDAUDIO_SAMPLE_RATES:
+            sample_rate = 44100
+
+        body = {
+            'text_prompt': prompt[:2048],
+            'format': audio_format,
+            'sample_rate': sample_rate,
+        }
+        if audio_urls:
+            body['reference_audio_urls'] = audio_urls[:3]
+        elif image_urls:
+            # image_url tidak boleh digabung dengan reference audio (docs) —
+            # referensi audio menang kalau dua-duanya ada.
+            body['image_url'] = image_urls[0]
+        duration = 0  # panjang audio ditentukan model, bukan parameter
+
+    elif family == 'imagen':
+        # Imagen 4 — single-tier model, minimal confirmed request shape
+        # (prompt + aspect_ratio + negative_prompt only; no reference slot).
+        if model_key not in ('STANDARD',):
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = 'imagen-4'
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in IMAGEN4_RATIOS else '1:1'
+        body = {
+            'prompt': prompt,
+            'aspect_ratio': aspect_ratio,
+        }
+        negative_prompt = str(payload.get('negative_prompt') or '').strip()
+        if negative_prompt:
+            body['negative_prompt'] = negative_prompt
+        duration = 0  # not applicable to image generation
+
+    elif family == 'qwen':
+        # Qwen Image — single-tier, text-to-image only (no reference slot).
+        # steps/guidance deliberately left at Segmind's own defaults.
+        if model_key not in ('STANDARD',):
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
+        endpoint = 'qwen-image'
+        aspect_ratio = aspect_ratio_in if aspect_ratio_in in QWENIMAGE_RATIOS else '1:1'
+        body = {
+            'prompt': prompt,
+            'aspect_ratio': aspect_ratio,
+            'image_format': 'png',
+            'base64': False,
+        }
+        negative_prompt = str(payload.get('negative_prompt') or '').strip()
+        if negative_prompt:
+            body['negative_prompt'] = negative_prompt
+        duration = 0  # not applicable to image generation
+
     else:
         return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini. '
                                   f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Kling 3.0 (STANDARD/PRO), '
-                                  f'Motion Control (STD/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
-                                  f'GPT Image 2 (LOW/STANDARD/HIGH), Seedream 5.0 Pro, dan Flux (SCHNELL/DEV/PRO).'}), 501
+                                  f'Motion Control (STD/PRO), Veo 3.1 (LITE/FAST/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
+                                  f'GPT Image 2 (LOW/STANDARD/HIGH), Seedream 5.0 Pro, Flux (SCHNELL/DEV/PRO), '
+                                  f'Imagen 4, Qwen Image, dan Seed Audio 1.0.'}), 501
 
-    output_type = 'image' if family in ('nanobanana', 'gptimage', 'seedream', 'flux') else 'video'
+    if family == 'seedaudio':
+        output_type = 'audio'
+    elif family in ('nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'):
+        output_type = 'image'
+    else:
+        output_type = 'video'
 
     task_id = uuid.uuid4().hex
     with AIVIDEO_TASKS_LOCK:
@@ -3542,20 +3922,30 @@ def aivideo_generate():
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
         }
+    _persist_task(task_id)
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
                      task_id, family, model_key, endpoint)
     threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family, mute_audio), daemon=True).start()
 
-    estimated_time = (duration * 12) if duration else 20
+    estimated_time = (duration * 12) if duration else (30 if output_type == 'audio' else 20)
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
 
 
 def _aivideo_task_payload(task_id):
     with AIVIDEO_TASKS_LOCK:
         t = AIVIDEO_TASKS.get(task_id)
-        if not t:
+        t = dict(t) if t else None
+    if t is None:
+        # Proses baru (redeploy)? Ambil dari SQLite dan hidupkan lagi di
+        # memori supaya poll berikutnya cepat.
+        try:
+            t = aivideo_archive.get_task(task_id)
+        except Exception:
+            t = None
+        if t is None:
             return None
-        t = dict(t)
+        with AIVIDEO_TASKS_LOCK:
+            AIVIDEO_TASKS.setdefault(task_id, dict(t))
     resp = {'id': task_id, 'status': t['status'], 'progress': t.get('progress', 0)}
     if t['status'] == 'completed':
         resp['output'] = t.get('output')
@@ -3589,6 +3979,11 @@ def aivideo_task_result(task_id):
     with AIVIDEO_TASKS_LOCK:
         t = AIVIDEO_TASKS.get(task_id)
         t = dict(t) if t else None
+    if not t:
+        try:
+            t = aivideo_archive.get_task(task_id)
+        except Exception:
+            t = None
     if not t:
         return jsonify({'error': 'Task tidak ditemukan'}), 404
     if t['status'] != 'completed':
@@ -3748,7 +4143,7 @@ def _ensure_dropbox_url(url):
         raise RuntimeError(f'File hasil generate tidak ditemukan di server: {rel_path}')
     with open(local_path, 'rb') as fh:
         file_bytes = fh.read()
-    dropbox_url = _dropbox_upload_and_link(file_bytes, os.path.basename(local_path))
+    dropbox_url = _dropbox_upload_and_link(file_bytes, os.path.basename(local_path), folder='results')
     app.logger.info('[ai-video][archive] promoted local file to Dropbox: %s -> %s', rel_path, dropbox_url)
     return dropbox_url
 
@@ -3787,17 +4182,19 @@ def aivideo_archive_save():
     rec_id = str(rec.get('id') or '').strip()
     if not rec_id:
         return jsonify({'error': 'id wajib diisi'}), 400
-    if not rec.get('videoUrl') and not rec.get('imageUrl'):
-        return jsonify({'error': 'videoUrl atau imageUrl wajib diisi'}), 400
+    if not rec.get('videoUrl') and not rec.get('imageUrl') and not rec.get('audioUrl'):
+        return jsonify({'error': 'videoUrl, imageUrl, atau audioUrl wajib diisi'}), 400
     try:
         if rec.get('videoUrl'):
             rec['videoUrl'] = _ensure_dropbox_url(rec['videoUrl'])
         if rec.get('imageUrl'):
             rec['imageUrl'] = _ensure_dropbox_url(rec['imageUrl'])
+        if rec.get('audioUrl'):
+            rec['audioUrl'] = _ensure_dropbox_url(rec['audioUrl'])
         aivideo_archive.upsert_archive(rec)
         app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s archived=%s',
                          rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')), bool(rec.get('archived', True)))
-        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', '')})
+        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', ''), 'audioUrl': rec.get('audioUrl', '')})
     except Exception as e:
         app.logger.error('[ai-video][archive] save failed id=%s: %s', rec_id, e, exc_info=True)
         _aivideo_last_error('archive', str(e))
@@ -3806,20 +4203,52 @@ def aivideo_archive_save():
 
 @app.route('/api/aivideo/archive/<archive_id>', methods=['DELETE'])
 def aivideo_archive_delete(archive_id):
-    """Remove a record from the server-side Archive (used when the user
-    unarchives or deletes a history item, to keep the database in sync).
-    Note: this does not delete the file from Dropbox — an archived file is
-    a deliberate long-term save, unlike a removed reference image."""
+    """Remove a record from the server-side History/Archive. Ala web
+    profesional: menghapus item dari library juga menghapus file hasilnya
+    di Dropbox (kecuali diminta keep_file=1, dipakai saat unarchive yang
+    hanya memindahkan record, bukan membuang hasil)."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    keep_file = request.args.get('keep_file') == '1'
     try:
+        rec = None
+        try:
+            rec = aivideo_archive.get_archive(archive_id)
+        except Exception:
+            rec = None
         aivideo_archive.delete_archive(archive_id)
+        if rec and not keep_file:
+            for key in ('video_url', 'image_url', 'audio_url'):
+                u = (rec.get(key) or '') if isinstance(rec, dict) else ''
+                if u:
+                    ok, detail = _dropbox_delete_result_url(u)
+                    app.logger.info('[ai-video][archive] delete id=%s %s dropbox cleanup: %s (%s)',
+                                     archive_id, key, ok, detail)
         return jsonify({'ok': True})
     except Exception as e:
         app.logger.error('[ai-video][archive] delete failed id=%s: %s', archive_id, e, exc_info=True)
         return jsonify({'error': f'Gagal hapus dari Archive: {e}'}), 500
 
 
+
+
+@app.route('/api/aivideo/storage')
+def aivideo_storage_usage():
+    """Pemakaian storage Dropbox (users/get_space_usage) untuk halaman
+    API Provider — tampil seperti '2.1 GB / 10 TB'."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        resp = _dropbox_request_with_retry(
+            'POST', 'https://api.dropboxapi.com/2/users/get_space_usage',
+            headers={'Content-Type': 'application/json'}, timeout=30)
+        if resp.status_code >= 400:
+            return jsonify({'error': f'Dropbox error ({resp.status_code})'}), 502
+        d = resp.json()
+        allocated = ((d.get('allocation') or {}).get('allocated')) or 0
+        return jsonify({'ok': True, 'used': d.get('used', 0), 'allocated': allocated})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 502
 
 
 @app.route('/ai-video/debug/clear')
