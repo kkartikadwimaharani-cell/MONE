@@ -152,6 +152,27 @@
     *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
     body::after{display:none}
   }
+  /* Kartu visual Recent Uploads — thumbnail + tipe + waktu, gampang dibedakan */
+  .up-grid{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+  .up-card{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:12px;border:1px solid var(--border-dim);background:var(--panel2);text-decoration:none;color:var(--txt);transition:border-color .15s,transform .15s}
+  .up-card:hover{border-color:var(--border);transform:translateX(2px)}
+  .up-thumb{position:relative;width:52px;height:52px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;overflow:hidden;border:1px solid var(--border-dim)}
+  .up-thumb img,.up-thumb video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .up-thumb svg{width:20px;height:20px;opacity:.9}
+  .up-image{background:rgba(57,255,136,.08);color:#39ff88}
+  .up-video{background:rgba(255,32,64,.12);color:#ff5a75}
+  .up-audio{background:rgba(255,179,0,.1);color:var(--amber)}
+  .up-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .up-name{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .up-meta{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.04em}
+  .up-err{font-family:var(--mono);font-size:10px;color:var(--bad);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .up-card .badge{flex-shrink:0}
+  /* Entri terbaru berdenyut sebentar supaya kelihatan ada yang berubah */
+  .up-card.is-new{animation:upNew 1.6s ease 1}
+  @keyframes upNew{0%{border-color:var(--ok);box-shadow:0 0 0 1px rgba(57,255,136,.5),0 0 22px -6px rgba(57,255,136,.6)}100%{border-color:var(--border-dim);box-shadow:none}}
+  .up-preview{margin:6px 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--border-dim);max-height:180px;display:flex}
+  .up-preview img,.up-preview video{width:100%;object-fit:cover;max-height:180px}
+  @media (prefers-reduced-motion: reduce){.up-card.is-new{animation:none}}
 </style>
 </head>
 <body>
@@ -257,6 +278,12 @@
       <h2>Last Upload (Dropbox Image/Video URL)</h2>
       {% if last_upload %}
       <div class="row"><span class="k">Filename</span><span class="v">{{ last_upload.filename }}</span></div>
+      {% set lfn = (last_upload.filename or '')|lower %}
+      {% if last_upload.url and (lfn.endswith('.mp4') or lfn.endswith('.mov')) %}
+      <div class="up-preview"><video src="{{ last_upload.url }}#t=0.1" preload="metadata" muted playsinline controls onerror="this.parentNode.style.display='none'"></video></div>
+      {% elif last_upload.url and not (lfn.endswith('.mp3') or lfn.endswith('.wav')) %}
+      <div class="up-preview"><img src="{{ last_upload.url }}" loading="lazy" onerror="this.parentNode.style.display='none'"></div>
+      {% endif %}
       <div class="row"><span class="k">Size</span><span class="v">{{ last_upload.size }} bytes</span></div>
       <div class="row"><span class="k">OK</span><span class="v">{{ last_upload.ok }}</span></div>
       <div class="row"><span class="k">Image URL</span><span class="v">{% if last_upload.url %}<a href="{{ last_upload.url }}" target="_blank" rel="noopener">{{ last_upload.url }}</a>{% else %}-{% endif %}</span></div>
@@ -271,9 +298,32 @@
       <span class="br-tr"></span><span class="br-bl"></span>
       <h2>Recent Uploads ({{ last_uploads|length }}) — Bukan Hanya Upload Terakhir</h2>
       {% if last_uploads %}
-      {% for u in last_uploads %}
-      <div class="row"><span class="k">{{ u.filename }} <span class="badge {{ 'ok' if u.ok else 'bad' }}">{{ 'OK' if u.ok else 'FAILED' }}</span></span><span class="v">{% if u.url %}<a href="{{ u.url }}" target="_blank" rel="noopener">link</a>{% else %}{{ u.error or '-' }}{% endif %}</span></div>
+      <div class="up-grid">
+      {% for u in last_uploads|reverse %}
+      {% set fn = (u.filename or '')|lower %}
+      {% set kind = 'video' if (fn.endswith('.mp4') or fn.endswith('.mov')) else ('audio' if (fn.endswith('.mp3') or fn.endswith('.wav')) else 'image') %}
+      <a class="up-card {{ 'is-new' if loop.first else '' }}" {% if u.url %}href="{{ u.url }}" target="_blank" rel="noopener"{% endif %}>
+        <span class="up-thumb up-{{ kind }}">
+          {% if kind == 'image' and u.url %}
+            <img src="{{ u.url }}" loading="lazy" onerror="this.style.display='none'">
+          {% elif kind == 'video' and u.url %}
+            <video src="{{ u.url }}#t=0.1" preload="metadata" muted playsinline onerror="this.style.display='none'"></video>
+          {% endif %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            {% if kind == 'video' %}<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>
+            {% elif kind == 'audio' %}<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            {% else %}<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>{% endif %}
+          </svg>
+        </span>
+        <span class="up-main">
+          <span class="up-name">{{ u.filename }}</span>
+          <span class="up-meta">{{ kind|upper }}{% if u.size %} · {{ '%.0f'|format(u.size/1024) }} KB{% endif %}{% if u.at %} · {{ u.at[11:19] }}{% endif %}</span>
+          {% if not u.ok %}<span class="up-err">{{ u.error or 'FAILED' }}</span>{% endif %}
+        </span>
+        <span class="badge {{ 'ok' if u.ok else 'bad' }}">{{ 'OK' if u.ok else 'FAILED' }}</span>
+      </a>
       {% endfor %}
+      </div>
       {% else %}
       <div class="empty">Belum ada upload tercatat sejak server terakhir restart.</div>
       {% endif %}
