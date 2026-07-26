@@ -353,7 +353,7 @@ button{background:none;border:none;cursor:pointer}
 .mc-meta-chip .mc-meta-v{font-size:14px;font-weight:700;color:var(--text)}
 .mc-meta-chip.mc-resized .mc-meta-v{color:#ff3c5a}
 .chip.mc-locked{position:relative;opacity:.6;pointer-events:none}
-.chip.mc-locked::after{content:'🔒';font-size:11px;margin-left:2px}
+.chip.mc-locked::after{content:'';width:11px;height:11px;margin-left:4px;display:inline-block;vertical-align:-1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center/contain no-repeat}
 
 /* Qty + Generate */
 .action-row{display:flex;align-items:center;gap:10px}
@@ -491,6 +491,12 @@ input[type=file].hidden-input{display:none}
 .dash-hero-sub{color:var(--text-dim,#999);font-size:11.5px;margin-top:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
 .dash-card{position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px;border-radius:16px;border:1px solid var(--border);background:var(--card2);cursor:pointer;transition:border-color .15s,transform .15s;text-decoration:none;color:#fff}
+/* Kartu utama melebar penuh: baris 1 = MII AI Video, baris 2 = History + Archive — grid selalu penuh, tidak ada sel kosong */
+.dash-card.featured{grid-column:1/-1;flex-direction:row;align-items:center;gap:14px;padding:16px;background:linear-gradient(135deg,rgba(255,32,64,.14),var(--card2) 55%);border-color:rgba(255,32,64,.3)}
+.dash-card.featured:hover{border-color:rgba(255,32,64,.5)}
+.dash-card-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dash-card-chev{width:16px;height:16px;margin-left:auto;flex-shrink:0;color:var(--text-dim);opacity:.8}
+
 .dash-card:active{transform:scale(.97)}
 .dash-card.locked{opacity:.45;cursor:not-allowed}
 .dash-card-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;box-shadow:0 0 16px rgba(255,32,64,.35)}
@@ -520,6 +526,19 @@ input[type=file].hidden-input{display:none}
 .hist-actions{display:flex;gap:5px;flex-shrink:0}
 .hist-act{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .hist-act:active{transform:scale(.92)}
+.hist-act{width:32px;height:32px;color:var(--text-dim);transition:background .15s,color .15s,border-color .15s}
+.hist-act:hover{background:rgba(255,255,255,.1);color:#fff;border-color:var(--border2)}
+.hist-act.danger:hover{background:rgba(255,32,64,.14);border-color:rgba(255,32,64,.4);color:#ff5a75}
+.hist-act svg{width:14px;height:14px;display:block}
+.hist-thumb-glyph svg{width:18px;height:18px;display:block}
+.hist-meta{font-family:var(--mono);letter-spacing:.02em}
+.rb-ico{display:flex;align-items:center;justify-content:center}
+.rb-ico svg{width:17px;height:17px;display:block}
+.failed-actions .rb-ico svg{width:15px;height:15px}
+.set-row-val svg{width:14px;height:14px;display:block;opacity:.7}
+.prompt-btn-icon svg{width:1em;height:1em;display:block}
+.aud svg{width:16px;height:16px;display:block;margin:auto}
+.mp-icon svg{width:16px;height:16px;display:block}
 
 /* CONFIRM DIALOG */
 .confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -1105,6 +1124,219 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .toast-check{width:18px;height:18px;border-radius:50%;background:#3cd97e;display:grid;place-items:center;flex-shrink:0}
 .toast-check svg{width:11px;height:11px}
 .toast-text{font-size:.84rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ============ DESKTOP LAYOUT (≥1100px) ============
+   Dua kolom: kanvas hasil di kiri, control panel jadi rail kanan yang
+   selalu terbuka (bukan bottom sheet). Sheet pilihan jadi dialog di
+   tengah, model dock nempel di samping rail. Mobile/tablet tidak berubah. */
+@media (min-width:768px){
+  .dash-wrap{max-width:820px;margin:0 auto;width:100%}
+}
+@media (min-width:1100px){
+  :root{--rail:432px}
+  .main{
+    display:grid;height:100svh;
+    grid-template-columns:minmax(0,1fr) var(--rail);
+    grid-template-rows:auto auto minmax(0,1fr);
+  }
+  .topbar{grid-column:1;grid-row:1;height:76px;padding-left:28px;padding-right:28px}
+  .modebar{grid-column:1;grid-row:2;justify-content:center;padding:4px 28px 12px}
+  .canvas{grid-column:1;grid-row:3;overflow-y:auto;padding:28px 40px 36px;gap:20px}
+  .canvas-preview,.canvas-result-wrap{max-width:640px}
+  .gen-queue{max-width:640px;margin:0 auto}
+
+  /* Rail kanan */
+  .panel-wrap{
+    grid-column:2;grid-row:1/4;display:flex;min-height:0;
+    padding:16px 16px 16px 4px;animation:none;
+  }
+  .panel{
+    width:100%;max-width:none;margin:0;min-height:0;max-height:100%;
+    border-radius:22px;padding:16px 16px 16px!important;
+    animation:none;transform:none!important;
+    box-shadow:0 18px 60px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.05) inset;
+  }
+  .panel-body{
+    flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+    max-height:none!important;opacity:1!important;pointer-events:auto!important;
+    padding-right:4px;margin-right:-4px;
+  }
+  /* Rail selalu terbuka: collapse/half hanya untuk mobile */
+  .panel-handle-wrap,.panel-collapsed-bar{display:none!important}
+  .panel.collapsed{padding-bottom:16px}
+  .panel.half .tab-content{display:block!important}
+  .panel.half .settings-row,.panel.half .credit-row{display:flex!important}
+
+  /* Sheet pilihan (ratio/durasi/resolusi/upload) -> dialog di tengah */
+  .sheet{
+    left:50%;right:auto;top:50%;bottom:auto;width:min(540px,92vw);margin:0;
+    border-radius:22px!important;border:1px solid var(--border2);border-bottom:1px solid var(--border2);
+    max-height:min(640px,82vh);padding:18px 20px 22px;
+    transform:translate(-50%,-47%) scale(.97);opacity:0;visibility:hidden;
+    transition:transform .2s cubic-bezier(.16,1,.3,1),opacity .16s ease,visibility 0s .2s;
+    box-shadow:0 32px 90px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05) inset!important;
+  }
+  .sheet.show{
+    transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible;
+    transition:transform .22s cubic-bezier(.16,1,.3,1),opacity .18s ease;
+  }
+  .sheet-handle{display:none}
+
+  /* Model dock nempel di samping rail, sejajar tombol pemicunya */
+  .model-dock{
+    left:auto;right:calc(var(--rail) + 24px);bottom:24px;margin:0;
+    width:min(660px,calc(100vw - var(--rail) - 64px));
+    max-height:min(580px,calc(100svh - 48px));
+    transform-origin:bottom right;
+  }
+  .model-dock-grid{flex-direction:row;align-items:flex-start;gap:12px}
+  .model-dock-col{flex:1}
+
+  /* Hover states untuk pointer (mobile pakai :active) */
+  .icon-btn:hover,.model-select:hover,.chip:hover,.upload-card:hover,
+  .frame-card:hover,.prompt-btn:hover{border-color:var(--border2)}
+  .sheet-opt:hover,.mp-item:hover{background:rgba(255,255,255,.06)}
+  .gen-btn{cursor:pointer}
+}
+@media (min-width:1440px){
+  :root{--rail:460px}
+  .canvas{padding:36px 56px 44px}
+  .canvas-preview,.canvas-result-wrap,.gen-queue{max-width:720px}
+}
+/* PROMPT tidak pernah terpotong: sejajar kartu upload kalau muat,
+   turun jadi baris penuh sendiri kalau sempit (mis. saat kartu Audio tampil). */
+.builder-input-row{flex-wrap:wrap}
+.prompt-btn-inline{flex:1 1 150px;min-width:150px}
+/* ============ UKURAN KOMPAK (semua tombol & pilihan lebih kecil, ala referensi) ============ */
+.model-select{min-height:44px;padding:9px 12px;border-radius:14px}
+.model-select-txt{font-size:15px}
+.model-select-icon{width:26px;height:26px;border-radius:9px}
+.model-select-icon svg{width:13px;height:13px}
+.model-select-tier{font-size:.58rem;padding:2px 7px}
+.elements-tabs{padding:4px;border-radius:13px}
+.el-tab{font-size:13px;font-weight:700;padding:8px 6px;border-radius:10px}
+.upload-card,.frame-card{height:74px;border-radius:16px}
+.uc-label{font-size:11px;font-weight:700}
+.uc-icon,.upload-row .upload-card .uc-icon{width:18px;height:18px}
+.uc-count{top:7px;right:7px;padding:2px 7px;font-size:.6rem}
+.prompt-btn{min-height:44px;padding:10px 12px;border-radius:14px}
+.prompt-btn-txt{font-size:13px}
+.settings-row{gap:6px}
+.chip{min-height:30px;padding:6px 10px;font-size:11.5px;border-radius:999px;gap:5px}
+.chip-ico{width:12px;height:12px}
+.qty-stepper{min-height:44px;padding:8px 12px;border-radius:12px;gap:8px}
+.qty-btn{width:22px;height:22px;font-size:14px;display:grid;place-items:center}
+.qty-val{font-size:.8rem;min-width:28px}
+.gen-btn{min-height:48px;font-size:15px;border-radius:16px;padding:12px;animation:none}
+/* Popover pilihan mini: menempel di atas chip, bukan bottom sheet lebar */
+.sheet.mini{top:auto;right:auto;width:236px;max-width:74vw;margin:0;border-radius:16px;border:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:8px;max-height:340px;overflow-y:auto;visibility:hidden;opacity:0;transform:translateY(6px) scale(.98);transform-origin:bottom left;transition:opacity .14s ease,transform .16s cubic-bezier(.16,1,.3,1),visibility 0s .16s;box-shadow:0 18px 54px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.04) inset}
+.sheet.mini.show{visibility:visible;opacity:1;transform:translateY(0) scale(1);transition:opacity .14s ease,transform .18s cubic-bezier(.16,1,.3,1)}
+.sheet.mini .sheet-handle,.sheet.mini .sheet-title{display:none}
+.sheet.mini .sheet-list{display:flex;flex-direction:column;gap:2px}
+.sheet.mini .sheet-opt{flex:0 0 auto;padding:9px 30px 9px 10px;font-size:13px;border-radius:10px}
+.sheet.mini .sheet-opt-desc{font-size:.62rem;margin-top:1px}
+.sheet.mini .sheet-opt-check{top:10px;right:8px}
+.sheet-overlay.mini-ov{background:transparent}
+/* Thumbnail video (frame pertama) mengikuti gaya thumbnail gambar */
+.uc-thumb{object-fit:cover}
+video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pe-tag-chip video{width:26px;height:26px;border-radius:8px;object-fit:cover;pointer-events:none}
+.asset-chip video,.media-slot video{pointer-events:none}
+/* ============ SEKSI REFERENSI + PROMPT BOX (layout ala referensi) ============ */
+.assets-strip{display:none!important} /* thumbnail kini tampil per-grup, strip lama redundan */
+.ref-sections{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.ref-sections::-webkit-scrollbar{display:none}
+.ref-group{display:flex;flex-direction:column;gap:7px;flex-shrink:0}
+.ref-group + .ref-group{border-left:1px solid rgba(255,255,255,.09);padding-left:12px}
+.ref-lbl{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);padding-left:2px}
+.ref-cards{display:flex;gap:8px;align-items:center}
+.ref-cards .upload-card{width:62px;height:62px;min-height:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px dashed rgba(255,255,255,.2);background:rgba(255,255,255,.03);box-shadow:none;padding:0;flex-shrink:0}
+.ref-cards .upload-card:active{transform:scale(.95)}
+.ref-cards .uc-icon{width:17px;height:17px;opacity:.85}
+.ref-cards .uc-count{position:static;background:transparent;border:none;padding:0;min-width:auto;height:auto;font-family:var(--mono);font-size:.64rem;font-weight:700;color:var(--text-dim)}
+.ref-thumbs{display:flex;gap:8px;align-items:center}
+.ref-thumb{position:relative;width:62px;height:62px;border-radius:16px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0;cursor:pointer}
+.ref-thumb img,.ref-thumb video{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
+.ref-thumb.audio{display:grid;place-items:center;background:rgba(255,255,255,.05);color:var(--text-dim)}
+.ref-thumb.audio svg{width:20px;height:20px}
+.ref-thumb.uploading::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
+/* Rail ikon vertikal + kotak PROMPT tinggi (ikon pensil dalam kotak aksen) */
+.prompt-row{display:flex;gap:8px;align-items:stretch;margin-top:2px}
+.type-rail{display:flex;flex-direction:column;gap:6px;flex-shrink:0;justify-content:flex-start}
+.rail-btn{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:grid;place-items:center;color:var(--text-dim);transition:background .15s,color .15s}
+.rail-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.rail-btn:active{transform:scale(.94)}
+.rail-btn svg{width:15px;height:15px}
+.prompt-row .prompt-btn{flex:1;min-width:0;min-height:114px;align-items:flex-start;border-radius:18px;border:1px solid rgba(255,60,90,.4);background:linear-gradient(180deg,#1c1c1c,#141414);padding:12px}
+.prompt-row .prompt-btn-icon{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#8a0018);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 6px 16px -8px rgba(255,32,64,.8)}
+.prompt-row .prompt-btn-icon svg{width:14px;height:14px}
+.prompt-row .prompt-btn-txt{font-size:14px;padding-top:6px;white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-align:left}
+.prompt-row .prompt-btn-arrow{display:none}
+/* Player audio hasil (mode Audio / Seed Audio) */
+.result-audio-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:480px;margin:0 auto;padding:26px 18px;border-radius:20px;border:1px solid var(--border);background:var(--card2)}
+.result-audio-ico{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;color:#fff;box-shadow:0 0 24px rgba(255,32,64,.35)}
+.result-audio-ico svg{width:22px;height:22px}
+.result-audio-wrap audio{filter:invert(1) hue-rotate(180deg)}
+/* ============ MODEBAR ALA REFERENSI: ikon per mode + pill meluncur ============ */
+.modebar{padding:4px 16px 10px}
+.modebar-track{position:relative;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.mode-pill{position:absolute;top:4px;bottom:4px;left:0;width:0;border-radius:999px;background:linear-gradient(180deg,#ff2142,#c60020);box-shadow:0 8px 20px -10px rgba(255,32,64,.9),0 1px 0 rgba(255,255,255,.18) inset;transition:transform .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);z-index:0;pointer-events:none}
+.modebar .mode-btn{position:relative;z-index:1;display:flex;align-items:center;gap:7px;padding:8px 16px;min-width:0;border:none;background:transparent;border-radius:999px;font-size:.82rem;font-weight:700;letter-spacing:.03em;text-transform:none;color:var(--text-dim);transition:color .2s}
+.modebar .mode-btn svg{width:15px;height:15px;flex-shrink:0;transition:transform .25s}
+.modebar .mode-btn.active{background:transparent;color:#fff}
+.modebar .mode-btn.mode-pop svg{animation:modeIconPop .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes modeIconPop{0%{transform:scale(.7) rotate(-8deg)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+/* Rail = pemilih mode: ikon aktif menyala seperti pill modebar */
+.rail-btn.active{background:linear-gradient(180deg,#ff2142,#c60020);border-color:transparent;color:#fff;box-shadow:0 8px 18px -10px rgba(255,32,64,.9),0 1px 0 rgba(255,255,255,.18) inset}
+.rail-btn.active svg{animation:modeIconPop .32s cubic-bezier(.34,1.56,.64,1)}
+/* ============ POLESAN: animasi seragam, ringan, dan smooth ============ */
+/* Rail memakai bahasa visual yang sama persis dengan pill modebar:
+   gradient, shadow, dan easing-nya satu sumber. */
+.rail-btn{transition:background .18s cubic-bezier(.22,1,.36,1),color .18s cubic-bezier(.22,1,.36,1),transform .16s cubic-bezier(.22,1,.36,1)}
+.rail-btn:active{transform:scale(.92)}
+/* PROMPT digeser sedikit dari rail supaya tidak nempel, dan turun 2px
+   agar sejajar optik dengan ikon rail pertama. */
+.prompt-row{gap:11px}
+.prompt-row .prompt-btn{margin-top:2px;transition:border-color .18s,transform .16s cubic-bezier(.22,1,.36,1)}
+.prompt-row .prompt-btn:active{transform:scale(.985)}
+/* Hanya properti GPU-friendly yang dianimasikan; hint compositing untuk
+   elemen yang paling sering bergerak supaya tidak berat di HP. */
+.mode-pill{will-change:transform,width;transform:translateX(0) translateZ(0)}
+.rail-btn svg,.modebar .mode-btn svg{will-change:transform}
+/* Hormati preferensi aksesibilitas: matikan animasi dekoratif */
+@media (prefers-reduced-motion: reduce){
+  .mode-pill{transition:none}
+  .modebar .mode-btn.mode-pop svg,.rail-btn.active svg{animation:none}
+  .rail-btn,.prompt-row .prompt-btn{transition:none}
+}
+/* Rail: track kapsul di belakang ikon + pill merah yang MELUNCUR vertikal
+   saat ditekan — persis perilaku pill modebar, versi tegak. */
+.type-rail{position:relative;padding:4px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);box-shadow:0 1px 0 rgba(255,255,255,.05) inset;gap:4px}
+.rail-pill{position:absolute;left:4px;right:4px;height:34px;top:0;border-radius:999px;background:linear-gradient(180deg,#ff2142,#c60020);box-shadow:0 8px 18px -10px rgba(255,32,64,.9),0 1px 0 rgba(255,255,255,.18) inset;transition:transform .32s cubic-bezier(.22,1,.36,1),height .32s cubic-bezier(.22,1,.36,1);z-index:0;pointer-events:none;will-change:transform}
+.type-rail .rail-btn{position:relative;z-index:1;background:transparent;border:none}
+.type-rail .rail-btn.active{background:transparent;box-shadow:none;color:#fff}
+.type-rail .rail-btn:hover{background:transparent}
+@media (prefers-reduced-motion: reduce){.rail-pill{transition:none}}
+/* Baris referensi editor tampil di atas (langsung terlihat saat masuk) */
+.pe-tags-row{padding-bottom:10px}
+.pe-tags-label{padding-top:2px}
+/* Tombol Enhance: status memproses */
+.pe-enhance-btn.busy{opacity:.6;pointer-events:none}
+.pe-enhance-btn.busy svg{animation:enhSpin 1s linear infinite}
+@keyframes enhSpin{to{transform:rotate(360deg)}}
+/* ============ HASIL TERBARU DI CANVAS (image & video berdampingan) ============ */
+.canvas-recent{padding:4px 16px 8px;display:flex;flex-direction:column;gap:8px}
+.canvas-recent-lbl{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.canvas-recent-row{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.canvas-recent-row::-webkit-scrollbar{display:none}
+.cr-card{position:relative;flex-shrink:0;width:104px;height:66px;border-radius:14px;overflow:hidden;border:1px solid var(--border2);background:var(--card2);cursor:pointer;transition:transform .16s cubic-bezier(.22,1,.36,1),border-color .16s}
+.cr-card:hover{transform:translateY(-2px);border-color:rgba(255,60,90,.5)}
+.cr-card:active{transform:scale(.96)}
+.cr-card img,.cr-card video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cr-card.audio{display:grid;place-items:center;color:var(--amber,#e8b341);background:rgba(255,179,0,.07)}
+.cr-card .cr-aud{width:22px;height:22px}
+.cr-play{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.cr-play svg{width:20px;height:20px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+.cr-tag{position:absolute;bottom:4px;left:4px;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.72);font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.06em;color:var(--accent-hover);pointer-events:none}
 </style>
 </head>
 <body>
@@ -1131,7 +1363,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     Dashboard
   </a>
   <div class="sb-sec-lbl">Tools</div>
-  <a class="sb-item" data-page="aivideo" href="#" onclick="navigateTo('aivideo');return false">
+  <a class="sb-item active" data-page="aivideo" href="#" onclick="navigateTo('aivideo');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
     MII AI Video
   </a>
@@ -1185,7 +1417,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </button>
     <div class="tb-center">
       <span class="tb-logo" aria-hidden="true">M</span>
-      <span class="tb-title" id="pageTitleTxt">Dashboard</span>
+      <span class="tb-title" id="pageTitleTxt">MII AI VIDEO</span>
       <span class="tb-badge">BETA</span>
     </div>
     <button class="icon-btn" id="settingsBtn" onclick="navigateTo('settings')">
@@ -1194,7 +1426,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   </div>
 
   <!-- PAGE: DASHBOARD (Home) -->
-  <div class="app-page active" id="pageDashboard">
+  <div class="app-page" id="pageDashboard">
     <div class="dash-wrap">
       <div class="dash-hero">
         <div class="dash-hero-inner">
@@ -1203,10 +1435,13 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         </div>
       </div>
       <div class="dash-grid">
-        <a class="dash-card" href="#" onclick="navigateTo('aivideo');return false">
+        <a class="dash-card featured" href="#" onclick="navigateTo('aivideo');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div>
-          <div class="dash-card-title">MII AI Video</div>
-          <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
+          <div class="dash-card-main">
+            <div class="dash-card-title">MII AI Video</div>
+            <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
+          </div>
+          <svg class="dash-card-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
         <a class="dash-card" href="#" onclick="navigateTo('history');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
@@ -1236,11 +1471,23 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   </div>
 
   <!-- PAGE: MII AI VIDEO -->
-  <div class="app-page" id="pageAiVideo">
+  <div class="app-page active" id="pageAiVideo">
   <div class="modebar" role="tablist" aria-label="Media type">
-    <div class="mode-btn" data-view="image" onclick="setView('image',this)" role="tab">IMAGE</div>
-    <div class="mode-btn active" data-view="video" onclick="setView('video',this)" role="tab">VIDEO</div>
-    <div class="mode-btn" data-view="audio" onclick="setView('audio',this)" role="tab" style="display:none">AUDIO</div>
+    <div class="modebar-track" id="modebarTrack">
+      <div class="mode-pill" id="modePill"></div>
+      <div class="mode-btn" data-view="image" onclick="setView('image',this)" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>Image</span>
+      </div>
+      <div class="mode-btn active" data-view="video" onclick="setView('video',this)" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+        <span>Video</span>
+      </div>
+      <div class="mode-btn" data-view="audio" onclick="setView('audio',this)" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2l2-7 3 14 3-10 2 5 2-2h4"/></svg>
+        <span>Audio</span>
+      </div>
+    </div>
   </div>
 
   <!-- CANVAS -->
@@ -1250,6 +1497,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     <div class="canvas-result-wrap" id="canvasResultWrap">
       <div class="canvas-preview" id="canvasPreview" style="display:none">
         <img class="canvas-preview-media" id="canvasPreviewImg" style="display:none" onerror="imgFallback(this)">
+        <audio id="canvasPreviewAudio" controls preload="metadata" style="display:none;width:100%;max-width:480px"></audio>
         <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline preload="metadata" onerror="videoFailed('canvasPreviewVideo')" onloadeddata="videoRecovered('canvasPreviewVideo')"></video>
         <div class="video-fail-state" id="canvasPreviewVideoFail" style="display:none">
           <div class="video-fail-msg">Video gagal dimuat</div>
@@ -1259,13 +1507,20 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
       <div class="canvas-result-box" id="canvasResultBox" style="display:none">
         <div class="canvas-result-actions" id="canvasResultActions">
-          <a class="result-btn primary" id="canvasDownloadBtn" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+          <a class="result-btn primary" id="canvasDownloadBtn" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span class="rb-lbl">Download</span></a>
           <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
-          <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
-          <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico">ℹ</span><span class="rb-lbl">Details</span></button>
+          <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span><span class="rb-lbl">Reuse</span></button>
+          <button class="result-btn" onclick="openResultOverlayFromCanvas()"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span><span class="rb-lbl">Details</span></button>
           <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
         </div>
       </div>
+    </div>
+
+    <!-- Hasil terbaru: image & video yang selesai tampil berdampingan di
+         halaman generate, masing-masing bisa dibuka detailnya. -->
+    <div class="canvas-recent" id="canvasRecent" style="display:none">
+      <div class="canvas-recent-lbl">Hasil Terbaru</div>
+      <div class="canvas-recent-row" id="canvasRecentRow"></div>
     </div>
 
     <!-- Multiple generations can run at once now — each gets its own compact
@@ -1311,27 +1566,48 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       <div class="tab-content active" id="elementsTab">
         <div class="assets-strip" id="assetsStrip"></div>
 
-        <div class="builder-input-row">
-          <div class="upload-row">
-            <div class="upload-card" id="cardImage" onclick="openUploadSheet('image')">
-              <span class="uc-count" id="cardImageCount">0/9</span>
-              <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
-              <span class="uc-label">IMAGE</span>
-            </div>
-            <div class="upload-card" id="cardVideo" onclick="openUploadSheet('video')">
-              <span class="uc-count" id="cardVideoCount">0/3</span>
-              <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
-              <span class="uc-label">VIDEO</span>
-            </div>
-            <div class="upload-card" id="cardAudio" onclick="openUploadSheet('audio')" style="display:none">
-              <span class="uc-count" id="cardAudioCount">0/3</span>
-              <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-              <span class="uc-label">AUDIO</span>
+        <div class="ref-sections" id="refSections">
+          <div class="ref-group" id="refGroupImage">
+            <div class="ref-lbl">Image</div>
+            <div class="ref-cards">
+              <div class="upload-card" id="cardImage" onclick="openUploadSheet('image')">
+                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span class="uc-count" id="cardImageCount">0/9</span>
+              </div>
+              <div class="ref-thumbs" id="refThumbsImage"></div>
             </div>
           </div>
+          <div class="ref-group" id="refGroupVideo">
+            <div class="ref-lbl">Video</div>
+            <div class="ref-cards">
+              <div class="upload-card" id="cardVideo" onclick="openUploadSheet('video')">
+                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+                <span class="uc-count" id="cardVideoCount">0/3</span>
+              </div>
+              <div class="ref-thumbs" id="refThumbsVideo"></div>
+            </div>
+          </div>
+          <div class="ref-group" id="refGroupAudio" style="display:none">
+            <div class="ref-lbl">Audio</div>
+            <div class="ref-cards">
+              <div class="upload-card" id="cardAudio" onclick="openUploadSheet('audio')">
+                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+                <span class="uc-count" id="cardAudioCount">0/3</span>
+              </div>
+              <div class="ref-thumbs" id="refThumbsAudio"></div>
+            </div>
+          </div>
+        </div>
 
+        <div class="prompt-row">
+          <div class="type-rail" id="typeRail">
+            <div class="rail-pill" id="railPill"></div>
+            <button class="rail-btn" id="railImage" data-mode="image" title="Mode Image" onclick="setMode('image')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></button>
+            <button class="rail-btn active" id="railVideo" data-mode="video" title="Mode Video" onclick="setMode('video')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></button>
+            <button class="rail-btn" id="railAudio" data-mode="audio" title="Mode Audio" onclick="setMode('audio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
+          </div>
           <button class="prompt-btn prompt-btn-inline" id="promptBtn" onclick="openPromptEditor()">
-            <span class="prompt-btn-icon">✏</span>
+            <span class="prompt-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
             <span class="prompt-btn-txt" id="promptBtnTxt">PROMPT</span>
             <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -1353,7 +1629,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         <div class="frame-hint">Set start and end keyframes to guide the motion between two images.</div>
 
         <button class="prompt-btn" id="promptBtnFrames" onclick="openPromptEditor()">
-          <span class="prompt-btn-icon">✏</span>
+          <span class="prompt-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
           <span class="prompt-btn-txt" id="promptBtnFramesTxt">PROMPT</span>
           <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -1380,14 +1656,16 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
         </div>
-        <div class="chip" id="qualityChip" onclick="openQualitySheet()" style="display:none">
+        <div class="chip" id="qualityChip" onclick="openQualitySheet(this)" style="display:none">
           <span id="qualityLabel">MINI</span><span class="chip-car"></span>
         </div>
-        <div class="chip" id="ratioChip" onclick="openSheet('ratio')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
-        <div class="chip" id="resolutionChip" onclick="openSheet('resolution')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
-        <div class="chip" id="bitrateChip" onclick="openSheet('bitrate')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
-        <div class="chip" id="durationChip" onclick="openSheet('duration')"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
-        <div class="chip" id="motionChip" onclick="openSheet('motion')" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
+        <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
+        <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
+        <div class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
+        <div class="chip" id="durationChip" onclick="openSheet('duration',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
+        <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
+        <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
+        <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
         <div class="chip" id="muteAudioChip" onclick="toggleMuteAudio()" style="display:none" title="Hapus audio dari video hasil">
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
@@ -1401,7 +1679,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
           <div class="qty-btn" onclick="changeQty(1)">+</div>
         </div>
         <button class="gen-btn" id="generateBtn" onclick="startGenerate()" disabled>
-          <span class="gen-txt">GENERATE ✦</span>
+          <span class="gen-txt">GENERATE</span>
         </button>
       </div>
 
@@ -1415,6 +1693,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="history-tabs" role="tablist" aria-label="Filter by type">
     <button class="hist-tab active" data-type="video" onclick="setHistTypeFilter('history','video',this)" role="tab">Video</button>
     <button class="hist-tab" data-type="image" onclick="setHistTypeFilter('history','image',this)" role="tab">Image</button>
+    <button class="hist-tab" data-type="audio" onclick="setHistTypeFilter('history','audio',this)" role="tab">Audio</button>
   </div>
   <div class="history-list" id="historyList"></div>
   <div class="history-empty" id="historyEmpty" style="display:none">No generations yet</div>
@@ -1425,6 +1704,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   <div class="history-tabs" role="tablist" aria-label="Filter by type">
     <button class="hist-tab active" data-type="video" onclick="setHistTypeFilter('archive','video',this)" role="tab">Video</button>
     <button class="hist-tab" data-type="image" onclick="setHistTypeFilter('archive','image',this)" role="tab">Image</button>
+    <button class="hist-tab" data-type="audio" onclick="setHistTypeFilter('archive','audio',this)" role="tab">Audio</button>
   </div>
   <div class="history-list" id="archiveList"></div>
   <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
@@ -1447,6 +1727,13 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
         </div>
         <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Dipakai untuk generate video dan image.</div>
       </div>
+      <div class="api-status-card" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Dropbox Storage</span>
+          <span id="apiStorageTxt" style="font-family:var(--mono);color:var(--accent-hover);font-size:13px">—</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-dim,#999);letter-spacing:.01em">Referensi dibersihkan otomatis 1 jam setelah dipakai; hasil generate disimpan permanen sampai dihapus dari History.</div>
+      </div>
     </div>
   </div>
 
@@ -1459,19 +1746,19 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       </div>
       <div class="set-row" onclick="fetchCreditBalance()" style="cursor:pointer">
         <span class="set-row-lbl">Refresh Balance</span>
-        <span class="set-row-val">↻</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg></span>
       </div>
       <div class="set-row" onclick="navigateTo('credits')" style="cursor:pointer">
         <span class="set-row-lbl">Credits &amp; Billing</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div class="set-row" onclick="navigateTo('profile')" style="cursor:pointer">
         <span class="set-row-lbl">Profile</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div class="set-row" onclick="doLogout()" style="cursor:pointer">
         <span class="set-row-lbl">Logout</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
     </div>
   </div>
@@ -1513,15 +1800,15 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
       </div>
       <div class="set-row" onclick="navigateTo('credits')" style="cursor:pointer">
         <span class="set-row-lbl">Credits &amp; Billing</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div class="set-row" onclick="navigateTo('settings')" style="cursor:pointer">
         <span class="set-row-lbl">Settings</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div class="set-row" onclick="doLogout()" style="cursor:pointer">
         <span class="set-row-lbl">Logout</span>
-        <span class="set-row-val">→</span>
+        <span class="set-row-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
     </div>
   </div>
@@ -1592,11 +1879,15 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   </div>
   <div class="result-body">
     <video class="result-video-full" id="resultVideoFull" controls playsinline preload="metadata" style="display:none" onerror="videoFailed('resultVideoFull')" onloadeddata="videoRecovered('resultVideoFull')"></video>
+    <div class="result-audio-wrap" id="resultAudioWrap" style="display:none">
+      <div class="result-audio-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+      <audio id="resultAudioFull" controls preload="metadata" style="width:100%"></audio>
+    </div>
     <div class="video-fail-state" id="resultVideoFullFail" style="display:none">
       <div class="video-fail-msg">Video gagal dimuat — coba refresh koneksi lalu tekan tombol di bawah</div>
       <button type="button" class="video-fail-retry" onclick="retryVideoLoad('resultVideoFull')">Coba lagi</button>
     </div>
-    <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" />
+    <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" onerror="imgFallback(this)" />
     <div class="result-meta-grid" id="resultMetaGrid"></div>
     <div class="result-compare-block" id="resultCompareBlock" style="display:none">
       <div class="result-section-label"><span>Hasil &amp; Referensi</span></div>
@@ -1625,11 +1916,11 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </div>
   </div>
   <div class="result-footer">
-    <a class="result-btn primary" id="downloadBtnFull" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico">⬇</span><span class="rb-lbl">Download</span></a>
+    <a class="result-btn primary" id="downloadBtnFull" href="javascript:void(0)" onclick="downloadResult(this.getAttribute('data-url'), this.getAttribute('data-filename'))"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span class="rb-lbl">Download</span></a>
     <button class="result-btn" onclick="archiveCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span><span class="rb-lbl">Archive</span></button>
-    <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico">↺</span><span class="rb-lbl">Reuse</span></button>
+    <button class="result-btn" onclick="useResultAsReference()"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span><span class="rb-lbl">Reuse</span></button>
     <button class="result-btn" onclick="deleteCurrentResult()"><span class="rb-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span><span class="rb-lbl">Delete</span></button>
-    <button class="result-btn" onclick="closeResultOverlay(); navigateTo('history');"><span class="rb-ico">☰</span><span class="rb-lbl">History</span></button>
+    <button class="result-btn" onclick="closeResultOverlay(); navigateTo('history');"><span class="rb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span><span class="rb-lbl">History</span></button>
   </div>
 </div>
 
@@ -1651,15 +1942,15 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 <div class="prompt-overlay" id="promptOverlay">
   <div class="pe-header">
     <div class="pe-attach-counts" id="peAttachCounts">
-      <div class="pe-attach-item" id="peImageItem">
+      <div class="pe-attach-item" id="peImageItem" role="button" onclick="peAttachPick('image')" title="Tambah gambar referensi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
         <span id="peImageCount">0/9</span>
       </div>
-      <div class="pe-attach-item" id="peVideoItem">
+      <div class="pe-attach-item" id="peVideoItem" role="button" onclick="peAttachPick('video')" title="Tambah video referensi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
         <span id="peVideoCount">0/3</span>
       </div>
-      <div class="pe-attach-item" id="peAudioItem" style="display:none">
+      <div class="pe-attach-item" id="peAudioItem" style="display:none" role="button" onclick="peAttachPick('audio')" title="Tambah audio referensi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
         <span id="peAudioCount">0/3</span>
       </div>
@@ -1673,12 +1964,12 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
     </button>
   </div>
   <div class="pe-body">
+    <div class="pe-tags-label" id="peTagsLabel">Tap a reference to insert</div>
+    <div class="pe-tags-row" id="peTagsRow"></div>
     <div class="pe-input-wrap">
       <div class="pe-highlight" id="peHighlight" aria-hidden="true"></div>
       <textarea class="pe-textarea" id="promptInput" placeholder="Describe the scene you imagine. Tap @ to reference uploaded elements." autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
     </div>
-    <div class="pe-tags-label" id="peTagsLabel">Tap a reference to insert</div>
-    <div class="pe-tags-row" id="peTagsRow"></div>
   </div>
   <div class="pe-footer">
     <button class="pe-at-btn" onclick="toggleMentionPopup(true)">@</button>
@@ -1813,6 +2104,16 @@ var modelFamilies = {
       ]
     },
     {
+      key: 'veo', brand: 'GOOGLE', name: 'VEO 3.1', featured: true,
+      desc: "Google's cinematic video with synced audio — text or image to video, start/end frames, up to 3 reference images.",
+      caps: { image: 3, video: 0, audio: 0, frames: true, elements: false, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
+      qualities: [
+        { id: 'veo-3.1-lite', label: 'LITE' },
+        { id: 'veo-3.1-fast', label: 'FAST' },
+        { id: 'veo-3.1',      label: 'PRO' }
+      ]
+    },
+    {
       key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
       caps: { image: 4, video: 1, audio: 0, frames: false, elements: true, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
@@ -1861,12 +2162,38 @@ var modelFamilies = {
         { id: 'flux-pro',     label: 'PRO' }
       ]
     },
+    {
+      key: 'imagen', brand: 'GOOGLE', name: 'IMAGEN 4', featured: true,
+      desc: "Google's photorealistic image model — sharp fine detail and accurate text rendering. Text-to-image only.",
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: false, resolutionSet: 'image', duration: false, motion: false },
+      qualities: [
+        { id: 'imagen-4', label: 'STANDARD' }
+      ]
+    },
+    {
+      key: 'qwen', brand: 'ALIBABA', name: 'QWEN IMAGE', featured: true,
+      desc: 'Strong multilingual text rendering and illustration styles. Text-to-image only.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: false, resolutionSet: 'image', duration: false, motion: false },
+      qualities: [
+        { id: 'qwen-image', label: 'STANDARD' }
+      ]
+    },
+  ],
+  audio: [
+    {
+      key: 'seedaudio', brand: 'BYTEDANCE', name: 'SEED AUDIO 1.0', featured: true,
+      desc: 'Text-to-audio penuh: dialog, musik, ambience, dan SFX dalam satu generate — voice cloning via 3 referensi audio (@Audio1-3) atau 1 gambar pemandu mood.',
+      caps: { image: 1, video: 0, audio: 3, frames: false, elements: true, ratio: false, resolution: false, resolutionSet: 'audio', duration: false, motion: false },
+      qualities: [
+        { id: 'seed-audio-1.0', label: 'STANDARD' }
+      ]
+    }
   ]
 };
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
-var CONNECTED_FAMILIES = ['seedance', 'kling', 'klingswap', 'nanobanana', 'gptimage', 'seedream', 'flux'];
+var CONNECTED_FAMILIES = ['seedance', 'kling', 'veo', 'klingswap', 'nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'];
 // Families where a reference image/video/frame is mandatory. Nano Banana Pro
 // (and other pure text-to-image models) can generate from prompt alone.
 var FAMILIES_REQUIRING_MEDIA = []; // Seedance AND Kling 3.0 both confirmed to support plain text-to-video against Segmind's own docs/sample code
@@ -1886,7 +2213,9 @@ var selectedMotion = 'Dynamic';
 // duration are auto-filled from the video and locked in the UI (spec:
 // user doesn't pick these manually once a video is selected).
 var motionControlMeta = null;
-var selectedBitrate = 'high'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
+var selectedBitrate = 'high';
+var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
+var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
 var muteAudioEnabled = false; // Seedance + Motion Control only — strips the audio track from the generated video server-side (ffmpeg -an), not just a client-side player mute.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
@@ -1990,7 +2319,7 @@ var PAGE_DEFS = {
   aivideo:     { el: 'pageAiVideo',     title: 'MII AI VIDEO' },
   history:     { el: 'historyPage',     title: 'History',     onEnter: function(){ renderHistoryList(); } },
   archive:     { el: 'archivePage',     title: 'Archive',     onEnter: function(){ renderArchiveList(); } },
-  apiprovider: { el: 'pageApiProvider', title: 'API Provider', onEnter: function(){ var e=document.getElementById('apiCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
+  apiprovider: { el: 'pageApiProvider', title: 'API Provider', onEnter: function(){ var e=document.getElementById('apiCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); fetchStorageUsage(); } },
   settings:    { el: 'pageSettings',    title: 'Settings',    onEnter: function(){ var e=document.getElementById('settingsCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
   credits:     { el: 'pageCredits',     title: 'Credits',     onEnter: function(){ renderCreditsPage(); } },
   profile:     { el: 'pageProfile',     title: 'Profile' }
@@ -2002,7 +2331,7 @@ function renderCreditsPage() {
   var c = document.getElementById('creditsEstCostVal'); if (c) c.textContent = '−' + cost;
   var a = document.getElementById('creditsAfterVal'); if (a) a.textContent = afterTxt;
 }
-var currentPage = 'dashboard';
+var currentPage = 'aivideo';
 function hideAllPages() {
   document.querySelectorAll('.app-page,.history-page').forEach(function(e){ e.classList.remove('active','show'); });
 }
@@ -2062,13 +2391,44 @@ function setModelSelectOpen(open) {
 }
 
 // ══════════ MODE BAR ══════════
+function moveModePill(el) {
+  var pill = document.getElementById('modePill');
+  var track = document.getElementById('modebarTrack');
+  if (!pill || !track || !el) return;
+  pill.style.width = el.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + (el.offsetLeft - track.clientLeft) + 'px)';
+  // Denyut kecil pada ikon mode yang baru dipilih
+  el.classList.remove('mode-pop'); void el.offsetWidth; el.classList.add('mode-pop');
+}
+function setMode(view) {
+  // Dipanggil dari rail ikon di panel — sinkron dengan modebar atas.
+  var btn = document.querySelector('.mode-btn[data-view="' + view + '"]');
+  if (btn) setView(view, btn);
+}
+function updateRailActive() {
+  var activeBtn = null;
+  document.querySelectorAll('.rail-btn[data-mode]').forEach(function(b) {
+    var on = b.getAttribute('data-mode') === activeMode;
+    b.classList.toggle('active', on);
+    if (on) activeBtn = b;
+  });
+  moveRailPill(activeBtn);
+}
+function moveRailPill(btn) {
+  var pill = document.getElementById('railPill');
+  if (!pill || !btn) return;
+  pill.style.height = btn.offsetHeight + 'px';
+  pill.style.transform = 'translateY(' + btn.offsetTop + 'px) translateZ(0)';
+}
 function setView(view, el) {
   document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
   el.classList.add('active');
-  if (view === 'image' || view === 'video') {
+  moveModePill(el);
+  if (view === 'image' || view === 'video' || view === 'audio') {
     activeMode = view;
     pickFamily(modelFamilies[activeMode][0], 0);
     updateModeUI();
+    updateRailActive();
   }
 }
 // The visible layout is now driven entirely by applyModelCapabilities(),
@@ -2123,6 +2483,19 @@ var sheetDefs = {
     get: function(){ return selectedDuration + 's'; },
     set: function(v){ selectedDuration = parseInt(v,10); document.getElementById('durationLabel').textContent = v; updateCreditEstimate(); }
   },
+  audioformat: {
+    title: 'Output Format',
+    options: ['WAV','MP3','OGG_OPUS'],
+    desc: function(v){ return v==='WAV'?'Lossless · terbaik untuk editing':v==='MP3'?'Kecil · kompatibel di mana saja':'Streaming · sangat kecil'; },
+    get: function(){ return selectedAudioFormat; },
+    set: function(v){ selectedAudioFormat = v; document.getElementById('audioFormatLabel').textContent = v; }
+  },
+  samplerate: {
+    title: 'Sample Rate',
+    options: ['16.000 Hz','24.000 Hz','32.000 Hz','44.100 Hz','48.000 Hz'],
+    get: function(){ return selectedSampleRate; },
+    set: function(v){ selectedSampleRate = v; document.getElementById('sampleRateLabel').textContent = v; }
+  },
   motion: {
     title: 'Motion',
     options: ['Static','Subtle','Dynamic','Intense'],
@@ -2141,7 +2514,26 @@ var sheetDefs = {
   }
 };
 
-function openSheet(key) {
+function positionMiniSheet(anchor) {
+  // Popover kecil menempel di atas chip pemicunya (ala referensi) —
+  // tanpa anchor, kembali ke bottom sheet penuh (dipakai Account sheet).
+  var sheet = document.getElementById('sheet');
+  var ov = document.getElementById('sheetOverlay');
+  if (!anchor || !anchor.getBoundingClientRect) {
+    sheet.classList.remove('mini');
+    if (ov) ov.classList.remove('mini-ov');
+    sheet.style.left = ''; sheet.style.bottom = '';
+    return;
+  }
+  var r = anchor.getBoundingClientRect();
+  sheet.classList.add('mini');
+  if (ov) ov.classList.add('mini-ov');
+  var w = 236;
+  var left = Math.max(10, Math.min(r.left, window.innerWidth - w - 10));
+  sheet.style.left = left + 'px';
+  sheet.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+}
+function openSheet(key, anchorEl) {
   if ((key === 'ratio' || key === 'duration') && selectedFamily && selectedFamily.key === 'klingswap') {
     showToast('Mengikuti video referensi (otomatis)');
     return;
@@ -2154,7 +2546,8 @@ function openSheet(key) {
   var disabledSet = def.disabled || [];
   var visibleOptions = def.options.filter(function(opt) { return disabledSet.indexOf(opt) === -1; });
 
-  if (def.wheel) {
+  var asMini = !!(anchorEl && anchorEl.getBoundingClientRect);
+  if (def.wheel && !asMini) {
     list.style.display = 'none';
     wheel.style.display = 'block';
     renderWheelPicker(def, visibleOptions);
@@ -2181,11 +2574,12 @@ function openSheet(key) {
     });
   }
 
+  positionMiniSheet(anchorEl);
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById('sheet').classList.add('show');
   setModelSelectOpen(false);
   requestAnimationFrame(function() {
-    if (def.wheel) return; // wheel picker scrolls itself into position on render
+    if (def.wheel && !asMini) return; // wheel picker scrolls itself into position on render
     var sel = list.querySelector('.sheet-opt.selected');
     if (sel) sel.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
   });
@@ -2239,7 +2633,13 @@ function renderWheelPicker(def, options) {
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  document.getElementById('sheet').classList.remove('show');
+  var sh = document.getElementById('sheet');
+  sh.classList.remove('show');
+  // Bersihkan mode popover mini supaya sheet lain (mis. Account) tampil normal.
+  sh.classList.remove('mini');
+  sh.style.left = ''; sh.style.bottom = '';
+  var ov = document.getElementById('sheetOverlay');
+  if (ov) ov.classList.remove('mini-ov');
   setModelSelectOpen(false);
 }
 
@@ -2305,25 +2705,27 @@ function applyModelCapabilities() {
   if (media.video.length > maxCounts.video) media.video = media.video.slice(0, maxCounts.video);
   if (media.audio && media.audio.length > (caps.audio||0)) media.audio = media.audio.slice(0, caps.audio||0);
 
-  // Image upload slot: hide if model accepts no images
-  var cardImage = document.getElementById('cardImage');
-  if (cardImage) cardImage.style.display = caps.image > 0 ? '' : 'none';
+  // Grup referensi (label + kartu tambah + thumbnail) ikut kapabilitas model
+  var grpImage = document.getElementById('refGroupImage');
+  if (grpImage) grpImage.style.display = caps.image > 0 ? '' : 'none';
   var peImageItem = document.getElementById('peImageItem');
   if (peImageItem) peImageItem.style.display = caps.image > 0 ? '' : 'none';
 
-  // Video upload slot: hide if model accepts no video refs
-  var cardVideo = document.getElementById('cardVideo');
-  if (cardVideo) cardVideo.style.display = caps.video > 0 ? '' : 'none';
+  var grpVideo = document.getElementById('refGroupVideo');
+  if (grpVideo) grpVideo.style.display = caps.video > 0 ? '' : 'none';
   var peVideoItem = document.getElementById('peVideoItem');
   if (peVideoItem) peVideoItem.style.display = caps.video > 0 ? '' : 'none';
 
-  // Audio upload slot
-  var cardAudio = document.getElementById('cardAudio');
   var audioSupported = (caps.audio || 0) > 0;
-  if (cardAudio) cardAudio.style.display = audioSupported ? '' : 'none';
+  var grpAudio = document.getElementById('refGroupAudio');
+  if (grpAudio) grpAudio.style.display = audioSupported ? '' : 'none';
   var peAudioItem = document.getElementById('peAudioItem');
   if (peAudioItem) peAudioItem.style.display = audioSupported ? '' : 'none';
   maxCounts.audio = caps.audio || 0;
+
+  // Sembunyikan seluruh baris seksi kalau model tidak menerima referensi apa pun
+  var refSections = document.getElementById('refSections');
+  if (refSections) refSections.style.display = (caps.image > 0 || caps.video > 0 || audioSupported) ? '' : 'none';
 
   // Upload row spans full width when only one slot is visible
   var uploadRow = document.querySelector('.upload-row');
@@ -2376,7 +2778,13 @@ function applyModelCapabilities() {
   // inherit the source video's track). Reset the toggle when switching
   // away so it can't silently apply to a family the user never chose it
   // for.
-  var muteAudioSupported = selectedFamily && (selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap');
+  var muteAudioSupported = selectedFamily && (selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo');
+  // Chips khusus mode Audio (Seed Audio): Output format + Sample rate
+  var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
+  var afChip = document.getElementById('audioFormatChip');
+  if (afChip) afChip.style.display = isSeedAudio ? '' : 'none';
+  var srChip = document.getElementById('sampleRateChip');
+  if (srChip) srChip.style.display = isSeedAudio ? '' : 'none';
   var muteAudioChip = document.getElementById('muteAudioChip');
   if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported ? '' : 'none';
   if (!muteAudioSupported) {
@@ -2385,10 +2793,13 @@ function applyModelCapabilities() {
   }
 
   // Aspect ratio: Kling 3.0 and Kling Character Swap only support 16:9 / 9:16
-  // / 1:1 (per Segmind's published API docs), narrower than Seedance's set.
+  // / 1:1; Veo 3.1 only 16:9 / 9:16 (per Segmind's published API docs) —
+  // both narrower than Seedance's set.
   if (sheetDefs && sheetDefs.ratio) {
     if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.ratio.options = ['1:1','9:16','16:9'];
+    } else if (selectedFamily && selectedFamily.key === 'veo') {
+      sheetDefs.ratio.options = ['9:16','16:9'];
     } else {
       sheetDefs.ratio.options = ['1:1','3:4','4:3','9:16','16:9','21:9'];
     }
@@ -2403,9 +2814,12 @@ function applyModelCapabilities() {
   // Duration: confirmed 3-15s for both Kling 3.0 tiers (Segmind's own Pro
   // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
   // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
+  // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per Segmind's API docs.
   if (sheetDefs && sheetDefs.duration) {
     if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.duration.options = [3,4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
+    } else if (selectedFamily && selectedFamily.key === 'veo') {
+      sheetDefs.duration.options = [4,6,8].map(function(s){ return s+'s'; });
     } else {
       sheetDefs.duration.options = [4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
     }
@@ -2427,6 +2841,10 @@ function applyModelCapabilities() {
     } else if (selectedFamily && selectedFamily.key === 'seedance') {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
+    } else if (selectedFamily && selectedFamily.key === 'veo') {
+      // Veo 3.1 (all tiers): 720p / 1080p only per Segmind's API docs.
+      sheetDefs.resolution.options = ['720p','1080p'];
+      sheetDefs.resolution.disabled = [];
     } else {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = ['4K'];
@@ -2495,7 +2913,7 @@ function toggleMuteAudio() {
   renderMuteAudioChip();
 }
 
-function openQualitySheet() {
+function openQualitySheet(anchorEl) {
   closeModelDock();
   var isRenderQuality = selectedFamily.qualities.some(function(q){ return q.label === 'MINI' || q.label === 'FAST' || q.label === 'PRO'; });
   document.getElementById('sheetTitle').textContent = isRenderQuality ? 'Quality' : 'Version';
@@ -2510,6 +2928,7 @@ function openQualitySheet() {
     row.onclick = function() { pickQuality(idx); };
     list.appendChild(row);
   });
+  positionMiniSheet(anchorEl);
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById('sheet').classList.add('show');
   setModelSelectOpen(false);
@@ -2543,10 +2962,10 @@ function closeModelDock() {
 }
 
 function openModelDock() {
-  var families = modelFamilies[activeMode === 'image' ? 'image' : 'video'];
+  var families = modelFamilies[activeMode] || modelFamilies.video;
   closeSheet();
   updateModelDockPosition();
-  document.getElementById('modelDockTitle').textContent = activeMode === 'image' ? 'Image Models' : 'Video Models';
+  document.getElementById('modelDockTitle').textContent = activeMode === 'image' ? 'Image Models' : (activeMode === 'audio' ? 'Audio Models' : 'Video Models');
   var all = document.getElementById('modelDockAll');
   all.innerHTML = '<div class="dock-label">All Models</div>';
   setModelSelectOpen(true);
@@ -2612,6 +3031,33 @@ function renderUploadGrid() {
   updateCardPreview(type);
 }
 
+function renderRefThumbs(type) {
+  var wrap = document.getElementById('refThumbs' + type.charAt(0).toUpperCase() + type.slice(1));
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  (media[type] || []).forEach(function(item, idx) {
+    var t = document.createElement('div');
+    t.className = 'ref-thumb' + (type === 'audio' ? ' audio' : '') + (item.uploading ? ' uploading' : '');
+    if (type === 'audio') {
+      t.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+    } else if (type === 'video') {
+      var v = document.createElement('video');
+      v.src = item.previewUrl; v.muted = true; v.playsInline = true; v.preload = 'metadata';
+      t.appendChild(v);
+    } else {
+      var im = document.createElement('img');
+      im.onerror = function() { imgFallback(this); };
+      im.src = item.previewUrl;
+      t.appendChild(im);
+    }
+    var rm = document.createElement('div');
+    rm.className = 'slot-remove';
+    rm.onclick = function(e) { e.stopPropagation(); removeMedia(type, idx); };
+    t.appendChild(rm);
+    t.addEventListener('click', function() { openUploadSheet(type); });
+    wrap.appendChild(t);
+  });
+}
 function updateCardPreview(type) {
   var count = media[type].length;
   var countEl = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
@@ -2620,24 +3066,15 @@ function updateCardPreview(type) {
   var peCountEl = document.getElementById('pe' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
   if (peCountEl) peCountEl.textContent = count + '/' + maxCounts[type];
   var card = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1));
-  var existingThumb = card.querySelector('.uc-thumb');
-  var existingDim = card.querySelector('.uc-thumb-dim');
-  if (existingThumb) existingThumb.remove();
-  if (existingDim) existingDim.remove();
   card.classList.toggle('has-media', count > 0);
-  if (count > 0) {
-    var img = document.createElement('img');
-    img.className = 'uc-thumb';
-    img.onerror = function() { imgFallback(this); };
-    img.src = media[type][0].previewUrl;
-    card.insertBefore(img, card.firstChild);
-    var dim = document.createElement('div');
-    dim.className = 'uc-thumb-dim';
-    card.insertBefore(dim, card.firstChild.nextSibling);
-  }
+  // Layout ala referensi: hasil upload tampil sebagai kartu thumbnail
+  // TERPISAH di samping kartu tambah, bukan menimpa kartu tambahnya.
+  renderRefThumbs(type);
   card.classList.remove('pop');
   void card.offsetWidth;
   if (count > 0) card.classList.add('pop');
+  var peCount = document.getElementById('pe' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
+  if (peCount) peCount.textContent = count + '/' + (maxCounts[type] || 0);
   if (document.getElementById('promptOverlay').classList.contains('show')) {
     renderPeTagsRow();
   }
@@ -2726,6 +3163,8 @@ function hideCanvasResultUI() {
   if (boxEl) boxEl.style.display = 'none';
   var wrapEl = document.getElementById('canvasResultWrap');
   if (wrapEl) wrapEl.classList.remove('has-result');
+  var aPrev = document.getElementById('canvasPreviewAudio');
+  if (aPrev) { aPrev.pause && aPrev.pause(); aPrev.removeAttribute('src'); aPrev.style.display = 'none'; }
 }
 // Opens the fullscreen Result/description page on demand (via the "Details"
 // button), instead of that page being forced open automatically as soon as
@@ -2759,7 +3198,7 @@ function updateGenerateButtonState() {
   var hasMedia = (!needsMedia || media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url))
     && (!needsVideo || media.video.length > 0);
   btn.disabled = !((hasPrompt || promptOptional) && hasMedia);
-  if (txt) txt.textContent = 'GENERATE \u2726';
+  if (txt) txt.textContent = 'GENERATE';
 }
 
 // ══════════ UPLOADED ASSETS STRIP (persists outside the upload sheet) ══════════
@@ -2794,6 +3233,42 @@ function renderAssetsStrip() {
     strip.appendChild(chip);
   });
   strip.classList.toggle('show', all.length > 0);
+}
+
+function clearPanelReferences() {
+  // Dipanggil tepat setelah generate berhasil disubmit — ala web AI
+  // profesional, lampiran direset per-job supaya generate berikutnya
+  // mulai bersih. File Dropbox-nya TIDAK dihapus di sini: job yang baru
+  // jalan (dan tombol Coba Lagi) masih memakai URL itu; sweeper server
+  // yang membereskannya nanti.
+  ['image', 'video', 'audio'].forEach(function(type) {
+    media[type].forEach(function(m) {
+      if (m && m.previewUrl && m.previewUrl.indexOf('blob:') === 0) {
+        try { URL.revokeObjectURL(m.previewUrl); } catch(_) {}
+      }
+    });
+    media[type] = [];
+  });
+  ['first', 'last'].forEach(function(k) {
+    var f = frames[k];
+    if (f && f.previewUrl && f.previewUrl.indexOf('blob:') === 0) {
+      try { URL.revokeObjectURL(f.previewUrl); } catch(_) {}
+    }
+    frames[k] = null;
+  });
+  // Prompt bisa berisi mention @image1 dst yang kini tak menunjuk apa-apa
+  // — biarkan teksnya (user mungkin mau pakai ulang), cukup refresh UI.
+  if (typeof clearMotionControlMeta === 'function' && motionControlMeta) clearMotionControlMeta();
+  renderUploadGrid();
+  renderPeTagsRow();
+  renderAssetsStrip();
+  updateCardPreview('image');
+  updateCardPreview('video');
+  updateCardPreview('audio');
+  resetFrameCard('first');
+  resetFrameCard('last');
+  updateCanvasPreview();
+  updateGenerateButtonState();
 }
 
 function removeMedia(type, idx) {
@@ -2910,7 +3385,12 @@ function uploadFile(file, type, previewUrl) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var i = media[type].indexOf(entry);
-      if (i === -1) return; // removed by the user before the upload finished — discard silently
+      if (i === -1) {
+        // Di-X sebelum upload selesai — file yang barusan ter-upload yatim,
+        // hapus langsung dari Dropbox.
+        if (data && data.ok && data.url) forgetUpload({ url: data.url });
+        return;
+      }
       if (data.ok) {
         entry.url = data.url;
         entry.uploading = false;
@@ -3090,11 +3570,14 @@ function resetFrameCard(which) {
     if (!file) return;
     var previewUrl = URL.createObjectURL(file);
     var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
-    // Free the previous frame's blob URL (if any) — it's being replaced.
+    // Frame lama sedang diganti: bebaskan blob preview-nya DAN hapus
+    // filenya dari Dropbox saat itu juga — salah pilih foto tidak
+    // meninggalkan file lama menumpuk atau link lama yang tersisa.
     var prev = frames[which];
     if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
       try { URL.revokeObjectURL(prev.previewUrl); } catch(_) {}
     }
+    forgetUpload(prev);
     // Keep a direct reference to this specific upload's entry object. If the
     // user reselects a different first/last frame (or removes it) before
     // this upload resolves, frames[which] will no longer be === entry, so
@@ -3109,7 +3592,12 @@ function resetFrameCard(which) {
     fetch('/api/aivideo/upload', { method: 'POST', body: fd })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (frames[which] !== entry) return; // superseded or cleared — ignore this stale result
+        if (frames[which] !== entry) {
+          // Sudah digantikan/dihapus sebelum upload selesai — file yang
+          // barusan ter-upload ini yatim, hapus langsung dari Dropbox.
+          if (data && data.ok && data.url) forgetUpload({ url: data.url });
+          return;
+        }
         if (data.ok) {
           entry.url = data.url;
           entry.uploading = false;
@@ -3146,8 +3634,52 @@ var PE_ICON_EXPAND = '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 
 var PE_ICON_COLLAPSE = '<path d="M9 3v3a2 2 0 0 1-2 2H4M20 8h-3a2 2 0 0 1-2-2V3M4 16h3a2 2 0 0 1 2 2v3M15 21v-3a2 2 0 0 1 2-2h3"/>';
 // Enhance is visual-only for now — no AI rewrite wired up yet.
 // Hook this up to a real backend call whenever that's ready.
+var enhanceBusy = false;
+var enhancePrevPrompt = null;
 function handlePromptEnhanceClick() {
-  showToast('Enhance segera hadir ✨');
+  if (enhanceBusy) return;
+  var raw = (promptInput.value || '').trim();
+  if (!raw) { showToast('Tulis prompt kasarnya dulu, baru Enhance'); return; }
+  var btn = document.querySelector('.pe-enhance-btn');
+  enhanceBusy = true;
+  if (btn) { btn.classList.add('busy'); btn.setAttribute('disabled', 'disabled'); }
+  fetchWithTimeout('/api/aivideo/enhance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: raw,
+      mode: activeMode,
+      family: selectedFamily ? selectedFamily.key : '',
+      model: selectedModelTier || ''
+    })
+  }, 50000)
+    .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+    .then(function(res) {
+      var d = res.data || {};
+      if (res.status >= 400 || !d.ok || !d.prompt) {
+        showError(d.error || 'Enhance gagal (' + res.status + ')');
+        return;
+      }
+      enhancePrevPrompt = promptInput.value;
+      promptInput.value = d.prompt;
+      syncPromptHighlight();
+      autosizePrompt();
+      updateGenerateButtonState();
+      showToastAction('Prompt di-enhance', 'Kembalikan', function() {
+        if (enhancePrevPrompt !== null) {
+          promptInput.value = enhancePrevPrompt;
+          enhancePrevPrompt = null;
+          syncPromptHighlight();
+          autosizePrompt();
+          updateGenerateButtonState();
+        }
+      });
+    })
+    .catch(function(err) { showError(classifyFetchError(err, 'Enhance gagal')); })
+    .finally(function() {
+      enhanceBusy = false;
+      if (btn) { btn.classList.remove('busy'); btn.removeAttribute('disabled'); }
+    });
 }
 
 function togglePromptExpand() {
@@ -3159,15 +3691,33 @@ function togglePromptExpand() {
   applyKeyboardHeight();
 }
 
+function peAttachPick(type) {
+  // Tambah referensi langsung dari dalam editor prompt (ala referensi):
+  // buka file picker sistem tanpa menutup editor; upload memakai pipeline
+  // yang sama, dan counter/chip di editor ikut ter-update otomatis.
+  if ((media[type] || []).length >= (maxCounts[type] || 0)) {
+    showError('Slot ' + type + ' sudah penuh untuk model ini.');
+    return;
+  }
+  var input = document.getElementById(type + 'FileInput');
+  if (input) input.click();
+}
 function openPromptEditor() {
   closeModelDock();
   renderPeTagsRow();
   syncPromptHighlight();
   if (peBackdrop) peBackdrop.classList.add('show');
   peOverlay.classList.add('show');
+  // Ala referensi: sekali tap PROMPT langsung fullscreen + keyboard siap ketik.
+  if (!promptExpanded) {
+    promptExpanded = true;
+    peOverlay.classList.add('pe-fullscreen');
+    var icon = document.getElementById('peExpandIcon');
+    if (icon) icon.innerHTML = PE_ICON_COLLAPSE;
+  }
   applyKeyboardHeight();
   autosizePrompt();
-  setTimeout(function(){ promptInput.focus(); }, 220);
+  setTimeout(function(){ promptInput.focus(); }, 180);
 }
 function renderPeTagsRow() {
   var row = document.getElementById('peTagsRow');
@@ -3182,9 +3732,9 @@ function renderPeTagsRow() {
       var tagName = refTag(type, idx);
       var thumbHtml;
       if (type === 'audio') {
-        thumbHtml = '<span class="aud">♪</span>';
+        thumbHtml = '<span class="aud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>';
       } else if (type === 'video') {
-        thumbHtml = '<img src="' + item.previewUrl + '" onerror="imgFallback(this)">';
+        thumbHtml = '<video src="' + item.previewUrl + '" muted playsinline preload="metadata"></video>';
       } else {
         thumbHtml = '<img src="' + item.previewUrl + '" onerror="imgFallback(this)">';
       }
@@ -3229,8 +3779,13 @@ function insertTagIntoPrompt(tag) {
   syncPromptHighlight();
   autosizePrompt();
 }
+function syncInlinePrompt() {
+  var inline = document.getElementById('promptInline');
+  if (inline && promptInput && inline.value !== promptInput.value) inline.value = promptInput.value;
+}
 function closePromptEditor() {
   peOverlay.classList.remove('show');
+  syncInlinePrompt();
   if (peBackdrop) peBackdrop.classList.remove('show');
   document.getElementById('mentionPopup').classList.remove('show');
   var val = promptInput.value.trim();
@@ -3351,7 +3906,9 @@ function renderMentionRefs() {
     row.className = 'mp-item';
     var thumbHtml;
     if (entry.type === 'audio') {
-      thumbHtml = '<div class="mp-icon object">♪</div>';
+      thumbHtml = '<div class="mp-icon object"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>';
+    } else if (entry.type === 'video') {
+      thumbHtml = '<video class="mp-ref-thumb" src="' + entry.item.previewUrl + '" muted playsinline preload="metadata" style="width:36px;height:36px;border-radius:10px;object-fit:cover;flex-shrink:0"></video>';
     } else {
       thumbHtml = '<img class="mp-ref-thumb" src="' + entry.item.previewUrl + '" onerror="imgFallback(this)" style="width:36px;height:36px;border-radius:10px;object-fit:cover;flex-shrink:0">';
     }
@@ -3508,10 +4065,15 @@ function startGenerate() {
   var prompt = promptInput.value.trim();
 
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
-    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, dan Flux (Schnell/Dev/Pro).');
+    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Veo 3.1 (Lite/Fast/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, Flux (Schnell/Dev/Pro), Imagen 4, dan Qwen Image.');
     return;
   }
-  if (!prompt) { showError('Prompt wajib diisi'); openPromptEditor(); return; }
+  // Motion Control (klingswap): prompt opsional — konsisten dengan
+  // updateGenerateButtonState() dan backend (aivideo_generate memakai
+  // default prompt sendiri kalau kosong). Family lain tetap wajib prompt.
+  if (!prompt && !(selectedFamily && selectedFamily.key === 'klingswap')) {
+    showError('Prompt wajib diisi'); openPromptEditor(); return;
+  }
   var hasFirstFrame = !!(frames.first && frames.first.url);
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
@@ -3550,7 +4112,11 @@ function startGenerate() {
   if (selectedFamily.key === 'seedance') {
     body.bitrate_mode = selectedBitrate;
   }
-  if ((selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap') && muteAudioEnabled) {
+  if (selectedFamily.key === 'seedaudio') {
+    body.audio_format = selectedAudioFormat.toLowerCase();
+    body.sample_rate = parseInt(selectedSampleRate.replace(/\./g, '').replace(/\D+$/g, ''), 10) || 44100;
+  }
+  if ((selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo') && muteAudioEnabled) {
     body.mute_audio = true;
   }
 
@@ -3590,7 +4156,7 @@ function startGenerate() {
     }
     var taskId = res.data.id;
     var taskInfo = res.data.task_info || {};
-    var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : '');
+    var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
     var list = document.getElementById('genQueueList');
     list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, titleLabel));
     var etaEl = document.getElementById('genqEta_' + taskId);
@@ -3599,6 +4165,9 @@ function startGenerate() {
     saveActiveTaskEntry(taskId, meta);
     refreshQueueBadge();
     pollQueueTask(taskId);
+    // Reset lampiran untuk job berikutnya — snapshot meta job ini sudah
+    // menyimpan semua URL yang dibutuhkan, jadi aman dikosongkan sekarang.
+    clearPanelReferences();
   })
   .catch(function(err) {
     showError(classifyFetchError(err, 'Generate gagal'));
@@ -3724,12 +4293,15 @@ function pollQueueTask(taskId, opts) {
           var out = data.output || data.result || {};
           var videoUrl = out.video_url || (out.type === 'video' ? out.url : '') || '';
           var imageUrl = out.image_url || (out.type === 'image' ? out.url : '') || '';
-          if (!videoUrl && !imageUrl && out.url) {
-            if (meta.activeMode === 'image') imageUrl = out.url; else videoUrl = out.url;
+          var audioUrl = out.audio_url || (out.type === 'audio' ? out.url : '') || '';
+          if (!videoUrl && !imageUrl && !audioUrl && out.url) {
+            if (meta.activeMode === 'image') imageUrl = out.url;
+            else if (meta.activeMode === 'audio') audioUrl = out.url;
+            else videoUrl = out.url;
           }
-          if (videoUrl || imageUrl) {
+          if (videoUrl || imageUrl || audioUrl) {
             var elapsedMs = state.startTs ? (Date.now() - state.startTs) : 0;
-            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
+            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, audioUrl: audioUrl, sizeBytes: out.size_bytes || 0, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
             // Saved using THIS job's own snapshotted meta — never live
             // panel state — so the History entry can never end up
             // mismatched with whatever you've since changed the panel to.
@@ -3746,9 +4318,25 @@ function pollQueueTask(taskId, opts) {
             // or started composing something new: updateCanvasPreview()
             // (called on every media/prompt change) already hides this via
             // hideCanvasResultUI(), so a stale preview can't linger.
-            showCanvasResult(videoUrl, imageUrl);
-            showCanvasResultUI(resultPayload);
+            if (audioUrl && !videoUrl && !imageUrl) {
+              // Hasil audio: tampilkan player audio inline di canvas.
+              var aPrev = document.getElementById('canvasPreviewAudio');
+              if (aPrev) {
+                document.getElementById('emptyState').style.display = 'none';
+                var cw = document.getElementById('canvasPreview');
+                if (cw) cw.style.display = 'flex';
+                var cvi = document.getElementById('canvasPreviewImg'); if (cvi) cvi.style.display = 'none';
+                var cvv = document.getElementById('canvasPreviewVideo'); if (cvv) { cvv.pause && cvv.pause(); cvv.style.display = 'none'; }
+                aPrev.src = audioUrl;
+                aPrev.style.display = 'block';
+              }
+              showCanvasResultUI(resultPayload);
+            } else {
+              showCanvasResult(videoUrl, imageUrl);
+              showCanvasResultUI(resultPayload);
+            }
             var isImageResult = !!imageUrl && !videoUrl;
+            var isAudioResult = !!audioUrl && !videoUrl && !imageUrl;
             var thumbEl = document.getElementById('genqThumb_' + taskId);
             var ringEl = document.getElementById('genqRing_' + taskId);
             if (thumbEl && ringEl) {
@@ -3765,7 +4353,7 @@ function pollQueueTask(taskId, opts) {
                 });
               }
             }
-            showToastAction((isImageResult ? 'Gambar selesai' : 'Video selesai') + ' — tersimpan di History', 'Lihat', function() {
+            showToastAction((isAudioResult ? 'Audio selesai' : (isImageResult ? 'Gambar selesai' : 'Video selesai')) + ' — tersimpan di History', 'Lihat', function() {
               if (rec) openHistoryItem(rec.id);
             });
             setTimeout(function() { var el = document.getElementById('genq_' + taskId); if (el) el.remove(); }, 3500);
@@ -3853,7 +4441,7 @@ function resumeActiveTaskIfAny() {
     var ageMs = now - (saved.ts || 0);
     if (ageMs > 30 * 60 * 1000) { removeActiveTaskEntry(saved.taskId); return; } // stale beyond any realistic generation time
     var meta = saved.meta || {};
-    var titleLabel = (meta.fullModelLabel || meta.model || 'Generating') + (meta.activeMode === 'image' ? ' · Image' : '');
+    var titleLabel = (meta.fullModelLabel || meta.model || 'Generating') + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
     list.insertAdjacentHTML('afterbegin', genQueueItemHtml(saved.taskId, titleLabel));
     var stageEl = document.getElementById('genqStage_' + saved.taskId);
     if (stageEl) stageEl.textContent = 'Reconnecting to your generation…';
@@ -3903,8 +4491,14 @@ function openResultOverlay(payload) {
   if (typeof payload === 'string') payload = { videoUrl: payload, imageUrl: '' };
   var videoUrl = payload.videoUrl || '';
   var imageUrl = payload.imageUrl || '';
+  var audioUrl = payload.audioUrl || '';
   var isImage = !!imageUrl && !videoUrl;
-  var mediaUrl = isImage ? imageUrl : videoUrl;
+  var isAudio = !!audioUrl && !videoUrl && !imageUrl;
+  var mediaUrl = isAudio ? audioUrl : (isImage ? imageUrl : videoUrl);
+  var aWrap = document.getElementById('resultAudioWrap');
+  var aEl = document.getElementById('resultAudioFull');
+  if (aWrap) aWrap.style.display = 'none';
+  if (aEl) { aEl.pause && aEl.pause(); aEl.removeAttribute('src'); }
 
   // Always prefer the actual history record's snapshotted settings over the
   // live generate panel — the panel may have been changed to a different
@@ -3926,6 +4520,11 @@ function openResultOverlay(payload) {
     iEl.style.display = 'none'; iEl.removeAttribute('src');
     var failEl = document.getElementById('resultVideoFullFail');
     if (failEl) failEl.style.display = 'none';
+  } else if (isAudio) {
+    vEl.style.display = 'none'; vEl.removeAttribute('src'); vEl.pause && vEl.pause();
+    iEl.style.display = 'none'; iEl.removeAttribute('src');
+    if (aWrap) aWrap.style.display = 'flex';
+    if (aEl) aEl.src = audioUrl;
   } else if (isImage) {
     vEl.style.display = 'none'; vEl.removeAttribute('src'); vEl.pause && vEl.pause();
     iEl.style.display = 'block'; iEl.src = imageUrl;
@@ -3941,7 +4540,7 @@ function openResultOverlay(payload) {
 
   var dlBtnFull = document.getElementById('downloadBtnFull');
   dlBtnFull.setAttribute('data-url', mediaUrl);
-  dlBtnFull.setAttribute('data-filename', 'mii-ai-video-' + Date.now() + (isImage ? '.png' : '.mp4'));
+  dlBtnFull.setAttribute('data-filename', 'mii-ai-' + Date.now() + (isAudio ? '.wav' : (isImage ? '.png' : '.mp4')));
 
   document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
 
@@ -3953,8 +4552,8 @@ function openResultOverlay(payload) {
   if (rec) {
     modelLabel = rec.model;
     qualityVal = rec.quality;
-    durationVal = rec.duration || rec.quality; // duration blank for image-mode records
-    ratioVal = rec.ratio;
+    durationVal = rec.duration || '';   // kosong untuk image/audio — kartunya disembunyikan
+    ratioVal = rec.ratio || '';
   } else {
     // No history record at all (shouldn't normally happen — saveGenerationToHistory
     // runs before this page can be opened) — fall back to the live panel.
@@ -3964,14 +4563,24 @@ function openResultOverlay(payload) {
     durationVal = isImage ? selectedResolution : (selectedDuration + 's');
     ratioVal = selectedRatio;
   }
+  var qLabel = 'Quality';
+  if (qualityVal && !/\d/.test(String(qualityVal))) qLabel = 'Tier'; // 720p/1080p/4K berisi angka; MINI/PRO/DEV tidak
+  if (qualityVal && modelLabel &&
+      (' ' + String(modelLabel).toUpperCase() + ' ').indexOf(' ' + String(qualityVal).toUpperCase() + ' ') !== -1) {
+    qualityVal = ''; // tier sudah ada di nama model — jangan ditampilkan dua kali
+  }
   var items = [
     { label: 'Model', value: modelLabel },
-    { label: 'Quality', value: qualityVal },
+    { label: qLabel, value: qualityVal },
     { label: isImage ? 'Resolution' : 'Duration', value: durationVal },
     { label: 'Aspect Ratio', value: ratioVal },
     { label: 'Generation Time', value: genTimeTxt },
     { label: 'Generated At', value: genAtTxt }
-  ];
+  ].filter(function(it) {
+    // Kartu tanpa nilai (mis. Duration untuk image/audio, ratio record lama)
+    // tidak ditampilkan sama sekali — bukan "undefined"/kosong.
+    return it.value !== undefined && it.value !== null && String(it.value).trim() !== '' && String(it.value) !== 'undefined';
+  });
   // Motion Control's preview is meant to be just the result/reference pair
   // + prompt + action buttons — the Model/Quality/Duration/... meta grid is
   // redundant clutter there (it's already implied by the before/after pair).
@@ -4097,6 +4706,71 @@ function loadHistory() {
 }
 function saveHistoryList(list) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(_) {}
+  // Satu-satunya jalur tulis History — strip "Hasil terbaru" di canvas
+  // ikut segar setiap kali riwayat berubah (selesai generate, hapus, dsb).
+  try { renderCanvasRecent(); } catch(_) {}
+}
+function showRecordInCanvas(id) {
+  // Lihat hasil langsung di canvas halaman generate — tanpa dipaksa masuk
+  // halaman detail. Tombol "Details" di bawah preview tetap membuka detail.
+  var r = findHistoryRecord(id);
+  if (!r) return;
+  var aPrev = document.getElementById('canvasPreviewAudio');
+  if (aPrev) { aPrev.pause && aPrev.pause(); aPrev.removeAttribute('src'); aPrev.style.display = 'none'; }
+  if (r.audioUrl && !r.videoUrl && !r.imageUrl) {
+    document.getElementById('emptyState').style.display = 'none';
+    var cw = document.getElementById('canvasPreview');
+    if (cw) cw.style.display = 'flex';
+    var cvi = document.getElementById('canvasPreviewImg'); if (cvi) cvi.style.display = 'none';
+    var cvv = document.getElementById('canvasPreviewVideo'); if (cvv) { cvv.pause && cvv.pause(); cvv.style.display = 'none'; }
+    if (aPrev) { aPrev.src = r.audioUrl; aPrev.style.display = 'block'; }
+  } else {
+    showCanvasResult(r.videoUrl || '', r.imageUrl || '');
+  }
+  showCanvasResultUI({
+    videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', audioUrl: r.audioUrl || '',
+    elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r
+  });
+  var canvasEl = document.getElementById('canvas');
+  if (canvasEl && canvasEl.scrollIntoView) canvasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function renderCanvasRecent() {
+  var wrap = document.getElementById('canvasRecent');
+  var row = document.getElementById('canvasRecentRow');
+  if (!wrap || !row) return;
+  var list = loadHistory().slice(0, 8);
+  if (!list.length) { wrap.style.display = 'none'; row.innerHTML = ''; return; }
+  row.innerHTML = '';
+  list.forEach(function(r) {
+    var card = document.createElement('div');
+    card.className = 'cr-card';
+    card.onclick = function() { showRecordInCanvas(r.id); };
+    var mediaEl;
+    if (r.videoUrl) {
+      mediaEl = document.createElement('video');
+      mediaEl.src = r.videoUrl; mediaEl.muted = true; mediaEl.playsInline = true; mediaEl.preload = 'metadata';
+      card.appendChild(mediaEl);
+      var play = document.createElement('span');
+      play.className = 'cr-play';
+      play.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.05 1.05 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14z"/></svg>';
+      card.appendChild(play);
+    } else if (r.audioUrl && !r.imageUrl) {
+      card.classList.add('audio');
+      card.innerHTML = '<svg class="cr-aud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+    } else {
+      mediaEl = document.createElement('img');
+      mediaEl.loading = 'lazy';
+      mediaEl.onerror = function() { imgFallback(this); };
+      mediaEl.src = r.imageUrl || r.thumb || '';
+      card.appendChild(mediaEl);
+    }
+    var tag = document.createElement('span');
+    tag.className = 'cr-tag';
+    tag.textContent = r.videoUrl ? 'VIDEO' : (r.audioUrl && !r.imageUrl ? 'AUDIO' : 'IMAGE');
+    card.appendChild(tag);
+    row.appendChild(card);
+  });
+  wrap.style.display = '';
 }
 function findHistoryRecord(id) {
   return loadHistory().find(function(r) { return r.id === id; });
@@ -4140,6 +4814,7 @@ function syncArchiveToServer(rec) {
       var patch = {};
       if (data.videoUrl) patch.videoUrl = data.videoUrl;
       if (data.imageUrl) patch.imageUrl = data.imageUrl;
+      if (data.audioUrl) patch.audioUrl = data.audioUrl;
       if (Object.keys(patch).length) updateHistoryRecord(rec.id, patch);
       return true;
     })
@@ -4272,11 +4947,13 @@ function saveGenerationToHistory(res, meta) {
       id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       videoUrl: res.videoUrl || '',
       imageUrl: res.imageUrl || '',
+      audioUrl: res.audioUrl || '',
+      sizeBytes: res.sizeBytes || 0,
       thumb: meta.thumbSeed || res.imageUrl || '',
       prompt: (meta.prompt || '').trim(),
       model: meta.fullModelLabel || meta.modelDisplayName || '',
       quality: meta.resolution || '',
-      duration: meta.activeMode === 'image' ? '' : ((meta.duration || '') + 's'),
+      duration: (meta.activeMode === 'image' || meta.activeMode === 'audio') ? '' : ((meta.duration || '') + 's'),
       ratio: meta.aspect_ratio || '',
       elapsedMs: res.elapsedMs || 0,
       genTime: formatElapsed(res.elapsedMs || 0),
@@ -4298,11 +4975,13 @@ function saveGenerationToHistory(res, meta) {
       id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       videoUrl: res.videoUrl || '',
       imageUrl: res.imageUrl || '',
+      audioUrl: res.audioUrl || '',
+      sizeBytes: res.sizeBytes || 0,
       thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
       prompt: promptInput.value.trim(),
       model: fullModelLabel,
       quality: selectedResolution,
-      duration: activeMode === 'image' ? '' : (selectedDuration + 's'),
+      duration: (activeMode === 'image' || activeMode === 'audio') ? '' : (selectedDuration + 's'),
       ratio: selectedRatio,
       elapsedMs: res.elapsedMs || 0,
       genTime: formatElapsed(res.elapsedMs || 0),
@@ -4363,21 +5042,45 @@ function buildHistGridItem(r) {
   var style = bg ? ' style="background-image:url(\'' + bg + '\')"' : '';
   return '<div class="hist-grid-item"' + style + ' onclick="openHistoryItem(\'' + r.id + '\')"></div>';
 }
+function fetchStorageUsage() {
+  var el = document.getElementById('apiStorageTxt');
+  if (!el) return;
+  el.textContent = '…';
+  fetchWithTimeout('/api/aivideo/storage', {}, 15000)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.ok) {
+        el.textContent = formatBytes(d.used) + ' / ' + formatBytes(d.allocated);
+      } else {
+        el.textContent = 'N/A';
+      }
+    })
+    .catch(function() { el.textContent = 'N/A'; });
+}
+function formatBytes(b) {
+  b = parseInt(b, 10);
+  if (!b || b <= 0) return '';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(0) + ' KB';
+  if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + ' MB';
+  return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
 function buildHistItemRow(r) {
   var safeThumb = safeCssUrl(r.thumb || '');
   var thumbStyle = safeThumb ? ' style="background-image:url(\'' + safeThumb + '\')"' : '';
-  var thumbGlyph = safeThumb ? '' : (r.videoUrl ? '\u25b6' : (r.imageUrl ? '\u25a4' : ''));
+  var audioGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+  if (r.audioUrl && !r.videoUrl && !r.imageUrl) { safeThumb = ''; thumbStyle = ''; }
+  var thumbGlyph = safeThumb ? '' : (r.audioUrl && !r.videoUrl && !r.imageUrl ? audioGlyph : (r.videoUrl ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.05 1.05 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14z"/></svg>' : (r.imageUrl ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' : '')));
   return '<div class="hist-item">' +
-    '<div class="hist-thumb"' + thumbStyle + '>' + (thumbGlyph ? '<span class="hist-thumb-glyph">' + thumbGlyph + '</span>' : '') + '</div>' +
+    '<div class="hist-thumb"' + thumbStyle + ' onclick="openHistoryItem(\'' + r.id + '\')">' + (thumbGlyph ? '<span class="hist-thumb-glyph">' + thumbGlyph + '</span>' : '') + '</div>' +
     '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
       '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
-      '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + '</span>' +
+      '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + (r.sizeBytes ? ' \u00b7 ' + formatBytes(r.sizeBytes) : '') + '</span>' +
     '</div>' +
     '<div class="hist-actions">' +
-      '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')">\u25b6</button>' +
-      '<button class="hist-act" title="Reuse" onclick="reuseHistoryItem(\'' + r.id + '\')">\u21ba</button>' +
-      '<button class="hist-act" title="' + (r.archived ? 'Unarchive' : 'Archive') + '" onclick="toggleArchiveItem(\'' + r.id + '\')">' + (r.archived ? '\u2934' : '\u2913') + '</button>' +
-      '<button class="hist-act" title="Delete" onclick="confirmDeleteHistoryItem(\'' + r.id + '\')">\ud83d\uddd1</button>' +
+      '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.05 1.05 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14z"/></svg></button>' +
+      '<button class="hist-act" title="Reuse" onclick="reuseHistoryItem(\'' + r.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>' +
+      '<button class="hist-act" title="' + (r.archived ? 'Unarchive' : 'Archive') + '" onclick="toggleArchiveItem(\'' + r.id + '\')">' + (r.archived ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h2"/><path d="M20 8v11a2 2 0 0 1-2 2h-2"/><path d="m9 15 3-3 3 3"/><path d="M12 12v9"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>') + '</button>' +
+      '<button class="hist-act danger" title="Delete" onclick="confirmDeleteHistoryItem(\'' + r.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>' +
     '</div>' +
   '</div>';
 }
@@ -4394,7 +5097,9 @@ function setHistTypeFilter(page, type, el) {
   if (page === 'history') renderHistoryList(); else renderArchiveList();
 }
 function recordMediaType(r) {
-  return r.videoUrl ? 'video' : 'image';
+  if (r.videoUrl) return 'video';
+  if (r.audioUrl) return 'audio';
+  return 'image';
 }
 function renderHistTypeList(archived, listId, emptyId, typeFilter) {
   var el = document.getElementById(listId);
@@ -4407,7 +5112,7 @@ function renderHistTypeList(archived, listId, emptyId, typeFilter) {
   if (list.length === 0) {
     el.innerHTML = '';
     empty.style.display = 'block';
-    empty.textContent = (archived ? 'No archived ' : 'No ') + (typeFilter === 'video' ? 'videos' : 'images') + ' yet';
+    empty.textContent = (archived ? 'No archived ' : 'No ') + (typeFilter === 'video' ? 'videos' : (typeFilter === 'audio' ? 'audio' : 'images')) + ' yet';
     return;
   }
   empty.style.display = 'none';
@@ -4433,7 +5138,7 @@ function openHistoryItem(id) {
   // History item no longer routes through the generate page first. Closing
   // it now lands you right back on History/Archive/wherever you came from.
   window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
-  openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
+  openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', audioUrl: r.audioUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
 function downloadHistoryItem(id) {
   var r = findHistoryRecord(id);
@@ -4443,7 +5148,7 @@ function downloadHistoryItem(id) {
 }
 function restoreFromRecord(r) {
   // Restore model + quality
-  var families = modelFamilies[r.imageUrl && !r.videoUrl ? 'image' : 'video'];
+  var families = modelFamilies[r.audioUrl && !r.videoUrl && !r.imageUrl ? 'audio' : (r.imageUrl && !r.videoUrl ? 'image' : 'video')];
   var fam = families.find(function(f) { return f.key === r.modelKey; }) || selectedFamily;
   var qIdx = fam.qualities.findIndex(function(q) { return q.label === r.modelTier; });
   pickFamily(fam, qIdx > -1 ? qIdx : 0);
@@ -4489,6 +5194,8 @@ function restoreFromRecord(r) {
   switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
   setPanelCollapsed(false);
   showToast('Settings restored — ready to regenerate');
+  syncInlinePrompt();
+  updateGenerateButtonState();
 }
 function reuseHistoryItem(id) {
   var r = findHistoryRecord(id);
@@ -4518,7 +5225,7 @@ var pendingDeleteId = null;
 function confirmDeleteHistoryItem(id) {
   pendingDeleteId = id;
   document.getElementById('confirmTitle').textContent = 'Delete this generation?';
-  document.getElementById('confirmSub').textContent = 'This only removes it from your history. The file itself is not deleted.';
+  document.getElementById('confirmSub').textContent = 'Item ini dihapus dari History beserta file hasilnya di penyimpanan. Tidak bisa dikembalikan.';
   var btn = document.getElementById('confirmActionBtn');
   btn.onclick = function() {
     removeArchiveFromServer(pendingDeleteId);
@@ -4597,9 +5304,64 @@ updateCanvasPreview();
 updateGenerateButtonState();
 fetchCreditBalance();
 renderLastResultCard();
-navigateTo('dashboard');
+// Buka langsung ke workspace MII AI VIDEO (bukan Dashboard). Dashboard
+// tetap bisa diakses lewat sidebar, dan deep-link via hash tetap jalan
+// (mis. makima.cloud/ai-video#dashboard atau #history).
+var bootPage = (location.hash || '').replace('#', '');
+if (PAGE_DEFS[bootPage] && bootPage !== 'aivideo') {
+  navigateTo(bootPage);
+} else {
+  // Halaman AI Video sudah aktif sejak first paint (markup), jadi tidak
+  // perlu navigate ulang — cukup sinkronkan judul & state internal.
+  currentPage = 'aivideo';
+  var bootTitle = document.getElementById('pageTitleTxt');
+  if (bootTitle) bootTitle.textContent = PAGE_DEFS.aivideo.title;
+}
 window.addEventListener('resize', updateModelDockPosition);
+// Composer: input inline adalah jalur utama menulis prompt — tersinkron dua
+// arah dengan editor fullscreen (@ tag tetap lewat editor via tombol expand).
+(function(){
+  var inline = document.getElementById('promptInline');
+  if (!inline) return;
+  inline.addEventListener('input', function() {
+    if (promptInput) promptInput.value = inline.value;
+    updateGenerateButtonState();
+  });
+  inline.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      var btn = document.getElementById('generateBtn');
+      if (btn && !btn.disabled) startGenerate();
+    }
+  });
+  syncInlinePrompt();
+})();
 </script>
 
+<script>
+// Desktop guard: di ≥1100px panel jadi rail kanan yang selalu terbuka —
+// pastikan state 'collapsed'/'half' bawaan mobile tidak pernah tersisa
+// saat window di-resize dari kecil ke besar (mis. rotasi/split-screen).
+(function(){
+  function syncPanelForDesktop(){
+    if (window.innerWidth >= 1100) {
+      var p = document.getElementById('panel');
+      if (p) p.classList.remove('collapsed', 'half');
+    }
+  }
+  window.addEventListener('resize', syncPanelForDesktop);
+  syncPanelForDesktop();
+})();
+</script>
+<script>
+// Pill modebar: posisikan di tab aktif saat halaman siap & saat layar berubah
+(function() {
+  function initPill() { moveModePill(document.querySelector('.mode-btn.active')); if (typeof updateRailActive === 'function') updateRailActive(); if (typeof renderCanvasRecent === 'function') { try { renderCanvasRecent(); } catch(_) {} } }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ requestAnimationFrame(initPill); });
+  else requestAnimationFrame(initPill);
+  window.addEventListener('resize', initPill);
+  window.addEventListener('load', initPill);
+})();
+</script>
 </body>
 </html>
