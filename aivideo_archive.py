@@ -61,7 +61,87 @@ def init_db():
         existing_cols = [r[1] for r in conn.execute('PRAGMA table_info(aivideo_archive)').fetchall()]
         if 'archived' not in existing_cols:
             conn.execute('ALTER TABLE aivideo_archive ADD COLUMN archived INTEGER DEFAULT 1')
+        # Mode Audio (Seed Audio 1.0): hasil audio disimpan di kolomnya sendiri.
+        if 'audio_url' not in existing_cols:
+            conn.execute("ALTER TABLE aivideo_archive ADD COLUMN audio_url TEXT DEFAULT ''")
         conn.commit()
+
+
+def _ensure_tasks_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS aivideo_tasks (
+            id TEXT PRIMARY KEY,
+            data TEXT NOT NULL,
+            status TEXT DEFAULT '',
+            updated_ts INTEGER DEFAULT 0
+        )
+    """)
+
+
+def save_task(task_id, data):
+    """Simpan/refresh snapshot task generate. Dipanggil app.py di setiap
+    perubahan status penting — supaya hasil generate selamat kalau proses
+    server mati/redeploy di tengah jalan."""
+    import json as _json, time as _time
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_tasks_table(conn)
+        conn.execute(
+            'INSERT INTO aivideo_tasks (id, data, status, updated_ts) VALUES (?, ?, ?, ?) '
+            'ON CONFLICT(id) DO UPDATE SET data=excluded.data, status=excluded.status, updated_ts=excluded.updated_ts',
+            (task_id, _json.dumps(data, default=str), str(data.get('status') or ''), int(_time.time())))
+        conn.commit()
+
+
+def get_task(task_id):
+    import json as _json
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_tasks_table(conn)
+        cur = conn.cursor()
+        cur.execute('SELECT data FROM aivideo_tasks WHERE id = ?', (task_id,))
+        row = cur.fetchone()
+    if not row:
+        return None
+    try:
+        return _json.loads(row[0])
+    except Exception:
+        return None
+
+
+def mark_interrupted_tasks(error_message):
+    """Dipanggil sekali saat boot: task yang masih 'pending'/'processing'
+    dari kehidupan server sebelumnya tidak mungkin selesai (thread-nya
+    ikut mati) — tandai failed dengan pesan yang jelas, bukan hilang."""
+    import json as _json, time as _time
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_tasks_table(conn)
+        cur = conn.cursor()
+        cur.execute("SELECT id, data FROM aivideo_tasks WHERE status NOT IN ('completed','failed')")
+        rows = cur.fetchall()
+        for task_id, raw in rows:
+            try:
+                d = _json.loads(raw)
+            except Exception:
+                d = {}
+            d['status'] = 'failed'
+            d['error'] = error_message
+            conn.execute('UPDATE aivideo_tasks SET data=?, status=?, updated_ts=? WHERE id=?',
+                         (_json.dumps(d, default=str), 'failed', int(_time.time()), task_id))
+        conn.commit()
+    return len(rows)
+
+
+def prune_tasks(max_age_seconds):
+    import time as _time
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_tasks_table(conn)
+        cur = conn.cursor()
+        cur.execute('DELETE FROM aivideo_tasks WHERE updated_ts < ?', (int(_time.time()) - int(max_age_seconds),))
+        conn.commit()
+        return cur.rowcount
 
 
 def upsert_archive(rec):
@@ -72,13 +152,14 @@ def upsert_archive(rec):
     with _write_lock:
         conn.execute('''
             INSERT INTO aivideo_archive
-                (id, media_type, video_url, image_url, thumb, prompt, model, quality,
+                (id, media_type, video_url, image_url, audio_url, thumb, prompt, model, quality,
                  duration, ratio, created_at_label, created_at_ts, ref_images, ref_videos,
                  model_key, model_tier, archived)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 media_type=excluded.media_type, video_url=excluded.video_url,
-                image_url=excluded.image_url, thumb=excluded.thumb, prompt=excluded.prompt,
+                image_url=excluded.image_url, audio_url=excluded.audio_url,
+                thumb=excluded.thumb, prompt=excluded.prompt,
                 model=excluded.model, quality=excluded.quality, duration=excluded.duration,
                 ratio=excluded.ratio, created_at_label=excluded.created_at_label,
                 created_at_ts=excluded.created_at_ts, ref_images=excluded.ref_images,
@@ -86,9 +167,10 @@ def upsert_archive(rec):
                 model_tier=excluded.model_tier, archived=excluded.archived
         ''', (
             rec.get('id'),
-            rec.get('media_type') or ('video' if rec.get('videoUrl') else 'image'),
+            rec.get('media_type') or ('video' if rec.get('videoUrl') else ('audio' if rec.get('audioUrl') else 'image')),
             rec.get('videoUrl') or '',
             rec.get('imageUrl') or '',
+            rec.get('audioUrl') or '',
             rec.get('thumb') or '',
             rec.get('prompt') or '',
             rec.get('model') or '',
@@ -127,6 +209,7 @@ def list_archive(archived=None):
         d['refVideos'] = json.loads(d.pop('ref_videos') or '[]')
         d['videoUrl'] = d.pop('video_url')
         d['imageUrl'] = d.pop('image_url')
+        d['audioUrl'] = d.pop('audio_url', '') or ''
         d['createdAtLabel'] = d.pop('created_at_label')
         d['createdAtTs'] = d.pop('created_at_ts')
         d['modelKey'] = d.pop('model_key')
