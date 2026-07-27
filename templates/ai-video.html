@@ -517,8 +517,10 @@ input[type=file].hidden-input{display:none}
 .history-list.grid-mode{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px 24px}
 .hist-grid-item{position:relative;aspect-ratio:1/1;border-radius:14px;background-size:cover;background-position:center;background-color:var(--card2);border:1px solid var(--border);cursor:pointer;animation:sheetRowIn .28s var(--ease-out-soft) both}
 .history-empty{text-align:center;color:var(--text-dim,#999);font-size:13px;padding:40px 0 24px}
-.hist-item{display:flex;gap:12px;padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
-.hist-thumb{width:56px;height:56px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#4a0010);background-size:cover;background-position:center;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center}
+.hist-item{display:flex;gap:13px;padding:11px;border-radius:16px;background:var(--card2);border:1px solid var(--border);align-items:center;animation:sheetRowIn .28s var(--ease-out-soft) both}
+.hist-thumb{position:relative;width:72px;height:72px;border-radius:14px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--accent),#4a0010);background-size:cover;background-position:center;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.08)}
+.hist-thumb video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.hist-type{position:absolute;bottom:3px;left:3px;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.72);font-family:var(--mono);font-size:.5rem;font-weight:700;letter-spacing:.06em;color:var(--accent-hover);pointer-events:none}
 .hist-thumb-glyph{color:rgba(255,255,255,.65);font-size:16px}
 .hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .hist-prompt{font-size:12.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -564,8 +566,8 @@ input[type=file].hidden-input{display:none}
 .pe-subtitle{font-size:11.5px;opacity:.55;line-height:1.3;letter-spacing:.02em}
 .pe-attach-counts{display:flex;gap:6px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .pe-attach-counts::-webkit-scrollbar{display:none}
-.pe-attach-item{display:flex;align-items:center;gap:5px;padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);flex-shrink:0;font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text-dim);letter-spacing:.02em}
-.pe-attach-item svg{width:14px;height:14px;opacity:.75;flex-shrink:0}
+.pe-attach-item{display:flex;align-items:center;gap:6px;padding:9px 13px;border-radius:13px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);flex-shrink:0;font-family:var(--mono);font-size:.8rem;font-weight:700;color:var(--text-dim);letter-spacing:.02em}
+.pe-attach-item svg{width:18px;height:18px;opacity:.8;flex-shrink:0}
 .pe-enhance-btn{display:flex;align-items:center;gap:5px;padding:8px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(190,110,255,.16),rgba(140,60,255,.08));border:1px solid rgba(190,110,255,.35);color:#c9a4ff;font-size:.72rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;flex-shrink:0;transition:background .2s ease,transform .15s ease}
 .pe-enhance-btn:hover{background:linear-gradient(180deg,rgba(190,110,255,.24),rgba(140,60,255,.12))}
 .pe-enhance-btn:active{transform:scale(.96)}
@@ -580,6 +582,7 @@ input[type=file].hidden-input{display:none}
 .pe-input-wrap{position:relative;flex:0 0 auto;min-height:180px;display:block}
 .pe-highlight{position:absolute;inset:0;padding:0;margin:0;font-family:inherit;font-size:16px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow:hidden;pointer-events:none;color:transparent;letter-spacing:normal}
 .pe-highlight .tag{background:rgba(255,32,64,.16);color:transparent;border-radius:6px;padding:1px 4px;margin:0 -2px;box-shadow:0 0 0 1px rgba(255,32,64,.35) inset}
+.pe-highlight .tag.has-thumb{box-shadow:0 0 0 1px rgba(255,60,90,.65) inset,0 2px 8px rgba(0,0,0,.4)}
 .pe-textarea{position:relative;width:100%;min-height:180px;background:transparent;border:none;outline:none;resize:none;font-size:16px;line-height:1.55;color:#fff;padding:0;letter-spacing:normal}
 
 /* Fullscreen mode: let the textarea actually fill all the available height
@@ -1337,6 +1340,8 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .cr-play{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .cr-play svg{width:20px;height:20px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
 .cr-tag{position:absolute;bottom:4px;left:4px;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.72);font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.06em;color:var(--accent-hover);pointer-events:none}
+.cr-x{position:absolute;top:3px;right:3px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:13px;line-height:1;cursor:pointer;z-index:2}
+.cr-x:active{transform:scale(.9)}
 </style>
 </head>
 <body>
@@ -3294,8 +3299,59 @@ function removeMedia(type, idx) {
     clearMotionControlMeta();
   }
   renderUploadGrid();
+  // BUGFIX: renderUploadGrid() hanya me-refresh updateCardPreview(currentUploadType)
+  // — tipe sheet yang TERAKHIR dibuka, bukan tipe yang barusan dihapus. Kalau
+  // keduanya beda, thumbnail/counter/chip strip untuk tipe yang dihapus tetap
+  // tampil (chip dengan tanda X masih nongol padahal datanya sudah hilang),
+  // dan tap X berikutnya memakai index basi → error / hapus item yang salah.
+  // Refresh eksplisit untuk tipe yang dihapus supaya semua tampilan konsisten.
+  updateCardPreview(type);
+  renderAssetsStrip();
   renderPeTagsRow();
+  // renumberPromptTagsAfterRemoval() sudah membersihkan @tag dari textarea,
+  // tapi teks tombol PROMPT di layar utama & prompt inline belum ikut — sinkronkan.
+  syncPromptBarText();
   updateCanvasPreview();
+  updateGenerateButtonState();
+}
+
+// Sinkronkan nilai promptInput ke prompt inline + teks tombol PROMPT di layar
+// utama (dipakai saat prompt berubah secara programatik, bukan lewat editor).
+function syncPromptBarText() {
+  if (typeof syncInlinePrompt === 'function') syncInlinePrompt();
+  var cc = document.getElementById('charCount');
+  if (cc && promptInput) cc.textContent = promptInput.value.length + ' chars';
+  if (typeof syncPromptHighlight === 'function') syncPromptHighlight();
+  var val = promptInput ? promptInput.value.trim() : '';
+  [document.getElementById('promptBtnTxt'), document.getElementById('promptBtnFramesTxt')].forEach(function(btnTxt) {
+    if (!btnTxt) return;
+    if (val) {
+      btnTxt.textContent = val;
+      btnTxt.classList.add('filled');
+    } else {
+      btnTxt.textContent = 'PROMPT';
+      btnTxt.classList.remove('filled');
+    }
+  });
+}
+
+// FITUR: begitu sebuah referensi image/video selesai ter-upload, tag-nya
+// (@image1, @video1, dst) otomatis dimasukkan ke prompt — tidak perlu tap
+// chip manual lagi. Aman dari dobel: kalau tag yang sama sudah ada di teks,
+// tidak ditambah lagi.
+function autoInsertRefTag(type, entry) {
+  if (!promptInput) return;
+  if (type !== 'image' && type !== 'video') return;
+  var idx = media[type].indexOf(entry);
+  if (idx === -1) return; // sudah dihapus sebelum upload selesai
+  var tag = refTag(type, idx);
+  var existsRe = new RegExp(tag.replace('@', '@') + '(?!\\d)');
+  if (existsRe.test(promptInput.value)) return;
+  var val = promptInput.value;
+  var sep = val && !/\s$/.test(val) ? ' ' : '';
+  promptInput.value = val + sep + tag + ' ';
+  syncPromptBarText();
+  if (typeof autosizePrompt === 'function') autosizePrompt();
   updateGenerateButtonState();
 }
 
@@ -3395,6 +3451,9 @@ function uploadFile(file, type, previewUrl) {
         entry.url = data.url;
         entry.uploading = false;
         showToast('Added 1 reference ' + type);
+        // Tag referensi (@image1/@video1 dst) otomatis ikut masuk ke prompt.
+        autoInsertRefTag(type, entry);
+        if (type === 'video') captureVideoPoster(entry);
         // Motion Control: auto-detect metadata (width/height/duration/fps/
         // aspect ratio) the instant the video finishes uploading, so the
         // UI can auto-fill + lock ratio/duration before Generate is tapped.
@@ -3826,12 +3885,54 @@ function safeCssUrl(u) {
 function syncPromptHighlight() {
   if (!peHighlight) return;
   var v = promptInput.value;
-  var html = escapeHtml(v).replace(/@(image|video|audio)(\d+)/g, function(m){
+  var html = escapeHtml(v).replace(/@(image|video|audio)(\d+)/g, function(m, t, n){
+    // Tag di dalam teks tampil dengan thumbnail referensinya sebagai
+    // background pill (foto untuk @image, poster frame untuk @video),
+    // ditint gelap supaya teks putih di atasnya tetap terbaca.
+    var thumb = refPreviewFor(t, parseInt(n, 10) - 1);
+    if (thumb) {
+      return '<span class="tag has-thumb" style="background-image:linear-gradient(rgba(20,0,6,.52),rgba(20,0,6,.52)),url(\'' + thumb.replace(/['"()]/g, '') + '\');background-size:cover;background-position:center">' + m + '</span>';
+    }
     return '<span class="tag">' + m + '</span>';
   });
   // trailing newline needs a space so overlay height matches textarea
   if (html.endsWith('\n')) html += ' ';
   peHighlight.innerHTML = html;
+}
+// URL thumbnail untuk sebuah referensi: previewUrl untuk image, poster
+// frame hasil capture untuk video (dibuat otomatis saat upload selesai).
+function refPreviewFor(type, idx) {
+  var item = media[type] && media[type][idx];
+  if (!item) return '';
+  if (type === 'image') return item.previewUrl || item.url || '';
+  if (type === 'video') return item.posterUrl || '';
+  return '';
+}
+// Ambil satu frame dari video referensi sebagai poster (data URI) supaya
+// tag @video bisa tampil dengan thumbnail-nya. Gagal (mis. CORS) = diam
+// saja, tag jatuh ke pill polos.
+function captureVideoPoster(entry) {
+  try {
+    var vid = document.createElement('video');
+    vid.muted = true; vid.playsInline = true; vid.preload = 'auto';
+    vid.crossOrigin = 'anonymous';
+    vid.src = entry.previewUrl;
+    vid.addEventListener('loadeddata', function() {
+      try { vid.currentTime = Math.min(0.1, (vid.duration || 1) / 2); } catch(_) {}
+    });
+    vid.addEventListener('seeked', function() {
+      try {
+        var c = document.createElement('canvas');
+        var w = 96, h = Math.max(1, Math.round(w * (vid.videoHeight || 9) / (vid.videoWidth || 16)));
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(vid, 0, 0, w, h);
+        entry.posterUrl = c.toDataURL('image/jpeg', 0.7);
+        syncPromptHighlight();
+        renderPeTagsRow();
+      } catch(_) {}
+      vid.removeAttribute('src');
+    });
+  } catch(_) {}
 }
 function autosizePrompt() {
   if (!promptInput) return;
@@ -4570,6 +4671,7 @@ function openResultOverlay(payload) {
     qualityVal = ''; // tier sudah ada di nama model — jangan ditampilkan dua kali
   }
   var items = [
+    { label: 'Type', value: isAudio ? 'AUDIO' : (isImage ? 'IMAGE' : 'VIDEO') },
     { label: 'Model', value: modelLabel },
     { label: qLabel, value: qualityVal },
     { label: isImage ? 'Resolution' : 'Duration', value: durationVal },
@@ -4738,7 +4840,9 @@ function renderCanvasRecent() {
   var wrap = document.getElementById('canvasRecent');
   var row = document.getElementById('canvasRecentRow');
   if (!wrap || !row) return;
-  var list = loadHistory().slice(0, 8);
+  // canvasDismissed: hasil yang di-"hapus" dari halaman generate saja —
+  // record History-nya TIDAK disentuh, jadi tetap ada di halaman History.
+  var list = loadHistory().filter(function(r) { return !canvasDismissed[r.id]; }).slice(0, 8);
   if (!list.length) { wrap.style.display = 'none'; row.innerHTML = ''; return; }
   row.innerHTML = '';
   list.forEach(function(r) {
@@ -4768,9 +4872,27 @@ function renderCanvasRecent() {
     tag.className = 'cr-tag';
     tag.textContent = r.videoUrl ? 'VIDEO' : (r.audioUrl && !r.imageUrl ? 'AUDIO' : 'IMAGE');
     card.appendChild(tag);
+    // X kecil = hapus dari halaman generate saja; History tetap utuh.
+    var x = document.createElement('span');
+    x.className = 'cr-x';
+    x.textContent = '\u00d7';
+    x.onclick = function(ev) {
+      ev.stopPropagation();
+      dismissFromCanvas(r.id);
+      showToast('Dihapus dari halaman \u2014 tetap ada di History');
+    };
+    card.appendChild(x);
     row.appendChild(card);
   });
   wrap.style.display = '';
+}
+// Daftar id hasil yang disembunyikan dari halaman generate (per sesi).
+// Sengaja TIDAK dipersist: refresh halaman menampilkan lagi semua hasil
+// dari History, dan hapus permanen tetap hanya lewat halaman History.
+var canvasDismissed = {};
+function dismissFromCanvas(id) {
+  if (id) canvasDismissed[id] = true;
+  renderCanvasRecent();
 }
 function findHistoryRecord(id) {
   return loadHistory().find(function(r) { return r.id === id; });
@@ -5070,11 +5192,23 @@ function buildHistItemRow(r) {
   var audioGlyph = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
   if (r.audioUrl && !r.videoUrl && !r.imageUrl) { safeThumb = ''; thumbStyle = ''; }
   var thumbGlyph = safeThumb ? '' : (r.audioUrl && !r.videoUrl && !r.imageUrl ? audioGlyph : (r.videoUrl ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.05 1.05 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14z"/></svg>' : (r.imageUrl ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' : '')));
+  // Video tanpa thumb tersimpan: pakai elemen <video preload="metadata"> —
+  // browser menampilkan frame pertamanya sebagai thumbnail asli.
+  var thumbInner;
+  if (safeThumb) {
+    thumbInner = '';
+  } else if (r.videoUrl) {
+    thumbInner = '<video src="' + escapeHtml(r.videoUrl) + '" muted playsinline preload="metadata"></video>';
+    thumbGlyph = '';
+  } else {
+    thumbInner = thumbGlyph ? '<span class="hist-thumb-glyph">' + thumbGlyph + '</span>' : '';
+  }
+  var typeBadge = r.videoUrl ? 'VIDEO' : (r.audioUrl && !r.imageUrl ? 'AUDIO' : 'IMAGE');
   return '<div class="hist-item">' +
-    '<div class="hist-thumb"' + thumbStyle + ' onclick="openHistoryItem(\'' + r.id + '\')">' + (thumbGlyph ? '<span class="hist-thumb-glyph">' + thumbGlyph + '</span>' : '') + '</div>' +
+    '<div class="hist-thumb"' + thumbStyle + ' onclick="openHistoryItem(\'' + r.id + '\')">' + thumbInner + '<span class="hist-type">' + typeBadge + '</span></div>' +
     '<div class="hist-info" onclick="openHistoryItem(\'' + r.id + '\')">' +
       '<span class="hist-prompt">' + escapeHtml(r.prompt || '\u2014') + '</span>' +
-      '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + (r.sizeBytes ? ' \u00b7 ' + formatBytes(r.sizeBytes) : '') + '</span>' +
+      '<span class="hist-meta">' + escapeHtml(r.model) + ' \u00b7 ' + escapeHtml(r.quality) + (r.duration ? ' \u00b7 ' + r.duration : '') + (r.sizeBytes ? ' \u00b7 ' + formatBytes(r.sizeBytes) : '') + (r.createdAtLabel ? ' \u00b7 ' + escapeHtml(r.createdAtLabel) : '') + '</span>' +
     '</div>' +
     '<div class="hist-actions">' +
       '<button class="hist-act" title="Open" onclick="openHistoryItem(\'' + r.id + '\')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.05 1.05 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14z"/></svg></button>' +
@@ -5265,9 +5399,18 @@ function resolveCurrentResultId() {
   return list.length > 0 ? list[0].id : null;
 }
 function deleteCurrentResult() {
+  // Tombol Delete di halaman generate (dan halaman detail hasil) sekarang
+  // HANYA membersihkan tampilan: preview besar ditutup dan kartunya
+  // disembunyikan dari "Hasil Terbaru". Record History TIDAK dihapus —
+  // hapus permanen tetap hanya lewat tombol delete di halaman History.
   var id = resolveCurrentResultId();
-  if (!id) { closeResultOverlay(); return; }
-  confirmDeleteHistoryItem(id);
+  if (id) canvasDismissed[id] = true;
+  if (typeof closeResultOverlay === 'function') { try { closeResultOverlay(); } catch(_) {} }
+  hideCanvasResultUI();
+  window.__lastResultPayload = null;
+  updateCanvasPreview();
+  renderCanvasRecent();
+  showToast('Dihapus dari halaman \u2014 tetap tersimpan di History');
 }
 function archiveCurrentResult() {
   var id = resolveCurrentResultId();
