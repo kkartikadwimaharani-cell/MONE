@@ -232,3 +232,50 @@ def delete_archive(archive_id):
     with _write_lock:
         conn.execute('DELETE FROM aivideo_archive WHERE id = ?', (archive_id,))
         conn.commit()
+
+
+def _ensure_visits_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS aivideo_lock_visits (
+            device_id TEXT PRIMARY KEY,
+            first_seen_ts INTEGER,
+            last_seen_ts INTEGER,
+            visit_count INTEGER DEFAULT 1
+        )
+    """)
+
+
+def record_lock_visit(device_id):
+    """Catat satu device sebagai 'pernah lihat halaman lock'. device_id
+    dikirim dari localStorage sisi browser (persist lintas refresh/reopen),
+    dan menjadi PRIMARY KEY di sini — jadi device yang sama refresh 100x
+    tetap cuma 1 baris (visit_count-nya yang naik, bukan total device-nya).
+    Device baru (device_id belum pernah tercatat) -> total unique bertambah 1.
+    Return total unique device SETELAH update."""
+    import time as _time
+    if not device_id or not isinstance(device_id, str) or len(device_id) > 128:
+        return get_lock_visit_total()
+    conn = _get_conn()
+    with _write_lock:
+        _ensure_visits_table(conn)
+        now = int(_time.time())
+        conn.execute('''
+            INSERT INTO aivideo_lock_visits (device_id, first_seen_ts, last_seen_ts, visit_count)
+            VALUES (?, ?, ?, 1)
+            ON CONFLICT(device_id) DO UPDATE SET
+                last_seen_ts=excluded.last_seen_ts,
+                visit_count=aivideo_lock_visits.visit_count + 1
+        ''', (device_id, now, now))
+        conn.commit()
+        cur = conn.cursor()
+        cur.execute('SELECT COUNT(*) FROM aivideo_lock_visits')
+        return cur.fetchone()[0]
+
+
+def get_lock_visit_total():
+    conn = _get_conn()
+    with _write_lock:
+        _ensure_visits_table(conn)
+        cur = conn.cursor()
+        cur.execute('SELECT COUNT(*) FROM aivideo_lock_visits')
+        return cur.fetchone()[0]
