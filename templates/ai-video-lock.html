@@ -172,9 +172,9 @@ body::before{
    localStorage so a refresh from the same browser never re-counts;
    only a genuinely new device bumps the total server-side. */
 .visit-pill{
-  display:flex;align-items:center;gap:9px;padding:9px 16px 9px 12px;border-radius:999px;
+  display:flex;align-items:center;gap:9px;padding:9px 16px 9px 12px;border-radius:12px;
   border:1px solid rgba(255,22,56,.28);
-  background:linear-gradient(135deg,rgba(255,22,56,.12),rgba(255,22,56,.03));
+  background:rgba(255,255,255,.04);
   position:relative;overflow:hidden;
 }
 .visit-pill::before{
@@ -187,6 +187,23 @@ body::before{
 @keyframes visitDotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
 .visit-num{font-family:'Outfit',sans-serif;font-weight:900;font-size:1.02rem;color:#fff;text-shadow:0 0 14px rgba(255,60,90,.55);letter-spacing:.02em;font-variant-numeric:tabular-nums}
 .visit-lbl{font-size:.64rem;font-weight:700;letter-spacing:.05em;color:rgba(255,225,230,.55);text-transform:uppercase;position:relative;z-index:1}
+
+/* Total attempts / total wrong — global lifetime counters, all people,
+   all devices. Same family as the visitor pill but as two compact boxes
+   side by side so all three numbers read together at a glance. */
+.stats-row{display:flex;gap:8px;width:100%}
+.stat-box{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 6px;border-radius:14px;
+  border:1px solid rgba(255,22,56,.22);background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.01));
+  position:relative;overflow:hidden}
+.stat-box::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);background-size:220% 100%;animation:visitSheen 3.8s ease-in-out infinite}
+.stat-box.fail{border-color:rgba(255,30,60,.4)}
+.stat-ico{width:15px;height:15px;color:rgba(255,225,230,.5);position:relative;z-index:1}
+.stat-box.fail .stat-ico{color:#ff4060}
+.stat-num{font-family:'Outfit',sans-serif;font-weight:900;font-size:1.1rem;color:#fff;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.stat-box.fail .stat-num{color:#ff4060;text-shadow:0 0 12px rgba(255,20,50,.55)}
+.stat-lbl{font-size:.56rem;font-weight:700;letter-spacing:.05em;color:rgba(255,225,230,.5);text-transform:uppercase;text-align:center;position:relative;z-index:1}
+.stat-num.bump{animation:statBump .4s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes statBump{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
@@ -204,6 +221,19 @@ body::before{
     <span class="visit-dot"></span>
     <span class="visit-num" id="visitNum">0</span>
     <span class="visit-lbl">orang sudah melihat halaman ini</span>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box" title="Total percobaan masuk password, semua orang">
+      <svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span class="stat-num" id="statAttempts">0</span>
+      <span class="stat-lbl">Total Percobaan</span>
+    </div>
+    <div class="stat-box fail" title="Total percobaan password yang salah, semua orang">
+      <svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+      <span class="stat-num" id="statFailed">0</span>
+      <span class="stat-lbl">Password Salah</span>
+    </div>
   </div>
 
   <div class="pw-field">
@@ -305,6 +335,7 @@ function doUnlock() {
   .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
   .then(function(res) {
     var data = res.data;
+    updateAttemptStats(data);
     if (data.ok) {
       err.classList.remove('show');
       window.location.href = '/ai-video';
@@ -401,6 +432,34 @@ function animateVisitNum(el, from, to) {
   })
   .catch(function() { /* diam-diam gagal — ini cuma penghitung, bukan fitur inti */ });
 })();
+
+// ── Statistik percobaan password (global, lintas semua orang/device) ──
+var statAttemptsEl = document.getElementById('statAttempts');
+var statFailedEl = document.getElementById('statFailed');
+var curAttempts = {{ (total_attempts or 0) | tojson }};
+var curFailed = {{ (total_failed or 0) | tojson }};
+if (statAttemptsEl) animateVisitNum(statAttemptsEl, 0, curAttempts);
+if (statFailedEl) animateVisitNum(statFailedEl, 0, curFailed);
+
+function updateAttemptStats(data) {
+  if (!data) return;
+  if (typeof data.total_attempts === 'number' && statAttemptsEl) {
+    var na = data.total_attempts;
+    if (na !== curAttempts) {
+      animateVisitNum(statAttemptsEl, curAttempts, na);
+      statAttemptsEl.classList.remove('bump'); void statAttemptsEl.offsetWidth; statAttemptsEl.classList.add('bump');
+    }
+    curAttempts = na;
+  }
+  if (typeof data.total_failed === 'number' && statFailedEl) {
+    var nf = data.total_failed;
+    if (nf !== curFailed) {
+      animateVisitNum(statFailedEl, curFailed, nf);
+      statFailedEl.classList.remove('bump'); void statFailedEl.offsetWidth; statFailedEl.classList.add('bump');
+    }
+    curFailed = nf;
+  }
+}
 </script>
 
 </body>
