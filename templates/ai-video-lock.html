@@ -71,15 +71,59 @@ body::before{
 }
 .pw-input::placeholder{color:rgba(255,225,230,.30);letter-spacing:.04em}
 .pw-input:focus{outline:none;border-color:rgba(255,60,90,.65);box-shadow:0 0 0 3px rgba(255,22,56,.10)}
-.pw-input.shake{animation:shk .4s ease}
-@keyframes shk{
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-10px)}
-  40%{transform:translateX(9px)}
-  60%{transform:translateX(-6px)}
-  80%{transform:translateX(4px)}
-}
 .pw-input:disabled{opacity:.45;cursor:not-allowed}
+
+/* Attempt "lives" — 3 shield pips showing tries left. One cracks + fades
+   red on every wrong password so the danger is felt, not just read. */
+.attempts-row{display:flex;gap:10px;justify-content:center}
+.attempt-pip{width:30px;height:30px;position:relative;filter:drop-shadow(0 0 4px rgba(255,60,90,.35))}
+.attempt-pip svg{width:100%;height:100%;transition:transform .25s,filter .25s}
+.attempt-pip .pip-fill{fill:rgba(255,60,90,.16);stroke:rgba(255,90,110,.75)}
+.attempt-pip .pip-crack{opacity:0;stroke:#fff;transition:opacity .15s}
+.attempt-pip.lost{animation:pipLost .55s cubic-bezier(.36,.07,.19,.97) both}
+.attempt-pip.lost .pip-fill{fill:rgba(255,20,40,.5);stroke:#ff2840}
+.attempt-pip.lost .pip-crack{opacity:1}
+.attempt-pip.lost svg{filter:drop-shadow(0 0 10px rgba(255,20,50,.85))}
+@keyframes pipLost{
+  0%{transform:scale(1) rotate(0)}
+  20%{transform:scale(1.25) rotate(-8deg)}
+  45%{transform:scale(.9) rotate(6deg)}
+  70%{transform:scale(1.06) rotate(-3deg)}
+  100%{transform:scale(1) rotate(0);opacity:.35}
+}
+
+/* Full-screen "hit" pulse — fires once per wrong attempt, on top of
+   everything, so a wrong password is FELT the instant it's submitted. */
+.hit-flash{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 45%,rgba(255,10,40,.35),transparent 70%);opacity:0}
+.hit-flash.go{animation:hitFlash .5s ease-out}
+@keyframes hitFlash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+
+.lockbox.shake{animation:boxShake .5s cubic-bezier(.36,.07,.19,.97) both,boxDanger .5s ease-out both}
+@keyframes boxShake{
+  0%,100%{transform:translateX(0) rotate(0)}
+  15%{transform:translateX(-9px) rotate(-1deg)}
+  30%{transform:translateX(8px) rotate(1deg)}
+  45%{transform:translateX(-7px) rotate(-.6deg)}
+  60%{transform:translateX(6px) rotate(.6deg)}
+  75%{transform:translateX(-4px) rotate(-.3deg)}
+  90%{transform:translateX(2px) rotate(0)}
+}
+@keyframes boxDanger{
+  0%{border-color:rgba(255,22,56,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.50)}
+  25%{border-color:#ff2840;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.50),0 0 46px rgba(255,20,50,.55)}
+  100%{border-color:rgba(255,22,56,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.50)}
+}
+
+.pw-input.shake{animation:inputShakeHard .5s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes inputShakeHard{
+  0%,100%{transform:translateX(0);border-color:rgba(255,22,56,.28);box-shadow:none}
+  15%{transform:translateX(-11px);border-color:#ff2840;box-shadow:0 0 0 4px rgba(255,20,50,.16)}
+  30%{transform:translateX(10px)}
+  45%{transform:translateX(-8px)}
+  60%{transform:translateX(6px);border-color:#ff2840;box-shadow:0 0 0 4px rgba(255,20,50,.10)}
+  75%{transform:translateX(-4px)}
+  90%{transform:translateX(2px)}
+}
 
 .locked-msg{
   font-size:.78rem;color:var(--red2);font-weight:700;text-align:center;
@@ -89,7 +133,22 @@ body::before{
 .locked-msg.show{display:block;animation:boxIn .3s cubic-bezier(.22,1,.36,1) both}
 .locked-msg b{color:#fff}
 
-.attempts-hint{font-size:.7rem;color:rgba(255,225,230,.4);text-align:center;letter-spacing:.03em;min-height:14px}
+/* Wrong-password alert — a proper danger pill (icon + message), not
+   plain floating text, entrance with a sharp pop + its own red glow. */
+.err-msg{
+  display:none;align-items:center;gap:9px;text-align:left;
+  font-size:.78rem;color:#fff;font-weight:700;
+  background:linear-gradient(135deg,rgba(255,22,56,.22),rgba(255,22,56,.06));
+  border:1px solid rgba(255,40,64,.55);border-radius:12px;padding:11px 14px;
+  box-shadow:0 0 22px rgba(255,20,50,.22);
+}
+.err-msg.show{display:flex;animation:errPop .32s cubic-bezier(.22,1,.36,1) both}
+@keyframes errPop{0%{opacity:0;transform:translateY(-6px) scale(.96)}60%{opacity:1;transform:translateY(1px) scale(1.015)}100%{transform:translateY(0) scale(1)}}
+.err-ico{width:18px;height:18px;flex-shrink:0;color:#ff3050;filter:drop-shadow(0 0 5px rgba(255,20,50,.7))}
+.err-ico svg{width:100%;height:100%;animation:errIcoPulse 1s ease-in-out infinite}
+@keyframes errIcoPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.err-txt{flex:1}
+
 
 .unlock-btn{
   width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,50,80,.50);
@@ -102,32 +161,61 @@ body::before{
 .unlock-btn:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(255,0,48,.34),0 16px 38px rgba(0,0,0,.36)}
 .unlock-btn:disabled{opacity:.5;cursor:not-allowed}
 
-.err-msg{
-  font-size:.76rem;color:var(--red2);font-weight:700;
-  min-height:16px;text-align:center;
-}
-
 .back-link{
   font-size:.72rem;color:rgba(255,225,230,.40);text-decoration:none;
   font-weight:600;letter-spacing:.04em;
 }
 .back-link:hover{color:rgba(255,225,230,.70)}
+
+/* Visitor counter — "sekian orang sudah melihat halaman ini". Purely
+   informational, auto-detected, no button. device_id lives in
+   localStorage so a refresh from the same browser never re-counts;
+   only a genuinely new device bumps the total server-side. */
+.visit-pill{
+  display:flex;align-items:center;gap:9px;padding:9px 16px 9px 12px;border-radius:999px;
+  border:1px solid rgba(255,22,56,.28);
+  background:linear-gradient(135deg,rgba(255,22,56,.12),rgba(255,22,56,.03));
+  position:relative;overflow:hidden;
+}
+.visit-pill::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.10) 50%,transparent 70%);
+  background-size:220% 100%;animation:visitSheen 3.4s ease-in-out infinite;
+}
+@keyframes visitSheen{0%{background-position:160% 0}100%{background-position:-60% 0}}
+.visit-dot{width:7px;height:7px;border-radius:50%;background:#3cff8a;box-shadow:0 0 8px #3cff8a;flex-shrink:0;animation:visitDotPulse 1.6s ease-in-out infinite}
+@keyframes visitDotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+.visit-num{font-family:'Outfit',sans-serif;font-weight:900;font-size:1.02rem;color:#fff;text-shadow:0 0 14px rgba(255,60,90,.55);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.visit-lbl{font-size:.64rem;font-weight:700;letter-spacing:.05em;color:rgba(255,225,230,.55);text-transform:uppercase;position:relative;z-index:1}
   </style>
 </head>
 <body>
 
-<div class="lockbox">
+<div class="hit-flash" id="hitFlash"></div>
+
+<div class="lockbox" id="lockbox">
   <div class="logo-ring"><span class="logo-m">M</span></div>
   <div>
     <div class="brand-title">MII AI Video</div>
     <div class="brand-sub" style="margin-top:6px">Private Workspace</div>
   </div>
 
+  <div class="visit-pill" id="visitPill" title="Total device unik yang pernah membuka halaman ini">
+    <span class="visit-dot"></span>
+    <span class="visit-num" id="visitNum">0</span>
+    <span class="visit-lbl">orang sudah melihat halaman ini</span>
+  </div>
+
   <div class="pw-field">
     <input type="password" id="pwInput" class="pw-input" placeholder="Masukkan password" autocomplete="off" />
   </div>
-  <div class="err-msg" id="errMsg"></div>
-  <div class="attempts-hint" id="attemptsHint"></div>
+
+  <div class="attempts-row" id="attemptsRow"></div>
+
+  <div class="err-msg" id="errMsg">
+    <span class="err-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
+    <span class="err-txt" id="errTxt"></span>
+  </div>
   <div class="locked-msg" id="lockedMsg"></div>
 
   <button class="unlock-btn" id="unlockBtn" onclick="doUnlock()">Unlock</button>
@@ -138,20 +226,52 @@ body::before{
 var input = document.getElementById('pwInput');
 var btn = document.getElementById('unlockBtn');
 var err = document.getElementById('errMsg');
-var hint = document.getElementById('attemptsHint');
+var errTxt = document.getElementById('errTxt');
 var lockedMsg = document.getElementById('lockedMsg');
+var lockbox = document.getElementById('lockbox');
+var hitFlash = document.getElementById('hitFlash');
+var attemptsRow = document.getElementById('attemptsRow');
 var countdownTimer = null;
+var TOTAL_ATTEMPTS = 3;
 
 function formatMMSS(sec) {
   var m = Math.floor(sec / 60), s = sec % 60;
   return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
+// 3 "shield" pips = 3 tries. attemptsLeft=null -> show all full (fresh
+// state / just unlocked from a lockout). Every wrong password drops one,
+// with a crack+fade animation on that exact pip so it reads as a hit,
+// not just a number changing.
+function renderAttemptPips(attemptsLeft) {
+  if (attemptsLeft == null) attemptsLeft = TOTAL_ATTEMPTS;
+  var lostCount = TOTAL_ATTEMPTS - attemptsLeft;
+  var html = '';
+  for (var i = 0; i < TOTAL_ATTEMPTS; i++) {
+    var isLost = i < lostCount;
+    html += '<span class="attempt-pip' + (isLost ? ' lost' : '') + '" data-i="' + i + '">' +
+      '<svg viewBox="0 0 24 24"><path class="pip-fill" d="M12 2.5 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6l8-3.5Z" stroke-width="1.6"/>' +
+      '<path class="pip-crack" d="M12 6 9.5 12l3 1-2 5" stroke-width="1.4" fill="none"/></svg></span>';
+  }
+  attemptsRow.innerHTML = html;
+}
+renderAttemptPips(TOTAL_ATTEMPTS);
+
+function triggerHitEffect() {
+  hitFlash.classList.remove('go'); void hitFlash.offsetWidth; hitFlash.classList.add('go');
+  lockbox.classList.remove('shake'); void lockbox.offsetWidth; lockbox.classList.add('shake');
+  input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+  if (navigator.vibrate) { try { navigator.vibrate([18, 40, 18]); } catch(e) {} }
+  setTimeout(function() {
+    lockbox.classList.remove('shake');
+    input.classList.remove('shake');
+  }, 520);
+}
+
 function enterLockedState(retryAfter) {
   input.disabled = true;
   btn.disabled = true;
-  hint.textContent = '';
-  err.textContent = '';
+  err.classList.remove('show');
   lockedMsg.classList.add('show');
   var remaining = retryAfter;
   if (countdownTimer) clearInterval(countdownTimer);
@@ -162,6 +282,7 @@ function enterLockedState(retryAfter) {
       input.disabled = false;
       btn.disabled = false;
       btn.textContent = 'Unlock';
+      renderAttemptPips(TOTAL_ATTEMPTS); // server resets the fail count once the lock expires
       return;
     }
     lockedMsg.innerHTML = 'Perangkat ini dikunci sementara setelah 3 kali salah password.<br>Coba lagi dalam <b>' + formatMMSS(remaining) + '</b>';
@@ -185,17 +306,18 @@ function doUnlock() {
   .then(function(res) {
     var data = res.data;
     if (data.ok) {
+      err.classList.remove('show');
       window.location.href = '/ai-video';
       return;
     }
     if (data.locked) {
+      renderAttemptPips(0);
+      triggerHitEffect();
       enterLockedState(data.retry_after || 300);
       return;
     }
+    if (typeof data.attempts_left === 'number') renderAttemptPips(data.attempts_left);
     showError(data.error || 'Password salah');
-    if (typeof data.attempts_left === 'number') {
-      hint.textContent = 'Sisa percobaan: ' + data.attempts_left;
-    }
     btn.disabled = false;
     btn.textContent = 'Unlock';
   })
@@ -207,9 +329,9 @@ function doUnlock() {
 }
 
 function showError(msg) {
-  err.textContent = msg;
-  input.classList.add('shake');
-  setTimeout(function() { input.classList.remove('shake'); }, 400);
+  errTxt.textContent = msg;
+  err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
+  triggerHitEffect();
 }
 
 input.addEventListener('keydown', function(e) {
@@ -222,6 +344,63 @@ if (initialRetryAfter > 0) {
 } else {
   input.focus();
 }
+
+// ── Visitor counter ─────────────────────────────────────────────────
+// device_id: satu ID acak dibuat sekali lalu disimpan di localStorage
+// device INI. Refresh/buka lagi dari browser yang sama akan selalu
+// kirim device_id yang SAMA -> server cuma update "last seen", TIDAK
+// nambah total. Device/browser lain = device_id lain = total bertambah.
+function getOrCreateDeviceId() {
+  var KEY = 'mii_aivideo_device_id';
+  try {
+    var existing = localStorage.getItem(KEY);
+    if (existing) return existing;
+    var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() :
+      'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+    localStorage.setItem(KEY, id);
+    return id;
+  } catch (e) {
+    // localStorage tidak tersedia (mode privat dsb) — pakai id per-tab
+    // saja; tidak akan persist, tapi tetap tidak error.
+    return 'dev-session-' + Math.random().toString(36).slice(2, 12);
+  }
+}
+
+function animateVisitNum(el, from, to) {
+  var start = null;
+  var dur = 900;
+  from = Math.max(0, from | 0);
+  to = Math.max(0, to | 0);
+  if (from === to) { el.textContent = to.toLocaleString('id-ID'); return; }
+  function step(ts) {
+    if (start === null) start = ts;
+    var p = Math.min((ts - start) / dur, 1);
+    var eased = 1 - Math.pow(1 - p, 3);
+    var val = Math.round(from + (to - from) * eased);
+    el.textContent = val.toLocaleString('id-ID');
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+(function trackLockVisit() {
+  var numEl = document.getElementById('visitNum');
+  var initialTotal = {{ (visit_total or 0) | tojson }};
+  if (numEl) animateVisitNum(numEl, 0, initialTotal);
+  var deviceId = getOrCreateDeviceId();
+  fetch('/ai-video/lock-visit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({device_id: deviceId})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (numEl && data && typeof data.total === 'number' && data.total !== initialTotal) {
+      animateVisitNum(numEl, initialTotal, data.total);
+    }
+  })
+  .catch(function() { /* diam-diam gagal — ini cuma penghitung, bukan fitur inti */ });
+})();
 </script>
 
 </body>
