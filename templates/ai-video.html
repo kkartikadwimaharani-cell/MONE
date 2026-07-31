@@ -181,7 +181,8 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-stage.err{color:var(--accent-hover)}
 .gen-q-bar{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
 .gen-q-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .5s ease}
-.gen-q-eta{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);flex-shrink:0}
+.gen-q-eta{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.gen-q-eta-ico{width:11px;height:11px;flex-shrink:0;opacity:.85}
 .gen-q-actions{display:flex;gap:6px;flex-shrink:0}
 .gen-q-btn{background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .gen-q-btn.primary{background:linear-gradient(135deg,#ff2040,#c4001c)}
@@ -254,10 +255,14 @@ button{background:none;border:none;cursor:pointer}
 .credit-row{display:flex;align-items:center;justify-content:space-between;padding:0 2px;font-size:.78rem;color:var(--text-faint);font-weight:600}
 .credit-row .credit-cost{color:var(--text-dim);font-weight:700}
 
-/* Model selector row (full width) + Elements/Frames segmented row (full width) — never clips */
-.panel-top-row{display:flex;flex-direction:column;gap:9px}
+/* Model selector + Elements/Frames tabs share ONE compact row, like the
+   reference layout: [icon+name+tier chevron]  |  Elements  Frames  ...(empty space)
+   — model-select sizes to its own content instead of stretching full width,
+   and the tabs sit right after it as small inline pills, not a second
+   full-width segmented row. */
+.panel-top-row{display:flex;flex-direction:row;align-items:center;gap:10px}
 .model-select{
-  display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;width:100%;
+  display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;width:auto;flex:0 1 auto;max-width:62%;
   background:var(--btn);border:1px solid var(--border);transition:border-color .15s;min-width:0;
 }
 .model-select:active{border-color:var(--border2)}
@@ -269,8 +274,10 @@ button{background:none;border:none;cursor:pointer}
 .model-select-car{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text-dim);transition:transform .18s;flex-shrink:0}
 .model-select.open .model-select-car{transform:rotate(180deg)}
 
-.elements-tabs{display:flex;gap:4px;width:100%;background:var(--btn);border:1px solid var(--border);border-radius:14px;padding:4px}
-.el-tab{flex:1;padding:9px 6px;border-radius:11px;font-size:18px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s;text-align:center}
+.panel-top-divider{width:1px;align-self:stretch;background:var(--border);flex-shrink:0}
+
+.elements-tabs{display:flex;align-items:center;gap:6px;width:auto;flex:0 0 auto;background:transparent;border:none;padding:0}
+.el-tab{flex:0 0 auto;padding:7px 14px;border-radius:999px;font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s;text-align:center}
 .el-tab.active{background:var(--accent);color:#fff}
 
 /* ---- ELEMENTS TAB CONTENT ---- */
@@ -361,13 +368,30 @@ button{background:none;border:none;cursor:pointer}
 .qty-btn{width:18px;height:18px;display:grid;place-items:center;font-weight:800;font-size:1rem;color:var(--text-dim);user-select:none}
 .qty-val{font-family:var(--mono);font-size:.84rem;font-weight:700;min-width:30px;text-align:center}
 
+/* Tier (MINI/FAST/PRO...) segmented toggle — same slot the reference uses
+   for its "Fast | Pro" control: one pill container, N equal buttons inside,
+   the active one filled solid. */
+.tier-seg{display:flex;align-items:center;gap:2px;padding:3px;border-radius:12px;background:var(--btn);border:1px solid var(--border);flex-shrink:0}
+.tier-seg-btn{padding:8px 12px;border-radius:9px;font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.03em;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s}
+.tier-seg-btn.active{background:var(--accent);color:#fff}
+
+.gen-btn-ico{display:flex;flex-shrink:0}
+.gen-btn-ico svg{width:17px;height:17px}
+
 .gen-btn{
-  flex:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:17px;border-radius:14px;
+  position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:17px;border-radius:14px;
   background:linear-gradient(135deg,#ff2b48,#8a0018 60%,#25000a);border:1px solid rgba(255,60,90,.5);
   font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:.01em;
   box-shadow:0 0 28px rgba(255,32,64,.28),0 10px 26px rgba(0,0,0,.35);transition:transform .16s,box-shadow .16s;
   animation:genGlow 2.6s ease-in-out infinite;
 }
+/* Credit cost badge pinned to the right inside the Generate button — mirrors
+   the coin+cost chip shown inside the reference's Generate button. Text is
+   filled by updateCreditEstimate() (id=creditCostTxt); empty string collapses
+   the badge to nothing via :empty so it never shows a stray blank pill. */
+.gen-cost-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.02em;color:#fff}
+.gen-cost-badge:empty{display:none}
+.gen-cost-badge.free{color:#7CFF9C}
 @keyframes genGlow{
   0%,100%{box-shadow:0 0 22px rgba(255,32,64,.24),0 10px 26px rgba(0,0,0,.35)}
   50%{box-shadow:0 0 40px rgba(255,32,64,.44),0 10px 30px rgba(0,0,0,.4)}
@@ -1246,34 +1270,36 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .asset-chip video,.media-slot video{pointer-events:none}
 /* ============ SEKSI REFERENSI + PROMPT BOX (layout ala referensi) ============ */
 .assets-strip{display:none!important} /* thumbnail kini tampil per-grup, strip lama redundan */
-.ref-sections{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.ref-sections{display:flex;flex:1 1 auto;min-width:56px;align-items:stretch;gap:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .ref-sections::-webkit-scrollbar{display:none}
-.ref-group{display:flex;flex-direction:column;gap:7px;flex-shrink:0}
-.ref-group + .ref-group{border-left:1px solid rgba(255,255,255,.09);padding-left:12px}
+.ref-group{display:flex;flex-direction:column;justify-content:center;flex-shrink:0}
+.ref-group + .ref-group{border-left:1px solid rgba(255,255,255,.09);padding-left:10px}
 .ref-lbl{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);padding-left:2px}
 .ref-cards{display:flex;gap:8px;align-items:center}
-.ref-cards .upload-card{width:62px;height:62px;min-height:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px dashed rgba(255,255,255,.2);background:rgba(255,255,255,.03);box-shadow:none;padding:0;flex-shrink:0}
+.ref-cards .upload-card{width:72px;height:78px;min-height:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid var(--border);background:rgba(255,255,255,.03);box-shadow:none;padding:0;flex-shrink:0}
 .ref-cards .upload-card:active{transform:scale(.95)}
-.ref-cards .uc-icon{width:17px;height:17px;opacity:.85}
-.ref-cards .uc-count{position:static;background:transparent;border:none;padding:0;min-width:auto;height:auto;font-family:var(--mono);font-size:.64rem;font-weight:700;color:var(--text-dim)}
+.ref-cards .uc-icon{width:18px;height:18px;opacity:.85}
+.ref-cards .uc-label{font-size:9px;color:var(--text-dim)}
+.ref-cards .uc-count{position:static;background:transparent;border:none;padding:0;min-width:auto;height:auto;font-family:var(--mono);font-size:.6rem;font-weight:700;color:var(--text-faint)}
 .ref-thumbs{display:flex;gap:8px;align-items:center}
-.ref-thumb{position:relative;width:62px;height:62px;border-radius:16px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0;cursor:pointer}
+.ref-thumb{position:relative;width:72px;height:78px;border-radius:16px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0;cursor:pointer}
 .ref-thumb img,.ref-thumb video{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
 .ref-thumb.audio{display:grid;place-items:center;background:rgba(255,255,255,.05);color:var(--text-dim)}
 .ref-thumb.audio svg{width:20px;height:20px}
 .ref-thumb.uploading::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
-/* Rail ikon vertikal + kotak PROMPT tinggi (ikon pensil dalam kotak aksen) */
-.prompt-row{display:flex;gap:8px;align-items:stretch;margin-top:2px}
+/* Rail ikon vertikal + kotak-kotak upload + kotak PROMPT — SATU baris utuh,
+   persis susunan referensi: rail | Image | Video | Audio | Prompt. */
+.media-row{display:flex;gap:8px;align-items:stretch;margin-top:2px}
 .type-rail{display:flex;flex-direction:column;gap:6px;flex-shrink:0;justify-content:flex-start}
 .rail-btn{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:grid;place-items:center;color:var(--text-dim);transition:background .15s,color .15s}
 .rail-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
 .rail-btn:active{transform:scale(.94)}
 .rail-btn svg{width:15px;height:15px}
-.prompt-row .prompt-btn{flex:1;min-width:0;min-height:114px;align-items:flex-start;border-radius:18px;border:1px solid rgba(255,60,90,.4);background:linear-gradient(180deg,#1c1c1c,#141414);padding:12px}
-.prompt-row .prompt-btn-icon{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#8a0018);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 6px 16px -8px rgba(255,32,64,.8)}
-.prompt-row .prompt-btn-icon svg{width:14px;height:14px}
-.prompt-row .prompt-btn-txt{font-size:14px;padding-top:6px;white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-align:left}
-.prompt-row .prompt-btn-arrow{display:none}
+.media-row .prompt-btn{flex:1 1 96px;min-width:96px;min-height:78px;align-items:flex-start;border-radius:18px;border:1px solid rgba(255,60,90,.4);background:linear-gradient(180deg,#1c1c1c,#141414);padding:12px}
+.media-row .prompt-btn-icon{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#8a0018);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 6px 16px -8px rgba(255,32,64,.8)}
+.media-row .prompt-btn-icon svg{width:14px;height:14px}
+.media-row .prompt-btn-txt{font-size:14px;padding-top:6px;white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-align:left}
+.media-row .prompt-btn-arrow{display:none}
 /* Player audio hasil (mode Audio / Seed Audio) */
 .result-audio-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:480px;margin:0 auto;padding:26px 18px;border-radius:20px;border:1px solid var(--border);background:var(--card2)}
 .result-audio-ico{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;color:#fff;box-shadow:0 0 24px rgba(255,32,64,.35)}
@@ -1298,9 +1324,9 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .rail-btn:active{transform:scale(.92)}
 /* PROMPT digeser sedikit dari rail supaya tidak nempel, dan turun 2px
    agar sejajar optik dengan ikon rail pertama. */
-.prompt-row{gap:11px}
-.prompt-row .prompt-btn{margin-top:2px;transition:border-color .18s,transform .16s cubic-bezier(.22,1,.36,1)}
-.prompt-row .prompt-btn:active{transform:scale(.985)}
+.media-row{gap:11px}
+.media-row .prompt-btn{margin-top:2px;transition:border-color .18s,transform .16s cubic-bezier(.22,1,.36,1)}
+.media-row .prompt-btn:active{transform:scale(.985)}
 /* Hanya properti GPU-friendly yang dianimasikan; hint compositing untuk
    elemen yang paling sering bergerak supaya tidak berat di HP. */
 .mode-pill{will-change:transform,width;transform:translateX(0) translateZ(0)}
@@ -1309,7 +1335,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 @media (prefers-reduced-motion: reduce){
   .mode-pill{transition:none}
   .modebar .mode-btn.mode-pop svg,.rail-btn.active svg{animation:none}
-  .rail-btn,.prompt-row .prompt-btn{transition:none}
+  .rail-btn,.media-row .prompt-btn{transition:none}
 }
 /* Rail: track kapsul di belakang ikon + pill merah yang MELUNCUR vertikal
    saat ditekan — persis perilaku pill modebar, versi tegak. */
@@ -1554,13 +1580,14 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       <div class="panel-top-row">
         <button class="model-select" id="modelSelectBtn" onclick="openModelDock()">
           <span class="model-select-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 5.9L21 9l-5 4.4L17.4 20 12 16.6 6.6 20 8 13.4 3 9l6.4-1.1L12 2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/></svg>
           </span>
           <span class="model-select-txt" id="modelSelectTxt">SEEDANCE 2.0</span>
           <span class="model-select-tier" id="modelSelectTier">MINI</span>
           <span class="model-select-spacer"></span>
           <span class="model-select-car"></span>
         </button>
+        <span class="panel-top-divider"></span>
         <div class="elements-tabs" id="elementsTabs">
           <button class="el-tab active" data-tab="elements" onclick="switchElTab('elements',this)">Elements</button>
           <button class="el-tab" data-tab="frames" onclick="switchElTab('frames',this)">Frames</button>
@@ -1571,46 +1598,47 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       <div class="tab-content active" id="elementsTab">
         <div class="assets-strip" id="assetsStrip"></div>
 
-        <div class="ref-sections" id="refSections">
-          <div class="ref-group" id="refGroupImage">
-            <div class="ref-lbl">Image</div>
-            <div class="ref-cards">
-              <div class="upload-card" id="cardImage" onclick="openUploadSheet('image')">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
-                <span class="uc-count" id="cardImageCount">0/9</span>
-              </div>
-              <div class="ref-thumbs" id="refThumbsImage"></div>
-            </div>
-          </div>
-          <div class="ref-group" id="refGroupVideo">
-            <div class="ref-lbl">Video</div>
-            <div class="ref-cards">
-              <div class="upload-card" id="cardVideo" onclick="openUploadSheet('video')">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
-                <span class="uc-count" id="cardVideoCount">0/3</span>
-              </div>
-              <div class="ref-thumbs" id="refThumbsVideo"></div>
-            </div>
-          </div>
-          <div class="ref-group" id="refGroupAudio" style="display:none">
-            <div class="ref-lbl">Audio</div>
-            <div class="ref-cards">
-              <div class="upload-card" id="cardAudio" onclick="openUploadSheet('audio')">
-                <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-                <span class="uc-count" id="cardAudioCount">0/3</span>
-              </div>
-              <div class="ref-thumbs" id="refThumbsAudio"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="prompt-row">
+        <div class="media-row" id="mediaRow">
           <div class="type-rail" id="typeRail">
             <div class="rail-pill" id="railPill"></div>
             <button class="rail-btn" id="railImage" data-mode="image" title="Mode Image" onclick="setMode('image')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></button>
             <button class="rail-btn active" id="railVideo" data-mode="video" title="Mode Video" onclick="setMode('video')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></button>
             <button class="rail-btn" id="railAudio" data-mode="audio" title="Mode Audio" onclick="setMode('audio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
           </div>
+
+          <div class="ref-sections" id="refSections">
+            <div class="ref-group" id="refGroupImage">
+              <div class="ref-cards">
+                <div class="upload-card" id="cardImage" onclick="openUploadSheet('image')">
+                  <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+                  <span class="uc-label">Image</span>
+                  <span class="uc-count" id="cardImageCount">0/9</span>
+                </div>
+                <div class="ref-thumbs" id="refThumbsImage"></div>
+              </div>
+            </div>
+            <div class="ref-group" id="refGroupVideo">
+              <div class="ref-cards">
+                <div class="upload-card" id="cardVideo" onclick="openUploadSheet('video')">
+                  <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+                  <span class="uc-label">Video</span>
+                  <span class="uc-count" id="cardVideoCount">0/3</span>
+                </div>
+                <div class="ref-thumbs" id="refThumbsVideo"></div>
+              </div>
+            </div>
+            <div class="ref-group" id="refGroupAudio" style="display:none">
+              <div class="ref-cards">
+                <div class="upload-card" id="cardAudio" onclick="openUploadSheet('audio')">
+                  <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+                  <span class="uc-label">Audio</span>
+                  <span class="uc-count" id="cardAudioCount">0/3</span>
+                </div>
+                <div class="ref-thumbs" id="refThumbsAudio"></div>
+              </div>
+            </div>
+          </div>
+
           <button class="prompt-btn prompt-btn-inline" id="promptBtn" onclick="openPromptEditor()">
             <span class="prompt-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
             <span class="prompt-btn-txt" id="promptBtnTxt">PROMPT</span>
@@ -1661,13 +1689,15 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
         </div>
-        <div class="chip" id="qualityChip" onclick="openQualitySheet(this)" style="display:none">
-          <span id="qualityLabel">MINI</span><span class="chip-car"></span>
-        </div>
         <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
         <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
         <div class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
         <div class="chip" id="durationChip" onclick="openSheet('duration',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
+        <!-- Tier (MINI/FAST/PRO etc) as an inline segmented toggle, right after
+             ratio/resolution/duration — matches the reference's "Fast | Pro"
+             segmented control placement exactly, instead of a chip that opens
+             a separate sheet. -->
+        <div class="tier-seg" id="qualityChip" style="display:none"></div>
         <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
         <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
         <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
@@ -1675,16 +1705,18 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
         </div>
-      </div>
-
-      <div class="action-row">
         <div class="qty-stepper">
           <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
           <div class="qty-val" id="qtyVal">1/4</div>
           <div class="qty-btn" onclick="changeQty(1)">+</div>
         </div>
+      </div>
+
+      <div class="action-row">
         <button class="gen-btn" id="generateBtn" onclick="startGenerate()" disabled>
+          <span class="gen-btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.9 10.1a2.6 2.6 0 0 0-3.6-3.6L16 7.8a2.1 2.1 0 0 1-3-3l1.3-1.3a2.6 2.6 0 1 0-3.6-3.7"/><path d="m3 21 4.3-4.3"/><path d="M12.5 6.5 3 16l5 5 9.5-9.5"/></svg></span>
           <span class="gen-txt">GENERATE</span>
+          <span class="gen-cost-badge" id="creditCostTxt"></span>
         </button>
       </div>
 
@@ -2036,6 +2068,25 @@ function imgFallback(el) { el.onerror = null; el.src = IMG_FALLBACK; }
 // has no way to know it's broken vs. still loading. Show a clear message
 // + retry button instead, mirroring what imgFallback does for images.
 var _videoAutoRetryCount = {}; // videoElId -> how many silent auto-retries already attempted
+// Cache-bust a media URL WITHOUT dropping its existing query params — a
+// Dropbox direct link looks like ...dl.dropboxusercontent.com/...?rlkey=XXXX&raw=1
+// and both rlkey (auth) and raw=1 (raw-content mode) are REQUIRED for the
+// link to resolve to playable video at all. The old code did
+// `src.split('?')[0] + '?_autoretry=' + Date.now()`, which threw away
+// rlkey/raw=1 entirely — every "retry" (silent auto-retry AND the manual
+// "Coba lagi" button) was requesting a broken URL and was guaranteed to
+// fail forever, even though the original link was perfectly fine. That's
+// why the inline preview looked permanently broken while Download (which
+// always used the untouched original URL) kept working.
+function _cacheBustMediaUrl(src, paramName) {
+  var hashIdx = src.indexOf('#');
+  var clean = hashIdx === -1 ? src : src.slice(0, hashIdx);
+  // Only strip a previous cache-bust param of our own, keep everything else.
+  clean = clean.replace(/([?&])_autoretry=[^&]*/, '$1').replace(/([?&])_retry=[^&]*/, '$1');
+  clean = clean.replace(/[?&]+$/, '').replace(/\?&/, '?');
+  var sep = clean.indexOf('?') === -1 ? '?' : '&';
+  return clean + sep + paramName + '=' + Date.now();
+}
 function videoFailed(videoElId) {
   var vEl = document.getElementById(videoElId);
   var failEl = document.getElementById(videoElId + 'Fail');
@@ -2050,8 +2101,7 @@ function videoFailed(videoElId) {
     _videoAutoRetryCount[videoElId] = attempts + 1;
     setTimeout(function() {
       if (!vEl) return;
-      var sep = src.indexOf('?') === -1 ? '?' : '&';
-      vEl.src = src.split('#')[0].split('?')[0] + sep + '_autoretry=' + Date.now();
+      vEl.src = _cacheBustMediaUrl(src, '_autoretry');
       vEl.load();
     }, 700 * (attempts + 1));
     return;
@@ -2076,9 +2126,8 @@ function retryVideoLoad(videoElId) {
   if (failEl) failEl.style.display = 'none';
   vEl.style.display = 'block';
   // Cache-bust so a transient network blip / stale CDN edge isn't retried
-  // with the exact same failed request.
-  var sep = src.indexOf('?') === -1 ? '?' : '&';
-  vEl.src = src.split('#')[0].split('?')[0] + sep + '_retry=' + Date.now();
+  // with the exact same failed request — but keep rlkey/raw=1 intact.
+  vEl.src = _cacheBustMediaUrl(src, '_retry');
   vEl.load();
 }
 
@@ -2663,9 +2712,19 @@ function renderQualityChip() {
   if (!chip) return;
   // Motion Control: quality follows the provider default automatically,
   // never shown as a manual choice. Every other model keeps the normal
-  // Quality chip when it has more than one tier.
+  // Quality control when it has more than one tier — rendered as an
+  // inline segmented toggle (one tap per option) instead of a chip that
+  // opens a separate sheet, matching the reference layout.
   if (selectedFamily.key !== 'klingswap' && selectedFamily.qualities.length > 1) {
-    document.getElementById('qualityLabel').textContent = selectedModelTier;
+    chip.innerHTML = '';
+    selectedFamily.qualities.forEach(function(q, idx) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tier-seg-btn' + (idx === selectedQualityIdx ? ' active' : '');
+      b.textContent = q.label;
+      b.onclick = function(e) { e.stopPropagation(); pickQuality(idx); };
+      chip.appendChild(b);
+    });
     chip.style.display = '';
   } else {
     chip.style.display = 'none';
@@ -4149,7 +4208,7 @@ function genQueueItemHtml(taskId, title) {
         '<div class="gen-q-stage" id="genqStage_' + taskId + '">Uploading Assets</div>' +
         '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
       '</div>' +
-      '<span class="gen-q-eta" id="genqEta_' + taskId + '">Estimating…</span>' +
+      '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="gen-q-eta-txt" id="genqEtaTxt_' + taskId + '">Estimating…</span></span>' +
       '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div>' +
       '<button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Sembunyikan" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">\u2715</button>' +
     '</div>'
@@ -4260,7 +4319,7 @@ function startGenerate() {
     var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
     var list = document.getElementById('genQueueList');
     list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, titleLabel));
-    var etaEl = document.getElementById('genqEta_' + taskId);
+    var etaEl = document.getElementById('genqEtaTxt_' + taskId);
     if (etaEl) etaEl.textContent = formatEta(taskInfo.estimated_time);
     activeGens[taskId] = { meta: meta, startTs: Date.now() };
     saveActiveTaskEntry(taskId, meta);
@@ -4283,12 +4342,11 @@ function stageForProgress(p) {
   return 'Complete';
 }
 function formatEta(seconds) {
-  seconds = parseInt(seconds, 10);
-  if (!seconds || seconds <= 0) return 'Estimating…';
-  if (seconds < 60) return '~' + seconds + 's';
+  seconds = Math.round(parseFloat(seconds));
+  if (!seconds || seconds <= 0 || isNaN(seconds)) return 'Estimating…';
   var m = Math.floor(seconds / 60);
   var s = seconds % 60;
-  return '~' + m + 'm ' + (s > 0 ? s + 's' : '');
+  return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 // ══════════ MULTI-TASK ACTIVE QUEUE PERSISTENCE ══════════
@@ -4320,6 +4378,7 @@ function pollQueueTask(taskId, opts) {
   var meta = state.meta || {};
   state.requestInFlight = false;
   state.consecutiveNetworkFailures = 0;
+  state.remainingSec = null; // clock countdown, resynced from server every poll
   // The generation itself runs entirely on the server — the phone's own
   // connection is only needed to check status, so a dropped connection
   // never loses a result: this only gives up after being unreachable for a
@@ -4332,7 +4391,7 @@ function pollQueueTask(taskId, opts) {
       item: document.getElementById('genq_' + taskId),
       stage: document.getElementById('genqStage_' + taskId),
       bar: document.getElementById('genqBar_' + taskId),
-      eta: document.getElementById('genqEta_' + taskId),
+      eta: document.getElementById('genqEtaTxt_' + taskId),
       actions: document.getElementById('genqActions_' + taskId),
       dismiss: document.getElementById('genqDismiss_' + taskId),
     };
@@ -4364,6 +4423,7 @@ function pollQueueTask(taskId, opts) {
         var e = els();
         if (data.error) {
           if (state.interval) clearInterval(state.interval);
+          if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
           markFailed(data.error);
           return;
@@ -4383,13 +4443,16 @@ function pollQueueTask(taskId, opts) {
           var pacedTotal = elapsedSec / (progress / 100);
           var pacedRemaining = Math.max(pacedTotal - elapsedSec, 0);
           var remaining = serverRemaining != null ? (pacedRemaining * 0.7 + serverRemaining * 0.3) : pacedRemaining;
+          state.remainingSec = remaining;
           if (e.eta) e.eta.textContent = formatEta(remaining);
-        } else if (serverRemaining != null && e.eta) {
-          e.eta.textContent = formatEta(serverRemaining);
+        } else if (serverRemaining != null) {
+          state.remainingSec = serverRemaining;
+          if (e.eta) e.eta.textContent = formatEta(serverRemaining);
         }
 
         if (status === 'completed') {
           if (state.interval) clearInterval(state.interval);
+          if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
           var out = data.output || data.result || {};
           var videoUrl = out.video_url || (out.type === 'video' ? out.url : '') || '';
@@ -4464,6 +4527,7 @@ function pollQueueTask(taskId, opts) {
           }
         } else if (status === 'failed') {
           if (state.interval) clearInterval(state.interval);
+          if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
           delete activeGens[taskId]; refreshQueueBadge();
           markFailed(data.error || 'Segmind tidak mengembalikan detail error.');
@@ -4479,6 +4543,7 @@ function pollQueueTask(taskId, opts) {
           return;
         }
         if (state.interval) clearInterval(state.interval);
+          if (state.clockInterval) clearInterval(state.clockInterval);
         delete activeGens[taskId]; refreshQueueBadge();
         markFailed('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
       });
@@ -4487,6 +4552,18 @@ function pollQueueTask(taskId, opts) {
   state.tick = tick;
   if (!(opts && opts.silentResume)) tick(); // check right away instead of waiting for the first 3s tick
   state.interval = setInterval(tick, 3000);
+  // Real per-second countdown — ticks down every 1s so the ETA visibly
+  // counts like a clock instead of only jumping every 3s when a poll
+  // response lands. It never invents time: it just counts down whatever
+  // state.remainingSec was last resynced to from the server above, and
+  // freezes at 0 (never negative) until the next poll corrects it.
+  if (state.clockInterval) clearInterval(state.clockInterval);
+  state.clockInterval = setInterval(function() {
+    if (state.remainingSec == null || !activeGens[taskId]) return;
+    state.remainingSec = Math.max(state.remainingSec - 1, 0);
+    var eEl = document.getElementById('genqEtaTxt_' + taskId);
+    if (eEl) eEl.textContent = formatEta(state.remainingSec);
+  }, 1000);
 }
 
 function retryQueueItem(taskId) {
