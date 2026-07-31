@@ -3426,8 +3426,33 @@ def ai_video_view():
         with _AIVIDEO_UNLOCK_LOCK:
             _, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(_aivideo_client_ip(), (0, 0))
         retry_after = max(int(locked_until - time.time()), 0)
-        return render_template('ai-video-lock.html', retry_after=retry_after)
+        visit_total = 0
+        try:
+            visit_total = aivideo_archive.get_lock_visit_total()
+        except Exception:
+            pass
+        return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total)
     return render_template('ai-video.html')
+
+
+@app.route('/ai-video/lock-visit', methods=['POST'])
+def ai_video_lock_visit():
+    # Deliberately available WITHOUT auth — this fires from the lock page
+    # itself, before anyone has typed a password. device_id is a random ID
+    # the browser generates once and keeps in localStorage, so a refresh
+    # (or 100 refreshes) from the same browser never inflates the total;
+    # only a genuinely new device/browser bumps the count.
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get('device_id', ''))[:128]
+    total = 0
+    try:
+        total = aivideo_archive.record_lock_visit(device_id)
+    except Exception:
+        try:
+            total = aivideo_archive.get_lock_visit_total()
+        except Exception:
+            total = 0
+    return jsonify({'ok': True, 'total': total})
 
 
 @app.route('/ai-video/unlock', methods=['POST'])
