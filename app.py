@@ -3427,11 +3427,17 @@ def ai_video_view():
             _, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(_aivideo_client_ip(), (0, 0))
         retry_after = max(int(locked_until - time.time()), 0)
         visit_total = 0
+        attempt_stats = (0, 0)
         try:
             visit_total = aivideo_archive.get_lock_visit_total()
         except Exception:
             pass
-        return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total)
+        try:
+            attempt_stats = aivideo_archive.get_lock_stats()
+        except Exception:
+            pass
+        return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
+                                total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
     return render_template('ai-video.html')
 
 
@@ -3468,8 +3474,13 @@ def ai_video_unlock():
     with _AIVIDEO_UNLOCK_LOCK:
         fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
     if locked_until > now:
+        try:
+            total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
+        except Exception:
+            total_attempts, total_failed = 0, 0
         return jsonify({'ok': False, 'locked': True, 'retry_after': int(locked_until - now),
-                         'error': 'Terlalu banyak percobaan salah. IP ini dikunci sementara.'}), 423
+                         'error': 'Terlalu banyak percobaan salah. IP ini dikunci sementara.',
+                         'total_attempts': total_attempts, 'total_failed': total_failed}), 423
 
     data = request.get_json(silent=True) or {}
     pw = str(data.get('password', ''))
@@ -3480,7 +3491,11 @@ def ai_video_unlock():
         session['mii_aivideo_auth'] = True
         with _AIVIDEO_UNLOCK_LOCK:
             _AIVIDEO_UNLOCK_ATTEMPTS.pop(ip, None)
-        return jsonify({'ok': True})
+        try:
+            total_attempts, total_failed = aivideo_archive.record_unlock_attempt(True)
+        except Exception:
+            total_attempts, total_failed = 0, 0
+        return jsonify({'ok': True, 'total_attempts': total_attempts, 'total_failed': total_failed})
 
     with _AIVIDEO_UNLOCK_LOCK:
         fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
@@ -3488,10 +3503,20 @@ def ai_video_unlock():
         if fails >= AIVIDEO_LOCKOUT_THRESHOLD:
             locked_until = now + AIVIDEO_LOCKOUT_SECONDS
             _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (0, locked_until)
+            try:
+                total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
+            except Exception:
+                total_attempts, total_failed = 0, 0
             return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
-                             'error': 'Password salah 3 kali. IP ini dikunci sementara.'}), 423
+                             'error': 'Password salah 3 kali. IP ini dikunci sementara.',
+                             'total_attempts': total_attempts, 'total_failed': total_failed}), 423
         _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (fails, 0)
-    return jsonify({'ok': False, 'attempts_left': AIVIDEO_LOCKOUT_THRESHOLD - fails, 'error': 'Password salah'}), 401
+    try:
+        total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
+    except Exception:
+        total_attempts, total_failed = 0, 0
+    return jsonify({'ok': False, 'attempts_left': AIVIDEO_LOCKOUT_THRESHOLD - fails, 'error': 'Password salah',
+                     'total_attempts': total_attempts, 'total_failed': total_failed}), 401
 
 
 @app.route('/ai-video/logout', methods=['POST'])
