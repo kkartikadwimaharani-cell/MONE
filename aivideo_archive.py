@@ -279,3 +279,43 @@ def get_lock_visit_total():
         cur = conn.cursor()
         cur.execute('SELECT COUNT(*) FROM aivideo_lock_visits')
         return cur.fetchone()[0]
+
+
+def _ensure_lock_stats_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS aivideo_lock_stats (
+            key TEXT PRIMARY KEY,
+            value INTEGER DEFAULT 0
+        )
+    """)
+    conn.execute("INSERT OR IGNORE INTO aivideo_lock_stats (key, value) VALUES ('total_attempts', 0)")
+    conn.execute("INSERT OR IGNORE INTO aivideo_lock_stats (key, value) VALUES ('total_failed', 0)")
+
+
+def record_unlock_attempt(success):
+    """Hitungan GLOBAL, lintas semua orang & device, seumur hidup server —
+    beda dari _AIVIDEO_UNLOCK_ATTEMPTS di app.py yang cuma per-IP dan reset
+    tiap kali lockout selesai. Ini murni statistik ('sudah berapa kali
+    password dicoba, berapa yang salah'), tidak memengaruhi logika lockout
+    sama sekali. Return (total_attempts, total_failed) setelah update."""
+    conn = _get_conn()
+    with _write_lock:
+        _ensure_lock_stats_table(conn)
+        conn.execute("UPDATE aivideo_lock_stats SET value = value + 1 WHERE key = 'total_attempts'")
+        if not success:
+            conn.execute("UPDATE aivideo_lock_stats SET value = value + 1 WHERE key = 'total_failed'")
+        conn.commit()
+        cur = conn.cursor()
+        cur.execute("SELECT key, value FROM aivideo_lock_stats WHERE key IN ('total_attempts','total_failed')")
+        rows = dict(cur.fetchall())
+    return rows.get('total_attempts', 0), rows.get('total_failed', 0)
+
+
+def get_lock_stats():
+    conn = _get_conn()
+    with _write_lock:
+        _ensure_lock_stats_table(conn)
+        cur = conn.cursor()
+        cur.execute("SELECT key, value FROM aivideo_lock_stats WHERE key IN ('total_attempts','total_failed')")
+        rows = dict(cur.fetchall())
+    return rows.get('total_attempts', 0), rows.get('total_failed', 0)
