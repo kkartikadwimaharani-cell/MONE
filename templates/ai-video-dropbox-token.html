@@ -1,154 +1,604 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MII AI Video — Dropbox Token Setup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Dropbox Connection — MII AI VIDEO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root{--bg:#0c0c0c;--card:#161616;--border:rgba(255,255,255,.09);--ok:#3ddc84;--bad:#ff4d5e;--txt:#eaeaea;--dim:#8a8a8a;--accent:#ff2040}
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px 16px 60px;line-height:1.5}
-  h1{font-size:19px;margin:0 0 4px}
-  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px}
-  label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-  input[type=text]{width:100%;background:#0e0e0e;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--txt);font-size:15px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  input[type=text]:focus{outline:none;border-color:rgba(255,32,64,.5)}
-  button{width:100%;margin-top:14px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff3050,#c8102e);color:#fff;font-size:15px;font-weight:700;letter-spacing:.02em}
-  button:disabled{opacity:.5}
-  button:active{transform:scale(.98)}
-  .result-box{margin-top:12px;background:#0e0e0e;border:1px solid var(--border);border-radius:12px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;word-break:break-all;position:relative}
-  .result-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-  .result-label span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.03em;font-weight:700}
-  .copy-btn{background:#232323;border:1px solid var(--border);color:var(--txt);font-size:11px;padding:5px 10px;border-radius:8px;font-weight:600}
-  .copy-btn.copied{background:rgba(61,220,132,.15);color:var(--ok);border-color:rgba(61,220,132,.4)}
-  .status{display:none;padding:12px 14px;border-radius:12px;font-size:13px;margin-top:14px}
-  .status.ok{display:block;background:rgba(61,220,132,.1);border:1px solid rgba(61,220,132,.3);color:#7ee8a8}
-  .status.bad{display:block;background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);color:#ff9aa4;white-space:pre-wrap}
-  .hint{font-size:12px;color:var(--dim);margin-top:8px}
-  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
-  .badge.ok{color:var(--ok);background:rgba(61,220,132,.12)}
-  .badge.bad{color:var(--bad);background:rgba(255,77,94,.12)}
-  .steps{font-size:13px;color:#c9c9c9;padding-left:18px;margin:0}
-  .steps li{margin-bottom:8px}
-  a{color:#7db8ff}
-  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
-  @keyframes spin{to{transform:rotate(360deg)}}
+:root{
+  --bg:#08070a;
+  --bg-grid:rgba(255,22,56,.05);
+  --surface:#131217;
+  --surface-2:#1b1a20;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.16);
+  --text:#f3f2f5;
+  --text-muted:#9a97a3;
+  --text-faint:#68656f;
+  --primary:#ff1638;
+  --primary-2:#ff4060;
+  --success:#2fd76b;
+  --success-bg:rgba(47,215,107,.12);
+  --warning:#ffb020;
+  --warning-bg:rgba(255,176,32,.12);
+  --danger:#ff3b4e;
+  --danger-bg:rgba(255,59,78,.12);
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:12px;
+  --shadow-card:0 20px 60px rgba(0,0,0,.45);
+  --shadow-btn:0 10px 30px rgba(255,22,56,.25);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:radial-gradient(ellipse 90% 50% at 50% -10%,rgba(200,0,36,.22),transparent),var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  line-height:1.6;
+  padding:22px 16px 80px;
+  animation:pageFade .5s ease both;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--bg-grid) 1px,transparent 1px),linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(ellipse 70% 55% at 50% 20%,#000 0 35%,transparent 85%);
+}
+@keyframes pageFade{from{opacity:0}to{opacity:1}}
+
+.wrap{position:relative;z-index:1;width:100%;max-width:560px;margin:0 auto}
+
+.page-header{margin-bottom:22px}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);text-decoration:none;font-size:16px;font-weight:600;margin-bottom:18px}
+.back-link svg{width:16px;height:16px}
+.back-link:active{opacity:.7}
+
+.page-title{font-size:clamp(28px,7vw,34px);font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+.page-sub{font-size:17px;color:var(--text-muted);font-weight:500;margin-bottom:16px}
+
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:99px;font-size:15px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;border:1px solid var(--border)}
+.status-pill .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.status-pill.connected{background:var(--success-bg);color:var(--success);border-color:rgba(47,215,107,.3)}
+.status-pill.connected .dot{background:var(--success);animation:pulse 2s ease-in-out infinite}
+.status-pill.warn{background:var(--warning-bg);color:var(--warning);border-color:rgba(255,176,32,.3)}
+.status-pill.warn .dot{background:var(--warning)}
+.status-pill.off{background:var(--surface-2);color:var(--text-muted)}
+.status-pill.off .dot{background:var(--text-faint)}
+.status-pill.error{background:var(--danger-bg);color:var(--danger);border-color:rgba(255,59,78,.3)}
+.status-pill.error .dot{background:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@media (prefers-reduced-motion: reduce){.status-pill.connected .dot{animation:none}}
+
+.card{background:linear-gradient(160deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 20px;margin-bottom:16px;box-shadow:var(--shadow-card);animation:cardIn .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media (min-width:640px){.card{padding:32px 30px}}
+@media (prefers-reduced-motion: reduce){.card, body{animation:none}}
+
+.card-icon-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.card-icon{width:52px;height:52px;border-radius:14px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,rgba(0,97,255,.16),rgba(0,97,255,.05));border:1px solid rgba(0,97,255,.25)}
+.card-icon svg{width:26px;height:26px}
+.card-title{font-size:22px;font-weight:700}
+.card-desc{font-size:17px;color:var(--text-muted);margin-top:2px;font-weight:500}
+
+.helper-text{font-size:16px;color:var(--text-muted);line-height:1.6;margin-bottom:18px;font-weight:500}
+.helper-text b{color:var(--text);font-weight:600}
+
+button{font-family:inherit;cursor:pointer}
+.btn{width:100%;min-height:54px;border:none;border-radius:14px;font-size:17px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s ease,opacity .15s ease,box-shadow .15s ease}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--primary-2);outline-offset:2px}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn-primary{background:linear-gradient(135deg,var(--primary-2),var(--primary));color:#fff;box-shadow:var(--shadow-btn)}
+.btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border-strong)}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(255,59,78,.3)}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;margin-top:10px}
+.btn-row .btn{flex:1}
+@media (prefers-reduced-motion: reduce){.btn{transition:none}.btn:active{transform:none}}
+
+.spinner{width:18px;height:18px;border-radius:50%;flex:none;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite}
+.btn-secondary .spinner,.btn-danger .spinner,.btn-ghost .spinner{border-color:rgba(255,255,255,.2);border-top-color:var(--text)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spinner{animation:spin 1.4s linear infinite}}
+
+.field{margin-bottom:18px}
+.field label{display:block;font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.input-wrap{position:relative}
+input[type=text],input[type=password]{width:100%;min-height:56px;background:#0d0c10;border:1.5px solid var(--border-strong);border-radius:12px;padding:0 48px 0 16px;color:var(--text);font-size:17px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;transition:border-color .15s ease,box-shadow .15s ease}
+input[type=text].plain{font-family:inherit;padding-right:16px}
+input:focus{outline:none;border-color:var(--primary-2);box-shadow:0 0 0 4px rgba(255,22,56,.15)}
+.input-icon-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border:none;background:transparent;border-radius:10px;display:grid;place-items:center;color:var(--text-muted)}
+.input-icon-btn:active{background:var(--surface-2)}
+.input-icon-btn svg{width:20px;height:20px}
+
+.code-box{background:#0d0c10;border:1.5px solid var(--border-strong);border-radius:12px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;word-break:break-all;line-height:1.55;color:#8fd3ff;margin-bottom:12px}
+
+.progress{display:flex;align-items:center;margin-bottom:24px}
+.progress .step{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;position:relative}
+.progress .step .num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--surface-2);color:var(--text-faint);border:1.5px solid var(--border-strong);transition:all .25s ease}
+.progress .step.active .num{background:linear-gradient(135deg,var(--primary-2),var(--primary));color:#fff;border-color:transparent}
+.progress .step.done .num{background:var(--success);color:#06170c;border-color:transparent}
+.progress .step .lbl{font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--text-faint);text-align:center}
+.progress .step.active .lbl{color:var(--text)}
+.progress .step.done .lbl{color:var(--success)}
+.progress .line{flex:1;height:2px;background:var(--border-strong);margin:0 -2px 22px;position:relative;top:-13px}
+.progress .line.done{background:var(--success)}
+
+.info-list{margin-bottom:18px}
+.info-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none}
+.info-row .k{font-size:16px;color:var(--text-muted);font-weight:600}
+.info-row .v{font-size:17px;font-weight:700;text-align:right}
+.info-row .v.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px}
+.info-row .v.ok{color:var(--success)}
+
+.skel{background:linear-gradient(90deg,var(--surface-2) 25%,rgba(255,255,255,.06) 37%,var(--surface-2) 63%);background-size:400% 100%;border-radius:8px;animation:shimmer 1.4s ease infinite;display:inline-block}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion: reduce){.skel{animation:none;background:var(--surface-2)}}
+.skel-line{height:16px;margin-bottom:10px;width:100%}
+.skel-line.short{width:55%}
+.skel-pill{height:32px;width:130px;border-radius:99px}
+
+.success-icon{width:76px;height:76px;margin:6px auto 18px;position:relative}
+.success-icon svg{width:100%;height:100%}
+.success-icon circle.ring{stroke-dasharray:145;stroke-dashoffset:145;animation:ringDraw .6s ease forwards}
+.success-icon path.check{stroke-dasharray:40;stroke-dashoffset:40;animation:checkDraw .35s .5s ease forwards}
+@keyframes ringDraw{to{stroke-dashoffset:0}}
+@keyframes checkDraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion: reduce){.success-icon circle.ring,.success-icon path.check{animation:none;stroke-dashoffset:0}}
+
+.banner{display:flex;align-items:flex-start;gap:12px;padding:16px;border-radius:14px;margin-bottom:16px;background:var(--warning-bg);border:1px solid rgba(255,176,32,.3);animation:cardIn .4s ease both}
+.banner svg{width:22px;height:22px;flex:none;color:var(--warning);margin-top:1px}
+.banner .txt{font-size:16px;color:var(--text);font-weight:500}
+.banner .txt b{display:block;font-size:18px;margin-bottom:4px;font-weight:800}
+
+.toast-host{position:fixed;left:16px;right:16px;bottom:20px;z-index:100;display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto}
+.toast{display:flex;align-items:center;gap:10px;padding:16px 18px;border-radius:14px;font-size:16px;font-weight:600;color:var(--text);background:var(--surface-2);border:1px solid var(--border-strong);box-shadow:0 12px 40px rgba(0,0,0,.5);animation:toastIn .3s cubic-bezier(.22,1,.36,1) both}
+.toast.leaving{animation:toastOut .25s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.96)}}
+@media (prefers-reduced-motion: reduce){.toast{animation:none}.toast.leaving{animation:none;opacity:0}}
+.toast svg{width:20px;height:20px;flex:none}
+.toast.success svg{color:var(--success)}
+.toast.error svg{color:var(--danger)}
+.toast.warning svg{color:var(--warning)}
+.toast.info svg{color:#8fd3ff}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+@media (min-width:640px){.modal-overlay{align-items:center}}
+.modal{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border-strong);border-radius:22px 22px 0 0;padding:26px 22px 30px;transform:translateY(20px) scale(.98);opacity:0;transition:all .25s cubic-bezier(.22,1,.36,1);max-height:90vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0) scale(1);opacity:1}
+@media (min-width:640px){.modal{border-radius:22px}}
+@media (prefers-reduced-motion: reduce){.modal-overlay,.modal{transition:none}}
+.modal-title{font-size:22px;font-weight:800;margin-bottom:8px}
+.modal-desc{font-size:16px;color:var(--text-muted);margin-bottom:22px;line-height:1.55;font-weight:500}
+
+.hidden{display:none !important}
+.text-center{text-align:center}
+.mt-6{margin-top:6px}
 </style>
 </head>
 <body>
-  <h1>Dropbox Token Setup</h1>
-  <div class="sub">
-    App key/secret:
-    {% if has_app_creds %}<span class="badge ok">configured</span>{% else %}<span class="badge bad">missing</span>{% endif %}
+<div class="wrap">
+  <div class="page-header">
+    <a class="back-link" href="/ai-video/debug">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Debug page
+    </a>
+    <div class="page-title">Dropbox Connection</div>
+    <div class="page-sub">Secure cloud storage integration</div>
+    <div id="statusPillHost"><span class="skel skel-pill" aria-hidden="true"></span></div>
   </div>
 
-  {% if not has_app_creds %}
-  <div class="status bad" style="display:block">
-    DROPBOX_APP_KEY / DROPBOX_APP_SECRET belum diset di Railway. Set dulu env var itu, redeploy, baru balik ke halaman ini.
-  </div>
-  {% endif %}
-
-  <div class="card">
-    <ol class="steps">
-      <li>Buka Dropbox App Console → tab OAuth2 → tombol <b>Generate</b> untuk dapat authorization code baru (code lama biasanya sudah expired / sekali pakai).</li>
-      <li>Tempel code-nya di bawah, lalu tap tombol.</li>
-      <li>Copy <b>refresh_token</b> yang muncul → Railway env <b>DROPBOX_REFRESH_TOKEN</b> → redeploy.</li>
-    </ol>
-  </div>
-
-  <div class="card">
-    <label for="codeInput">Authorization Code</label>
-    <input type="text" id="codeInput" placeholder="Tempel authorization code di sini" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    <button id="genBtn" onclick="doExchange()" {% if not has_app_creds %}disabled{% endif %}>Generate Refresh Token</button>
-
-    <div class="status" id="statusBox"></div>
-
-    <div id="resultArea" style="display:none">
-      <div class="result-box">
-        <div class="result-label"><span>refresh_token</span><button class="copy-btn" onclick="copyField('refreshTokenVal', this)">Copy</button></div>
-        <div id="refreshTokenVal"></div>
+  <div id="bannerHost"></div>
+  <div id="mainHost">
+    <div class="card" id="skeletonCard">
+      <div class="card-icon-row">
+        <span class="skel" style="width:52px;height:52px;border-radius:14px" aria-hidden="true"></span>
+        <div style="flex:1"><span class="skel skel-line short" aria-hidden="true"></span></div>
       </div>
-      <div class="result-box">
-        <div class="result-label"><span>access_token</span><button class="copy-btn" onclick="copyField('accessTokenVal', this)">Copy</button></div>
-        <div id="accessTokenVal"></div>
-      </div>
-      <div class="hint" id="metaHint"></div>
+      <span class="skel skel-line" aria-hidden="true"></span>
+      <span class="skel skel-line" aria-hidden="true"></span>
+      <span class="skel skel-line short" aria-hidden="true"></span>
     </div>
   </div>
+</div>
 
-  <a href="/ai-video/debug">← Ke halaman Debug</a>
+<div class="modal-overlay" id="disconnectOverlay">
+  <div class="modal">
+    <div class="modal-title">Disconnect Dropbox?</div>
+    <div class="modal-desc">File di Dropbox kamu tetap aman, nggak akan terhapus.</div>
+    <button class="btn btn-danger" id="btnDisconnectAccount">Disconnect account</button>
+    <div class="btn-row"><button class="btn btn-ghost" id="btnRemoveConfig">Remove configuration</button></div>
+    <div class="btn-row"><button class="btn btn-secondary" id="btnCancelDisconnect">Cancel</button></div>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
 
 <script>
-function copyField(id, btn) {
-  var text = document.getElementById(id).textContent;
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(function() {
-    var orig = btn.textContent;
-    btn.textContent = 'Copied ✓';
-    btn.classList.add('copied');
-    setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
-  }).catch(function() {
-    // Fallback for older Android webviews without clipboard API
-    var range = document.createRange();
-    range.selectNode(document.getElementById(id));
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    document.execCommand('copy');
-    window.getSelection().removeAllRanges();
-    btn.textContent = 'Copied ✓';
-  });
+(function() {
+  function readCookie(name) {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  var origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    init = init || {};
+    var method = (init.method || 'GET').toUpperCase();
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var isSameOriginApi = url.indexOf('/api/aivideo/') !== -1 || url.indexOf('/ai-video/') !== -1;
+    var isRelative = url.indexOf('://') === -1;
+    if (isSameOriginApi && isRelative && method !== 'GET' && method !== 'HEAD') {
+      var tok = readCookie('mii_csrf');
+      if (tok) init.headers = Object.assign({}, init.headers || {}, { 'X-CSRF-Token': tok });
+    }
+    return origFetch(input, init);
+  };
+})();
+
+var ICONS = {
+  cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="#4aa3ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 01-.6-7.96A5.5 5.5 0 0117.5 9 4 4 0 0117 18H7z"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a21.6 21.6 0 015.06-6.06M9.9 4.24A10.4 10.4 0 0112 4c7 0 11 7 11 7a21.6 21.6 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.86L1.8 18a1.6 1.6 0 001.4 2.4h17.6a1.6 1.6 0 001.4-2.4L13.7 3.86a1.6 1.6 0 00-2.8 0z"/></svg>'
+};
+
+function toast(kind, msg) {
+  var host = document.getElementById('toastHost');
+  var el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  var icon = kind === 'success' ? ICONS.check : kind === 'error' ? ICONS.x : kind === 'warning' ? ICONS.warn : ICONS.info;
+  el.innerHTML = icon + '<span>' + msg + '</span>';
+  host.appendChild(el);
+  setTimeout(function() {
+    el.classList.add('leaving');
+    setTimeout(function() { el.remove(); }, 300);
+  }, 3600);
 }
 
-function doExchange() {
-  var code = document.getElementById('codeInput').value.trim();
-  var btn = document.getElementById('genBtn');
-  var statusBox = document.getElementById('statusBox');
-  var resultArea = document.getElementById('resultArea');
-  statusBox.className = 'status';
-  statusBox.style.display = 'none';
-  resultArea.style.display = 'none';
+var STATE = null;
+var wizardStep = 1;
 
-  if (!code) {
-    statusBox.className = 'status bad';
-    statusBox.textContent = 'Tempel authorization code dulu.';
+function qs(name) { return new URLSearchParams(window.location.search).get(name); }
+
+function renderStatusPill(state) {
+  var host = document.getElementById('statusPillHost');
+  var map = {
+    connected: ['connected', 'Connected'],
+    legacy_not_migrated: ['warn', 'Legacy Config Detected'],
+    credentials_saved: ['warn', 'Setup In Progress'],
+    key_mismatch: ['error', 'Reauthorization Required'],
+    not_connected: ['off', 'Not Connected'],
+  };
+  var v = map[state] || ['off', 'Not Connected'];
+  host.innerHTML = '<span class="status-pill ' + v[0] + '"><span class="dot"></span>' + v[1] + '</span>';
+}
+
+function renderBanner(data) {
+  var host = document.getElementById('bannerHost');
+  if (data.key_mismatch) {
+    host.innerHTML =
+      '<div class="banner">' + ICONS.warn +
+      '<div class="txt"><b>Reauthorization required</b>' +
+      'The server\'s encryption key changed since Dropbox was last connected (usually because FLASK_SECRET_KEY isn\'t set to a fixed value). Please reconnect Dropbox below.' +
+      '</div></div>';
     return;
   }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Memproses…';
-
-  fetch('/ai-video/dropbox-oauth/exchange', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({code: code})
-  })
-  .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
-  .then(function(res) {
-    btn.disabled = false;
-    btn.textContent = 'Generate Refresh Token';
-    if (res.status >= 400 || res.data.error) {
-      statusBox.className = 'status bad';
-      statusBox.textContent = res.data.error || 'Exchange gagal, coba lagi.';
-      return;
-    }
-    statusBox.className = 'status ok';
-    statusBox.textContent = 'Berhasil! Copy refresh_token di bawah ke Railway env DROPBOX_REFRESH_TOKEN.';
-    document.getElementById('refreshTokenVal').textContent = res.data.refresh_token || '';
-    document.getElementById('accessTokenVal').textContent = res.data.access_token || '';
-    var meta = [];
-    if (res.data.expires_in) meta.push('access_token expires in ' + res.data.expires_in + 's (tapi server auto-refresh, tidak perlu disimpan)');
-    if (res.data.account_id) meta.push('account_id: ' + res.data.account_id);
-    document.getElementById('metaHint').textContent = meta.join(' · ');
-    resultArea.style.display = 'block';
-  })
-  .catch(function() {
-    btn.disabled = false;
-    btn.textContent = 'Generate Refresh Token';
-    statusBox.className = 'status bad';
-    statusBox.textContent = 'Request gagal — cek koneksi internet kamu lalu coba lagi.';
-  });
+  if (data.legacy_import_available) {
+    host.innerHTML =
+      '<div class="banner">' + ICONS.warn +
+      '<div class="txt"><b>Existing Dropbox configuration detected</b>' +
+      'DROPBOX_APP_KEY / DROPBOX_APP_SECRET / DROPBOX_REFRESH_TOKEN found in environment variables.' +
+      '<div class="btn-row"><button class="btn btn-secondary" id="btnImportLegacy" style="min-height:50px;font-size:16px">Import configuration</button></div>' +
+      '</div></div>';
+    document.getElementById('btnImportLegacy').onclick = function() { importLegacy(this); };
+  } else {
+    host.innerHTML = '';
+  }
 }
+
+function renderMain() {
+  var host = document.getElementById('mainHost');
+  if (STATE.state === 'connected') {
+    host.innerHTML = connectedCardHTML(STATE);
+    wireConnectedCard();
+  } else {
+    host.innerHTML = notConnectedCardHTML();
+    document.getElementById('btnConfigure').onclick = function() { openWizard(); };
+  }
+}
+
+function notConnectedCardHTML() {
+  return (
+    '<div class="card">' +
+      '<div class="card-icon-row"><div class="card-icon">' + ICONS.cloud + '</div>' +
+      '<div><div class="card-title">Dropbox</div><div class="card-desc">Cloud Storage Integration</div></div></div>' +
+      '<div class="helper-text">Connect Dropbox tanpa copy-paste token manual, tanpa edit Railway.</div>' +
+      '<button class="btn btn-primary" id="btnConfigure">Configure Dropbox</button>' +
+    '</div>'
+  );
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  try { return new Date(ts * 1000).toLocaleString(); } catch (e) { return '—'; }
+}
+
+function connectedCardHTML(d) {
+  return (
+    '<div class="card">' +
+      '<div class="card-icon-row"><div class="card-icon">' + ICONS.cloud + '</div>' +
+      '<div><div class="card-title">Dropbox</div><div class="card-desc">Connected &amp; auto-refreshing</div></div></div>' +
+      '<div class="info-list">' +
+        '<div class="info-row"><span class="k">Account</span><span class="v">' + (d.account_name || '—') + '</span></div>' +
+        '<div class="info-row"><span class="k">Account ID</span><span class="v mono">' + (d.account_id_masked || '—') + '</span></div>' +
+        '<div class="info-row"><span class="k">Auto Refresh</span><span class="v ok">Enabled</span></div>' +
+        '<div class="info-row"><span class="k">Access Token</span><span class="v ok">Healthy</span></div>' +
+        '<div class="info-row"><span class="k">Last Refresh</span><span class="v">' + fmtTime(d.last_refresh_at) + '</span></div>' +
+        '<div class="info-row"><span class="k">Last Connection Test</span><span class="v">' + fmtTime(d.last_test_at) + '</span></div>' +
+        '<div class="info-row"><span class="k">Scopes</span><span class="v mono" style="text-align:right;max-width:60%">' + (d.scope || '—') + '</span></div>' +
+      '</div>' +
+      '<button class="btn btn-secondary" id="btnTest">Test Connection</button>' +
+      '<div class="btn-row">' +
+        '<button class="btn btn-secondary" id="btnReconnect">Reconnect</button>' +
+        '<button class="btn btn-danger" id="btnDisconnect">Disconnect</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function setBtnLoading(btn, loadingText, originalText) {
+  btn.disabled = true;
+  btn.dataset.orig = originalText;
+  btn.innerHTML = '<span class="spinner"></span>' + loadingText;
+}
+function resetBtn(btn) { btn.disabled = false; btn.textContent = btn.dataset.orig; }
+
+function wireConnectedCard() {
+  document.getElementById('btnTest').onclick = function() {
+    var btn = this;
+    setBtnLoading(btn, 'Testing…', 'Test Connection');
+    fetch('/api/aivideo/dropbox/test', { method: 'POST' })
+      .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+      .then(function(res) {
+        resetBtn(btn);
+        if (res.data.ok) { toast('success', 'Connection test successful'); loadStatus(); }
+        else {
+          var code = (res.data.error || {}).code;
+          if (code === 'DROPBOX_REAUTH_REQUIRED') toast('warning', 'Reauthorization required — please reconnect.');
+          else toast('error', (res.data.error || {}).message || 'Connection failed');
+          loadStatus();
+        }
+      })
+      .catch(function() { resetBtn(btn); toast('error', 'Connection failed'); });
+  };
+  document.getElementById('btnReconnect').onclick = function() { openWizard(true); };
+  document.getElementById('btnDisconnect').onclick = function() { document.getElementById('disconnectOverlay').classList.add('open'); };
+}
+
+document.getElementById('btnCancelDisconnect').onclick = function() {
+  document.getElementById('disconnectOverlay').classList.remove('open');
+};
+function doDisconnect(mode, btn) {
+  setBtnLoading(btn, 'Disconnecting…', btn.textContent);
+  fetch('/api/aivideo/dropbox/disconnect', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: mode }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      document.getElementById('disconnectOverlay').classList.remove('open');
+      resetBtn(btn);
+      if (res.ok) { toast('success', 'Dropbox disconnected'); loadStatus(); }
+      else { toast('error', 'Disconnect failed'); }
+    })
+    .catch(function() { resetBtn(btn); toast('error', 'Disconnect failed'); });
+}
+document.getElementById('btnDisconnectAccount').onclick = function() { doDisconnect('tokens', this); };
+document.getElementById('btnRemoveConfig').onclick = function() { doDisconnect('all', this); };
+
+function importLegacy(btn) {
+  setBtnLoading(btn, 'Importing…', 'Import existing configuration');
+  fetch('/api/aivideo/dropbox/import-legacy', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      resetBtn(btn);
+      if (res.ok) { toast('success', 'Existing configuration imported'); loadStatus(); }
+      else { toast('error', (res.error || {}).message || 'Import failed'); }
+    })
+    .catch(function() { resetBtn(btn); toast('error', 'Import failed'); });
+}
+
+function loadStatus() {
+  fetch('/api/aivideo/dropbox/status')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.ok) { toast('error', 'Failed to load connection status'); return; }
+      STATE = res.data;
+      renderStatusPill(STATE.state);
+      renderBanner(STATE);
+      renderMain();
+    })
+    .catch(function() { toast('error', 'Connection failed — check your internet connection.'); });
+}
+
+function openWizard() {
+  wizardStep = (STATE && STATE.has_app_credentials) ? 2 : 1;
+  document.getElementById('mainHost').innerHTML = wizardHTML();
+  goToStep(wizardStep);
+  wireWizard();
+}
+
+function step(n, label) { return '<div class="step" data-step="' + n + '"><div class="num">' + n + '</div><div class="lbl">' + label + '</div></div>'; }
+function line() { return '<div class="line"></div>'; }
+
+function wizardHTML() {
+  return (
+    '<div class="card">' +
+      '<div class="progress" id="wizProgress">' +
+        step('1', 'Credentials') + line() + step('2', 'Redirect URI') + line() + step('3', 'Authorize') + line() + step('4', 'Connected') +
+      '</div>' +
+      '<div id="wizStep1">' +
+        '<div class="card-title mt-6" style="margin-bottom:4px">Application Credentials</div>' +
+        '<div class="helper-text">Isi App Key &amp; Secret dari Dropbox App Console.</div>' +
+        '<div class="field"><label for="fAppKey">App Key</label>' +
+          '<input type="text" class="plain" id="fAppKey" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 8vak3xy2z1a2b3c"></div>' +
+        '<div class="field"><label for="fAppSecret">App Secret</label>' +
+          '<div class="input-wrap"><input type="password" id="fAppSecret" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="App secret">' +
+          '<button type="button" class="input-icon-btn" id="toggleSecret" aria-label="Show secret">' + ICONS.eye + '</button></div></div>' +
+        '<button class="btn btn-primary" id="btnSaveCreds">Save &amp; Continue</button>' +
+      '</div>' +
+      '<div id="wizStep2" class="hidden">' +
+        '<div class="card-title mt-6" style="margin-bottom:4px">Configure Redirect URI</div>' +
+        '<div class="helper-text">Tambahkan URL ini ke Dropbox App Console.</div>' +
+        '<div class="code-box" id="redirectUriBox">…</div>' +
+        '<div class="btn-row" style="margin-top:0;margin-bottom:18px"><button class="btn btn-secondary" id="btnCopyUri">' + ICONS.copy + ' Copy Redirect URI</button></div>' +
+        '<div class="helper-text">App Console → Settings → OAuth 2 → Redirect URIs</div>' +
+        '<button class="btn btn-primary" id="btnUriAdded">I&#39;ve added the redirect URI</button>' +
+      '</div>' +
+      '<div id="wizStep3" class="hidden">' +
+        '<div class="card-title mt-6" style="margin-bottom:4px">Connect Your Dropbox</div>' +
+        '<div class="helper-text">Izinkan akses ke akun Dropbox kamu.</div>' +
+        '<button class="btn btn-primary" id="btnConnectDropbox">Connect Dropbox</button>' +
+      '</div>' +
+      '<div id="wizStep4" class="hidden text-center">' +
+        '<div class="success-icon"><svg viewBox="0 0 52 52" fill="none">' +
+          '<circle class="ring" cx="26" cy="26" r="23" stroke="var(--success)" stroke-width="3"/>' +
+          '<path class="check" d="M15 27l7 7 15-15" stroke="var(--success)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg></div>' +
+        '<div class="card-title" style="margin-bottom:6px">Dropbox Connected</div>' +
+        '<div class="helper-text">Auto-refresh token aktif — nggak perlu setting lagi.</div>' +
+        '<div class="info-list" id="step4Info" style="text-align:left"></div>' +
+        '<button class="btn btn-primary" id="btnWizardDone">Done</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function goToStep(n) {
+  wizardStep = n;
+  for (var i = 1; i <= 4; i++) document.getElementById('wizStep' + i).classList.toggle('hidden', i !== n);
+  var steps = document.querySelectorAll('#wizProgress .step');
+  var lines = document.querySelectorAll('#wizProgress .line');
+  steps.forEach(function(el) {
+    var s = parseInt(el.dataset.step, 10);
+    el.classList.toggle('done', s < n);
+    el.classList.toggle('active', s === n);
+  });
+  lines.forEach(function(el, idx) { el.classList.toggle('done', idx + 1 < n); });
+}
+
+function wireWizard() {
+  if (wizardStep === 2) prefillRedirectUri();
+  document.getElementById('toggleSecret').onclick = function() {
+    var input = document.getElementById('fAppSecret');
+    var showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    this.innerHTML = showing ? ICONS.eye : ICONS.eyeOff;
+  };
+  document.getElementById('btnSaveCreds').onclick = function() {
+    var btn = this;
+    var appKey = document.getElementById('fAppKey').value.trim();
+    var appSecret = document.getElementById('fAppSecret').value.trim();
+    if (!appKey || !appSecret) { toast('warning', 'App Key and App Secret are required.'); return; }
+    setBtnLoading(btn, 'Saving…', 'Save & Continue');
+    fetch('/api/aivideo/dropbox/credentials', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_key: appKey, app_secret: appSecret }),
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        resetBtn(btn);
+        if (res.ok) {
+          toast('success', 'Configuration saved');
+          if (STATE) STATE.redirect_uri = (res.data && res.data.redirect_uri) || STATE.redirect_uri;
+          goToStep(2);
+          prefillRedirectUri();
+        } else {
+          toast('error', (res.error || {}).message || 'Failed to save credentials');
+        }
+      })
+      .catch(function() { resetBtn(btn); toast('error', 'Failed to save credentials'); });
+  };
+  document.getElementById('btnCopyUri').onclick = function() {
+    var text = document.getElementById('redirectUriBox').textContent;
+    navigator.clipboard.writeText(text).then(function() { toast('info', 'Redirect URI copied'); })
+      .catch(function() { toast('error', 'Copy failed — select and copy manually.'); });
+  };
+  document.getElementById('btnUriAdded').onclick = function() { goToStep(3); };
+  document.getElementById('btnConnectDropbox').onclick = function() {
+    var btn = this;
+    setBtnLoading(btn, 'Redirecting to Dropbox…', 'Connect Dropbox');
+    fetch('/api/aivideo/dropbox/authorize', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        if (res.ok) { window.location.href = res.data.authorize_url; }
+        else { resetBtn(btn); toast('error', (res.error || {}).message || 'Failed to start authorization'); }
+      })
+      .catch(function() { resetBtn(btn); toast('error', 'Failed to start authorization'); });
+  };
+}
+
+function prefillRedirectUri() {
+  document.getElementById('redirectUriBox').textContent = (STATE && STATE.redirect_uri) || '';
+}
+
+function handleQueryParams() {
+  var connected = qs('connected');
+  var error = qs('dropbox_error');
+  var url = new URL(window.location.href);
+  if (connected) { url.searchParams.delete('connected'); window.history.replaceState({}, '', url.toString()); }
+  if (error) {
+    url.searchParams.delete('dropbox_error');
+    window.history.replaceState({}, '', url.toString());
+    var messages = {
+      state_mismatch: 'Security check failed (state mismatch) — please try connecting again.',
+      state_expired: 'Authorization session expired — please try connecting again.',
+      missing_code: 'Dropbox did not return an authorization code — please try again.',
+      exchange_failed: 'Could not complete the Dropbox connection — please try again.',
+      access_denied: 'Dropbox authorization was cancelled.',
+    };
+    toast('error', messages[error] || 'Dropbox connection failed — please try again.');
+  }
+  return { connected: !!connected };
+}
+
+(function init() {
+  var q = handleQueryParams();
+  fetch('/api/aivideo/dropbox/status')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.ok) { toast('error', 'Failed to load connection status'); return; }
+      STATE = res.data;
+      renderStatusPill(STATE.state);
+      renderBanner(STATE);
+      if (q.connected && STATE.state === 'connected') {
+        document.getElementById('mainHost').innerHTML = wizardHTML();
+        goToStep(4);
+        document.getElementById('step4Info').innerHTML =
+          '<div class="info-row"><span class="k">Account</span><span class="v">' + (STATE.account_name || '—') + '</span></div>' +
+          '<div class="info-row"><span class="k">Auto Refresh</span><span class="v ok">Enabled</span></div>' +
+          '<div class="info-row"><span class="k">Token Status</span><span class="v ok">Healthy</span></div>';
+        document.getElementById('btnWizardDone').onclick = function() { renderMain(); };
+      } else {
+        renderMain();
+      }
+    })
+    .catch(function() { toast('error', 'Connection failed — check your internet connection.'); });
+})();
 </script>
 </body>
 </html>
