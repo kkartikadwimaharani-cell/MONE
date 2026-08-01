@@ -262,22 +262,27 @@ button{background:none;border:none;cursor:pointer}
    full-width segmented row. */
 .panel-top-row{display:flex;flex-direction:row;align-items:center;gap:10px}
 .model-select{
-  display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;width:auto;flex:0 1 auto;max-width:62%;
+  display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;width:auto;flex:0 0 auto;max-width:100%;
   background:var(--btn);border:1px solid var(--border);transition:border-color .15s;min-width:0;
 }
 .model-select:active{border-color:var(--border2)}
 .model-select-icon{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#7a0014);flex-shrink:0;display:grid;place-items:center;box-shadow:0 0 12px rgba(255,32,64,.35)}
 .model-select-icon svg{width:14px;height:14px}
-.model-select-txt{font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-select-txt{font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0}
 .model-select-tier{margin-left:2px;padding:3px 9px;border-radius:999px;background:var(--accent-dim);color:var(--accent-hover);font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
-.model-select-spacer{flex:1;min-width:4px}
+.model-select-spacer{flex:0 0 4px;min-width:4px}
 .model-select-car{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text-dim);transition:transform .18s;flex-shrink:0}
 .model-select.open .model-select-car{transform:rotate(180deg)}
 
 .panel-top-divider{width:1px;align-self:stretch;background:var(--border);flex-shrink:0}
 
-.elements-tabs{display:flex;align-items:center;gap:6px;width:auto;flex:0 0 auto;background:transparent;border:none;padding:0}
-.el-tab{flex:0 0 auto;padding:7px 14px;border-radius:999px;font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s;text-align:center}
+/* Elements/Frames is the side that compresses — the model name (incl.
+   "SEEDANCE 2.5") must never truncate to "SEEDANCE…", so it's given
+   flex:0 0 auto (natural size, never forced smaller) above, while these
+   tabs absorb whatever space pressure that creates, shrinking down to
+   compact-but-still-tappable before the name would ever have to give. */
+.elements-tabs{display:flex;align-items:center;gap:4px;width:auto;flex:1 1 auto;min-width:0;justify-content:flex-end;background:transparent;border:none;padding:0}
+.el-tab{flex:0 0 auto;padding:7px 10px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s;text-align:center}
 .el-tab.active{background:var(--accent);color:#fff}
 
 /* ---- ELEMENTS TAB CONTENT ---- */
@@ -360,11 +365,71 @@ button{background:none;border:none;cursor:pointer}
 .mc-meta-chip .mc-meta-v{font-size:14px;font-weight:700;color:var(--text)}
 .mc-meta-chip.mc-resized .mc-meta-v{color:#ff3c5a}
 .chip.mc-locked{position:relative;opacity:.6;pointer-events:none}
+.duration-card.mc-locked{opacity:.55;pointer-events:none}
+.duration-card.mc-locked .duration-slider{cursor:not-allowed}
 .chip.mc-locked::after{content:'';width:11px;height:11px;margin-left:4px;display:inline-block;vertical-align:-1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center/contain no-repeat}
 
 /* Qty + Generate */
 .action-row{display:flex;align-items:center;gap:10px}
 .qty-stepper{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:14px;background:var(--btn);border:1px solid var(--border);flex-shrink:0}
+
+/* ═══ Duration — premium drag slider (replaces the old chip+sheet) ═══ */
+.duration-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:14px 16px 12px;display:flex;flex-direction:column;gap:2px;
+}
+.duration-card-head{display:flex;align-items:center;gap:8px}
+.duration-card-title{font-family:var(--disp);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:.01em}
+.duration-card-state{
+  font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.06em;
+  color:var(--text-faint);background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:999px;padding:2px 8px;text-transform:uppercase;
+}
+.duration-card-state.long{color:var(--accent-hover);background:var(--accent-dim);border-color:rgba(255,32,64,.35)}
+.duration-card-val{margin-left:auto;display:flex;align-items:baseline;gap:5px;font-family:var(--mono);font-weight:700}
+.duration-card-val #durationLabel{font-size:1.02rem;color:var(--text)}
+.duration-card-val-sub{font-size:.66rem;color:var(--text-faint)}
+.duration-slider-wrap{position:relative;padding:14px 0 4px;touch-action:pan-y}
+.duration-track{position:relative;height:4px;border-radius:99px;background:var(--btn);overflow:visible}
+.duration-track-fill{position:absolute;left:0;top:0;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-hover),var(--accent));width:0%;pointer-events:none}
+.duration-ticks{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.duration-ticks span{width:2px;height:2px;border-radius:50%;background:rgba(255,255,255,.22)}
+.duration-slider{
+  position:absolute;left:0;top:0;width:100%;margin:0;height:32px;top:6px;
+  -webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;
+}
+.duration-slider::-webkit-slider-runnable-track{height:32px;background:transparent}
+.duration-slider::-moz-range-track{height:32px;background:transparent;border:none}
+.duration-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:6px;border-radius:50%;
+  background:#fff;border:3px solid var(--accent);box-shadow:0 0 0 4px rgba(255,32,64,.16),0 2px 8px rgba(0,0,0,.4);
+  transition:transform .12s,box-shadow .12s;cursor:grab;
+}
+.duration-slider::-moz-range-thumb{
+  width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--accent);
+  box-shadow:0 0 0 4px rgba(255,32,64,.16),0 2px 8px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;cursor:grab;
+}
+.duration-slider:active::-webkit-slider-thumb,.duration-card.dragging .duration-slider::-webkit-slider-thumb{
+  transform:scale(1.18);box-shadow:0 0 0 7px rgba(255,32,64,.22),0 3px 10px rgba(0,0,0,.45);cursor:grabbing;
+}
+.duration-slider:active::-moz-range-thumb,.duration-card.dragging .duration-slider::-moz-range-thumb{
+  transform:scale(1.18);box-shadow:0 0 0 7px rgba(255,32,64,.22),0 3px 10px rgba(0,0,0,.45);cursor:grabbing;
+}
+.duration-slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(255,32,64,.35),0 2px 8px rgba(0,0,0,.4)}
+.duration-endpoints{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.64rem;color:var(--text-faint);padding:0 1px}
+.duration-bubble{
+  position:absolute;top:-30px;left:0;transform:translateX(-50%) scale(.85);
+  background:#1c1c1c;border:1px solid rgba(255,60,90,.4);border-radius:9px;padding:4px 9px;
+  font-family:var(--mono);font-weight:700;font-size:.68rem;color:#fff;text-align:center;line-height:1.15;
+  white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+  transition:opacity .14s,transform .14s;z-index:2;
+}
+.duration-bubble::after{
+  content:"";position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
+  width:8px;height:8px;background:#1c1c1c;border-right:1px solid rgba(255,60,90,.4);border-bottom:1px solid rgba(255,60,90,.4);
+  transform:translateX(-50%) rotate(45deg);
+}
+.duration-card.dragging .duration-bubble{opacity:1;transform:translateX(-50%) scale(1)}
 .qty-btn{width:18px;height:18px;display:grid;place-items:center;font-weight:800;font-size:1rem;color:var(--text-dim);user-select:none}
 .qty-val{font-family:var(--mono);font-size:.84rem;font-weight:700;min-width:30px;text-align:center}
 
@@ -397,7 +462,7 @@ button{background:none;border:none;cursor:pointer}
   50%{box-shadow:0 0 40px rgba(255,32,64,.44),0 10px 30px rgba(0,0,0,.4)}
 }
 .gen-btn:active:not(:disabled){transform:scale(.98)}
-.gen-btn:disabled{opacity:.5;animation:none}
+.gen-btn:disabled{opacity:.5;animation:none;cursor:not-allowed}
 .gen-btn.loading .gen-txt::after{content:'';display:inline-block;width:13px;height:13px;margin-left:6px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -657,7 +722,8 @@ input[type=file].hidden-input{display:none}
 .mp-title span{color:var(--accent-hover)}
 .mp-sub{font-size:.72rem;color:var(--text-faint);margin-bottom:10px;line-height:1.4}
 .mp-empty{font-size:.8rem;color:var(--text-faint);line-height:1.5;padding:10px 4px}
-.mp-item{display:flex;align-items:center;gap:12px;height:60px;padding:0 10px;border-radius:14px;background:rgba(255,255,255,.05);transition:background .12s;margin-bottom:8px}
+.mp-refs-list{max-height:min(46vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;margin:0 -4px;padding:0 4px}
+.mp-item{display:flex;align-items:center;gap:12px;height:60px;padding:0 10px;border-radius:14px;background:rgba(255,255,255,.05);transition:background .12s;margin-bottom:8px;flex-shrink:0}
 .mp-item:last-child{margin-bottom:0}
 .mp-item:active{background:rgba(255,255,255,.09)}
 .mp-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
@@ -1123,7 +1189,8 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .dock-feature-card,.dock-list-row{position:relative;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#202020,#151515);box-shadow:0 1px 0 rgba(255,255,255,.045) inset;cursor:pointer;overflow:hidden;transition:transform .16s var(--ease-pop),border-color .18s ease,background .18s ease,box-shadow .22s ease}
 .dock-feature-card{border-radius:20px;padding:13px;min-height:116px;display:flex;flex-direction:column;gap:9px}.dock-list-row{border-radius:14px;min-height:auto;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
 .dock-feature-card:hover,.dock-list-row:hover{transform:translateY(-1px);border-color:rgba(255,60,90,.32)}.dock-feature-card.selected,.dock-list-row.selected{background:linear-gradient(90deg,rgba(255,32,64,.20),rgba(255,32,64,.055));border-color:rgba(255,32,64,.55);box-shadow:0 10px 26px -18px rgba(255,32,64,.75),0 0 0 1px rgba(255,32,64,.18) inset}
-.dock-icon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.72rem;box-shadow:0 8px 16px -10px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;font-size:.66rem;line-height:1.18}.dock-desc{font-size:.68rem;color:var(--text-faint);line-height:1.42}.dock-arrow{display:none}.dock-list-main{min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px}.dock-list-sub{font-size:.54rem;color:var(--text-faint);font-weight:700}.model-dock.show .dock-feature-card,.model-dock.show .dock-list-row{animation:dockRowIn .34s var(--ease-dream) both}.model-dock.show .dock-list-row:nth-child(2),.model-dock.show .dock-feature-card:nth-child(2){animation-delay:.03s}.model-dock.show .dock-list-row:nth-child(3),.model-dock.show .dock-feature-card:nth-child(3){animation-delay:.06s}.model-dock.show .dock-list-row:nth-child(4){animation-delay:.09s}.model-dock.show .dock-list-row:nth-child(5){animation-delay:.12s}.model-dock.show .dock-list-row:nth-child(n+6){animation-delay:.15s}
+.dock-icon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.72rem;box-shadow:0 8px 16px -10px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;font-size:.66rem;line-height:1.18}
+.dock-badge{display:inline-block;margin-left:4px;padding:1px 5px;border-radius:5px;background:var(--accent);color:#fff;font-size:.5rem;font-weight:800;letter-spacing:.04em;vertical-align:middle}.dock-desc{font-size:.68rem;color:var(--text-faint);line-height:1.42}.dock-arrow{display:none}.dock-list-main{min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px}.dock-list-sub{font-size:.54rem;color:var(--text-faint);font-weight:700}.model-dock.show .dock-feature-card,.model-dock.show .dock-list-row{animation:dockRowIn .34s var(--ease-dream) both}.model-dock.show .dock-list-row:nth-child(2),.model-dock.show .dock-feature-card:nth-child(2){animation-delay:.03s}.model-dock.show .dock-list-row:nth-child(3),.model-dock.show .dock-feature-card:nth-child(3){animation-delay:.06s}.model-dock.show .dock-list-row:nth-child(4){animation-delay:.09s}.model-dock.show .dock-list-row:nth-child(5){animation-delay:.12s}.model-dock.show .dock-list-row:nth-child(n+6){animation-delay:.15s}
 @keyframes dockRowIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 .prompt-overlay{z-index:150;background:linear-gradient(180deg,#0b0b0b,#080808);transition:opacity .26s ease,transform .34s var(--ease-dream)}.prompt-overlay.show{animation:promptLift .34s var(--ease-dream) both}@keyframes promptLift{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -1289,6 +1356,10 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .ref-thumb.uploading::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
 /* Rail ikon vertikal + kotak-kotak upload + kotak PROMPT — SATU baris utuh,
    persis susunan referensi: rail | Image | Video | Audio | Prompt. */
+.ref-total-header{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px 8px;font-family:var(--disp)}
+.ref-total-header>span:first-child{font-size:.78rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
+.ref-total-header>span:last-child{font-family:var(--mono);font-size:.76rem;font-weight:700;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.ref-total-header.full>span:last-child{color:var(--accent-hover)}
 .media-row{display:flex;gap:8px;align-items:stretch;margin-top:2px}
 .type-rail{display:flex;flex-direction:column;gap:6px;flex-shrink:0;justify-content:flex-start}
 .rail-btn{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:grid;place-items:center;color:var(--text-dim);transition:background .15s,color .15s}
@@ -1598,6 +1669,10 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       <div class="tab-content active" id="elementsTab">
         <div class="assets-strip" id="assetsStrip"></div>
 
+        <div class="ref-total-header" id="refTotalHeader" style="display:none">
+          <span>References</span>
+          <span id="refTotalCount">0 / 50</span>
+        </div>
         <div class="media-row" id="mediaRow">
           <div class="type-rail" id="typeRail">
             <div class="rail-pill" id="railPill"></div>
@@ -1685,6 +1760,28 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         \u26a0 Video referensi lebih dari 15 detik — Motion Control cuma mendukung maks 15 detik, jadi hasilnya akan dipotong ke 15 detik pertama.
       </div>
 
+      <div class="duration-card" id="durationChip">
+        <div class="duration-card-head">
+          <span class="duration-card-title">Duration</span>
+          <span class="duration-card-state" id="durationStateBadge">STANDARD</span>
+          <span class="duration-card-val">
+            <span id="durationLabel">5s</span><span class="duration-card-val-sub" id="durationLabelSub"></span>
+          </span>
+        </div>
+        <div class="duration-slider-wrap">
+          <div class="duration-bubble" id="durationBubble"><span id="durationBubbleTxt">5s</span></div>
+          <div class="duration-track">
+            <div class="duration-track-fill" id="durationTrackFill"></div>
+            <div class="duration-ticks" id="durationTicks"></div>
+          </div>
+          <input type="range" class="duration-slider" id="durationSlider" min="0" max="6" step="1" value="0" aria-label="Duration">
+        </div>
+        <div class="duration-endpoints">
+          <span id="durationMinLabel">4s</span>
+          <span id="durationMaxLabel">15s</span>
+        </div>
+      </div>
+
       <div class="settings-row">
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -1692,7 +1789,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
         <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
         <div class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
-        <div class="chip" id="durationChip" onclick="openSheet('duration',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="durationLabel">5s</span><span class="chip-car"></span></div>
         <!-- Tier (MINI/FAST/PRO etc) as an inline segmented toggle, right after
              ratio/resolution/duration — matches the reference's "Fast | Pro"
              segmented control placement exactly, instead of a chip that opens
@@ -2136,6 +2232,10 @@ var media = { image: [], video: [], audio: [] };
 var frames = { first: null, last: null };
 var maxCounts = { image: 9, video: 3, audio: 3 };
 var currentUploadType = 'image';
+// Seedance 2.0 and 2.5 share every capability (bitrate control, mute-audio,
+// resolution-per-tier default, etc.) — this is the single place that
+// defines "is this a Seedance model" so both stay in sync automatically.
+function isSeedanceFamily(key) { return key === 'seedance' || key === 'seedance25'; }
 var modelFamilies = {
   video: [
     {
@@ -2147,6 +2247,22 @@ var modelFamilies = {
         { id: 'FAST', label: 'FAST' },
         { id: 'PRO', label: 'PRO' }
       ]
+    },
+    {
+      key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
+      subtitle: '30s \u2022 Multimodal',
+      desc: 'ByteDance — klip native sampai 30 detik, 4K, dan hingga 50 referensi multimodal (30 gambar / 10 video / 10 audio) sekaligus.',
+      // ByteDance's own launch spec (Volcano Engine FORCE, 23 Jun 2026): up
+      // to 50 multimodal references per generation, commonly broken down as
+      // ~30 images + 10 video clips + 10 audio clips, native single-pass
+      // duration up to 30s, output up to 4K. Not on Segmind (or any backend
+      // this app talks to) yet, and no FAST/PRO-style tier split has been
+      // confirmed — so `qualities` stays empty (no invented tier names) and
+      // `available:false` keeps Generate disabled until that's real.
+      available: false,
+      caps: { image: 30, video: 10, audio: 10, combinedCap: 50, frames: true, elements: true, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
+      durationSteps: [5, 10, 15, 20, 25, 30],
+      qualities: []
     },
     {
       key: 'kling', brand: 'KLING', name: 'KLING 3.0', featured: true,
@@ -2175,6 +2291,36 @@ var modelFamilies = {
         { id: 'STD', label: 'STD' },
         { id: 'PRO', label: 'PRO' }
       ]
+    },
+    // Placeholders below: verified directly against segmind.com/models
+    // live (fetched, not from memory/secondhand articles), each currently
+    // listed as "1mo ago" — genuinely current. Workspace (references/
+    // duration/resolution/tiers) hasn't been built out yet — name + card +
+    // disabled "COMING SOON" Generate only, same pattern as Seedance 2.5.
+    // No invented pricing/params.
+    {
+      key: 'happyhorse', brand: 'ALIBABA', name: 'HAPPYHORSE 1.1', featured: true, available: false,
+      desc: 'Generate cinematic video with synchronized native audio and multilingual lip-sync from text, an image, or reference images.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
+      qualities: []
+    },
+    {
+      key: 'lumaray32', brand: 'LUMA', name: 'LUMA RAY 3.2', featured: true, available: false,
+      desc: 'Cinematic text-to-video and image-to-video clips up to 1080p.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
+      qualities: []
+    },
+    {
+      key: 'grokvideo', brand: 'XAI', name: 'GROK IMAGINE VIDEO', featured: true, available: false,
+      desc: 'Text-to-video and image-to-video with native synchronized audio, by xAI.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
+      qualities: []
+    },
+    {
+      key: 'hailuo2', brand: 'MINIMAX', name: 'MINIMAX HAILUO 2', featured: true, available: false,
+      desc: 'Ranked #2 globally on the Artificial Analysis benchmark — 1080P cinematic video up to 10s at 24-30 FPS, with physics simulation and body tracking.',
+      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
+      qualities: []
     }
   ],
   image: [
@@ -2512,6 +2658,84 @@ var ratioDesc = {'1:1':'Square','3:4':'Portrait','4:3':'Standard','9:16':'Vertic
 var resDesc   = {'480p':'Draft · fastest','720p':'HD · balanced','1080p':'Full HD · sharp','4K':'Ultra HD · premium'};
 function durDesc(n){ return n<=5?'Short clip':n<=9?'Standard':'Extended'; }
 
+// ── Duration — premium drag slider ──────────────────────────────────
+// Steps always come from sheetDefs.duration.options (already rebuilt per
+// model/tier by applyModelCapabilities), so this never invents a duration
+// the backend doesn't support — it just presents whatever that list is as
+// a draggable index-based slider instead of a wheel of buttons.
+function durationHuman(sec) {
+  if (sec < 60) return '';
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+function renderDurationSlider() {
+  var card = document.getElementById('durationChip');
+  var slider = document.getElementById('durationSlider');
+  if (!card || !slider || !sheetDefs.duration) return;
+  var steps = sheetDefs.duration.options.map(function(o){ return parseInt(o, 10); });
+  if (!steps.length) return;
+  var idx = steps.indexOf(selectedDuration);
+  if (idx === -1) { idx = steps.length - 1; selectedDuration = steps[idx]; }
+  slider.min = 0;
+  slider.max = steps.length - 1;
+  slider.step = 1;
+  slider.value = idx;
+  slider.dataset.steps = steps.join(',');
+  document.getElementById('durationMinLabel').textContent = steps[0] + 's';
+  document.getElementById('durationMaxLabel').textContent = steps[steps.length - 1] + 's';
+  // Only a handful of models will ever cross into genuinely long-form
+  // territory — this stays config-driven (family.longVideoThreshold) so it
+  // activates automatically for a future model instead of being guessed.
+  var threshold = selectedFamily && selectedFamily.longVideoThreshold;
+  var isLong = threshold != null && selectedDuration >= threshold;
+  var stateBadge = document.getElementById('durationStateBadge');
+  stateBadge.textContent = isLong ? 'LONG VIDEO \u2022 BETA' : 'STANDARD';
+  stateBadge.classList.toggle('long', isLong);
+  _paintDurationUI(idx, steps);
+}
+function _paintDurationUI(idx, steps) {
+  var pct = steps.length > 1 ? (idx / (steps.length - 1)) * 100 : 0;
+  var sec = steps[idx];
+  var human = durationHuman(sec);
+  document.getElementById('durationTrackFill').style.width = pct + '%';
+  document.getElementById('durationLabel').textContent = sec + 's';
+  document.getElementById('durationLabelSub').textContent = human;
+  var bubble = document.getElementById('durationBubble');
+  bubble.style.left = pct + '%';
+  document.getElementById('durationBubbleTxt').textContent = human ? sec + 's \u00b7 ' + human : sec + 's';
+}
+(function initDurationSliderEvents() {
+  var slider = document.getElementById('durationSlider');
+  var card = document.getElementById('durationChip');
+  if (!slider || !card) return;
+  function apply(live) {
+    var steps = slider.dataset.steps.split(',').map(Number);
+    var idx = parseInt(slider.value, 10);
+    _paintDurationUI(idx, steps);
+    var threshold = selectedFamily && selectedFamily.longVideoThreshold;
+    var isLong = threshold != null && steps[idx] >= threshold;
+    var stateBadge = document.getElementById('durationStateBadge');
+    stateBadge.textContent = isLong ? 'LONG VIDEO \u2022 BETA' : 'STANDARD';
+    stateBadge.classList.toggle('long', isLong);
+    if (!live) {
+      selectedDuration = steps[idx];
+      updateCreditEstimate();
+    }
+  }
+  slider.addEventListener('input', function() { apply(true); });
+  slider.addEventListener('change', function() { apply(false); });
+  ['pointerdown', 'touchstart'].forEach(function(ev) {
+    slider.addEventListener(ev, function() { card.classList.add('dragging'); }, {passive: true});
+  });
+  ['pointerup', 'touchend', 'touchcancel'].forEach(function(ev) {
+    slider.addEventListener(ev, function() {
+      card.classList.remove('dragging');
+      selectedDuration = slider.dataset.steps.split(',').map(Number)[parseInt(slider.value, 10)];
+      updateCreditEstimate();
+    }, {passive: true});
+  });
+})();
+
 var sheetDefs = {
   ratio: {
     title: 'Aspect Ratio',
@@ -2531,7 +2755,9 @@ var sheetDefs = {
   duration: {
     title: 'Duration',
     wheel: true,
-    // Seedance 2.0 only accepts these exact durations (not a continuous range)
+    // Base/fallback list — applyModelCapabilities() below overwrites both
+    // .options and .disabled per selected model/tier every time the model
+    // changes, so this is only what's shown before any model has loaded.
     options: [4,5,6,8,10,12,15].map(function(s){ return s+'s'; }),
     desc: function(v){ return durDesc(parseInt(v,10)); },
     get: function(){ return selectedDuration + 's'; },
@@ -2733,17 +2959,21 @@ function renderQualityChip() {
 function pickFamily(family, qualityIdx) {
   selectedFamily = family;
   selectedQualityIdx = qualityIdx || 0;
-  var q = family.qualities[selectedQualityIdx];
-  selectedModel = q.id;
+  var hasTiers = family.qualities && family.qualities.length > 0;
+  var q = hasTiers ? family.qualities[selectedQualityIdx] : null;
+  // Models with no confirmed tier lineup yet (e.g. Seedance 2.5 pre-API)
+  // fall back to the family key as a placeholder id — never invented
+  // tier names like FAST/PRO that the real backend hasn't confirmed.
+  selectedModel = q ? q.id : family.key;
   selectedModelName = family.name;
-  selectedModelTier = q.label;
-  if (family.key === 'seedance' && seedanceDefaultRes[q.label]) {
+  selectedModelTier = q ? q.label : null;
+  if (q && isSeedanceFamily(family.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
     var resLabelEl0 = document.getElementById('resolutionLabel');
     if (resLabelEl0) resLabelEl0.textContent = selectedResolution;
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
-  updateCollapsedBar(family.name + (family.qualities.length > 1 ? ' ' + q.label : ''));
+  updateCollapsedBar(family.name + (hasTiers && family.qualities.length > 1 ? ' ' + q.label : ''));
   applyQualityBadge();
   renderQualityChip();
   applyModelCapabilities();
@@ -2786,6 +3016,12 @@ function applyModelCapabilities() {
   var peAudioItem = document.getElementById('peAudioItem');
   if (peAudioItem) peAudioItem.style.display = audioSupported ? '' : 'none';
   maxCounts.audio = caps.audio || 0;
+  // maxCounts changed above — the visible "0/9" style labels on each
+  // upload card don't repaint themselves, so without this a model switch
+  // silently leaves the OLD cap on screen until the next upload/remove.
+  updateCardPreview('image');
+  updateCardPreview('video');
+  updateCardPreview('audio');
 
   // Sembunyikan seluruh baris seksi kalau model tidak menerima referensi apa pun
   var refSections = document.getElementById('refSections');
@@ -2829,7 +3065,7 @@ function applyModelCapabilities() {
   // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
   // see _run_segmind_task), so the option is available everywhere without
   // ever risking a failed generation.
-  var bitrateSupported = selectedFamily && selectedFamily.key === 'seedance';
+  var bitrateSupported = selectedFamily && isSeedanceFamily(selectedFamily.key);
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
   if (!bitrateSupported) {
     selectedBitrate = 'high';
@@ -2842,7 +3078,7 @@ function applyModelCapabilities() {
   // inherit the source video's track). Reset the toggle when switching
   // away so it can't silently apply to a family the user never chose it
   // for.
-  var muteAudioSupported = selectedFamily && (selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo');
+  var muteAudioSupported = selectedFamily && (isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo');
   // Chips khusus mode Audio (Seed Audio): Output format + Sample rate
   var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
   var afChip = document.getElementById('audioFormatChip');
@@ -2879,8 +3115,13 @@ function applyModelCapabilities() {
   // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
   // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
   // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per Segmind's API docs.
+  // Seedance 2.5 (ByteDance's own launch spec, Volcano Engine FORCE, 23 Jun
+  // 2026): native single-pass generation up to 30s, doubling 2.0's 15s cap.
+  // Not on Segmind yet — UI is ready ahead of the API.
   if (sheetDefs && sheetDefs.duration) {
-    if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
+    if (selectedFamily && selectedFamily.key === 'seedance25') {
+      sheetDefs.duration.options = (selectedFamily.durationSteps || [5,10,15,20,25,30]).map(function(s){ return s+'s'; });
+    } else if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.duration.options = [3,4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
     } else if (selectedFamily && selectedFamily.key === 'veo') {
       sheetDefs.duration.options = [4,6,8].map(function(s){ return s+'s'; });
@@ -2890,9 +3131,8 @@ function applyModelCapabilities() {
     var durOpts = sheetDefs.duration.options;
     if (durOpts.indexOf(selectedDuration + 's') === -1) {
       selectedDuration = parseInt(durOpts[durOpts.length - 1], 10);
-      var durLabelEl = document.getElementById('durationLabel');
-      if (durLabelEl) durLabelEl.textContent = selectedDuration + 's';
     }
+    renderDurationSlider();
   }
 
   // Dynamic resolution options per model type/tier.
@@ -2902,7 +3142,14 @@ function applyModelCapabilities() {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
       sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
-    } else if (selectedFamily && selectedFamily.key === 'seedance') {
+    } else if (selectedFamily && selectedFamily.key === 'seedance25') {
+      // ByteDance's launch spec lists 720p/1080p/4K for 2.5 — no 480p draft
+      // tier like 2.0 has, and no confirmed FAST/PRO-style tier gating
+      // (2.5 isn't wired to a real backend yet), so all three are shown as
+      // preview capability rather than arbitrarily locking any of them.
+      sheetDefs.resolution.options = ['720p','1080p','4K'];
+      sheetDefs.resolution.disabled = [];
+    } else if (selectedFamily && isSeedanceFamily(selectedFamily.key)) {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
     } else if (selectedFamily && selectedFamily.key === 'veo') {
@@ -2945,7 +3192,7 @@ function pickQuality(idx) {
   var q = selectedFamily.qualities[idx];
   selectedModel = q.id;
   selectedModelTier = q.label;
-  if (selectedFamily.key === 'seedance' && seedanceDefaultRes[q.label]) {
+  if (isSeedanceFamily(selectedFamily.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
     var resLabelEl1 = document.getElementById('resolutionLabel');
     if (resLabelEl1) resLabelEl1.textContent = selectedResolution;
@@ -3038,7 +3285,7 @@ function openModelDock() {
     var row = document.createElement('div');
     row.className = 'dock-list-row' + (family.key === selectedFamily.key ? ' selected' : '');
     var versionsTxt = family.qualities.length > 1 ? family.qualities.length + 'x' : '';
-    row.innerHTML = '<span class="dock-icon">' + family.brand.charAt(0) + '</span><span class="dock-list-main"><span class="dock-name">' + family.brand + '</span>' + (versionsTxt ? '<span class="dock-list-sub">' + versionsTxt + '</span>' : '') + '</span>';
+    row.innerHTML = '<span class="dock-icon">' + family.brand.charAt(0) + '</span><span class="dock-list-main"><span class="dock-name">' + family.name + (family.badge ? '<span class="dock-badge">' + family.badge + '</span>' : '') + '</span>' + (versionsTxt ? '<span class="dock-list-sub">' + versionsTxt + '</span>' : '') + '</span>';
     row.onclick = function() { pickFamily(family, 0); };
     all.appendChild(row);
   });
@@ -3122,6 +3369,19 @@ function renderRefThumbs(type) {
     wrap.appendChild(t);
   });
 }
+// Unified "References X / 50" header — only for models with a combined
+// multimodal cap declared (Seedance 2.5 so far); every other model keeps
+// the existing per-type "0/9" counters on each card and this stays hidden.
+function updateRefTotalHeader() {
+  var header = document.getElementById('refTotalHeader');
+  if (!header) return;
+  var cap = selectedFamily && selectedFamily.caps && selectedFamily.caps.combinedCap;
+  if (!cap) { header.style.display = 'none'; return; }
+  var total = (media.image.length || 0) + (media.video.length || 0) + (media.audio.length || 0);
+  header.style.display = '';
+  document.getElementById('refTotalCount').textContent = total + ' / ' + cap;
+  header.classList.toggle('full', total >= cap);
+}
 function updateCardPreview(type) {
   var count = media[type].length;
   var countEl = document.getElementById('card' + type.charAt(0).toUpperCase() + type.slice(1) + 'Count');
@@ -3142,6 +3402,7 @@ function updateCardPreview(type) {
   if (document.getElementById('promptOverlay').classList.contains('show')) {
     renderPeTagsRow();
   }
+  updateRefTotalHeader();
   renderAssetsStrip();
   updateCanvasPreview();
   updateGenerateButtonState();
@@ -3245,6 +3506,16 @@ function updateGenerateButtonState() {
   var btn = document.getElementById('generateBtn');
   if (!btn) return;
   var txt = btn.querySelector('.gen-txt');
+  // available:false is an explicit, config-declared "not wired to a real
+  // backend yet" flag (e.g. Seedance 2.5 pre-API) — gets its own clear
+  // "<MODEL> COMING SOON" state instead of the generic message below.
+  if (selectedFamily && selectedFamily.available === false) {
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'true');
+    if (txt) txt.textContent = selectedFamily.name + ' COMING SOON';
+    return;
+  }
+  if (btn.hasAttribute('aria-disabled')) btn.removeAttribute('aria-disabled');
   // Only families in CONNECTED_FAMILIES are actually wired to a real
   // backend/Segmind endpoint right now. Every other model card is UI-only
   // so far — don't let the button imply it'll work when it can't.
@@ -4245,7 +4516,7 @@ function startGenerate() {
     showError('Motion Control butuh 1 video sumber untuk diedit');
     return;
   }
-  if (selectedFamily && selectedFamily.key === 'seedance' && media.audio.length > 0
+  if (selectedFamily && isSeedanceFamily(selectedFamily.key) && media.audio.length > 0
       && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
     showError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup)');
     return;
@@ -4269,14 +4540,14 @@ function startGenerate() {
   };
   // Sent for every Seedance tier now — backend validates + auto-retries
   // without it if a given tier actually rejects the field.
-  if (selectedFamily.key === 'seedance') {
+  if (isSeedanceFamily(selectedFamily.key)) {
     body.bitrate_mode = selectedBitrate;
   }
   if (selectedFamily.key === 'seedaudio') {
     body.audio_format = selectedAudioFormat.toLowerCase();
     body.sample_rate = parseInt(selectedSampleRate.replace(/\./g, '').replace(/\D+$/g, ''), 10) || 44100;
   }
-  if ((selectedFamily.key === 'seedance' || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo') && muteAudioEnabled) {
+  if ((isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo') && muteAudioEnabled) {
     body.mute_audio = true;
   }
 
@@ -4290,7 +4561,7 @@ function startGenerate() {
     activeMode: activeMode,
     modelDisplayName: selectedModelName,
     fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
-    bitrateSnapshot: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
+    bitrateSnapshot: (isSeedanceFamily(selectedFamily.key)) ? selectedBitrate : '',
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
 
@@ -5190,7 +5461,7 @@ function saveGenerationToHistory(res, meta) {
       refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
       modelKey: selectedFamily.key,
       modelTier: selectedModelTier,
-      bitrate: (selectedFamily.key === 'seedance') ? selectedBitrate : '',
+      bitrate: (isSeedanceFamily(selectedFamily.key)) ? selectedBitrate : '',
       archived: false
     };
   }
@@ -5372,7 +5643,7 @@ function restoreFromRecord(r) {
   syncCanvasPreviewAspect();
   if (r.duration) {
     var d = parseInt(r.duration, 10);
-    if (d) { selectedDuration = d; var durEl = document.getElementById('durationLabel'); if (durEl) durEl.textContent = d + 's'; }
+    if (d) { selectedDuration = d; renderDurationSlider(); }
   }
   if (r.bitrate) {
     selectedBitrate = r.bitrate;
