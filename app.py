@@ -20,6 +20,8 @@ from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 import analytics
 import aivideo_archive
+import dropbox_oauth
+import secrets_store
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -27,6 +29,7 @@ import google.generativeai as genai
 # ---------------------------------------------------------------------------
 _gemini_model_cache = {}  # {model_name: GenerativeModel}
 _gemini_configured = False
+_gemini_configured_key = None  # last api_key genai.configure() was called with
 
 _MAKIMA_SYSTEM_INSTRUCTION = """
 Kamu adalah MAKIMA AI, asisten pribadi milik MII NETWORK.
@@ -71,19 +74,24 @@ Safety:
 _GEMINI_ALLOWED_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash']
 
 def _get_gemini_model(model_name=None):
-    global _gemini_configured, _gemini_model_cache
+    global _gemini_configured, _gemini_model_cache, _gemini_configured_key
     if model_name is None:
         model_name = 'gemini-2.0-flash'
     if model_name not in _GEMINI_ALLOWED_MODELS:
         model_name = 'gemini-2.0-flash'
-    if model_name in _gemini_model_cache:
-        return _gemini_model_cache[model_name]
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
     if not api_key:
         return None
-    if not _gemini_configured:
+    if api_key != _gemini_configured_key:
+        # Key changed (e.g. updated via /ai-video/app-secrets without a
+        # redeploy) — reconfigure and drop the old cached model instances,
+        # which were bound to the previous key.
         genai.configure(api_key=api_key)
         _gemini_configured = True
+        _gemini_configured_key = api_key
+        _gemini_model_cache = {}
+    if model_name in _gemini_model_cache:
+        return _gemini_model_cache[model_name]
     model = genai.GenerativeModel(
         model_name,
         system_instruction=_MAKIMA_SYSTEM_INSTRUCTION
@@ -167,6 +175,75 @@ SITE_STATUS_FILE = os.path.join(DATA_DIR, 'site_status.json')
 EVENT_DATA_FILE = os.path.join(DATA_DIR, 'event_data.json')
 _STATUS_LOCK = threading.Lock()
 _EVENT_LOCK = threading.Lock()
+
+# ---------------------------------------------------------------------------
+# Generic App Secrets store (Gemini/Groq/Segmind keys, Telegram bot token +
+# chat IDs, admin passwords) — encrypted, persistent, editable from
+# /ai-video/app-secrets so none of these need to be re-entered in Railway
+# Variables after a GitHub repo swap or redeploy. See secrets_store.py.
+#
+# get_secret(*names) checks the encrypted store first (first of `names`
+# that has a value wins), then falls back to os.environ (same order),
+# exactly mirroring the "env var still works until migrated" behaviour of
+# the Dropbox Connection Manager. Nothing that already works via Railway
+# Variables breaks by this being added.
+# ---------------------------------------------------------------------------
+_app_secrets_store = secrets_store.SecretsStore(
+    data_dir=DATA_DIR,
+    master_secret_fn=lambda: app.secret_key,
+)
+
+# Canonical metadata for every secret manageable from /ai-video/app-secrets.
+# `key` is what's stored/read from the encrypted store; `env_names` is the
+# ordered list of legacy env var names checked as fallback (first wins).
+APP_SECRET_DEFS = [
+    {'key': 'MII_AIVIDEO_PASSWORD', 'env_names': ['MII_AIVIDEO_PASSWORD'],
+     'label': 'AI Video Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
+     'help': 'Password login /ai-video (halaman admin workspace ini sendiri).'},
+    {'key': 'BOT_ADMIN_PASSWORD', 'env_names': ['BOT_ADMIN_PASSWORD', 'ADMIN_PASSWORD'],
+     'label': 'Telegram Bot Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
+     'help': 'Password admin di dalam menu bot Telegram (bukan /ai-video).'},
+    {'key': 'GEMINI_API_KEY', 'env_names': ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
+     'label': 'Gemini API Key', 'category': 'AI Providers', 'kind': 'api_key',
+     'help': 'Dipakai Makima AI chatbot (Gemini provider) dan Vision.'},
+    {'key': 'GROQ_API_KEY', 'env_names': ['GROQ_API_KEY'],
+     'label': 'Groq API Key', 'category': 'AI Providers', 'kind': 'api_key',
+     'help': 'Dipakai Makima AI chatbot (Groq provider, fallback saat Gemini kena kuota).'},
+    {'key': 'SEGMIND_API_KEY', 'env_names': ['SEGMIND_API_KEY'],
+     'label': 'Segmind API Key', 'category': 'AI Providers', 'kind': 'api_key',
+     'help': 'Dipakai AI Video (Seedance/Hailuo generate) via Segmind.'},
+    {'key': 'TELEGRAM_BOT_TOKEN', 'env_names': ['TELEGRAM_BOT_TOKEN'],
+     'label': 'Telegram Bot Token', 'category': 'Telegram Bot', 'kind': 'api_key',
+     'help': 'Token bot dari @BotFather. Mengganti ini butuh restart proses untuk polling mulai/berhenti.'},
+    {'key': 'TELEGRAM_ADMIN_CHAT_ID', 'env_names': ['TELEGRAM_ADMIN_CHAT_ID', 'TELEGRAM_ADMIN_ID'],
+     'label': 'Telegram Admin Chat ID', 'category': 'Telegram Bot', 'kind': 'id',
+     'help': 'Chat ID Telegram kamu — menentukan siapa yang dianggap admin bot.'},
+    {'key': 'TELEGRAM_CHANNEL_ID', 'env_names': ['TELEGRAM_CHANNEL_ID', 'TELEGRAM_EVENT_CHANNEL_ID'],
+     'label': 'Telegram Channel ID', 'category': 'Telegram Bot', 'kind': 'id',
+     'help': 'Chat ID channel Telegram yang dipakai untuk cek join member (event/reward).'},
+]
+_APP_SECRET_DEFS_BY_KEY = {d['key']: d for d in APP_SECRET_DEFS}
+
+
+def get_secret(*names, default=''):
+    """Check the encrypted app-secrets store first (in the order given),
+    then fall back to os.environ (same order). Always returns a plain
+    string, never raises — a decryption failure (rotated FLASK_SECRET_KEY)
+    is treated the same as 'not set', not a crash."""
+    for n in names:
+        try:
+            v = _app_secrets_store.get(n)
+        except Exception:
+            v = ''
+        if v:
+            return v
+    for n in names:
+        v = os.environ.get(n, '')
+        if v:
+            return v
+    return default
+
+
 _BOT_SESSION_LOCK = threading.Lock()
 _BOT_AUTHENTICATED_CHATS = set()
 _BOT_LOGIN_PENDING_CHATS = set()
@@ -176,7 +253,12 @@ _BOT_PROCESSED_UPDATE_IDS = set()
 _BOT_POLLING_STARTED = False
 _BOT_LAST_UPDATE_ID = None
 TELEGRAM_CHANNEL_LINK = 'https://t.me/+L0mZsWxq30cxZmM1'
-TELEGRAM_CHANNEL_CHAT_ID = (os.environ.get('TELEGRAM_CHANNEL_ID') or os.environ.get('TELEGRAM_EVENT_CHANNEL_ID') or '').strip()
+
+
+def _telegram_channel_chat_id():
+    return get_secret('TELEGRAM_CHANNEL_ID', 'TELEGRAM_EVENT_CHANNEL_ID')
+
+
 WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl'
 TOKEN_TTL_SECONDS = 16 * 24 * 60 * 60
 
@@ -760,7 +842,7 @@ def _md_code(value):
     return '`' + str(value).replace('`', "'") + '`'
 
 def _telegram_api_url(method):
-    token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
+    token = get_secret('TELEGRAM_BOT_TOKEN').strip()
     return f'https://api.telegram.org/bot{token}/{method}' if token else None
 
 
@@ -836,7 +918,7 @@ def _telegram_answer_callback(callback_query_id):
 def _telegram_get_photo_url(file_id):
     """Get public URL of a Telegram photo via getFile API."""
     url = _telegram_api_url('getFile')
-    token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
+    token = get_secret('TELEGRAM_BOT_TOKEN').strip()
     if not url or not token:
         return None
     try:
@@ -852,10 +934,11 @@ def _telegram_get_photo_url(file_id):
 
 def _telegram_get_chat_member(user_id):
     url = _telegram_api_url('getChatMember')
-    if not url or not TELEGRAM_CHANNEL_CHAT_ID:
+    channel_chat_id = _telegram_channel_chat_id()
+    if not url or not channel_chat_id:
         return 'error'
     try:
-        resp = requests_lib.post(url, json={'chat_id': TELEGRAM_CHANNEL_CHAT_ID, 'user_id': user_id}, timeout=10)
+        resp = requests_lib.post(url, json={'chat_id': channel_chat_id, 'user_id': user_id}, timeout=10)
         data = resp.json() if resp.ok else {}
         if not resp.ok or not data.get('ok'):
             app.logger.warning('Telegram getChatMember failed: %s', data or resp.text[:300])
@@ -867,7 +950,7 @@ def _telegram_get_chat_member(user_id):
 
 
 def getAdminIdFromEnv():
-    return (os.environ.get('TELEGRAM_ADMIN_CHAT_ID') or os.environ.get('TELEGRAM_ADMIN_ID') or '').strip()
+    return get_secret('TELEGRAM_ADMIN_CHAT_ID', 'TELEGRAM_ADMIN_ID').strip()
 
 
 def isAdmin(user_id):
@@ -876,7 +959,7 @@ def isAdmin(user_id):
 
 
 def checkAdminPassword(input_value):
-    expected = (os.environ.get('BOT_ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD') or '').strip()
+    expected = get_secret('BOT_ADMIN_PASSWORD', 'ADMIN_PASSWORD').strip()
     supplied = (input_value or '').strip()
     return bool(expected and supplied and hmac.compare_digest(supplied, expected))
 
@@ -1852,7 +1935,7 @@ def _telegram_polling_loop():
 
 def start_telegram_bot():
     global _BOT_POLLING_STARTED
-    if _BOT_POLLING_STARTED or not os.environ.get('TELEGRAM_BOT_TOKEN'): return
+    if _BOT_POLLING_STARTED or not get_secret('TELEGRAM_BOT_TOKEN'): return
     _BOT_POLLING_STARTED = True; threading.Thread(target=_telegram_polling_loop, name='telegram-bot-polling', daemon=True).start()
 
 _ensure_status_file()
@@ -2118,11 +2201,14 @@ def event_page():
     return render_template('event.html', event_status=_bounty_event_status(data), reward_info=_format_reward_info(data).replace('🎁 Info Hadiah\n', ''), maintenance=get_site_status().get('maintenance'))
 
 
-MII_AIVIDEO_PASSWORD = os.environ.get('MII_AIVIDEO_PASSWORD', '')
+def _mii_aivideo_password():
+    return get_secret('MII_AIVIDEO_PASSWORD')
+
+
 AIVIDEO_LOCKOUT_THRESHOLD = 3
 AIVIDEO_LOCKOUT_SECONDS = 5 * 60
-if not MII_AIVIDEO_PASSWORD:
-    app.logger.error('[startup] MII_AIVIDEO_PASSWORD tidak diset di environment — /ai-video akan MENOLAK SEMUA login (fail-closed) sampai variable ini diisi di Railway. Ini BUKAN mode terbuka.')
+if not _mii_aivideo_password():
+    app.logger.error('[startup] MII_AIVIDEO_PASSWORD tidak diset — /ai-video akan MENOLAK SEMUA login (fail-closed) sampai diisi lewat Railway env atau /ai-video/app-secrets. Ini BUKAN mode terbuka.')
 
 # Brute-force lockout keyed by client IP (not the session cookie) — a
 # session-scoped lockout can be trivially bypassed by simply dropping the
@@ -2154,9 +2240,12 @@ def _aivideo_client_ip():
 # means it is permanently visible in this repo's git history even after
 # being removed from the current version — if that was ever pushed
 # anywhere, rotate/regenerate that key in the Segmind dashboard.
-SEGMIND_API_KEY = os.environ.get('SEGMIND_API_KEY', '')
-if not SEGMIND_API_KEY:
-    app.logger.warning('[startup] SEGMIND_API_KEY tidak diset di environment — semua generate akan gagal sampai variable ini diisi di Railway.')
+def _segmind_api_key():
+    return get_secret('SEGMIND_API_KEY')
+
+
+if not _segmind_api_key():
+    app.logger.warning('[startup] SEGMIND_API_KEY tidak diset — semua generate akan gagal sampai diisi lewat Railway env atau /ai-video/app-secrets.')
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
@@ -2317,10 +2406,35 @@ DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET', '')
 DROPBOX_REFRESH_TOKEN = os.environ.get('DROPBOX_REFRESH_TOKEN', '')
 DROPBOX_ACCESS_TOKEN = os.environ.get('DROPBOX_ACCESS_TOKEN', '')  # legacy fallback only
 
+# Must be registered EXACTLY (scheme+host+path) in Dropbox App Console ->
+# Settings -> OAuth 2 -> Redirect URIs, or the OAuth exchange will fail.
+DROPBOX_REDIRECT_URI = os.environ.get('DROPBOX_REDIRECT_URI', 'https://makima.cloud/ai-video/dropbox/callback')
+
 DROPBOX_OAUTH_TOKEN_URL = 'https://api.dropbox.com/oauth2/token'
 
 _DROPBOX_TOKEN_LOCK = threading.Lock()
 _DROPBOX_TOKEN_CACHE = {'access_token': '', 'expires_at': 0}
+
+# ── Dropbox Connection Manager (encrypted persistent OAuth store) ──────────
+# See dropbox_oauth.py. This is what /ai-video/dropbox-token now drives —
+# no more manual authorization-code paste + Railway env var edits. Falls
+# back transparently to the DROPBOX_* env vars above when the encrypted
+# store hasn't been set up yet (nothing above is removed or broken).
+_dropbox_store = dropbox_oauth.DropboxCredentialStore(
+    data_dir=DATA_DIR,
+    master_secret_fn=lambda: app.secret_key,
+)
+_dropbox_manager = dropbox_oauth.DropboxTokenManager(
+    store=_dropbox_store,
+    legacy_env={
+        'app_key': DROPBOX_APP_KEY,
+        'app_secret': DROPBOX_APP_SECRET,
+        'refresh_token': DROPBOX_REFRESH_TOKEN,
+        'access_token': DROPBOX_ACCESS_TOKEN,
+    },
+    logger=app.logger,
+    redirect_uri=DROPBOX_REDIRECT_URI,
+)
 
 # Maps an issued Dropbox shareable/temp link -> the Dropbox path it points
 # to, so a later "remove this reference" action in the UI can actually
@@ -2486,65 +2600,11 @@ def _aivideo_csrf_cookie(response):
     return response
 
 
-def _dropbox_refresh_access_token():
-    """Exchange the long-lived refresh token for a short-lived access token.
-    Requires DROPBOX_APP_KEY + DROPBOX_APP_SECRET + DROPBOX_REFRESH_TOKEN."""
-    if not (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN):
-        raise RuntimeError(
-            'Dropbox belum dikonfigurasi dengan refresh token. '
-            'Set DROPBOX_APP_KEY, DROPBOX_APP_SECRET, dan DROPBOX_REFRESH_TOKEN.'
-        )
-    app.logger.info('[ai-video][dropbox] refreshing access token via oauth2/token')
-    resp = requests_lib.post(
-        DROPBOX_OAUTH_TOKEN_URL,
-        data={
-            'grant_type': 'refresh_token',
-            'refresh_token': DROPBOX_REFRESH_TOKEN,
-            'client_id': DROPBOX_APP_KEY,
-            'client_secret': DROPBOX_APP_SECRET,
-        },
-        timeout=30,
-    )
-    if resp.status_code >= 400:
-        detail = resp.text[:300]
-        app.logger.error('[ai-video][dropbox] token refresh failed (%s): %s', resp.status_code, detail)
-        raise RuntimeError(f'Dropbox token refresh gagal ({resp.status_code}): {detail}')
-    data = resp.json()
-    access_token = data.get('access_token', '')
-    expires_in = int(data.get('expires_in', 14400))  # Dropbox default ~4h
-    if not access_token:
-        raise RuntimeError('Dropbox token refresh sukses tapi access_token kosong di response')
-    with _DROPBOX_TOKEN_LOCK:
-        # Refresh 60s early to avoid edge-of-expiry race conditions.
-        _DROPBOX_TOKEN_CACHE['access_token'] = access_token
-        _DROPBOX_TOKEN_CACHE['expires_at'] = time.time() + expires_in - 60
-    app.logger.info('[ai-video][dropbox] access token refreshed, expires_in=%ss', expires_in)
-    return access_token
-
-
 def _dropbox_get_access_token():
-    """Return a valid Dropbox access token, refreshing automatically when the
-    cached one is missing/expired. Falls back to the legacy static
-    DROPBOX_ACCESS_TOKEN only if refresh-token env vars are absent."""
-    has_refresh_creds = bool(DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN)
-    if has_refresh_creds:
-        with _DROPBOX_TOKEN_LOCK:
-            cached = _DROPBOX_TOKEN_CACHE['access_token']
-            valid = cached and time.time() < _DROPBOX_TOKEN_CACHE['expires_at']
-        if valid:
-            return cached
-        return _dropbox_refresh_access_token()
-    if DROPBOX_ACCESS_TOKEN:
-        app.logger.warning(
-            '[ai-video][dropbox] using legacy static DROPBOX_ACCESS_TOKEN — this token '
-            'expires after ~4h per Dropbox policy and will start failing silently. '
-            'Configure DROPBOX_APP_KEY/DROPBOX_APP_SECRET/DROPBOX_REFRESH_TOKEN instead.'
-        )
-        return DROPBOX_ACCESS_TOKEN
-    raise RuntimeError(
-        'Dropbox belum dikonfigurasi. Set DROPBOX_APP_KEY, DROPBOX_APP_SECRET, '
-        'DROPBOX_REFRESH_TOKEN (disarankan) atau DROPBOX_ACCESS_TOKEN (legacy).'
-    )
+    """Return a valid Dropbox access token, refreshing automatically when
+    needed. Prefers credentials connected via /ai-video/dropbox-token
+    (encrypted store); falls back to legacy DROPBOX_* env vars untouched."""
+    return _dropbox_manager.get_valid_access_token()
 
 
 def _dropbox_request_with_retry(method, url, **kwargs):
@@ -2553,12 +2613,14 @@ def _dropbox_request_with_retry(method, url, **kwargs):
     headers = kwargs.pop('headers', {}) or {}
     headers = {**headers, 'Authorization': f'Bearer {_dropbox_get_access_token()}'}
     resp = requests_lib.request(method, url, headers=headers, **kwargs)
-    if resp.status_code == 401 and DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN:
+    if resp.status_code == 401 and _dropbox_manager.is_configured():
         app.logger.warning('[ai-video][dropbox] got 401, forcing token refresh and retrying once')
-        with _DROPBOX_TOKEN_LOCK:
-            _DROPBOX_TOKEN_CACHE['access_token'] = ''
-            _DROPBOX_TOKEN_CACHE['expires_at'] = 0
-        headers['Authorization'] = f'Bearer {_dropbox_get_access_token()}'
+        try:
+            fresh_token = _dropbox_manager.force_refresh()
+        except Exception as e:
+            app.logger.error('[ai-video][dropbox] forced refresh after 401 failed: %s', e)
+            return resp
+        headers['Authorization'] = f'Bearer {fresh_token}'
         resp = requests_lib.request(method, url, headers=headers, **kwargs)
     return resp
 
@@ -2854,9 +2916,13 @@ def _dropbox_status_check():
     """Lightweight health check used by the debug page — verifies we can
     obtain/refresh a valid access token and that Dropbox accepts it, without
     uploading anything."""
-    mode = 'refresh_token' if (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN) else (
-        'legacy_static' if DROPBOX_ACCESS_TOKEN else 'not_configured'
-    )
+    _status = _dropbox_manager.status()
+    mode = {
+        'connected': 'oauth_connected',
+        'legacy_not_migrated': 'legacy_env',
+        'credentials_saved': 'credentials_saved_not_connected',
+        'not_connected': 'not_configured',
+    }.get(_status['state'], 'not_configured')
     if mode == 'not_configured':
         _aivideo_debug_set('dropbox', mode=mode, ok=False, detail='No Dropbox credentials configured')
         return False, 'Dropbox belum dikonfigurasi'
@@ -3220,7 +3286,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         _set(status='processing', progress=15)
         resp = requests_lib.post(
             f'{SEGMIND_BASE}/{endpoint}',
-            headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
+            headers={'x-api-key': _segmind_api_key(), 'Content-Type': 'application/json'},
             json=body, timeout=600,
         )
         # We optimistically send bitrate_mode on every Seedance tier even
@@ -3238,7 +3304,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
             retry_count += 1
             resp = requests_lib.post(
                 f'{SEGMIND_BASE}/{endpoint}',
-                headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
+                headers={'x-api-key': _segmind_api_key(), 'Content-Type': 'application/json'},
                 json=retry_body, timeout=600,
             )
             if resp.status_code < 400:
@@ -3261,7 +3327,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
             retry_count += 1
             resp = requests_lib.post(
                 f'{SEGMIND_BASE}/{endpoint}',
-                headers={'x-api-key': SEGMIND_API_KEY, 'Content-Type': 'application/json'},
+                headers={'x-api-key': _segmind_api_key(), 'Content-Type': 'application/json'},
                 json=body, timeout=600,
             )
         _set(progress=80)
@@ -3466,7 +3532,7 @@ def ai_video_unlock():
     # Fail CLOSED, not open: if the password isn't configured, refuse every
     # login attempt instead of letting `pw == ''` succeed against an unset
     # (empty-string-default) env var.
-    if not MII_AIVIDEO_PASSWORD:
+    if not _mii_aivideo_password():
         return jsonify({'ok': False, 'error': 'Fitur ini belum dikonfigurasi di server.'}), 503
 
     ip = _aivideo_client_ip()
@@ -3487,7 +3553,7 @@ def ai_video_unlock():
     # Constant-time comparison — plain `==` short-circuits on the first
     # differing byte, which is a (low-severity but free-to-fix) timing
     # side channel for a shared-secret password.
-    if pw and hmac.compare_digest(pw, MII_AIVIDEO_PASSWORD):
+    if pw and hmac.compare_digest(pw, _mii_aivideo_password()):
         session['mii_aivideo_auth'] = True
         with _AIVIDEO_UNLOCK_LOCK:
             _AIVIDEO_UNLOCK_ATTEMPTS.pop(ip, None)
@@ -3577,7 +3643,7 @@ def aivideo_enhance():
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not SEGMIND_API_KEY:
+    if not _segmind_api_key():
         _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
@@ -4324,7 +4390,7 @@ def ai_video_debug_page():
     if not _aivideo_authed():
         return render_template('ai-video-lock.html')
     dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(SEGMIND_API_KEY)
+    segmind_ok = bool(_segmind_api_key())
     _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
     snap = _aivideo_debug_snapshot()
     log = _aivideo_request_log_snapshot()
@@ -4342,8 +4408,7 @@ def ai_video_debug_page():
         request_log_total=log['total'],
         request_log_errors=log['errors'],
         request_log_avg_ms=log['avg_duration_ms'],
-        dropbox_mode=('refresh_token' if (DROPBOX_APP_KEY and DROPBOX_APP_SECRET and DROPBOX_REFRESH_TOKEN)
-                      else ('legacy_static' if DROPBOX_ACCESS_TOKEN else 'not_configured')),
+        dropbox_mode=_dropbox_manager.status()['state'],
     )
 
 
@@ -4352,24 +4417,247 @@ def ai_video_debug_data():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
     dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(SEGMIND_API_KEY)
+    segmind_ok = bool(_segmind_api_key())
     _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
     snap = _aivideo_debug_snapshot()
     snap['request_log'] = _aivideo_request_log_snapshot()
     return jsonify(snap)
 
 
-@app.route('/ai-video/dropbox-token')
-def ai_video_dropbox_token_page():
-    """Browser-friendly page (works fine on mobile) with a form that POSTs
-    to /ai-video/dropbox-oauth/exchange via fetch — no curl needed. Paste the
-    Dropbox authorization code, tap the button, copy the refresh_token."""
+@app.route('/ai-video/app-secrets')
+def ai_video_app_secrets_page():
+    """Generic Secrets Manager: Gemini/Groq/Segmind API keys, Telegram bot
+    token + chat IDs, admin passwords — configure once from the browser,
+    survives GitHub repo swaps/redeploys without touching Railway
+    Variables. Same encrypted-at-rest approach as the Dropbox Connection
+    Manager, generalized. See secrets_store.py."""
     if not _aivideo_authed():
         return render_template('ai-video-lock.html')
-    return render_template(
-        'ai-video-dropbox-token.html',
-        has_app_creds=bool(DROPBOX_APP_KEY and DROPBOX_APP_SECRET),
-    )
+    return render_template('ai-video-app-secrets.html')
+
+
+@app.route('/api/aivideo/app-secrets/list')
+def api_app_secrets_list():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    meta = _app_secrets_store.get_all_meta()
+    items = []
+    for d in APP_SECRET_DEFS:
+        key = d['key']
+        m = meta.get(key, {})
+        env_present = any(os.environ.get(n) for n in d['env_names'])
+        items.append({
+            'key': key,
+            'label': d['label'],
+            'category': d['category'],
+            'kind': d['kind'],
+            'help': d['help'],
+            'configured': bool(m.get('has_value')) or env_present,
+            'source': 'store' if m.get('has_value') else ('env' if env_present else None),
+            'updated_at': m.get('updated_at'),
+            'key_mismatch': bool(m.get('key_mismatch')),
+        })
+    return jsonify({'ok': True, 'data': {'items': items}})
+
+
+@app.route('/api/aivideo/app-secrets/update', methods=['POST'])
+def api_app_secrets_update():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    key = str(payload.get('key', '')).strip()
+    value = payload.get('value', '')
+    if key not in _APP_SECRET_DEFS_BY_KEY:
+        return jsonify({'ok': False, 'error': {'code': 'VALIDATION', 'message': 'Secret key tidak dikenal.'}}), 400
+    value = str(value or '').strip()
+    if not value:
+        return jsonify({'ok': False, 'error': {'code': 'VALIDATION', 'message': 'Value tidak boleh kosong (pakai Remove untuk menghapus).'}}), 400
+    try:
+        _app_secrets_store.set(key, value)
+    except secrets_store.SecretStoreError as e:
+        return jsonify({'ok': False, 'error': {'code': 'ENCRYPTION_ERROR', 'message': str(e)}}), 500
+    app.logger.info('[app-secrets] updated key=%s', key)
+    # Effects that need to happen immediately (no redeploy):
+    if key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY'):
+        global _gemini_configured_key
+        _gemini_configured_key = None  # force _get_gemini_model to reconfigure on next call
+    if key == 'TELEGRAM_BOT_TOKEN':
+        start_telegram_bot()  # idempotent — starts polling now if it hadn't already
+    return jsonify({'ok': True, 'message': 'Configuration saved'})
+
+
+@app.route('/api/aivideo/app-secrets/delete', methods=['POST'])
+def api_app_secrets_delete():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    key = str(payload.get('key', '')).strip()
+    if key not in _APP_SECRET_DEFS_BY_KEY:
+        return jsonify({'ok': False, 'error': {'code': 'VALIDATION', 'message': 'Secret key tidak dikenal.'}}), 400
+    _app_secrets_store.delete(key)
+    app.logger.info('[app-secrets] deleted key=%s (env var fallback, if any, still applies)', key)
+    return jsonify({'ok': True, 'message': 'Removed from encrypted store (env var fallback still applies if set)'})
+
+
+@app.route('/api/aivideo/app-secrets/import-legacy', methods=['POST'])
+def api_app_secrets_import_legacy():
+    """Copy every currently-set Railway env var (from APP_SECRET_DEFS) into
+    the encrypted store in one click, same idea as the Dropbox manager's
+    import button."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    imported = []
+    for d in APP_SECRET_DEFS:
+        if _app_secrets_store.get(d['key']):
+            continue  # already in the store, don't overwrite
+        for env_name in d['env_names']:
+            v = os.environ.get(env_name, '').strip()
+            if v:
+                _app_secrets_store.set(d['key'], v)
+                imported.append(d['key'])
+                break
+    global _gemini_configured_key
+    _gemini_configured_key = None
+    start_telegram_bot()
+    app.logger.info('[app-secrets] imported from env: %s', imported)
+    return jsonify({'ok': True, 'message': f'Imported {len(imported)} value(s) from environment variables', 'data': {'imported': imported}})
+
+
+@app.route('/ai-video/dropbox-token')
+def ai_video_dropbox_token_page():
+    """Dropbox Connection Manager: connect/reconnect/test/disconnect the
+    Dropbox integration entirely from the browser, no more manual
+    authorization-code copy-paste or Railway env var edits. All data is
+    fetched client-side from /api/aivideo/dropbox/*; this just renders the
+    page shell (and the auth gate)."""
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+    return render_template('ai-video-dropbox-token.html')
+
+
+def _dropbox_oauth_error_response(e):
+    code = getattr(e, 'code', 'DROPBOX_OAUTH_ERROR')
+    status = getattr(e, 'status', 400) or 400
+    return jsonify({'ok': False, 'error': {'code': code, 'message': str(e)}}), status
+
+
+@app.route('/api/aivideo/dropbox/status')
+def api_dropbox_status():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    return jsonify({'ok': True, 'data': _dropbox_manager.status()})
+
+
+@app.route('/api/aivideo/dropbox/credentials', methods=['POST'])
+def api_dropbox_credentials():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    app_key = str(payload.get('app_key', '')).strip()
+    app_secret = str(payload.get('app_secret', '')).strip()
+    if not app_key or not app_secret:
+        return jsonify({'ok': False, 'error': {'code': 'VALIDATION', 'message': 'APP KEY dan APP SECRET wajib diisi.'}}), 400
+    try:
+        _dropbox_manager.save_credentials(app_key, app_secret)
+    except dropbox_oauth.CredentialEncryptionError as e:
+        return _dropbox_oauth_error_response(dropbox_oauth.DropboxOAuthError(str(e), status=500))
+    app.logger.info('[ai-video][dropbox] app credentials saved')
+    return jsonify({'ok': True, 'message': 'Configuration saved', 'data': {'redirect_uri': DROPBOX_REDIRECT_URI}})
+
+
+@app.route('/api/aivideo/dropbox/authorize', methods=['POST'])
+def api_dropbox_authorize():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    state = secrets.token_urlsafe(32)
+    session['mii_dropbox_oauth_state'] = state
+    session['mii_dropbox_oauth_state_at'] = time.time()
+    try:
+        url = _dropbox_manager.build_authorize_url(state)
+    except dropbox_oauth.DropboxOAuthError as e:
+        return _dropbox_oauth_error_response(e)
+    return jsonify({'ok': True, 'data': {'authorize_url': url}})
+
+
+@app.route('/ai-video/dropbox/callback')
+def ai_video_dropbox_callback():
+    """Dropbox redirects here after the user clicks Allow/Deny. No CSRF
+    header is possible on a cross-site GET redirect, so protection instead
+    comes from verifying the `state` value against what we stashed in the
+    session right before redirecting to Dropbox."""
+    if not _aivideo_authed():
+        return render_template('ai-video-lock.html')
+
+    error = request.args.get('error')
+    if error:
+        _aivideo_last_error('dropbox_oauth_callback', f'{error}: {request.args.get("error_description", "")}')
+        return redirect(f'/ai-video/dropbox-token?dropbox_error={error}')
+
+    code = request.args.get('code', '')
+    state = request.args.get('state', '')
+    expected_state = session.get('mii_dropbox_oauth_state')
+    expected_at = session.get('mii_dropbox_oauth_state_at') or 0
+    session.pop('mii_dropbox_oauth_state', None)
+    session.pop('mii_dropbox_oauth_state_at', None)
+
+    if not expected_state or not state or not hmac.compare_digest(expected_state, state):
+        _aivideo_last_error('dropbox_oauth_callback', 'state mismatch (possible CSRF or expired session)')
+        return redirect('/ai-video/dropbox-token?dropbox_error=state_mismatch')
+    if time.time() - expected_at > dropbox_oauth._STATE_TTL_SECONDS:
+        return redirect('/ai-video/dropbox-token?dropbox_error=state_expired')
+    if not code:
+        return redirect('/ai-video/dropbox-token?dropbox_error=missing_code')
+
+    try:
+        _dropbox_manager.complete_authorization(code)
+    except dropbox_oauth.DropboxOAuthError as e:
+        _aivideo_last_error('dropbox_oauth_callback', str(e))
+        return redirect(f'/ai-video/dropbox-token?dropbox_error=exchange_failed')
+    except Exception as e:
+        _aivideo_last_error('dropbox_oauth_callback', str(e))
+        return redirect('/ai-video/dropbox-token?dropbox_error=exchange_failed')
+
+    _aivideo_debug_set('dropbox', mode='oauth_connected', ok=True, detail='Connected via in-app OAuth flow')
+    app.logger.info('[ai-video][dropbox] OAuth connected successfully')
+    return redirect('/ai-video/dropbox-token?connected=1')
+
+
+@app.route('/api/aivideo/dropbox/test', methods=['POST'])
+def api_dropbox_test():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        result = _dropbox_manager.test_connection()
+    except dropbox_oauth.DropboxOAuthError as e:
+        return _dropbox_oauth_error_response(e)
+    except Exception as e:
+        return _dropbox_oauth_error_response(dropbox_oauth.DropboxOAuthError(str(e), status=502))
+    return jsonify({'ok': True, 'message': 'Connection test successful', 'data': result})
+
+
+@app.route('/api/aivideo/dropbox/disconnect', methods=['POST'])
+def api_dropbox_disconnect():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    mode = payload.get('mode', 'tokens')
+    if mode not in ('tokens', 'all'):
+        mode = 'tokens'
+    _dropbox_manager.disconnect(mode=mode)
+    app.logger.info('[ai-video][dropbox] disconnected (mode=%s)', mode)
+    return jsonify({'ok': True, 'message': 'Dropbox disconnected'})
+
+
+@app.route('/api/aivideo/dropbox/import-legacy', methods=['POST'])
+def api_dropbox_import_legacy():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        _dropbox_manager.import_legacy()
+    except dropbox_oauth.DropboxOAuthError as e:
+        return _dropbox_oauth_error_response(e)
+    app.logger.info('[ai-video][dropbox] imported legacy env-var configuration into encrypted store')
+    return jsonify({'ok': True, 'message': 'Existing configuration imported', 'data': _dropbox_manager.status()})
 
 
 @app.route('/ai-video/dropbox-oauth/exchange', methods=['POST'])
@@ -5795,7 +6083,7 @@ def download_photo():
 
 @app.route('/api/test-gemini', methods=['GET'])
 def test_gemini():
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
     if not api_key:
         return jsonify({
             'configured': False,
@@ -6060,7 +6348,7 @@ def ai_chat():
         return messages
 
     def _call_gemini(gemini_model_name):
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
         if not api_key:
             return None, 'not_configured'
         gemini_model = _get_gemini_model(gemini_model_name)
@@ -6075,7 +6363,7 @@ def ai_chat():
             return reply_text, None
         except Exception as e:
             err_msg = str(e)
-            api_key_val = os.environ.get("GEMINI_API_KEY")
+            api_key_val = get_secret("GEMINI_API_KEY")
             if api_key_val:
                 err_msg = err_msg.replace(api_key_val, '[REDACTED]')
             app.logger.error('Gemini API error: %s', err_msg)
@@ -6084,7 +6372,7 @@ def ai_chat():
             return None, 'error'
 
     def _call_groq(groq_model_name):
-        groq_key = os.environ.get("GROQ_API_KEY")
+        groq_key = get_secret("GROQ_API_KEY")
         if not groq_key:
             return None, 'not_configured'
         allowed_groq_models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']
@@ -6130,7 +6418,7 @@ def ai_chat():
             return None, 'error'
 
     if image_part:
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
         if not api_key:
             return jsonify({'error': 'Vision belum dikonfigurasi. Aktifkan GEMINI_API_KEY dulu.'}), 503
         reply, err = _call_gemini(model if model in _GEMINI_ALLOWED_MODELS else 'gemini-2.0-flash')
@@ -6143,7 +6431,7 @@ def ai_chat():
 
     # Route to provider
     if provider == 'gemini':
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
         if not api_key:
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_gemini(model)
@@ -6157,7 +6445,7 @@ def ai_chat():
         return jsonify({'error': 'MAKIMA AI SEDANG TIDAK BISA MERESPONS. COBA LAGI NANTI.'}), 500
 
     elif provider == 'groq':
-        groq_key = os.environ.get("GROQ_API_KEY")
+        groq_key = get_secret("GROQ_API_KEY")
         if not groq_key:
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
         reply, err = _call_groq(model)
@@ -6172,8 +6460,8 @@ def ai_chat():
 
     else:
         # Auto mode: try Gemini first, fallback to Groq only on quota error
-        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-        groq_key = os.environ.get("GROQ_API_KEY")
+        gemini_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
+        groq_key = get_secret("GROQ_API_KEY")
         if not gemini_key and not groq_key:
             return jsonify({'error': 'API PROVIDER BELUM DIKONFIGURASI.'}), 503
 
@@ -6211,8 +6499,8 @@ def test_env():
     # Find env var names containing GEMINI or GOOGLE (names only, not values)
     env_names = [k for k in os.environ.keys() if 'GEMINI' in k.upper() or 'GOOGLE' in k.upper()]
     return jsonify({
-        'gemini_key_exists': bool(os.environ.get("GEMINI_API_KEY")),
-        'google_key_exists': bool(os.environ.get("GOOGLE_API_KEY")),
+        'gemini_key_exists': bool(get_secret("GEMINI_API_KEY")),
+        'google_key_exists': bool(get_secret("GOOGLE_API_KEY")),
         'env_names': env_names,
         'cwd': os.getcwd(),
         'backend_file': 'app.py',
