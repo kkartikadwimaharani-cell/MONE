@@ -2607,9 +2607,40 @@ def _dropbox_get_access_token():
     return _dropbox_manager.get_valid_access_token()
 
 
+def _dropbox_retry_after_seconds(resp, attempt):
+    """How long to wait before retrying a 429. Dropbox's own error body
+    ({"error": {"reason": {".tag": "too_many_write_operations"}},
+    "retry_after": N}) or its Retry-After header is authoritative when
+    present; otherwise fall back to a short exponential backoff (0.6s,
+    1.2s, 2.4s...) so a burst of parallel uploads (e.g. picking 9
+    reference images at once, which each fire an upload immediately)
+    spaces itself out instead of hammering the API in lockstep."""
+    try:
+        body = resp.json()
+        ra = body.get('retry_after') or (body.get('error') or {}).get('retry_after')
+        if ra:
+            return min(float(ra), 8.0)
+    except Exception:
+        pass
+    header_ra = resp.headers.get('Retry-After')
+    if header_ra:
+        try:
+            return min(float(header_ra), 8.0)
+        except Exception:
+            pass
+    return min(0.6 * (2 ** attempt), 8.0)
+
+
 def _dropbox_request_with_retry(method, url, **kwargs):
-    """Perform a Dropbox API call, transparently retrying once with a freshly
-    refreshed token if we get a 401 (expired/invalid token)."""
+    """Perform a Dropbox API call, transparently retrying:
+    - once with a freshly refreshed token if we get a 401 (expired/invalid
+      token);
+    - up to 4 times, with backoff, on 429 (rate limit — most commonly
+      "too_many_write_operations" when several files are uploaded/linked
+      at nearly the same moment, e.g. dropping in a batch of reference
+      images). A 429 means Dropbox rejected the call before doing
+      anything, so retrying the identical request is safe (never a
+      double-write)."""
     headers = kwargs.pop('headers', {}) or {}
     headers = {**headers, 'Authorization': f'Bearer {_dropbox_get_access_token()}'}
     resp = requests_lib.request(method, url, headers=headers, **kwargs)
@@ -2622,6 +2653,18 @@ def _dropbox_request_with_retry(method, url, **kwargs):
             return resp
         headers['Authorization'] = f'Bearer {fresh_token}'
         resp = requests_lib.request(method, url, headers=headers, **kwargs)
+
+    max_429_retries = 4
+    attempt = 0
+    while resp.status_code == 429 and attempt < max_429_retries:
+        wait_s = _dropbox_retry_after_seconds(resp, attempt)
+        app.logger.warning(
+            '[ai-video][dropbox] got 429 (rate limited), retrying in %.1fs (attempt %d/%d): %s',
+            wait_s, attempt + 1, max_429_retries, resp.text[:200],
+        )
+        time.sleep(wait_s)
+        resp = requests_lib.request(method, url, headers=headers, **kwargs)
+        attempt += 1
     return resp
 
 
