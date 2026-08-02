@@ -2936,12 +2936,18 @@ function applyQualityBadge() {
 function renderQualityChip() {
   var chip = document.getElementById('qualityChip');
   if (!chip) return;
-  // Motion Control: quality follows the provider default automatically,
-  // never shown as a manual choice. Every other model keeps the normal
-  // Quality control when it has more than one tier — rendered as an
-  // inline segmented toggle (one tap per option) instead of a chip that
-  // opens a separate sheet, matching the reference layout.
-  if (selectedFamily.key !== 'klingswap' && selectedFamily.qualities.length > 1) {
+  // Every model with more than one quality tier gets the inline segmented
+  // toggle (one tap per option). Motion Control (klingswap) genuinely has
+  // two backend-distinct modes — STD and PRO — sent to Segmind as
+  // `swap_mode`, so it needs this exactly like every other multi-tier
+  // model. It used to be excluded here on the assumption that "quality
+  // follows the provider default automatically", but that was never true:
+  // the model dock itself already labels Motion Control "2x" (from its
+  // qualities.length), yet the toggle was hidden — meaning STD vs PRO was
+  // silently fixed to whatever selectedQualityIdx last happened to be,
+  // with no way for the user to actually choose between the two modes the
+  // UI claimed existed.
+  if (selectedFamily.qualities.length > 1) {
     chip.innerHTML = '';
     selectedFamily.qualities.forEach(function(q, idx) {
       var b = document.createElement('button');
