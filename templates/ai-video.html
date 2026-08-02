@@ -2097,7 +2097,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
     </button>
   </div>
   <div class="pe-body">
-    <div class="pe-tags-label" id="peTagsLabel">Tap a reference to insert</div>
+    <div class="pe-tags-label" id="peTagsLabel">Your references — type @ in the prompt to use one</div>
     <div class="pe-tags-row" id="peTagsRow"></div>
     <div class="pe-input-wrap">
       <div class="pe-highlight" id="peHighlight" aria-hidden="true"></div>
@@ -3672,25 +3672,17 @@ function syncPromptBarText() {
   });
 }
 
-// FITUR: begitu sebuah referensi image/video selesai ter-upload, tag-nya
-// (@image1, @video1, dst) otomatis dimasukkan ke prompt — tidak perlu tap
-// chip manual lagi. Aman dari dobel: kalau tag yang sama sudah ada di teks,
-// tidak ditambah lagi.
-function autoInsertRefTag(type, entry) {
-  if (!promptInput) return;
-  if (type !== 'image' && type !== 'video') return;
-  var idx = media[type].indexOf(entry);
-  if (idx === -1) return; // sudah dihapus sebelum upload selesai
-  var tag = refTag(type, idx);
-  var existsRe = new RegExp(tag.replace('@', '@') + '(?!\\d)');
-  if (existsRe.test(promptInput.value)) return;
-  var val = promptInput.value;
-  var sep = val && !/\s$/.test(val) ? ' ' : '';
-  promptInput.value = val + sep + tag + ' ';
-  syncPromptBarText();
-  if (typeof autosizePrompt === 'function') autosizePrompt();
-  updateGenerateButtonState();
-}
+// Tagging references into the prompt (@image1, @video1, etc.) is manual
+// only — tap a chip in the "Tap a reference to insert" row (renderPeTagsRow
+// / insertTagIntoPrompt below). This used to also fire automatically the
+// instant each upload finished, silently stuffing every single reference's
+// tag into the prompt one after another. With several images plus a video
+// plus audio uploaded together, that meant the prompt filled up with a
+// wall of auto-inserted tags the user never asked for — burying whatever
+// they'd actually typed, making it look like the video reference "wasn't
+// picked up" when it was just lost in the clutter, and leaving no way to
+// reference an upload WITHOUT it being tagged. Removed so the person fully
+// controls which references actually go in the prompt, and only once.
 
 // Keep literal @image2/@video1/etc. mentions already typed in the prompt in
 // sync with the live media arrays after a removal shifts indices down.
@@ -3805,8 +3797,6 @@ function _runUpload(file, type, entry) {
         entry.url = data.url;
         entry.uploading = false;
         showToast('Added 1 reference ' + type);
-        // Tag referensi (@image1/@video1 dst) otomatis ikut masuk ke prompt.
-        autoInsertRefTag(type, entry);
         if (type === 'video') captureVideoPoster(entry);
         // Motion Control: auto-detect metadata (width/height/duration/fps/
         // aspect ratio) the instant the video finishes uploading, so the
@@ -4166,8 +4156,12 @@ function renderPeTagsRow() {
         thumbHtml = '<img src="' + item.previewUrl + '" onerror="imgFallback(this)">';
       }
       chip.innerHTML = thumbHtml + '<span>' + tagName + '</span>';
+      // Tapping only points out which upload this tag belongs to (scrolls/
+      // pulses it in the assets strip below) — it no longer writes
+      // anything into the prompt. To actually use a reference in the
+      // prompt, type its @tag by hand wherever it fits the scene, or type
+      // '@' to pick one from the popup.
       chip.onclick = function() {
-        insertTagIntoPrompt(tagName);
         pulseAssetInStrip(type, idx);
       };
       row.appendChild(chip);
