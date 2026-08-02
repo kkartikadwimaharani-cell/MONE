@@ -2251,7 +2251,7 @@ var modelFamilies = {
     {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
       subtitle: '30s \u2022 Multimodal',
-      desc: 'ByteDance — klip native sampai 30 detik, 4K, dan hingga 50 referensi multimodal (30 gambar / 10 video / 10 audio) sekaligus.',
+      desc: 'ByteDance — klip native sampai 30 detik dan hingga 50 referensi multimodal (30 gambar / 10 video / 10 audio) sekaligus. Spec penuh sampai 4K, tapi early-access API saat ini baru expose 480p/720p.',
       // ByteDance's own launch spec (Volcano Engine FORCE, 23 Jun 2026): up
       // to 50 multimodal references per generation, commonly broken down as
       // ~30 images + 10 video clips + 10 audio clips, native single-pass
@@ -3143,11 +3143,12 @@ function applyModelCapabilities() {
       sheetDefs.resolution.options = ['1K','2K','4K'];
       sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
     } else if (selectedFamily && selectedFamily.key === 'seedance25') {
-      // ByteDance's launch spec lists 720p/1080p/4K for 2.5 — no 480p draft
-      // tier like 2.0 has, and no confirmed FAST/PRO-style tier gating
-      // (2.5 isn't wired to a real backend yet), so all three are shown as
-      // preview capability rather than arbitrarily locking any of them.
-      sheetDefs.resolution.options = ['720p','1080p','4K'];
+      // Corrected against ByteDance/MuAPI's actual early-access launch spec:
+      // Seedance 2.5 ships with only a 480p and a 720p tier per endpoint —
+      // 1080p and 4K are explicitly "not yet available" on this model, even
+      // though 2.0 already has them. Previously this listed
+      // 720p/1080p/4K (no 480p) which was backwards on both counts.
+      sheetDefs.resolution.options = ['480p','720p'];
       sheetDefs.resolution.disabled = [];
     } else if (selectedFamily && isSeedanceFamily(selectedFamily.key)) {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
@@ -3730,6 +3731,7 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   });
   e.target.value = '';
 });
+
 ['video', 'audio'].forEach(function(type) {
   var input = document.getElementById(type + 'FileInput');
   if (!input) return;
@@ -3755,19 +3757,35 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   });
 });
 
-function uploadFile(file, type, previewUrl) {
-  // Track the entry by object identity (not array index). If the user
-  // removes an earlier reference while this upload is still in flight, the
-  // array shifts and a captured index would end up writing this upload's
-  // result onto a completely different (unrelated) reference — corrupting
-  // it with a stale/duplicate URL. Using the object reference itself and
-  // verifying it's still present in the array before mutating avoids that.
-  var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
-  media[type].push(entry);
-  renderUploadGrid();
+// Uploads are queued with a small concurrency cap instead of firing one
+// fetch per file the instant it's picked. Selecting several reference
+// images at once (e.g. 9 files) used to launch 9 parallel uploads —
+// each of which does 2 Dropbox write calls (files/upload +
+// create_shared_link) — which reliably tripped Dropbox's
+// "too_many_write_operations" rate limit (HTTP 429) and left some
+// references failed. Queueing keeps only a couple in flight at a time;
+// the rest wait their turn automatically. Previews still appear
+// instantly for every picked file — only the actual network request is
+// staggered.
+var _uploadQueue = [];
+var _uploadActive = 0;
+var UPLOAD_CONCURRENCY = 2;
+
+function _pumpUploadQueue() {
+  while (_uploadActive < UPLOAD_CONCURRENCY && _uploadQueue.length) {
+    var job = _uploadQueue.shift();
+    _uploadActive++;
+    _runUpload(job.file, job.type, job.entry).then(function() {
+      _uploadActive--;
+      _pumpUploadQueue();
+    });
+  }
+}
+
+function _runUpload(file, type, entry) {
   var fd = new FormData();
   fd.append('file', file);
-  fetch('/api/aivideo/upload', { method: 'POST', body: fd })
+  return fetch('/api/aivideo/upload', { method: 'POST', body: fd })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var i = media[type].indexOf(entry);
@@ -3803,6 +3821,20 @@ function uploadFile(file, type, previewUrl) {
       media[type].splice(i, 1);
       renderUploadGrid();
     });
+}
+
+function uploadFile(file, type, previewUrl) {
+  // Track the entry by object identity (not array index). If the user
+  // removes an earlier reference while this upload is still in flight, the
+  // array shifts and a captured index would end up writing this upload's
+  // result onto a completely different (unrelated) reference — corrupting
+  // it with a stale/duplicate URL. Using the object reference itself and
+  // verifying it's still present in the array before mutating avoids that.
+  var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
+  media[type].push(entry);
+  renderUploadGrid();
+  _uploadQueue.push({ file: file, type: type, entry: entry });
+  _pumpUploadQueue();
 }
 
 // ══════════ MOTION CONTROL — auto-detect / auto-fill / lock ══════════
