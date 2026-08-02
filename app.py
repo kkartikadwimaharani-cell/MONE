@@ -2446,6 +2446,28 @@ _DROPBOX_URL_TO_PATH = {}
 # In-memory task store for the async generate/poll flow (single-process).
 AIVIDEO_TASKS = {}
 AIVIDEO_TASKS_LOCK = threading.Lock()
+# How long a finished (completed/failed) task stays cached in memory after
+# its own 'created' timestamp before being pruned. Purely a RAM cap — the
+# real record lives on in SQLite via aivideo_archive, and
+# _aivideo_task_payload() already falls back to loading it from there if a
+# poll ever misses the in-memory copy (e.g. after a redeploy). Without this,
+# AIVIDEO_TASKS never shrinks for the entire life of the process — every
+# generate ever run stays in RAM forever.
+_AIVIDEO_TASK_TTL_SECONDS = 6 * 3600
+
+
+def _prune_aivideo_tasks():
+    """Drop finished tasks older than the TTL. Must be called with
+    AIVIDEO_TASKS_LOCK already held."""
+    if len(AIVIDEO_TASKS) < 200:
+        return  # not worth scanning until it's actually grown noticeably
+    cutoff = time.time() - _AIVIDEO_TASK_TTL_SECONDS
+    stale = [
+        tid for tid, t in AIVIDEO_TASKS.items()
+        if t.get('status') in ('completed', 'failed') and t.get('created', 0) < cutoff
+    ]
+    for tid in stale:
+        AIVIDEO_TASKS.pop(tid, None)
 
 # Rolling debug state for /ai-video/debug — never store secrets here, only
 # metadata useful for diagnosing "Generation failed" reports.
@@ -4077,6 +4099,7 @@ def aivideo_generate():
 
     task_id = uuid.uuid4().hex
     with AIVIDEO_TASKS_LOCK:
+        _prune_aivideo_tasks()
         AIVIDEO_TASKS[task_id] = {
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
