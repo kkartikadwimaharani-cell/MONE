@@ -1,5 +1,8 @@
 {
   "maintenance": false,
   "message": "Kami sedang melakukan pembaruan sistem.",
-  "updated_at": "2026-06-14T03:52:20.885342+00:00"
+  "updated_at": "2026-06-14T03:52:20.885342+00:00",
+  "community_name": "COMMUNITY",
+  "community_link": "https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl?s=cl&p=a&ilr=0",
+  "community_btn_label": "GABUNG"
 }
