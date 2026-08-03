@@ -30,6 +30,27 @@
   --safe-t:env(safe-area-inset-top,0px);
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);max-width:100%}
+
+/* ============ EDGE-GLOW: traveling light around a button's border ============
+   A single bright arc of light continuously circles the element's edge,
+   independent of whatever background/content is inside — used on Generate,
+   the Image/Video/Audio mode pill, and the model selector chip. Uses the
+   standard conic-gradient + mask-composite:exclude ring trick so it never
+   touches or dims the button's own background/text. @property makes
+   --edge-angle a real animatable value (supported in Chromium/Kiwi). */
+@property --edge-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+.edge-glow{position:relative}
+.edge-glow::before{
+  content:'';position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;z-index:1;
+  background:conic-gradient(from var(--edge-angle),transparent 0 68%,#ff2040 84%,#ff6a80 90%,#ff2040 96%,transparent 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  filter:drop-shadow(0 0 6px #ff2040) drop-shadow(0 0 3px #ff2040);
+  animation:edgeGlowSpin 2.8s linear infinite;
+}
+@keyframes edgeGlowSpin{to{--edge-angle:360deg}}
+@media (prefers-reduced-motion: reduce){.edge-glow::before{animation:none;display:none}}
+
 body{
   font-family:var(--body);color:var(--text);
   height:100svh;display:flex;position:relative;
@@ -181,6 +202,18 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-stage.err{color:var(--accent-hover)}
 .gen-q-bar{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
 .gen-q-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .5s ease}
+.gen-q-steps{display:flex;align-items:center;margin-top:7px}
+.gen-q-step{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none}
+.gen-q-step-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.14);transition:background .3s ease,box-shadow .3s ease,transform .3s ease}
+.gen-q-step-lbl{font-family:var(--mono);font-size:.56rem;letter-spacing:.03em;text-transform:uppercase;color:var(--text-faint);opacity:.6;white-space:nowrap}
+.gen-q-step-line{flex:1;height:1px;background:rgba(255,255,255,.1);margin:0 4px 14px}
+.gen-q-step.active .gen-q-step-dot{background:var(--accent);box-shadow:0 0 8px var(--accent);transform:scale(1.35);animation:stepPulse 1.2s ease-in-out infinite}
+.gen-q-step.active .gen-q-step-lbl{color:var(--accent);opacity:1}
+.gen-q-step.done .gen-q-step-dot{background:#3cffb0;box-shadow:0 0 6px rgba(60,255,176,.6)}
+.gen-q-step.done .gen-q-step-lbl{color:#3cffb0;opacity:.85}
+.gen-q-step.done ~ .gen-q-step-line{background:rgba(60,255,176,.35)}
+@keyframes stepPulse{0%,100%{box-shadow:0 0 6px var(--accent)}50%{box-shadow:0 0 14px var(--accent)}}
+@media (prefers-reduced-motion: reduce){.gen-q-step.active .gen-q-step-dot{animation:none}}
 .gen-q-eta{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
 .gen-q-eta-ico{width:11px;height:11px;flex-shrink:0;opacity:.85}
 .gen-q-actions{display:flex;gap:6px;flex-shrink:0}
@@ -463,6 +496,7 @@ button{background:none;border:none;cursor:pointer}
 }
 .gen-btn:active:not(:disabled){transform:scale(.98)}
 .gen-btn:disabled{opacity:.5;animation:none;cursor:not-allowed}
+.gen-btn:disabled.edge-glow::before{display:none}
 .gen-btn.loading .gen-txt::after{content:'';display:inline-block;width:13px;height:13px;margin-left:6px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -1441,6 +1475,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .cr-x:active{transform:scale(.9)}
 </style>
 </head>
+
 <body>
 
 <div class="toast-wrap" id="toastWrap">
@@ -1635,7 +1670,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 
   <!-- BOTTOM FLOATING PANEL -->
   <div class="panel-wrap">
-    <div class="panel" id="panel">
+    <div class="panel edge-glow" id="panel">
       <div class="panel-handle-wrap" id="panelHandle" onclick="togglePanelCollapse()">
         <div class="panel-handle"></div>
       </div>
@@ -1809,7 +1844,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       </div>
 
       <div class="action-row">
-        <button class="gen-btn" id="generateBtn" onclick="startGenerate()" disabled>
+        <button class="gen-btn edge-glow" id="generateBtn" onclick="startGenerate()" disabled>
           <span class="gen-btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.9 10.1a2.6 2.6 0 0 0-3.6-3.6L16 7.8a2.1 2.1 0 0 1-3-3l1.3-1.3a2.6 2.6 0 1 0-3.6-3.7"/><path d="m3 21 4.3-4.3"/><path d="M12.5 6.5 3 16l5 5 9.5-9.5"/></svg></span>
           <span class="gen-txt">GENERATE</span>
           <span class="gen-cost-badge" id="creditCostTxt"></span>
@@ -4502,6 +4537,14 @@ function refreshQueueBadge() {
 }
 
 function genQueueItemHtml(taskId, title) {
+  // Workflow tracker: the same 4 stages stageForProgress() already maps
+  // progress % onto, shown as a small step row instead of only changing
+  // text — so each step of the generation is visibly reached, not just
+  // narrated by a label that overwrites itself.
+  var steps = ['Upload', 'Prepare', 'Generate', 'Render'];
+  var stepsHtml = steps.map(function(label, i) {
+    return '<div class="gen-q-step" id="genqStep_' + taskId + '_' + i + '"><span class="gen-q-step-dot"></span><span class="gen-q-step-lbl">' + label + '</span></div>';
+  }).join('<div class="gen-q-step-line"></div>');
   return (
     '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
       '<div class="gen-q-ring" id="genqRing_' + taskId + '"><span class="gen-q-ring-m">M</span></div>' +
@@ -4510,12 +4553,29 @@ function genQueueItemHtml(taskId, title) {
         '<div class="gen-q-title">' + escapeHtml(title) + '</div>' +
         '<div class="gen-q-stage" id="genqStage_' + taskId + '">Uploading Assets</div>' +
         '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
+        '<div class="gen-q-steps" id="genqSteps_' + taskId + '">' + stepsHtml + '</div>' +
       '</div>' +
       '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="gen-q-eta-txt" id="genqEtaTxt_' + taskId + '">Estimating…</span></span>' +
       '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div>' +
       '<button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Sembunyikan" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">\u2715</button>' +
     '</div>'
   );
+}
+function stepIndexForProgress(p) {
+  if (p < 10) return 0;
+  if (p < 60) return 1;
+  if (p < 85) return 2;
+  return 3; // includes 100 (Render finishing / Complete)
+}
+function updateWorkflowSteps(taskId, progress) {
+  var activeIdx = stepIndexForProgress(progress);
+  for (var i = 0; i < 4; i++) {
+    var stepEl = document.getElementById('genqStep_' + taskId + '_' + i);
+    if (!stepEl) continue;
+    stepEl.classList.remove('done', 'active');
+    if (i < activeIdx || progress >= 100) stepEl.classList.add('done');
+    else if (i === activeIdx) stepEl.classList.add('active');
+  }
 }
 function dismissGenQueueItem(taskId) {
   var el = document.getElementById('genq_' + taskId);
@@ -4703,6 +4763,7 @@ function pollQueueTask(taskId, opts) {
     var e = els();
     if (e.item) e.item.classList.add('done');
     if (e.dismiss) e.dismiss.style.display = 'block';
+    updateWorkflowSteps(taskId, 100);
   }
   function markFailed(msg) {
     var e = els();
@@ -4735,6 +4796,7 @@ function pollQueueTask(taskId, opts) {
         var progress = data.progress || 0;
         if (e.bar) e.bar.style.width = progress + '%';
         if (e.stage) e.stage.textContent = stageForProgress(progress);
+        updateWorkflowSteps(taskId, progress);
 
         // ETA reconciliation: blend the server's initial estimate with the
         // pace actually observed so far, so the displayed time tracks
