@@ -247,6 +247,17 @@ def get_secret(*names, default=''):
 _BOT_SESSION_LOCK = threading.Lock()
 _BOT_AUTHENTICATED_CHATS = set()
 _BOT_LOGIN_PENDING_CHATS = set()
+# When a session expires mid-action (e.g. admin taps "Community Link" but
+# the bot process restarted since their last login, or 24h+ passed), the
+# bot has to interrupt them with a password prompt. Without remembering
+# *what* they were trying to do, successful login used to just dump them
+# back at the generic admin panel — so the very next message they sent
+# (the actual "Nama | Link | Label" text meant for Community Link) landed
+# with no state at all and got misread as something else entirely (e.g.
+# matched a regular-user reward-verification reply instead of updating the
+# community link). This dict lets login-success resume the original
+# action instead of discarding it.
+_BOT_LOGIN_RESUME_ACTION = {}
 _BOT_USER_STATES = {}
 _BOT_LAST_PANEL_MESSAGES = {}
 _BOT_PROCESSED_UPDATE_IDS = set()
@@ -281,8 +292,13 @@ def _default_site_status():
         'maintenance': False,
         'message': 'Kami sedang melakukan pembaruan sistem.',
         'updated_at': _utc_timestamp(),
+        # Hardcoded directly per MII's request instead of being set through
+        # the bot's Community Link flow (button removed from _admin_keyboard
+        # above). Still editable later by writing straight to this file /
+        # via a future admin route if it ever needs to change.
         'community_name': 'COMMUNITY',
-        'community_link': '',
+        'community_link': 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl?s=cl&p=a&ilr=0',
+        'community_btn_label': 'GABUNG',
         'telegram_channel_link': 'https://t.me/+L0mZsWxq30cxZmM1'
     }
 
@@ -306,7 +322,7 @@ def get_site_status():
         status.setdefault('message', 'Kami sedang melakukan pembaruan sistem.')
         status.setdefault('updated_at', _utc_timestamp())
         status.setdefault('community_name', 'COMMUNITY')
-        status.setdefault('community_link', '')
+        status.setdefault('community_link', 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl?s=cl&p=a&ilr=0')
         status.setdefault('community_btn_label', 'GABUNG')
         status.setdefault('telegram_channel_link', 'https://t.me/+L0mZsWxq30cxZmM1')
         status.setdefault('extension_locked', True)
@@ -1010,7 +1026,11 @@ def _admin_keyboard():
         ['📦 Reward Stock', '👥 Token List'],
         ['🏆 Winner List', '📊 Status'],
         ['♻️ Reset Event', '🎁 Info Hadiah'],
-        ['🔗 Community Link', '📢 Telegram Channel'],
+        # Community Link button removed — the community link is now hardcoded
+        # directly in _default_site_status()/get_site_status() below instead
+        # of being set through this bot flow, so there's no button for it
+        # here anymore. The '📢 Telegram Channel' flow is untouched.
+        ['📢 Telegram Channel'],
         ['🧩 Extension Page', '🔐 Private Vault'],
         ['🏠 Menu Utama'],
         ['🔐 Logout'],
@@ -1144,9 +1164,34 @@ def refresh_admin_panel(chat_id, user=None, note=None):
     if user and message_id:
         _save_user_message_ids(user['telegram_user_id'], admin_panel_message_id=message_id)
 
-def _show_login_prompt(chat_id):
-    with _BOT_SESSION_LOCK: _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
+def _show_login_prompt(chat_id, resume_action=None):
+    with _BOT_SESSION_LOCK:
+        _BOT_LOGIN_PENDING_CHATS.add(str(chat_id))
+        if resume_action:
+            _BOT_LOGIN_RESUME_ACTION[str(chat_id)] = resume_action
+        else:
+            _BOT_LOGIN_RESUME_ACTION.pop(str(chat_id), None)
     _telegram_send_message(chat_id, 'Masukkan password admin untuk membuka MII NETWORK ADMIN PANEL.')
+
+
+def _prompt_edit_community_link(chat_id, uid):
+    status = get_site_status()
+    current_name = status.get('community_name', 'COMMUNITY')
+    current_link = status.get('community_link', '(kosong)')
+    current_btn = status.get('community_btn_label', 'GABUNG')
+    _set_bot_state(chat_id, 'set_community_link', uid)
+    _telegram_send_message(chat_id,
+        f'🔗 Edit Community\n\nSaat ini:\nNama: *{current_name}*\nLink: `{current_link}`\nTombol: *{current_btn}*\n\nKirim format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nKosongkan link:\n`COMMUNITY | |`',
+        _claim_keyboard(), parse_mode='Markdown')
+
+
+def _prompt_edit_telegram_channel(chat_id, uid):
+    status = get_site_status()
+    current = status.get('telegram_channel_link', '(kosong)')
+    _set_bot_state(chat_id, 'set_telegram_channel', uid)
+    _telegram_send_message(chat_id,
+        f'📢 Edit Telegram Channel\n\nSaat ini:\n`{current}`\n\nKirim link baru:',
+        _claim_keyboard(), parse_mode='Markdown')
 
 
 def _format_stats():
@@ -1553,7 +1598,13 @@ def process_telegram_update(update):
             with _BOT_SESSION_LOCK:
                 _BOT_AUTHENTICATED_CHATS.add(str(chat_id))
                 _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
-            show_admin_panel(chat_id, user)
+                resume_action = _BOT_LOGIN_RESUME_ACTION.pop(str(chat_id), None)
+            if resume_action == 'community_link':
+                _prompt_edit_community_link(chat_id, uid)
+            elif resume_action == 'telegram_channel':
+                _prompt_edit_telegram_channel(chat_id, uid)
+            else:
+                show_admin_panel(chat_id, user)
         else:
             _telegram_send_message(chat_id, '❌ Password salah.')
         return
@@ -1571,6 +1622,7 @@ def process_telegram_update(update):
         with _BOT_SESSION_LOCK:
             _BOT_AUTHENTICATED_CHATS.discard(str(chat_id))
             _BOT_LOGIN_PENDING_CHATS.discard(str(chat_id))
+            _BOT_LOGIN_RESUME_ACTION.pop(str(chat_id), None)
         _clear_bot_state(chat_id, uid)
         if _is_admin_chat(uid):
             _telegram_send_message(chat_id, '🔐 Logout berhasil. Kirim /start untuk login admin lagi.')
@@ -1583,11 +1635,11 @@ def process_telegram_update(update):
         _telegram_send_message(chat_id, '⛔ Access denied.')
         return
     if _is_admin_chat(uid) and data in admin_actions and not _is_logged_in(chat_id):
-        _show_login_prompt(chat_id)
+        _show_login_prompt(chat_id, resume_action=data)
         return
     if _is_admin_chat(uid):
         if not _is_logged_in(chat_id):
-            _show_login_prompt(chat_id)
+            _show_login_prompt(chat_id, resume_action=data)
             return
         if data == 'event_stats':
             _telegram_send_message(chat_id, _format_stats())
@@ -1730,22 +1782,10 @@ def process_telegram_update(update):
             _handle_admin_text(chat_id, raw_data, message=message)
             return
         if data == 'community_link':
-            status = get_site_status()
-            current_name = status.get('community_name', 'COMMUNITY')
-            current_link = status.get('community_link', '(kosong)')
-            current_btn = status.get('community_btn_label', 'GABUNG')
-            _set_bot_state(chat_id, 'set_community_link', uid)
-            _telegram_send_message(chat_id,
-                f'🔗 Edit Community\n\nSaat ini:\nNama: *{current_name}*\nLink: `{current_link}`\nTombol: *{current_btn}*\n\nKirim format:\n`Nama | Link | Label Tombol`\n\nContoh:\n`GEMINI BOT | https://t.me/geminibot | BUKA`\n\nKosongkan link:\n`COMMUNITY | |`',
-                _claim_keyboard(), parse_mode='Markdown')
+            _prompt_edit_community_link(chat_id, uid)
             return
         if data == 'telegram_channel':
-            status = get_site_status()
-            current = status.get('telegram_channel_link', '(kosong)')
-            _set_bot_state(chat_id, 'set_telegram_channel', uid)
-            _telegram_send_message(chat_id,
-                f'📢 Edit Telegram Channel\n\nSaat ini:\n`{current}`\n\nKirim link baru:',
-                _claim_keyboard(), parse_mode='Markdown')
+            _prompt_edit_telegram_channel(chat_id, uid)
             return
         if data == 'extension_page':
             status = get_site_status()
