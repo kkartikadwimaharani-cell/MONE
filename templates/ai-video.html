@@ -1678,7 +1678,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div class="panel-handle"></div>
       </div>
       <div class="panel-collapsed-bar" onclick="togglePanelCollapse()">
-        <span class="panel-collapsed-model" id="collapsedModelTxt">SEEDANCE 2.0</span>
+        <span class="panel-collapsed-model" id="collapsedModelTxt">Loading model…</span>
         <span class="panel-collapsed-progress" id="collapsedProgressTxt"></span>
         <span class="panel-collapsed-spacer"></span>
         <span class="panel-collapsed-hint">Expand</span>
@@ -1691,8 +1691,8 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
           <span class="model-select-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/></svg>
           </span>
-          <span class="model-select-txt" id="modelSelectTxt">SEEDANCE 2.0</span>
-          <span class="model-select-tier" id="modelSelectTier">MINI</span>
+          <span class="model-select-txt" id="modelSelectTxt">Loading model…</span>
+          <span class="model-select-tier" id="modelSelectTier"></span>
           <span class="model-select-spacer"></span>
           <span class="model-select-car"></span>
         </button>
@@ -2633,10 +2633,8 @@ function setView(view, el) {
   moveModePill(el);
   if (view === 'image' || view === 'video' || view === 'audio') {
     activeMode = view;
-    var saved = loadCanonicalModelState(activeMode);
-    var family = modelFamilies[activeMode].find(function(item){ return saved && item.key === saved.family; }) || modelFamilies[activeMode][0];
-    var variantIdx = family.qualities.findIndex(function(item){ return saved && item.id === saved.variant; });
-    pickFamily(family, variantIdx < 0 ? 0 : variantIdx);
+    var canonical = resolveCanonicalModelState(activeMode);
+    applySelectedFamily(canonical.family, canonical.qualityIdx, { initialize: true, saved: canonical.saved });
     updateModeUI();
     updateRailActive();
   }
@@ -2731,6 +2729,7 @@ function _paintDurationUI(idx, steps) {
       selectedDuration = steps[idx];
       updateCreditEstimate();
       renderSeedance25Settings();
+      persistCanonicalModelState();
     }
   }
   slider.addEventListener('input', function() { apply(true); });
@@ -2744,6 +2743,7 @@ function _paintDurationUI(idx, steps) {
       selectedDuration = slider.dataset.steps.split(',').map(Number)[parseInt(slider.value, 10)];
       updateCreditEstimate();
       renderSeedance25Settings();
+      persistCanonicalModelState();
     }, {passive: true});
   });
 })();
@@ -2754,7 +2754,7 @@ var sheetDefs = {
     options: ['1:1','3:4','4:3','9:16','16:9','21:9'],
     desc: function(v){ return ratioDesc[v]; },
     get: function(){ return selectedRatio; },
-    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; syncCanvasPreviewAspect(); renderSeedance25Settings(); }
+    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; syncCanvasPreviewAspect(); renderSeedance25Settings(); persistCanonicalModelState(); }
   },
   resolution: {
     title: 'Resolution',
@@ -2762,13 +2762,13 @@ var sheetDefs = {
     disabled: ['4K'],
     desc: function(v){ return resDesc[v]; },
     get: function(){ return selectedResolution; },
-    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); }
+    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); persistCanonicalModelState(); }
   },
   audio: {
     title: 'Audio',
     options: ['Audio On','Audio Off'],
     get: function(){ return muteAudioEnabled ? 'Audio Off' : 'Audio On'; },
-    set: function(v){ muteAudioEnabled = v === 'Audio Off'; renderMuteAudioChip(); }
+    set: function(v){ muteAudioEnabled = v === 'Audio Off'; renderMuteAudioChip(); persistCanonicalModelState(); }
   },
   imageformat: {
     title: 'Output Format', options: ['PNG','JPEG'],
@@ -2785,7 +2785,7 @@ var sheetDefs = {
     options: [4,5,6,8,10,12,15].map(function(s){ return s+'s'; }),
     desc: function(v){ return durDesc(parseInt(v,10)); },
     get: function(){ return selectedDuration + 's'; },
-    set: function(v){ selectedDuration = parseInt(v,10); document.getElementById('durationLabel').textContent = v; updateCreditEstimate(); }
+    set: function(v){ selectedDuration = parseInt(v,10); document.getElementById('durationLabel').textContent = v; updateCreditEstimate(); persistCanonicalModelState(); }
   },
   audioformat: {
     title: 'Output Format',
@@ -2995,51 +2995,94 @@ function renderQualityChip() {
     chip.style.display = 'none';
   }
 }
-function pickFamily(family, qualityIdx) {
+function applySelectedFamily(family, qualityIdx, options) {
+  options = options || {};
+  if (!family || (modelFamilies[activeMode] || []).indexOf(family) === -1) return false;
   var previousFamilyKey = selectedFamily && selectedFamily.key;
+  var variants = family.qualities || [];
+  qualityIdx = Number.isInteger(qualityIdx) && qualityIdx >= 0 && qualityIdx < variants.length ? qualityIdx : 0;
   selectedFamily = family;
-  selectedQualityIdx = qualityIdx || 0;
-  var hasTiers = family.qualities && family.qualities.length > 0;
-  var q = hasTiers ? family.qualities[selectedQualityIdx] : null;
+  selectedQualityIdx = qualityIdx;
+  var hasTiers = variants.length > 0;
+  var q = hasTiers ? variants[selectedQualityIdx] : null;
   // Models with no confirmed tier lineup yet (e.g. Seedance 2.5 pre-API)
   // fall back to the family key as a placeholder id — never invented
   // tier names like FAST/PRO that the real backend hasn't confirmed.
   selectedModel = q ? q.id : family.key;
   selectedModelName = family.name;
   selectedModelTier = q ? q.label : null;
-  if (family.key === 'seedance25' && previousFamilyKey !== 'seedance25') {
+  // Initialization is explicit: boot must apply defaults even though the
+  // pre-DOM state already points at the first video family. A same-family
+  // click, on the other hand, must not discard settings the user just chose.
+  var resetFamilyDefaults = !!options.initialize || previousFamilyKey !== family.key;
+  if (resetFamilyDefaults) {
+    selectedRatio = '16:9';
+    selectedDuration = 5;
+    muteAudioEnabled = false;
+  }
+  if (family.key === 'seedance25' && resetFamilyDefaults) {
     selectedRatio = '16:9';
     selectedResolution = '720p';
     muteAudioEnabled = false;
-    document.getElementById('ratioLabel').textContent = selectedRatio;
-    document.getElementById('resolutionLabel').textContent = selectedResolution;
-    renderMuteAudioChip();
   }
   if (q && isSeedanceFamily(family.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
-    var resLabelEl0 = document.getElementById('resolutionLabel');
-    if (resLabelEl0) resLabelEl0.textContent = selectedResolution;
+  }
+  if (options.saved) {
+    if (typeof options.saved.ratio === 'string') selectedRatio = options.saved.ratio;
+    if (typeof options.saved.resolution === 'string') selectedResolution = options.saved.resolution;
+    if (Number.isFinite(options.saved.duration)) selectedDuration = options.saved.duration;
+    if (typeof options.saved.muteAudio === 'boolean') muteAudioEnabled = options.saved.muteAudio;
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
-  updateCollapsedBar(family.name + (hasTiers && family.qualities.length > 1 ? ' ' + q.label : ''));
+  updateCollapsedBar(family.name);
   applyQualityBadge();
   renderQualityChip();
   applyModelCapabilities();
+  // Capability application may clamp state; labels are painted afterwards so
+  // no old family's settings survive for even one completed synchronization.
+  var ratioLabel = document.getElementById('ratioLabel');
+  var resolutionLabel = document.getElementById('resolutionLabel');
+  if (ratioLabel) ratioLabel.textContent = selectedRatio;
+  if (resolutionLabel) resolutionLabel.textContent = selectedResolution;
+  renderMuteAudioChip();
   updateCreditEstimate();
+  updateGenerateButtonState();
   closeSheet();
   closeModelDock();
   persistCanonicalModelState();
+  return true;
+}
+function pickFamily(family, qualityIdx) {
+  return applySelectedFamily(family, qualityIdx, { initialize: false });
 }
 
 var MODEL_STATE_KEY = 'mii_model_state_v1';
+var DEFAULT_VIDEO_FAMILY_KEY = 'seedance25';
 function loadCanonicalModelState(mode) {
   try { return (JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {})[mode] || null; } catch (_) { return null; }
+}
+function resolveCanonicalModelState(mode) {
+  var saved = loadCanonicalModelState(mode);
+  var families = modelFamilies[mode] || [];
+  var fallbackFamily = mode === 'video'
+    ? families.find(function(item){ return item.key === DEFAULT_VIDEO_FAMILY_KEY; }) || families[0]
+    : families[0];
+  var family = families.find(function(item){ return saved && item.key === saved.family; });
+  if (!family) return { family: fallbackFamily, qualityIdx: 0, saved: null };
+  var qualities = family.qualities || [];
+  if (!qualities.length) {
+    return saved.variant === family.key ? { family: family, qualityIdx: 0, saved: saved } : { family: fallbackFamily, qualityIdx: 0, saved: null };
+  }
+  var qualityIdx = qualities.findIndex(function(item){ return item.id === saved.variant; });
+  return qualityIdx >= 0 ? { family: family, qualityIdx: qualityIdx, saved: saved } : { family: fallbackFamily, qualityIdx: 0, saved: null };
 }
 function persistCanonicalModelState() {
   if (!selectedFamily) return;
   try {
     var all = JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {};
-    all[activeMode] = {family:selectedFamily.key, variant:selectedModel};
+    all[activeMode] = {family:selectedFamily.key, variant:selectedModel, ratio:selectedRatio,
+      resolution:selectedResolution, duration:selectedDuration, muteAudio:muteAudioEnabled};
     localStorage.setItem(MODEL_STATE_KEY, JSON.stringify(all));
   } catch (_) {}
 }
@@ -3317,21 +3360,7 @@ function applyModelCapabilities() {
   renderSeedance25Settings();
 }
 function pickQuality(idx) {
-  selectedQualityIdx = idx;
-  var q = selectedFamily.qualities[idx];
-  selectedModel = q.id;
-  selectedModelTier = q.label;
-  if (isSeedanceFamily(selectedFamily.key) && seedanceDefaultRes[q.label]) {
-    selectedResolution = seedanceDefaultRes[q.label];
-    var resLabelEl1 = document.getElementById('resolutionLabel');
-    if (resLabelEl1) resLabelEl1.textContent = selectedResolution;
-  }
-  applyQualityBadge();
-  renderQualityChip();
-  if (typeof applyModelCapabilities === 'function') applyModelCapabilities();
-  updateCreditEstimate();
-  persistCanonicalModelState();
-  closeSheet();
+  return applySelectedFamily(selectedFamily, idx, { initialize: false });
 }
 function renderMuteAudioChip() {
   var chip = document.getElementById('muteAudioChip');
@@ -3356,6 +3385,7 @@ function toggleMuteAudio() {
   muteAudioEnabled = !muteAudioEnabled;
   renderMuteAudioChip();
   renderSeedance25Settings();
+  persistCanonicalModelState();
 }
 
 function openAudioSelector(anchorEl) {
@@ -6031,14 +6061,11 @@ function closeImagePreview() {
   document.getElementById('imgPreviewOverlay').classList.remove('show');
 }
 
-var restoredModelState = loadCanonicalModelState(activeMode);
-if (restoredModelState) {
-  var restoredFamily = modelFamilies[activeMode].find(function(item){ return item.key === restoredModelState.family; });
-  if (restoredFamily) {
-    var restoredVariant = restoredFamily.qualities.findIndex(function(item){ return item.id === restoredModelState.variant; });
-    pickFamily(restoredFamily, restoredVariant < 0 ? 0 : restoredVariant);
-  }
-}
+// Boot uses exactly the same complete application path as a dock selection.
+// Invalid/missing state resolves to the mode's explicit primary family.
+var bootModelState = resolveCanonicalModelState(activeMode);
+applySelectedFamily(bootModelState.family, bootModelState.qualityIdx,
+  { initialize: true, saved: bootModelState.saved });
 updateCardPreview('image');
 updateCardPreview('video');
 updateCardPreview('audio');
