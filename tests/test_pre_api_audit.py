@@ -65,6 +65,35 @@ class PreApiAuditTests(unittest.TestCase):
             self.assertEqual(video['length_seconds'], seconds)
             self.assertNotIn('duration', video)
 
+    def test_budgetpixel_video_uses_filtered_prompt_and_preserves_original(self):
+        captured = {}
+
+        class NoStartThread:
+            def __init__(self, target=None, args=(), **kwargs):
+                captured['task_id'], captured['body'] = args[0], args[3]
+            def start(self):
+                pass
+
+        payload = {'family': 'wan30', 'model': 'PRIME', 'prompt': 'A woman walks home.',
+                   'duration': 5}
+        with app.app.test_request_context('/api/aivideo/generate', method='POST', json=payload):
+            app.session['mii_aivideo_auth'] = True
+            with patch.object(app.threading, 'Thread', NoStartThread), patch.object(app, '_persist_task'), \
+                    patch.object(app.mii_quality_filter, 'build_final_prompt', return_value='filtered prompt'):
+                response = app.aivideo_generate()
+        self.assertEqual(response.status_code, 200)
+        task = app.AIVIDEO_TASKS.pop(captured['task_id'])
+        self.assertEqual(captured['body']['prompt'], 'filtered prompt')
+        self.assertEqual(task['request_metadata']['original_prompt'], 'A woman walks home.')
+        self.assertEqual(task['request_metadata']['final_prompt'], 'filtered prompt')
+
+    def test_quality_filter_failure_falls_back_to_original_prompt(self):
+        with patch.object(app.mii_quality_filter, 'build_final_prompt', side_effect=RuntimeError('filter failed')):
+            body = self._capture_generation_body(
+                {'family': 'wan30', 'model': 'PRIME', 'prompt': 'Keep this exact prompt.', 'duration': 5}
+            )
+        self.assertEqual(body['prompt'], 'Keep this exact prompt.')
+
     def test_generation_creates_persistent_diagnostic_with_reference_trace(self):
         reference_url = 'https://cdn.example.com/reference.png'
         app._aivideo_debug_append_upload({'filename': 'reference.png', 'url': reference_url,
