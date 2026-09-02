@@ -16,7 +16,8 @@ class AiVideoDebugTests(unittest.TestCase):
             app._AIVIDEO_REQUEST_LOG.clear()
 
     def _upload(self, filename, final_url):
-        png = b'\x89PNG\r\n\x1a\n' + b'\x00' * 32
+        png = (b'\x89PNG\r\n\x1a\n' + b'\x00\x00\x00\x0dIHDR'
+               + b'\x00\x00\x00\x01\x00\x00\x00\x01' + b'\x08\x06\x00\x00\x00')
         with app.app.test_request_context(
                 '/api/aivideo/upload', method='POST',
                 data={'file': (io.BytesIO(png), filename)},
