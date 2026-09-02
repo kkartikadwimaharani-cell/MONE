@@ -3052,21 +3052,49 @@ def _dropbox_status_check():
 
 def _browser_debug_status():
     """Build the provider-neutral diagnostic safe to send to a browser."""
+    checked_at = _utc_timestamp()
     storage_state = _dropbox_manager.status()['state']
     if storage_state == 'not_connected':
-        storage = {'status': 'NOT CONFIGURED', 'detail': 'Storage is not configured.'}
+        storage = {'status': 'NOT CONFIGURED', 'mode': 'DISCONNECTED', 'archive': 'UNAVAILABLE',
+                   'detail': 'Storage is not configured.'}
     else:
         storage_ok, _internal_detail = _dropbox_status_check()
-        storage = ({'status': 'READY', 'detail': 'Storage is ready.'} if storage_ok else
-                   {'status': 'ERROR', 'detail': 'Storage connection requires attention.'})
+        storage = ({'status': 'READY', 'mode': 'CONNECTED', 'archive': 'READY',
+                    'detail': 'Storage is ready.'} if storage_ok else
+                   {'status': 'ERROR', 'mode': 'ATTENTION REQUIRED', 'archive': 'UNAVAILABLE',
+                    'detail': 'Storage connection requires attention.'})
+    storage.update({'auto_refresh': '5 SECONDS', 'checked_at': checked_at})
 
     configured = bool(get_secret('BUDGETPIXEL_API_KEY'))
     generation = {
         'configured': configured,
         'status': 'READY' if configured else 'NOT CONFIGURED',
+        'api_configuration': 'CONFIGURED' if configured else 'NOT CONFIGURED',
+        'video_backend': 'READY' if configured else 'STANDBY',
+        'image_backend': 'READY' if configured else 'STANDBY',
+        'task_engine': 'READY',
+        'polling': 'READY',
+        'last_request': 'RECORDED' if _AIVIDEO_DEBUG.get('last_request') else 'NONE',
         'detail': 'AI generation is ready.' if configured else 'AI generation is not configured.',
+        'checked_at': checked_at,
     }
-    return {'storage': storage, 'generation': generation}
+    try:
+        recent = aivideo_archive.list_archive(archived=None)
+    except Exception:
+        recent = []
+    with _AIVIDEO_REQUEST_LOG_LOCK:
+        request_total = len(_AIVIDEO_REQUEST_LOG)
+        request_errors = sum(1 for entry in _AIVIDEO_REQUEST_LOG if not entry.get('ok'))
+    pipeline = {
+        'archive': storage['archive'], 'image_preview': 'READY', 'video_preview': 'READY',
+        'history': 'READY', 'last_save': 'AVAILABLE' if recent else 'NONE',
+    }
+    # The browser receives aggregate, provider-neutral metadata only. Detailed
+    # request records stay in the server log where secret redaction is enforced.
+    return {'storage': storage, 'generation': generation, 'pipeline': pipeline,
+            'motion': {'status': 'READY'},
+            'request_log': {'status': 'INTERNAL ONLY', 'total': request_total,
+                            'errors': request_errors}, 'checked_at': checked_at}
 
 
 def _segmind_extract_error(resp):
@@ -3764,7 +3792,14 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
             output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
         if output_type == 'image':
             output['images'] = archived
-        _set(status='completed', progress=100, output=output)
+        if archive_available:
+            _set(status='completed', progress=100, output=output)
+        else:
+            # Preserve the locally-previewable result while reporting storage
+            # failure separately from provider generation failure.
+            _set(status='failed', progress=100, output=output,
+                 error='Result was generated but could not be saved. Please try again.',
+                 error_code='RESULT_SAVE_FAILED')
         app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
                         task_id, family, variant, round((time.time() - started) * 1000))
     except budgetpixel_provider.ProviderError as exc:
@@ -3964,22 +3999,20 @@ def aivideo_generate():
         gpt_references = family == 'gptimage' and image_urls and not (video_urls or audio_urls or first_frame_url or last_frame_url)
         seedance20_references = family == 'seedance'
         if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or seedance20_references):
-            code = 'INVALID_IMAGE_SETTINGS' if output_type == 'image' else 'GENERATION_FAILED'
-            return jsonify({'ok': False, 'error': {'code': code, 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+            return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         variant = model_key or 'STANDARD'
         try:
             endpoint = (budgetpixel_provider.resolve_image_model(family, variant) if output_type == 'image'
                         else budgetpixel_provider.resolve_video_model(family, variant))
         except budgetpixel_provider.ProviderError:
-            code = 'IMAGE_MODEL_UNAVAILABLE' if output_type == 'image' else 'MODEL_UNAVAILABLE'
-            return jsonify({'ok': False, 'error': {'code': code, 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+            return jsonify({'ok': False, 'error': {'code': 'MODEL_UNAVAILABLE', 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         body = {'prompt': prompt}
         if family == 'seedance':
             try:
                 body = _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
                                                   audio_urls, first_frame_url, last_frame_url, mute_audio)
             except ValueError as exc:
-                return jsonify({'ok': False, 'error': {'code': 'INVALID_VIDEO_SETTINGS', 'message': str(exc),
+                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': str(exc),
                                 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         elif output_type == 'video':
             ranges = {'seedance': (4, 15), 'seedance25': (4, 30), 'wan30': (2, 30)}
@@ -3988,7 +4021,7 @@ def aivideo_generate():
                 duration = int(payload.get('duration', low))
             except (TypeError, ValueError):
                 duration = low
-            body['duration'] = max(low, min(high, duration))
+            body['length_seconds'] = max(low, min(high, duration))
             if family == 'seedance25':
                 allowed = ('480p', '720p')
             else:
@@ -4011,13 +4044,15 @@ def aivideo_generate():
             try:
                 count = int(payload.get('num_images', 1))
             except (TypeError, ValueError):
-                count = 1
+                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'Image count must be 1–4.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+            if len(image_urls) > 9 or count not in range(1, 5):
+                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'Image settings exceed model limits.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
             body.update({'quality': quality, 'resolution': resolution if resolution in ('1K', '2K', '4K') else '1K',
                          'aspect_ratio': aspect_ratio_in if aspect_ratio_in in ratios else '1:1',
-                         'num_images': max(1, min(4, count)),
+                         'num_images': count,
                          'output_format': output_format if output_format in ('png', 'jpeg') else 'png'})
             if image_urls:
-                body['reference_images'] = image_urls[:9]
+                body['reference_images'] = image_urls
 
         task_id = uuid.uuid4().hex
         with AIVIDEO_TASKS_LOCK:
