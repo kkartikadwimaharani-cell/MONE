@@ -65,6 +65,47 @@ class PreApiAuditTests(unittest.TestCase):
             self.assertEqual(video['length_seconds'], seconds)
             self.assertNotIn('duration', video)
 
+    def test_generation_creates_persistent_diagnostic_with_reference_trace(self):
+        reference_url = 'https://cdn.example.com/reference.png'
+        app._aivideo_debug_append_upload({'filename': 'reference.png', 'url': reference_url,
+                                          'ok': True, 'at': '2026-09-02T00:00:00Z'})
+        captured = {}
+
+        class NoStartThread:
+            def __init__(self, target=None, args=(), **kwargs):
+                captured['task_id'] = args[0]
+            def start(self):
+                pass
+
+        payload = {'family': 'gptimage', 'model': 'HIGH', 'prompt': 'exact prompt',
+                   'resolution': '4K', 'num_images': 4, 'output_format': 'jpeg',
+                   'aspect_ratio': '16:9', 'image_urls': [reference_url]}
+        with app.app.test_request_context('/api/aivideo/generate', method='POST', json=payload):
+            app.session['mii_aivideo_auth'] = True
+            with patch.object(app.threading, 'Thread', NoStartThread), patch.object(app, '_persist_task'):
+                response = app.aivideo_generate()
+        self.assertEqual(response.status_code, 200)
+        task = app.AIVIDEO_TASKS.pop(captured['task_id'])
+        diagnostic = task['diagnostic']
+        self.assertEqual(diagnostic['status'], 'QUEUED')
+        self.assertEqual(diagnostic['prompt_sent'], 'exact prompt')
+        self.assertEqual(diagnostic['payload_summary']['quality'], 'high')
+        self.assertEqual(diagnostic['references'][0]['filename'], 'reference.png')
+        self.assertEqual(diagnostic['references'][0]['final_url'],
+                         diagnostic['payload_summary']['reference_urls'][0])
+        self.assertNotIn('Authorization', repr(diagnostic))
+
+    def test_debug_log_reconstructs_persisted_task_after_refresh(self):
+        record = {'request_id': 'MII-ABC', 'status': 'COMPLETED', 'created_at': 'now',
+                  'elapsed_ms': 125, 'prompt_sent': 'safe', 'references': []}
+        with patch.object(app.aivideo_archive, 'list_recent_tasks', return_value=[{'diagnostic': record}]), \
+             patch.object(app.aivideo_archive, 'list_archive', return_value=[]), \
+             patch.object(app._dropbox_manager, 'status', return_value={'state': 'not_connected'}):
+            status = app._browser_debug_status()
+        self.assertEqual(status['request_log']['total'], 1)
+        self.assertEqual(status['request_log']['success'], 1)
+        self.assertEqual(status['request_log']['entries'][0]['request_id'], 'MII-ABC')
+
     @patch.object(app, '_persist_task')
     @patch.object(app, '_fetch_generated_result', return_value=b'image')
     @patch.object(app.budgetpixel_provider, 'poll')

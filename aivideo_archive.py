@@ -115,6 +115,26 @@ def get_task(task_id):
         return None
 
 
+def list_recent_tasks(limit=20):
+    """Return recent task snapshots for diagnostics/history reconstruction."""
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_tasks_table(conn)
+        rows = conn.execute(
+            'SELECT id, data FROM aivideo_tasks ORDER BY updated_ts DESC LIMIT ?',
+            (max(1, min(int(limit), 50)),),
+        ).fetchall()
+    out = []
+    for task_id, raw in rows:
+        try:
+            item = json.loads(raw)
+        except (TypeError, ValueError):
+            continue
+        item.setdefault('id', task_id)
+        out.append(item)
+    return out
+
+
 def mark_interrupted_tasks(error_message):
     """Dipanggil sekali saat boot: task yang masih 'pending'/'processing'
     dari kehidupan server sebelumnya tidak mungkin selesai (thread-nya
