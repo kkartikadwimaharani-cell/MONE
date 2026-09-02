@@ -21,6 +21,22 @@ VIDEO_MODELS = {
     ("wan30", "PRIME"): "/videos/wan-3.0-video-prime",
 }
 
+# Verified public request controls.  Keep this separate from endpoint routing so
+# UI/request validation can share the contract without introducing new fields.
+VIDEO_CAPABILITIES = {
+    ("seedance25", "STANDARD"): {
+        "aspect_ratios": ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"),
+        "resolutions": ("480p", "720p"),
+        "duration": (4, 30),
+        "generate_audio": True,
+    },
+}
+
+
+def video_capabilities(family, variant="STANDARD"):
+    """Return a copy of verified video controls for capability-driven callers."""
+    return dict(VIDEO_CAPABILITIES.get((str(family).lower(), str(variant).upper()), {}))
+
 IMAGE_MODELS = {
     ("flux2", "KLEIN"): "/images/flux-2-klein",
     ("flux2", "PRO"): "/images/flux-2-pro",

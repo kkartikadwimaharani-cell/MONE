@@ -463,6 +463,10 @@ button{background:none;border:none;cursor:pointer}
   transform:translateX(-50%) rotate(45deg);
 }
 .duration-card.dragging .duration-bubble{opacity:1;transform:translateX(-50%) scale(1)}
+.video-advanced{display:none;margin-top:9px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.video-advanced summary{display:flex;justify-content:space-between;gap:12px;padding:11px 13px;cursor:pointer;font:700 .76rem var(--disp);list-style:none}
+.video-advanced summary::-webkit-details-marker{display:none}.video-advanced-summary{color:var(--text-muted);font:600 .7rem var(--mono)}
+.video-advanced-controls{display:flex;gap:7px;flex-wrap:wrap;padding:0 10px 10px}.video-advanced-controls .chip{background:var(--surface-2)}
 .qty-btn{width:18px;height:18px;display:grid;place-items:center;font-weight:800;font-size:1rem;color:var(--text-dim);user-select:none}
 .qty-val{font-family:var(--mono);font-size:.84rem;font-weight:700;min-width:30px;text-align:center}
 
@@ -1808,6 +1812,15 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         </div>
       </div>
 
+      <details class="video-advanced" id="seedance25Advanced">
+        <summary><span>Advanced Video Settings</span><span class="video-advanced-summary" id="seedance25SettingsSummary">5s | 720p | 16:9 | Audio On</span></summary>
+        <div class="video-advanced-controls">
+          <button type="button" class="chip" onclick="openSheet('ratio',this)">Aspect Ratio&nbsp; <span id="seedance25RatioValue">16:9</span></button>
+          <button type="button" class="chip" onclick="openSheet('resolution',this)">Resolution&nbsp; <span id="seedance25ResolutionValue">720p</span></button>
+          <button type="button" class="chip" onclick="toggleMuteAudio()">Audio&nbsp; <span id="seedance25AudioValue">On</span></button>
+        </div>
+      </details>
+
       <div class="settings-row">
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -2239,7 +2252,7 @@ var modelFamilies = {
     {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
       desc: 'Multimodal generation with up to 15 images, 5 videos and 5 audio references.',
-      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, resolutions:['480p','720p'], supportsAudioGeneration:true }, qualities: [{id:'STANDARD',label:'STANDARD'}]
+      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], resolutions:['480p','720p'], supportsAudioGeneration:true }, qualities: [{id:'STANDARD',label:'STANDARD'}]
     },
     {
       key:'seedance', brand:'SEEDANCE', name:'SEEDANCE 2.0', featured:true, desc:'Mini, Fast and Pro in one reference-capable family.',
@@ -2717,6 +2730,7 @@ function _paintDurationUI(idx, steps) {
     if (!live) {
       selectedDuration = steps[idx];
       updateCreditEstimate();
+      renderSeedance25Settings();
     }
   }
   slider.addEventListener('input', function() { apply(true); });
@@ -2729,6 +2743,7 @@ function _paintDurationUI(idx, steps) {
       card.classList.remove('dragging');
       selectedDuration = slider.dataset.steps.split(',').map(Number)[parseInt(slider.value, 10)];
       updateCreditEstimate();
+      renderSeedance25Settings();
     }, {passive: true});
   });
 })();
@@ -2739,7 +2754,7 @@ var sheetDefs = {
     options: ['1:1','3:4','4:3','9:16','16:9','21:9'],
     desc: function(v){ return ratioDesc[v]; },
     get: function(){ return selectedRatio; },
-    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; syncCanvasPreviewAspect(); }
+    set: function(v){ selectedRatio = v; document.getElementById('ratioLabel').textContent = v; syncCanvasPreviewAspect(); renderSeedance25Settings(); }
   },
   resolution: {
     title: 'Resolution',
@@ -2747,7 +2762,7 @@ var sheetDefs = {
     disabled: ['4K'],
     desc: function(v){ return resDesc[v]; },
     get: function(){ return selectedResolution; },
-    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); }
+    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); }
   },
   imageformat: {
     title: 'Output Format', options: ['PNG','JPEG'],
@@ -3123,8 +3138,11 @@ function applyModelCapabilities() {
   var bitrateChip = document.getElementById('bitrateChip');
   var imageFormatChip = document.getElementById('imageFormatChip');
   var imageCountControl = document.getElementById('imageCountControl');
-  if (ratioChip)  ratioChip.style.display  = caps.ratio      ? '' : 'none';
-  if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
+  var seedance25Advanced = document.getElementById('seedance25Advanced');
+  var isSeedance25Video = activeMode === 'video' && selectedFamily && selectedFamily.key === 'seedance25';
+  if (seedance25Advanced) seedance25Advanced.style.display = isSeedance25Video ? 'block' : 'none';
+  if (ratioChip)  ratioChip.style.display  = caps.ratio && !isSeedance25Video ? '' : 'none';
+  if (resChip)    resChip.style.display    = caps.resolution && !isSeedance25Video ? '' : 'none';
   if (imageFormatChip) imageFormatChip.style.display = rawCaps.supportsOutputFormat ? '' : 'none';
   if (imageCountControl) imageCountControl.style.display = rawCaps.supportsImageCount ? '' : 'none';
   maxQty = rawCaps.supportsImageCount ? (rawCaps.maxImages || 1) : 1;
@@ -3171,7 +3189,7 @@ function applyModelCapabilities() {
   var srChip = document.getElementById('sampleRateChip');
   if (srChip) srChip.style.display = isSeedAudio ? '' : 'none';
   var muteAudioChip = document.getElementById('muteAudioChip');
-  if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported ? '' : 'none';
+  if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported && !isSeedance25Video ? '' : 'none';
   if (!muteAudioSupported) {
     muteAudioEnabled = false;
     renderMuteAudioChip();
@@ -3270,6 +3288,7 @@ function applyModelCapabilities() {
   }
   applyMotionControlLock();
   renderMotionControlMeta();
+  renderSeedance25Settings();
 }
 function pickQuality(idx) {
   selectedQualityIdx = idx;
@@ -3310,6 +3329,20 @@ function toggleMuteAudio() {
   if (activeCaps.audioAlwaysOn) return;
   muteAudioEnabled = !muteAudioEnabled;
   renderMuteAudioChip();
+  renderSeedance25Settings();
+}
+
+function renderSeedance25Settings() {
+  var summary = document.getElementById('seedance25SettingsSummary');
+  if (!summary) return;
+  var audio = muteAudioEnabled ? 'Off' : 'On';
+  summary.textContent = selectedDuration + 's | ' + selectedResolution + ' | ' + selectedRatio + ' | Audio ' + audio;
+  var ratio = document.getElementById('seedance25RatioValue');
+  var resolution = document.getElementById('seedance25ResolutionValue');
+  var audioValue = document.getElementById('seedance25AudioValue');
+  if (ratio) ratio.textContent = selectedRatio;
+  if (resolution) resolution.textContent = selectedResolution;
+  if (audioValue) audioValue.textContent = audio;
 }
 
 function openQualitySheet(anchorEl) {
@@ -4701,9 +4734,9 @@ function startGenerate() {
       delete body.image_urls;
     }
   }
-  // Sent for every Seedance tier now — backend validates + auto-retries
-  // without it if a given tier actually rejects the field.
-  if (isSeedanceFamily(selectedFamily.key)) {
+  // Legacy Seedance 2.0 alone retains its existing verified provider option.
+  // Seedance 2.5 deliberately emits no bitrate or output-quality field.
+  if (selectedFamily.key === 'seedance') {
     body.bitrate_mode = selectedBitrate;
   }
   if (selectedFamily.key === 'seedaudio') {
@@ -4724,7 +4757,7 @@ function startGenerate() {
     activeMode: activeMode,
     modelDisplayName: selectedModelName,
     fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
-    bitrateSnapshot: (isSeedanceFamily(selectedFamily.key)) ? selectedBitrate : '',
+    bitrateSnapshot: selectedFamily.key === 'seedance' ? selectedBitrate : '',
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
 
@@ -5650,7 +5683,7 @@ function saveGenerationToHistory(res, meta) {
       refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
       modelKey: selectedFamily.key,
       modelTier: selectedModelTier,
-      bitrate: (isSeedanceFamily(selectedFamily.key)) ? selectedBitrate : '',
+      bitrate: selectedFamily.key === 'seedance' ? selectedBitrate : '',
       archived: false
     };
   }
