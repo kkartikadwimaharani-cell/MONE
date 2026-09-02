@@ -4193,11 +4193,16 @@ def aivideo_generate():
                 duration = low
             body['length_seconds'] = max(low, min(high, duration))
             if family == 'seedance25':
-                allowed = ('480p', '720p')
+                capabilities = budgetpixel_provider.video_capabilities(family, variant)
+                allowed = capabilities['resolutions']
             else:
                 allowed = ('480p', '720p', '1080p')
             body['resolution'] = payload.get('resolution') if payload.get('resolution') in allowed else '720p'
-            if aspect_ratio_in:
+            if family == 'seedance25':
+                ratios = capabilities['aspect_ratios']
+                body['aspect_ratio'] = aspect_ratio_in if aspect_ratio_in in ratios else '16:9'
+                body['generate_audio'] = not mute_audio
+            elif aspect_ratio_in:
                 body['aspect_ratio'] = aspect_ratio_in
         elif family == 'seedream5' and variant == 'PRO':
             # Only this exact image schema was supplied as verified.
