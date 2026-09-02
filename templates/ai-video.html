@@ -463,10 +463,6 @@ button{background:none;border:none;cursor:pointer}
   transform:translateX(-50%) rotate(45deg);
 }
 .duration-card.dragging .duration-bubble{opacity:1;transform:translateX(-50%) scale(1)}
-.video-advanced{display:none;margin-top:9px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-.video-advanced summary{display:flex;justify-content:space-between;gap:12px;padding:11px 13px;cursor:pointer;font:700 .76rem var(--disp);list-style:none}
-.video-advanced summary::-webkit-details-marker{display:none}.video-advanced-summary{color:var(--text-muted);font:600 .7rem var(--mono)}
-.video-advanced-controls{display:flex;gap:7px;flex-wrap:wrap;padding:0 10px 10px}.video-advanced-controls .chip{background:var(--surface-2)}
 .qty-btn{width:18px;height:18px;display:grid;place-items:center;font-weight:800;font-size:1rem;color:var(--text-dim);user-select:none}
 .qty-val{font-family:var(--mono);font-size:.84rem;font-weight:700;min-width:30px;text-align:center}
 
@@ -1369,6 +1365,18 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.mini .sheet-opt-desc{font-size:.62rem;margin-top:1px}
 .sheet.mini .sheet-opt-check{top:10px;right:8px}
 .sheet-overlay.mini-ov{background:transparent}
+/* Seedance 2.5 uses the established compact chip row without horizontal
+   scrolling. All four controls remain visible inside the mobile panel. */
+.settings-row.seedance25-settings{overflow-x:visible}
+.settings-row.seedance25-settings>.chip{flex:1 1 auto;min-width:0;justify-content:center;padding-inline:7px}
+.settings-row.seedance25-settings>.credit-chip{flex:1.2 1 auto}
+.settings-row.seedance25-settings .credit-chip-balance{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:430px){
+  .settings-row.seedance25-settings{gap:4px}
+  .settings-row.seedance25-settings>.chip{padding-inline:5px;font-size:10.5px;gap:3px}
+  .settings-row.seedance25-settings .chip-ico{display:none}
+  .settings-row.seedance25-settings .chip-car{margin-left:0;border-left-width:3px;border-right-width:3px}
+}
 /* Thumbnail video (frame pertama) mengikuti gaya thumbnail gambar */
 .uc-thumb{object-fit:cover}
 video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -1812,15 +1820,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         </div>
       </div>
 
-      <details class="video-advanced" id="seedance25Advanced">
-        <summary><span>Advanced Video Settings</span><span class="video-advanced-summary" id="seedance25SettingsSummary">5s | 720p | 16:9 | Audio On</span></summary>
-        <div class="video-advanced-controls">
-          <button type="button" class="chip" onclick="openSheet('ratio',this)">Aspect Ratio&nbsp; <span id="seedance25RatioValue">16:9</span></button>
-          <button type="button" class="chip" onclick="openSheet('resolution',this)">Resolution&nbsp; <span id="seedance25ResolutionValue">720p</span></button>
-          <button type="button" class="chip" onclick="toggleMuteAudio()">Audio&nbsp; <span id="seedance25AudioValue">On</span></button>
-        </div>
-      </details>
-
       <div class="settings-row">
         <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
           <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
@@ -1837,9 +1836,10 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
         <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
         <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
-        <div class="chip" id="muteAudioChip" onclick="toggleMuteAudio()" style="display:none" title="Hapus audio dari video hasil">
+        <div class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Atur audio video hasil">
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
+          <span class="chip-car" id="muteAudioCaret" style="display:none"></span>
         </div>
         <div class="qty-stepper" id="imageCountControl">
           <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
@@ -2764,6 +2764,12 @@ var sheetDefs = {
     get: function(){ return selectedResolution; },
     set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); }
   },
+  audio: {
+    title: 'Audio',
+    options: ['Audio On','Audio Off'],
+    get: function(){ return muteAudioEnabled ? 'Audio Off' : 'Audio On'; },
+    set: function(v){ muteAudioEnabled = v === 'Audio Off'; renderMuteAudioChip(); }
+  },
   imageformat: {
     title: 'Output Format', options: ['PNG','JPEG'],
     desc: function(v){ return v === 'PNG' ? 'Lossless image' : 'Smaller file'; },
@@ -2820,7 +2826,7 @@ function positionMiniSheet(anchor) {
   if (!anchor || !anchor.getBoundingClientRect) {
     sheet.classList.remove('mini');
     if (ov) ov.classList.remove('mini-ov');
-    sheet.style.left = ''; sheet.style.bottom = '';
+    sheet.style.left = ''; sheet.style.top = ''; sheet.style.bottom = '';
     return;
   }
   var r = anchor.getBoundingClientRect();
@@ -2829,7 +2835,16 @@ function positionMiniSheet(anchor) {
   var w = 236;
   var left = Math.max(10, Math.min(r.left, window.innerWidth - w - 10));
   sheet.style.left = left + 'px';
-  sheet.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+  // Prefer the established upward popover. If it would leave the viewport,
+  // place it below the chip instead; fixed positioning avoids panel clipping.
+  var estimatedHeight = Math.min(340, 18 + ((document.querySelectorAll('#sheetList .sheet-opt').length || 1) * 54));
+  if (r.top >= estimatedHeight + 10) {
+    sheet.style.top = '';
+    sheet.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+  } else {
+    sheet.style.bottom = '';
+    sheet.style.top = Math.min(window.innerHeight - estimatedHeight - 10, r.bottom + 8) + 'px';
+  }
 }
 function openSheet(key, anchorEl) {
   if ((key === 'ratio' || key === 'duration') && selectedFamily && selectedFamily.key === 'klingswap') {
@@ -2935,7 +2950,7 @@ function closeSheet() {
   sh.classList.remove('show');
   // Bersihkan mode popover mini supaya sheet lain (mis. Account) tampil normal.
   sh.classList.remove('mini');
-  sh.style.left = ''; sh.style.bottom = '';
+  sh.style.left = ''; sh.style.top = ''; sh.style.bottom = '';
   var ov = document.getElementById('sheetOverlay');
   if (ov) ov.classList.remove('mini-ov');
   setModelSelectOpen(false);
@@ -2981,6 +2996,7 @@ function renderQualityChip() {
   }
 }
 function pickFamily(family, qualityIdx) {
+  var previousFamilyKey = selectedFamily && selectedFamily.key;
   selectedFamily = family;
   selectedQualityIdx = qualityIdx || 0;
   var hasTiers = family.qualities && family.qualities.length > 0;
@@ -2991,6 +3007,14 @@ function pickFamily(family, qualityIdx) {
   selectedModel = q ? q.id : family.key;
   selectedModelName = family.name;
   selectedModelTier = q ? q.label : null;
+  if (family.key === 'seedance25' && previousFamilyKey !== 'seedance25') {
+    selectedRatio = '16:9';
+    selectedResolution = '720p';
+    muteAudioEnabled = false;
+    document.getElementById('ratioLabel').textContent = selectedRatio;
+    document.getElementById('resolutionLabel').textContent = selectedResolution;
+    renderMuteAudioChip();
+  }
   if (q && isSeedanceFamily(family.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
     var resLabelEl0 = document.getElementById('resolutionLabel');
@@ -3138,11 +3162,11 @@ function applyModelCapabilities() {
   var bitrateChip = document.getElementById('bitrateChip');
   var imageFormatChip = document.getElementById('imageFormatChip');
   var imageCountControl = document.getElementById('imageCountControl');
-  var seedance25Advanced = document.getElementById('seedance25Advanced');
+  var settingsRow = document.querySelector('.settings-row');
   var isSeedance25Video = activeMode === 'video' && selectedFamily && selectedFamily.key === 'seedance25';
-  if (seedance25Advanced) seedance25Advanced.style.display = isSeedance25Video ? 'block' : 'none';
-  if (ratioChip)  ratioChip.style.display  = caps.ratio && !isSeedance25Video ? '' : 'none';
-  if (resChip)    resChip.style.display    = caps.resolution && !isSeedance25Video ? '' : 'none';
+  if (settingsRow) settingsRow.classList.toggle('seedance25-settings', isSeedance25Video);
+  if (ratioChip)  ratioChip.style.display  = caps.ratio ? '' : 'none';
+  if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
   if (imageFormatChip) imageFormatChip.style.display = rawCaps.supportsOutputFormat ? '' : 'none';
   if (imageCountControl) imageCountControl.style.display = rawCaps.supportsImageCount ? '' : 'none';
   maxQty = rawCaps.supportsImageCount ? (rawCaps.maxImages || 1) : 1;
@@ -3189,7 +3213,9 @@ function applyModelCapabilities() {
   var srChip = document.getElementById('sampleRateChip');
   if (srChip) srChip.style.display = isSeedAudio ? '' : 'none';
   var muteAudioChip = document.getElementById('muteAudioChip');
-  if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported && !isSeedance25Video ? '' : 'none';
+  if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported ? '' : 'none';
+  var muteAudioCaret = document.getElementById('muteAudioCaret');
+  if (muteAudioCaret) muteAudioCaret.style.display = isSeedance25Video ? '' : 'none';
   if (!muteAudioSupported) {
     muteAudioEnabled = false;
     renderMuteAudioChip();
@@ -3332,17 +3358,16 @@ function toggleMuteAudio() {
   renderSeedance25Settings();
 }
 
+function openAudioSelector(anchorEl) {
+  var variant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
+  var activeCaps = Object.assign({}, selectedFamily && selectedFamily.caps, variant && variant.caps);
+  if (activeCaps.audioAlwaysOn) return;
+  if (selectedFamily && selectedFamily.key === 'seedance25') openSheet('audio', anchorEl);
+  else toggleMuteAudio();
+}
+
 function renderSeedance25Settings() {
-  var summary = document.getElementById('seedance25SettingsSummary');
-  if (!summary) return;
-  var audio = muteAudioEnabled ? 'Off' : 'On';
-  summary.textContent = selectedDuration + 's | ' + selectedResolution + ' | ' + selectedRatio + ' | Audio ' + audio;
-  var ratio = document.getElementById('seedance25RatioValue');
-  var resolution = document.getElementById('seedance25ResolutionValue');
-  var audioValue = document.getElementById('seedance25AudioValue');
-  if (ratio) ratio.textContent = selectedRatio;
-  if (resolution) resolution.textContent = selectedResolution;
-  if (audioValue) audioValue.textContent = audio;
+  renderMuteAudioChip();
 }
 
 function openQualitySheet(anchorEl) {
