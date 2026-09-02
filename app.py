@@ -3089,12 +3089,44 @@ def _browser_debug_status():
         'archive': storage['archive'], 'image_preview': 'READY', 'video_preview': 'READY',
         'history': 'READY', 'last_save': 'AVAILABLE' if recent else 'NONE',
     }
-    # The browser receives aggregate, provider-neutral metadata only. Detailed
-    # request records stay in the server log where secret redaction is enforced.
+    debug = _aivideo_debug_snapshot()
+    last = debug.get('last_request') or {}
+    request_body = last.get('body') or last.get('incoming_payload') or {}
+    # Only an allow-list reaches the browser.  In particular, neither response
+    # bodies nor provider job identifiers are copied from task/debug state.
+    safe_settings = {k: request_body.get(k) for k in
+                     ('aspect_ratio', 'resolution', 'quality', 'num_images', 'output_format',
+                      'duration', 'bitrate_mode') if request_body.get(k) is not None}
+    references = []
+    upload_by_url = {u.get('url'): u for u in debug.get('last_uploads', []) if u.get('url')}
+    for field, kind in (('reference_images', 'IMAGE'), ('image_urls', 'IMAGE'),
+                        ('reference_videos', 'VIDEO'), ('video_urls', 'VIDEO'),
+                        ('reference_audios', 'AUDIO'), ('audio_urls', 'AUDIO')):
+        for url in request_body.get(field, []) or []:
+            upload = upload_by_url.get(url, {})
+            references.append({'type': kind, 'filename': upload.get('filename') or 'REFERENCE',
+                               'upload_status': 'UPLOADED' if url else 'FAILED', 'final_url': url})
+    task_id = last.get('task_id')
+    with AIVIDEO_TASKS_LOCK:
+        task = dict(AIVIDEO_TASKS.get(task_id) or {})
+    created = task.get('created')
+    request_detail = {
+        'request_id': task_id or '—', 'type': task.get('output_type') or '—',
+        'model': task.get('family') or '—', 'variant': task.get('model') or '—',
+        'status': task.get('status') or '—',
+        'created_at': datetime.fromtimestamp(created, timezone.utc).isoformat() if created else (last.get('at') or '—'),
+        'duration': safe_settings.get('duration', '—'), 'resolution': safe_settings.get('resolution', '—'),
+        'aspect_ratio': safe_settings.get('aspect_ratio', '—'),
+        'prompt_sent': request_body.get('prompt') or '—', 'references': references,
+        'generation_settings': safe_settings,
+        'result_save': ('READY' if task.get('output', {}).get('archive_available') is not False
+                        else 'FAILED') if task.get('output') else 'PENDING',
+    }
     return {'storage': storage, 'generation': generation, 'pipeline': pipeline,
             'motion': {'status': 'READY'},
             'request_log': {'status': 'INTERNAL ONLY', 'total': request_total,
-                            'errors': request_errors}, 'checked_at': checked_at}
+                            'errors': request_errors, 'entries': [request_detail] if last else []},
+            'reference_storage_route': 'NOT IMPLEMENTED', 'checked_at': checked_at}
 
 
 def _segmind_extract_error(resp):
@@ -3983,7 +4015,7 @@ def aivideo_generate():
     if not prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
-    image_urls = [u for u in (payload.get('image_urls') or []) if u]
+    image_urls = [u for u in (payload.get('reference_images') or payload.get('image_urls') or []) if u]
     video_urls = [u for u in (payload.get('video_urls') or []) if u]
     audio_urls = [u for u in (payload.get('audio_urls') or []) if u]
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
@@ -4058,7 +4090,9 @@ def aivideo_generate():
         with AIVIDEO_TASKS_LOCK:
             _prune_aivideo_tasks()
             AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
-                                      'model': variant, 'family': family, 'created': time.time()}
+                                      'model': variant, 'family': family, 'output_type': output_type,
+                                      'request_metadata': {'prompt': prompt, **body}, 'created': time.time()}
+        _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
         _persist_task(task_id)
         threading.Thread(target=_run_budgetpixel_task,
                          args=(task_id, family, variant, body, output_type), daemon=True).start()

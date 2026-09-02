@@ -64,6 +64,12 @@ def init_db():
         # Mode Audio (Seed Audio 1.0): hasil audio disimpan di kolomnya sendiri.
         if 'audio_url' not in existing_cols:
             conn.execute("ALTER TABLE aivideo_archive ADD COLUMN audio_url TEXT DEFAULT ''")
+        for column, declaration in (
+            ('resolution', "TEXT DEFAULT ''"), ('image_quality', "TEXT DEFAULT ''"),
+            ('image_count', 'INTEGER DEFAULT 1'), ('output_format', "TEXT DEFAULT ''"),
+            ('generation_status', "TEXT DEFAULT 'COMPLETED'")):
+            if column not in existing_cols:
+                conn.execute('ALTER TABLE aivideo_archive ADD COLUMN %s %s' % (column, declaration))
         conn.commit()
 
 
@@ -154,8 +160,9 @@ def upsert_archive(rec):
             INSERT INTO aivideo_archive
                 (id, media_type, video_url, image_url, audio_url, thumb, prompt, model, quality,
                  duration, ratio, created_at_label, created_at_ts, ref_images, ref_videos,
-                 model_key, model_tier, archived)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 model_key, model_tier, archived, resolution, image_quality, image_count,
+                 output_format, generation_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 media_type=excluded.media_type, video_url=excluded.video_url,
                 image_url=excluded.image_url, audio_url=excluded.audio_url,
@@ -164,7 +171,10 @@ def upsert_archive(rec):
                 ratio=excluded.ratio, created_at_label=excluded.created_at_label,
                 created_at_ts=excluded.created_at_ts, ref_images=excluded.ref_images,
                 ref_videos=excluded.ref_videos, model_key=excluded.model_key,
-                model_tier=excluded.model_tier, archived=excluded.archived
+                model_tier=excluded.model_tier, archived=excluded.archived,
+                resolution=excluded.resolution, image_quality=excluded.image_quality,
+                image_count=excluded.image_count, output_format=excluded.output_format,
+                generation_status=excluded.generation_status
         ''', (
             rec.get('id'),
             rec.get('media_type') or ('video' if rec.get('videoUrl') else ('audio' if rec.get('audioUrl') else 'image')),
@@ -184,6 +194,9 @@ def upsert_archive(rec):
             rec.get('modelKey') or '',
             rec.get('modelTier') or '',
             1 if rec.get('archived', True) else 0,
+            rec.get('resolution') or '', rec.get('imageQuality') or '',
+            int(rec.get('imageCount') or 1), rec.get('outputFormat') or '',
+            rec.get('status') or 'COMPLETED',
         ))
         conn.commit()
 
@@ -215,6 +228,10 @@ def list_archive(archived=None):
         d['modelKey'] = d.pop('model_key')
         d['modelTier'] = d.pop('model_tier')
         d['archived'] = bool(d.get('archived'))
+        d['imageQuality'] = d.pop('image_quality', '') or ''
+        d['imageCount'] = d.pop('image_count', 1) or 1
+        d['outputFormat'] = d.pop('output_format', '') or ''
+        d['status'] = d.pop('generation_status', '') or 'COMPLETED'
         out.append(d)
     return out
 
