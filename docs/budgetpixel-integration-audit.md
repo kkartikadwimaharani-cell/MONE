@@ -1,11 +1,8 @@
 # BudgetPixel integration audit
 
-This document records the mandatory pre-implementation audit performed on
-2026-09-02. It deliberately does **not** define an API contract: no official
-BudgetPixel or Derabox API documentation is present in this repository, and
-the documentation hosts could not be reached from the implementation
-environment. Inventing endpoints, authentication headers, payload fields,
-model IDs, upload responses, or public URL formats would be unsafe.
+This document records the mandatory source audit performed on 2026-09-02.
+Phase 1 uses only the request contract supplied for this change; no network
+documentation lookup or paid generation was performed.
 
 ## Current architecture
 
@@ -57,10 +54,9 @@ The existing Segmind worker, Dropbox helpers, polling routes, task database,
 History, Archive, authentication, CSRF protection, and result UI must remain
 the defaults and must not be replaced.
 
-## Required authoritative information
+## Deliberately unknown fields
 
-Implementation must not start until the following are available from official
-BudgetPixel and Derabox documentation or an exported OpenAPI schema:
+The following remain disabled until an authoritative request contract exists:
 
 - BudgetPixel API base URL, authentication header, submit endpoint, status
   endpoint, response/job states, error schema, and result schema;

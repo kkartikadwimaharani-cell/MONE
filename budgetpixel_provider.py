@@ -10,7 +10,6 @@ import requests
 
 
 BASE_URL = "https://api.budgetpixel.com/v1"
-STATUS_PATH = "/jobs/{job_id}"
 
 VIDEO_MODELS = {
     ("seedance", "MINI"): "/videos/seedance-2.0-mini",
@@ -30,6 +29,9 @@ IMAGE_MODELS = {
     ("seedream5", "PRO"): "/images/seedream-5.0-pro",
     ("klingimage", "V3"): "/images/kling-v3",
     ("klingimage", "OMNI"): "/images/kling-v3-omni",
+    ("gptimage", "LOW"): "/images/gpt-image-2",
+    ("gptimage", "STANDARD"): "/images/gpt-image-2",
+    ("gptimage", "HIGH"): "/images/gpt-image-2",
 }
 
 
@@ -93,14 +95,22 @@ def submit_image(family, variant, payload, api_key, session=requests, timeout=30
     return _submit(resolve_image_model(family, variant), payload, api_key, session, timeout)
 
 
-def get_status(job_id, api_key, session=requests, timeout=30):
+def _get_status(kind, job_id, api_key, session=requests, timeout=30):
     try:
-        response = session.get(BASE_URL + STATUS_PATH.format(job_id=job_id), headers=_headers(api_key), timeout=timeout)
+        response = session.get("%s/%ss/%s" % (BASE_URL, kind, job_id), headers=_headers(api_key), timeout=timeout)
     except requests.RequestException as exc:
         raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", str(exc))
     if response.status_code >= 400:
         raise normalize_error(response)
     return normalize_result(_json(response))
+
+
+def get_video_status(job_id, api_key, session=requests, timeout=30):
+    return _get_status("video", job_id, api_key, session, timeout)
+
+
+def get_image_status(job_id, api_key, session=requests, timeout=30):
+    return _get_status("image", job_id, api_key, session, timeout)
 
 
 def normalize_result(data):
@@ -116,13 +126,26 @@ def normalize_result(data):
     output = data.get("output") or data.get("result") or {}
     if isinstance(output, str):
         output = {"url": output}
+    images = data.get("images") or output.get("images") or []
+    normalized_images = []
+    if isinstance(images, list):
+        for item in images:
+            candidate = item.get("url") if isinstance(item, dict) else item
+            if isinstance(candidate, str) and candidate:
+                normalized_images.append({"url": candidate})
     url = (output.get("url") or output.get("video_url") or output.get("image_url")
            or data.get("url") or data.get("video_url") or data.get("image_url"))
-    return {"status": status, "url": url, "raw_status": raw_status, "raw": data}
+    if not url and normalized_images:
+        url = normalized_images[0]["url"]
+    return {"status": status, "url": url, "images": normalized_images,
+            "raw_status": raw_status, "raw": data}
 
 
 def normalize_error(response):
-    code = "MODEL_UNAVAILABLE" if response.status_code in (401, 403, 404) else "GENERATION_FAILED"
+    if response.status_code == 429:
+        code = "RATE_LIMITED"
+    else:
+        code = "MODEL_UNAVAILABLE" if response.status_code in (401, 403, 404) else "GENERATION_FAILED"
     detail = "HTTP %s" % response.status_code
     try:
         detail += ": " + str(response.json())[:1000]
@@ -131,10 +154,11 @@ def normalize_error(response):
     return ProviderError(code, "Selected model is unavailable." if code == "MODEL_UNAVAILABLE" else "Generation failed. Please try again.", detail)
 
 
-def poll(job_id, api_key, session=requests, timeout_seconds=600, interval=2, sleep=time.sleep):
+def poll(job_id, api_key, kind="video", session=requests, timeout_seconds=600, interval=2, sleep=time.sleep):
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        result = get_status(job_id, api_key, session=session)
+        getter = get_image_status if kind == "image" else get_video_status
+        result = getter(job_id, api_key, session=session)
         if result["status"] in ("completed", "failed"):
             return result
         sleep(interval)

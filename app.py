@@ -23,6 +23,8 @@ import aivideo_archive
 import dropbox_oauth
 import secrets_store
 import budgetpixel_provider
+import ipaddress
+import socket
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -210,12 +212,9 @@ APP_SECRET_DEFS = [
     {'key': 'GROQ_API_KEY', 'env_names': ['GROQ_API_KEY'],
      'label': 'Groq API Key', 'category': 'AI Providers', 'kind': 'api_key',
      'help': 'Fallback chatbot'},
-    {'key': 'SEGMIND_API_KEY', 'env_names': ['SEGMIND_API_KEY'],
-     'label': 'Segmind API Key', 'category': 'AI Providers', 'kind': 'api_key',
-     'help': 'Generate AI Video'},
     {'key': 'BUDGETPIXEL_API_KEY', 'env_names': ['BUDGETPIXEL_API_KEY'],
      'label': 'BudgetPixel API Key', 'category': 'AI Providers', 'kind': 'api_key',
-     'help': 'BudgetPixel AI Video provider (backend only)'},
+     'help': 'AI IMAGE & VIDEO GENERATION'},
     {'key': 'TELEGRAM_BOT_TOKEN', 'env_names': ['TELEGRAM_BOT_TOKEN'],
      'label': 'Telegram Bot Token', 'category': 'Telegram Bot', 'kind': 'api_key',
      'help': 'Token dari @BotFather'},
@@ -3595,6 +3594,39 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         _set(status='failed', error=str(e), progress=100)
 
 
+def _fetch_generated_result(url, output_type):
+    """Bounded provider-result fetch; validate every redirect before archive."""
+    current = str(url or '')
+    maximum = 25 * 1024 * 1024 if output_type == 'image' else 200 * 1024 * 1024
+    for _ in range(4):
+        parsed = urlparse(current)
+        if parsed.scheme != 'https' or not parsed.hostname:
+            raise RuntimeError('unsafe result URL')
+        for address in socket.getaddrinfo(parsed.hostname, 443, type=socket.SOCK_STREAM):
+            if not ipaddress.ip_address(address[4][0]).is_global:
+                raise RuntimeError('unsafe result host')
+        response = requests_lib.get(current, timeout=(10, 120), stream=True, allow_redirects=False)
+        if response.status_code in (301, 302, 303, 307, 308):
+            current = urljoin(current, response.headers.get('Location', ''))
+            continue
+        if response.status_code >= 400:
+            raise RuntimeError('result download failed')
+        content_type = response.headers.get('Content-Type', '').split(';', 1)[0].lower()
+        expected = 'image/' if output_type == 'image' else 'video/'
+        if content_type and not content_type.startswith(expected) and content_type != 'application/octet-stream':
+            raise RuntimeError('unexpected result content type')
+        chunks, total = [], 0
+        for chunk in response.iter_content(65536):
+            total += len(chunk)
+            if total > maximum:
+                raise RuntimeError('result exceeds size limit')
+            chunks.append(chunk)
+        if not total:
+            raise RuntimeError('empty result')
+        return b''.join(chunks)
+    raise RuntimeError('too many result redirects')
+
+
 def _run_budgetpixel_task(task_id, family, variant, body, output_type):
     """Run the async provider job inside the existing Mii task lifecycle."""
     def _set(**values):
@@ -3605,6 +3637,7 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
             _persist_task(task_id)
 
     started = time.time()
+    generated = False
     try:
         _set(status='processing', progress=10)
         api_key = get_secret("BUDGETPIXEL_API_KEY")
@@ -3614,11 +3647,25 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
             if task_id in AIVIDEO_TASKS:
                 AIVIDEO_TASKS[task_id]['provider_job_id'] = submitted['job_id']
         _persist_task(task_id)
-        result = budgetpixel_provider.poll(submitted['job_id'], api_key)
+        result = budgetpixel_provider.poll(submitted['job_id'], api_key, kind=output_type)
         if result['status'] != 'completed' or not result.get('url'):
             raise budgetpixel_provider.ProviderError('GENERATION_FAILED', 'Generation failed. Please try again.', repr(result.get('raw')))
+        generated = True
+        _set(status='processing', progress=90)
+        sources = result.get('images') if output_type == 'image' and result.get('images') else [{'url': result['url']}]
+        archived, total_bytes = [], 0
+        for index, source in enumerate(sources):
+            media = _fetch_generated_result(source['url'], output_type)
+            total_bytes += len(media)
+            ext = 'png' if output_type == 'image' else 'mp4'
+            name = '%s%s.%s' % (task_id, ('-%d' % (index + 1)) if len(sources) > 1 else '', ext)
+            archived.append({'url': _dropbox_upload_and_link(media, name, folder='results')})
         output_key = 'image_url' if output_type == 'image' else 'video_url'
-        _set(status='completed', progress=100, output={output_key: result['url']})
+        output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
+                  'original_url': None, 'size_bytes': total_bytes}
+        if output_type == 'image':
+            output['images'] = archived
+        _set(status='completed', progress=100, output=output)
         app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
                         task_id, family, variant, round((time.time() - started) * 1000))
     except budgetpixel_provider.ProviderError as exc:
@@ -3627,7 +3674,10 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         _set(status='failed', error=exc.public_message, error_code=exc.code, progress=100)
     except Exception:
         app.logger.exception('[ai-generation][internal] provider task failed task=%s model=%s/%s', task_id, family, variant)
-        _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
+        if generated:
+            _set(status='failed', error='Result was generated but could not be saved. Please try again.', error_code='RESULT_SAVE_FAILED', progress=100)
+        else:
+            _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
 
 
 @app.route('/ai-video')
@@ -3807,12 +3857,13 @@ def aivideo_generate():
     aspect_ratio_in = payload.get('aspect_ratio')
 
     budget_video_families = {'seedance', 'seedance25', 'wan30'}
-    budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage'}
+    budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimage'}
     if family in budget_video_families or family in budget_image_families:
         output_type = 'image' if family in budget_image_families else 'video'
         # The Phase 1 contract does not define reference/frame request field
         # names. Never forward local/private URLs or guess provider fields.
-        if image_urls or video_urls or audio_urls or first_frame_url or last_frame_url:
+        gpt_references = family == 'gptimage' and image_urls and not (video_urls or audio_urls or first_frame_url or last_frame_url)
+        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not gpt_references:
             code = 'INVALID_IMAGE_SETTINGS' if output_type == 'image' else 'GENERATION_FAILED'
             return jsonify({'ok': False, 'error': {'code': code, 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         variant = model_key or 'STANDARD'
@@ -3846,6 +3897,22 @@ def aivideo_generate():
                 body['aspect_ratio'] = aspect_ratio_in
             if payload.get('resolution'):
                 body['resolution'] = payload['resolution']
+        elif family == 'gptimage':
+            quality = {'LOW': 'low', 'STANDARD': 'medium', 'HIGH': 'high'}[variant]
+            ratios = ('1:1', '4:3', '3:4', '5:4', '4:5', '16:9', '9:16',
+                      '3:2', '2:3', '21:9', '9:21', '2:1', '1:2')
+            resolution = str(payload.get('resolution') or '1K').upper()
+            output_format = str(payload.get('output_format') or 'png').lower()
+            try:
+                count = int(payload.get('num_images', 1))
+            except (TypeError, ValueError):
+                count = 1
+            body.update({'quality': quality, 'resolution': resolution if resolution in ('1K', '2K', '4K') else '1K',
+                         'aspect_ratio': aspect_ratio_in if aspect_ratio_in in ratios else '1:1',
+                         'num_images': max(1, min(4, count)),
+                         'output_format': output_format if output_format in ('png', 'jpeg') else 'png'})
+            if image_urls:
+                body['reference_images'] = image_urls[:9]
 
         task_id = uuid.uuid4().hex
         with AIVIDEO_TASKS_LOCK:
