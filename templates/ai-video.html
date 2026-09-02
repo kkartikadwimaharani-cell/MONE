@@ -1769,11 +1769,11 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         </button>
       </div>
 
-      <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" multiple />
+      <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple />
       <input type="file" id="videoFileInput" class="hidden-input" accept="video/mp4,video/quicktime" />
       <input type="file" id="audioFileInput" class="hidden-input" accept="audio/mpeg,audio/wav,audio/mp3" />
-      <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
-      <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp" />
+      <input type="file" id="firstFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+      <input type="file" id="lastFrameInput" class="hidden-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
 
       <div class="mc-meta-row" id="mcMetaRow" style="display:none">
         <div class="mc-meta-chip" id="mcMetaResChip"><span class="mc-meta-k">Resolution</span><span class="mc-meta-v" id="mcMetaRes">-</span></div>
@@ -3861,6 +3861,7 @@ function _pumpUploadQueue() {
 function _runUpload(file, type, entry) {
   var fd = new FormData();
   fd.append('file', file);
+  fd.append('media_type', type);
   return fetch('/api/aivideo/upload', { method: 'POST', body: fd })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -4084,6 +4085,7 @@ function resetFrameCard(which) {
     updateCanvasPreview();
     var fd = new FormData();
     fd.append('file', file);
+    fd.append('media_type', 'image');
     fetch('/api/aivideo/upload', { method: 'POST', body: fd })
       .then(function(r) { return r.json(); })
       .then(function(data) {

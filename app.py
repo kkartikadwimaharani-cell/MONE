@@ -4669,30 +4669,53 @@ def aivideo_task_result(task_id):
     return jsonify({'status': 'completed', 'output': t.get('output')})
 
 
+_UPLOAD_FORMATS = {
+    'image': {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.png': 'image/png', '.webp': 'image/webp',
+    },
+    'video': {'.mp4': 'video/mp4', '.mov': 'video/quicktime'},
+    'audio': {'.wav': 'audio/wav', '.mp3': 'audio/mpeg'},
+}
+_IMAGE_FORMAT_ERROR = 'Format gambar tidak didukung. Gunakan JPG, JPEG, PNG, atau WEBP.'
+
+
+def _detect_upload_format(file_bytes):
+    """Return the supported format identified from file structure/magic bytes.
+
+    The browser-supplied Content-Type and filename are hints only. Keeping this
+    detector independent from both prevents an empty/mobile MIME or a harmless
+    JPEG alias from rejecting a real image, while non-image bytes cannot pass by
+    merely carrying an image extension.
+    """
+    head = file_bytes[:32]
+    if (len(file_bytes) >= 4 and head[:3] == b'\xff\xd8\xff'
+            and file_bytes[-2:] == b'\xff\xd9'):
+        return 'image', 'image/jpeg', '.jpg'
+    if (len(file_bytes) >= 24 and head[:8] == b'\x89PNG\r\n\x1a\n'
+            and head[12:16] == b'IHDR'):
+        return 'image', 'image/png', '.png'
+    if (len(file_bytes) >= 20 and head[:4] == b'RIFF' and head[8:12] == b'WEBP'
+            and head[12:16] in (b'VP8 ', b'VP8L', b'VP8X')):
+        return 'image', 'image/webp', '.webp'
+    if len(file_bytes) >= 12 and file_bytes[4:8] == b'ftyp':
+        # MP4 and QuickTime share the ISO BMFF envelope. The compatible/major
+        # brand selects the safe normalized container name used for storage.
+        brand = file_bytes[8:12]
+        if brand == b'qt  ':
+            return 'video', 'video/quicktime', '.mov'
+        return 'video', 'video/mp4', '.mp4'
+    if len(file_bytes) >= 12 and head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE':
+        return 'audio', 'audio/wav', '.wav'
+    if head[:3] == b'ID3' or (len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0):
+        return 'audio', 'audio/mpeg', '.mp3'
+    return None
+
+
 def _sniff_upload_matches_ext(file_bytes, ext):
-    """Verify the file's actual magic bytes match the claimed extension,
-    instead of trusting the client-supplied filename alone. Deliberately
-    stdlib-only (no python-magic/libmagic dependency) so it doesn't require
-    touching the Dockerfile's system packages."""
-    head = file_bytes[:16]
-    if ext in ('.jpg', '.jpeg'):
-        return head[:3] == b'\xff\xd8\xff'
-    if ext == '.png':
-        return head[:8] == b'\x89PNG\r\n\x1a\n'
-    if ext == '.webp':
-        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
-    if ext in ('.mp4', '.mov'):
-        # ISO base media file format: box size (4 bytes) + 'ftyp' at offset 4.
-        # Covers mp4/mov/m4v/qt — the only container types we accept here.
-        return file_bytes[4:8] == b'ftyp'
-    if ext == '.wav':
-        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE'
-    if ext == '.mp3':
-        if head[:3] == b'ID3':
-            return True
-        # Frameless MP3 (no ID3 tag): starts with an MPEG audio frame sync.
-        return len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0
-    return False
+    """Back-compatible helper: validate content against an allowed extension."""
+    detected = _detect_upload_format(file_bytes)
+    return bool(detected and _UPLOAD_FORMATS.get(detected[0], {}).get(ext) == detected[1])
 
 
 @app.route('/api/aivideo/upload', methods=['POST'])
@@ -4714,23 +4737,40 @@ def aivideo_upload():
     if not f or not f.filename:
         return jsonify({'error': 'File tidak ditemukan'}), 400
     ext = os.path.splitext(f.filename)[1].lower()
-    allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
+    requested_kind = str(request.form.get('media_type') or '').strip().lower()
+    allowed = {ext: mime for formats in _UPLOAD_FORMATS.values() for ext, mime in formats.items()}
     if ext not in allowed:
         app.logger.warning('[ai-video][upload] rejected file %s: unsupported ext %s', f.filename, ext)
+        if requested_kind == 'image' or (f.mimetype or '').lower().startswith('image/'):
+            return jsonify({'error': _IMAGE_FORMAT_ERROR}), 400
         return jsonify({'error': f'Tipe file tidak didukung ({ext})'}), 400
     file_bytes = f.read()
     app.logger.info('[ai-video][upload] received file=%s size=%d ext=%s', f.filename, len(file_bytes), ext)
     if len(file_bytes) > 50 * 1024 * 1024:
         return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
-    if not _sniff_upload_matches_ext(file_bytes, ext):
-        app.logger.warning('[ai-video][upload] rejected file %s: content does not match extension %s', f.filename, ext)
-        return jsonify({'error': f'Isi file tidak sesuai dengan ekstensinya ({ext})'}), 400
+    detected = _detect_upload_format(file_bytes)
+    expected_kind = next(kind for kind, formats in _UPLOAD_FORMATS.items() if ext in formats)
+    if (not detected or detected[0] != expected_kind
+            or (requested_kind and requested_kind != expected_kind)):
+        app.logger.warning('[ai-video][upload] rejected file %s: unsupported or invalid %s content', f.filename, expected_kind)
+        return jsonify({'error': _IMAGE_FORMAT_ERROR if expected_kind == 'image' or requested_kind == 'image'
+                        else 'Isi file tidak sesuai dengan format yang didukung'}), 400
+    media_kind, detected_mime, normalized_ext = detected
+    # JPEG's .jpg/.jpeg aliases are equivalent. For any other supported
+    # filename/content mismatch, keep the original bytes but normalize the
+    # storage filename to what was actually detected rather than lying to the
+    # downstream provider about its content type.
+    upload_filename = f.filename
+    if allowed[ext] != detected_mime:
+        upload_filename = os.path.splitext(f.filename)[0] + normalized_ext
+        app.logger.info('[ai-video][upload] normalized filename %s -> %s (%s)',
+                        f.filename, upload_filename, detected_mime)
     try:
-        url = _dropbox_upload_and_link(file_bytes, f.filename)
+        url = _dropbox_upload_and_link(file_bytes, upload_filename)
         app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
-        media_type = ('IMAGE' if ext in ('.jpg', '.jpeg', '.png', '.webp') else
-                      ('VIDEO' if ext in ('.mp4', '.mov') else 'AUDIO'))
+        media_type = media_kind.upper()
         upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
+                        'mime_type': detected_mime, 'storage_filename': upload_filename,
                         'status': 'READY', 'final_url': url, 'url': url, 'ok': True,
                         'error': None, 'at': _utc_timestamp()}
         _aivideo_debug_set('last_upload', **upload_debug)
@@ -4738,8 +4778,7 @@ def aivideo_upload():
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
-        media_type = ('IMAGE' if ext in ('.jpg', '.jpeg', '.png', '.webp') else
-                      ('VIDEO' if ext in ('.mp4', '.mov') else 'AUDIO'))
+        media_type = media_kind.upper()
         upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
                         'status': 'FAILED', 'final_url': None, 'url': None, 'ok': False,
                         'error': _aivideo_safe_debug_value(str(e)), 'at': _utc_timestamp()}
