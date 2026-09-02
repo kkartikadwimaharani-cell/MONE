@@ -3082,51 +3082,28 @@ def _browser_debug_status():
         recent = aivideo_archive.list_archive(archived=None)
     except Exception:
         recent = []
-    with _AIVIDEO_REQUEST_LOG_LOCK:
-        request_total = len(_AIVIDEO_REQUEST_LOG)
-        request_errors = sum(1 for entry in _AIVIDEO_REQUEST_LOG if not entry.get('ok'))
     pipeline = {
         'archive': storage['archive'], 'image_preview': 'READY', 'video_preview': 'READY',
         'history': 'READY', 'last_save': 'AVAILABLE' if recent else 'NONE',
     }
-    debug = _aivideo_debug_snapshot()
-    last = debug.get('last_request') or {}
-    request_body = last.get('body') or last.get('incoming_payload') or {}
-    # Only an allow-list reaches the browser.  In particular, neither response
-    # bodies nor provider job identifiers are copied from task/debug state.
-    safe_settings = {k: request_body.get(k) for k in
-                     ('aspect_ratio', 'resolution', 'quality', 'num_images', 'output_format',
-                      'duration', 'bitrate_mode') if request_body.get(k) is not None}
-    references = []
-    upload_by_url = {u.get('url'): u for u in debug.get('last_uploads', []) if u.get('url')}
-    for field, kind in (('reference_images', 'IMAGE'), ('image_urls', 'IMAGE'),
-                        ('reference_videos', 'VIDEO'), ('video_urls', 'VIDEO'),
-                        ('reference_audios', 'AUDIO'), ('audio_urls', 'AUDIO')):
-        for url in request_body.get(field, []) or []:
-            upload = upload_by_url.get(url, {})
-            references.append({'type': kind, 'filename': upload.get('filename') or 'REFERENCE',
-                               'upload_status': 'UPLOADED' if url else 'FAILED', 'final_url': url})
-    task_id = last.get('task_id')
-    with AIVIDEO_TASKS_LOCK:
-        task = dict(AIVIDEO_TASKS.get(task_id) or {})
-    created = task.get('created')
-    request_detail = {
-        'request_id': task_id or '—', 'type': task.get('output_type') or '—',
-        'model': task.get('family') or '—', 'variant': task.get('model') or '—',
-        'status': task.get('status') or '—',
-        'created_at': datetime.fromtimestamp(created, timezone.utc).isoformat() if created else (last.get('at') or '—'),
-        'duration': safe_settings.get('duration', '—'), 'resolution': safe_settings.get('resolution', '—'),
-        'aspect_ratio': safe_settings.get('aspect_ratio', '—'),
-        'prompt_sent': request_body.get('prompt') or '—', 'references': references,
-        'generation_settings': safe_settings,
-        'result_save': ('READY' if task.get('output', {}).get('archive_available') is not False
-                        else 'FAILED') if task.get('output') else 'PENDING',
-    }
+    try:
+        tasks = aivideo_archive.list_recent_tasks(20)
+    except Exception:
+        tasks = []
+    records = [dict(task['diagnostic']) for task in tasks if isinstance(task.get('diagnostic'), dict)]
+    total = len(records)
+    errors = sum(record.get('status') == 'FAILED' for record in records)
+    successes = sum(record.get('status') == 'COMPLETED' for record in records)
+    completed_durations = [record.get('elapsed_ms') for record in records
+                           if record.get('status') in ('COMPLETED', 'FAILED') and isinstance(record.get('elapsed_ms'), (int, float))]
+    avg_duration = round(sum(completed_durations) / len(completed_durations)) if completed_durations else None
     return {'storage': storage, 'generation': generation, 'pipeline': pipeline,
             'motion': {'status': 'READY'},
-            'request_log': {'status': 'INTERNAL ONLY', 'total': request_total,
-                            'errors': request_errors, 'entries': [request_detail] if last else []},
-            'reference_storage_route': 'NOT IMPLEMENTED', 'checked_at': checked_at}
+            'request_log': {'total': total, 'success': successes, 'errors': errors,
+                            'avg_duration': avg_duration, 'last_request': records[0].get('created_at') if records else 'NONE',
+                            'entries': records},
+            'reference_storage_route': 'NOT CONFIGURED — no Derabox/reference-management route or integration exists; uploads use Dropbox relay only.',
+            'checked_at': checked_at}
 
 
 def _segmind_extract_error(resp):
@@ -3448,6 +3425,69 @@ def _persist_task(task_id):
         app.logger.warning('[ai-video][persist] gagal simpan task %s: %s', task_id, e)
 
 
+def _diagnostic_update(task_id, status=None, **values):
+    """Update the safe, persistent diagnostic record embedded in a real task."""
+    with AIVIDEO_TASKS_LOCK:
+        task = AIVIDEO_TASKS.get(task_id)
+        if not task:
+            return
+        diagnostic = task.setdefault('diagnostic', {})
+        if status:
+            diagnostic['status'] = status.upper()
+        diagnostic.update(values)
+        created = diagnostic.get('created_ts') or task.get('created') or time.time()
+        diagnostic['elapsed_ms'] = round((time.time() - created) * 1000)
+        if status in ('completed', 'failed'):
+            diagnostic['completed_at'] = _utc_timestamp()
+    _persist_task(task_id)
+
+
+def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body):
+    """Attach the exact sanitized provider payload and matching upload traces."""
+    reference_fields = {
+        'image': ('reference_images', 'image_urls', 'image_input', 'image', 'first_frame_url', 'start_image_url', 'frontal_image_url'),
+        'video': ('reference_videos', 'video_urls', 'video', 'video_url'),
+        'audio': ('reference_audios', 'audio_urls', 'audio', 'reference_audio_urls'),
+    }
+    refs, seen = [], set()
+    uploads = _aivideo_debug_snapshot().get('last_uploads', [])
+    upload_by_url = {u.get('url'): u for u in uploads if u.get('url')}
+    for kind, fields in reference_fields.items():
+        urls = []
+        for field in fields:
+            value = body.get(field)
+            urls.extend(value if isinstance(value, list) else ([value] if value else []))
+        for url in urls:
+            if url in seen:
+                continue
+            seen.add(url)
+            upload = upload_by_url.get(url, {})
+            refs.append({'index': 1 + sum(r['type'] == kind.upper() for r in refs),
+                         'type': kind.upper(), 'filename': upload.get('filename') or 'REFERENCE',
+                         'upload_status': 'READY', 'final_url': url,
+                         'created_at': upload.get('at') or _utc_timestamp()})
+    allowed = ('prompt', 'aspect_ratio', 'resolution', 'quality', 'duration', 'length_seconds',
+               'generate_audio', 'num_images', 'output_format', 'size', 'output_resolution')
+    summary = {key: body[key] for key in allowed if key in body}
+    summary.update({'reference_image_count': sum(r['type'] == 'IMAGE' for r in refs),
+                    'reference_video_count': sum(r['type'] == 'VIDEO' for r in refs),
+                    'reference_audio_count': sum(r['type'] == 'AUDIO' for r in refs),
+                    'reference_urls': [r['final_url'] for r in refs]})
+    now = time.time()
+    diagnostic = {'request_id': 'MII-' + task_id[:12].upper(), 'task_id': task_id,
+                  'type': output_type.upper(), 'model': family, 'variant': variant,
+                  'created_at': datetime.fromtimestamp(now, timezone.utc).isoformat(), 'created_ts': now,
+                  'status': 'QUEUED', 'user_prompt': user_prompt,
+                  'prompt_sent': body.get('prompt') or body.get('text_prompt') or '',
+                  'payload_summary': summary, 'references': refs,
+                  'result_save_status': 'PENDING', 'archive_status': 'PENDING',
+                  'preview_status': 'PENDING', 'elapsed_ms': 0}
+    with AIVIDEO_TASKS_LOCK:
+        if task_id in AIVIDEO_TASKS:
+            AIVIDEO_TASKS[task_id]['diagnostic'] = diagnostic
+    _persist_task(task_id)
+
+
 def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None, mute_audio=False):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
@@ -3457,6 +3497,12 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         # yang menentukan nasib task (status/hasil/error).
         if 'status' in kw or 'output' in kw or 'error' in kw:
             _persist_task(task_id)
+        if kw.get('status') == 'processing':
+            _diagnostic_update(task_id, 'processing')
+        elif kw.get('status') == 'completed':
+            _diagnostic_update(task_id, 'completed', result_save_status='SAVED', archive_status='READY', preview_status='READY')
+        elif kw.get('status') == 'failed':
+            _diagnostic_update(task_id, 'failed', result_save_status='FAILED', archive_status='FAILED', preview_status='FAILED', error_detail=str(kw.get('error') or '')[:300])
 
     log_prefix = f'[ai-video][segmind][{task_id}]'
     logged_body = dict(body)
@@ -3784,6 +3830,7 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
     generated = False
     try:
         _set(status='processing', progress=10)
+        _diagnostic_update(task_id, 'submitted')
         api_key = get_secret("BUDGETPIXEL_API_KEY")
         submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
         submitted = submit(family, variant, body, api_key)
@@ -3791,11 +3838,13 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
             if task_id in AIVIDEO_TASKS:
                 AIVIDEO_TASKS[task_id]['provider_job_id'] = submitted['job_id']
         _persist_task(task_id)
+        _diagnostic_update(task_id, 'processing')
         result = budgetpixel_provider.poll(submitted['job_id'], api_key, kind=output_type)
         if result['status'] != 'completed' or not result.get('url'):
             raise budgetpixel_provider.ProviderError('GENERATION_FAILED', 'Generation failed. Please try again.', repr(result.get('raw')))
         generated = True
         _set(status='processing', progress=90)
+        _diagnostic_update(task_id, 'generated', result_save_status='SAVING', archive_status='ARCHIVING')
         sources = result.get('images') if output_type == 'image' and result.get('images') else [{'url': result['url']}]
         archived, total_bytes = [], 0
         archive_available = True
@@ -3825,25 +3874,30 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         if output_type == 'image':
             output['images'] = archived
         if archive_available:
+            _diagnostic_update(task_id, 'archiving', result_save_status='SAVED', archive_status='READY', preview_status='READY')
             _set(status='completed', progress=100, output=output)
+            _diagnostic_update(task_id, 'completed', result_save_status='SAVED', archive_status='READY', preview_status='READY')
         else:
             # Preserve the locally-previewable result while reporting storage
             # failure separately from provider generation failure.
             _set(status='failed', progress=100, output=output,
                  error='Result was generated but could not be saved. Please try again.',
                  error_code='RESULT_SAVE_FAILED')
+            _diagnostic_update(task_id, 'failed', result_save_status='FAILED', archive_status='FAILED', preview_status='READY')
         app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
                         task_id, family, variant, round((time.time() - started) * 1000))
     except budgetpixel_provider.ProviderError as exc:
         app.logger.error('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=failed error=%s elapsed=%dms',
                          task_id, family, variant, str(exc), round((time.time() - started) * 1000))
         _set(status='failed', error=exc.public_message, error_code=exc.code, progress=100)
+        _diagnostic_update(task_id, 'failed', result_save_status='NOT STARTED', archive_status='NOT STARTED', preview_status='FAILED', error_detail=exc.public_message)
     except Exception:
         app.logger.exception('[ai-generation][internal] provider task failed task=%s model=%s/%s', task_id, family, variant)
         if generated:
             _set(status='failed', error='Result was generated but could not be saved. Please try again.', error_code='RESULT_SAVE_FAILED', progress=100)
         else:
             _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
+        _diagnostic_update(task_id, 'failed', result_save_status='FAILED' if generated else 'NOT STARTED', archive_status='FAILED' if generated else 'NOT STARTED', preview_status='FAILED')
 
 
 @app.route('/ai-video')
@@ -4092,6 +4146,7 @@ def aivideo_generate():
             AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
                                       'model': variant, 'family': family, 'output_type': output_type,
                                       'request_metadata': {'prompt': prompt, **body}, 'created': time.time()}
+        _diagnostic_record(task_id, family, variant, output_type, prompt, body)
         _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
         _persist_task(task_id)
         threading.Thread(target=_run_budgetpixel_task,
@@ -4476,6 +4531,7 @@ def aivideo_generate():
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
         }
+    _diagnostic_record(task_id, family, model_key, output_type, prompt, body)
     _persist_task(task_id)
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
                      task_id, family, model_key, endpoint)
