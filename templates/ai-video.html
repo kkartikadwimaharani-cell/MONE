@@ -1814,6 +1814,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         </div>
         <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
         <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
+        <div class="chip" id="imageFormatChip" onclick="openSheet('imageformat',this)" style="display:none"><span style="opacity:.6">Format</span><span id="imageFormatLabel">PNG</span><span class="chip-car"></span></div>
         <div class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
         <!-- Tier (MINI/FAST/PRO etc) as an inline segmented toggle, right after
              ratio/resolution/duration — matches the reference's "Fast | Pro"
@@ -1827,7 +1828,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
         </div>
-        <div class="qty-stepper">
+        <div class="qty-stepper" id="imageCountControl">
           <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
           <div class="qty-val" id="qtyVal">1/4</div>
           <div class="qty-btn" onclick="changeQty(1)">+</div>
@@ -2303,16 +2304,16 @@ var modelFamilies = {
   image: [
     {
       key:'flux2',brand:'FLUX',name:'FLUX 2',featured:true,desc:'Klein, Pro and Dev image generation.',
-      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},
+      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},
       qualities:[{id:'KLEIN',label:'KLEIN'},{id:'PRO',label:'PRO'},{id:'DEV',label:'DEV'}]
     },
-    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},qualities:[{id:'STANDARD',label:'STANDARD'}]},
+    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},qualities:[{id:'STANDARD',label:'STANDARD'}]},
     {
       key:'seedream5',brand:'SEEDREAM',name:'SEEDREAM 5',featured:true,desc:'Lite and Pro image generation.',
-      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},
-      qualities:[{id:'PRO',label:'PRO',caps:{ratio:true,resolution:true,resolutionSet:'image'}},{id:'LITE',label:'LITE'}]
+      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},
+      qualities:[{id:'PRO',label:'PRO',caps:{ratio:true,resolution:true,resolutionSet:'image',supportsAspectRatio:true,aspectRatios:['1:1','3:4','4:3','9:16','16:9'],supportsResolution:true,resolutions:['1K','2K']}},{id:'LITE',label:'LITE'}]
     },
-    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI'}]},
+    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI'}]},
     {
       key: 'nanobanana', brand: 'GOOGLE', name: 'NANO BANANA PRO', featured: true,
       desc: "Google's highest quality image generation with up to 14 references.",
@@ -2326,7 +2327,7 @@ var modelFamilies = {
     {
       key: 'gptimage', brand: 'OPENAI', name: 'GPT IMAGE 2', featured: true,
       desc: "Image generation with independent quality and resolution controls.",
-      caps: { image: 9, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
+      caps: { image: 9, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false, supportsAspectRatio:true, aspectRatios:['1:1','4:3','3:4','5:4','4:5','16:9','9:16','3:2','2:3','21:9','9:21','2:1','1:2'], supportsResolution:true, resolutions:['1K','2K','4K'], supportsQuality:true, qualities:['low','medium','high'], supportsImageCount:true, minImages:1, maxImages:4, supportsReferenceImages:true, maxReferenceImages:9, supportsOutputFormat:true, formats:['png','jpeg'] },
       qualities: [
         { id: 'gpt-image-2-low',      label: 'LOW' },
         { id: 'gpt-image-2-standard', label: 'STANDARD' },
@@ -2410,6 +2411,7 @@ var motionControlMeta = null;
 var selectedBitrate = 'high';
 var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
 var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (generation service bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
+var selectedImageFormat = 'PNG';
 var muteAudioEnabled = false; // Seedance + Motion Control only — strips the audio track from the generated video server-side (ffmpeg -an), not just a client-side player mute.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
@@ -2747,6 +2749,12 @@ var sheetDefs = {
     get: function(){ return selectedResolution; },
     set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); }
   },
+  imageformat: {
+    title: 'Output Format', options: ['PNG','JPEG'],
+    desc: function(v){ return v === 'PNG' ? 'Lossless image' : 'Smaller file'; },
+    get: function(){ return selectedImageFormat; },
+    set: function(v){ selectedImageFormat=v; document.getElementById('imageFormatLabel').textContent=v; }
+  },
   duration: {
     title: 'Duration',
     wheel: true,
@@ -3042,7 +3050,12 @@ function applyModelCapabilities() {
     audioGeneration: !!rawCaps.supportsAudioGeneration,
     audioAlwaysOn: !!rawCaps.audioAlwaysOn,
     motion: false
-  } : rawCaps;
+  } : Object.assign({}, rawCaps, {
+    ratio: rawCaps.supportsAspectRatio != null ? rawCaps.supportsAspectRatio : rawCaps.ratio,
+    ratioOptions: rawCaps.aspectRatios || rawCaps.ratioOptions,
+    resolution: rawCaps.supportsResolution != null ? rawCaps.supportsResolution : rawCaps.resolution,
+    resolutionOptions: rawCaps.resolutions || rawCaps.resolutionOptions
+  });
 
   // Enforce per-model reference limits
   maxCounts.image = caps.image || 0;
@@ -3108,8 +3121,16 @@ function applyModelCapabilities() {
   var durChip = document.getElementById('durationChip');
   var motionChip = document.getElementById('motionChip');
   var bitrateChip = document.getElementById('bitrateChip');
+  var imageFormatChip = document.getElementById('imageFormatChip');
+  var imageCountControl = document.getElementById('imageCountControl');
   if (ratioChip)  ratioChip.style.display  = caps.ratio      ? '' : 'none';
   if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
+  if (imageFormatChip) imageFormatChip.style.display = rawCaps.supportsOutputFormat ? '' : 'none';
+  if (imageCountControl) imageCountControl.style.display = rawCaps.supportsImageCount ? '' : 'none';
+  maxQty = rawCaps.supportsImageCount ? (rawCaps.maxImages || 1) : 1;
+  qty = Math.max(rawCaps.minImages || 1, Math.min(maxQty, qty));
+  var qtyValEl = document.getElementById('qtyVal');
+  if (qtyValEl) qtyValEl.textContent = qty + '/' + maxQty;
   if (durChip)    durChip.style.display    = caps.duration   ? '' : 'none';
   if (durChip) durChip.classList.toggle('unavailable', !!caps.durationUnknown);
   var durationSlider = document.getElementById('durationSlider');
@@ -3206,12 +3227,12 @@ function applyModelCapabilities() {
   // Seedance 2.0 (video): PRO supports the full 480p/720p/1080p/4K range per
   // generation service's API (4k = 3840x2160). MINI and FAST are capped at 720p.
   if (sheetDefs && sheetDefs.resolution) {
-    if (caps.resolutionSet === 'image') {
-      sheetDefs.resolution.options = ['1K','2K','4K'];
-      sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
-    } else if (caps.resolutionOptions) {
+    if (caps.resolutionOptions) {
       sheetDefs.resolution.options = caps.resolutionOptions.slice();
       sheetDefs.resolution.disabled = [];
+    } else if (caps.resolutionSet === 'image') {
+      sheetDefs.resolution.options = ['1K','2K','4K'];
+      sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
     } else if (selectedFamily && isSeedanceFamily(selectedFamily.key)) {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
@@ -4667,6 +4688,17 @@ function startGenerate() {
     resolution: selectedResolution,
     aspect_ratio: selectedRatio,
   };
+  if (activeMode === 'image') {
+    var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
+    if (imageCaps.supportsImageCount) body.num_images = qty;
+    if (imageCaps.supportsOutputFormat) body.output_format = selectedImageFormat.toLowerCase();
+    // GPT Image 2's provider contract calls this reference_images.  Keep
+    // image_urls only for older adapters whose schemas explicitly use it.
+    if (selectedFamily.key === 'gptimage') {
+      body.reference_images = body.image_urls;
+      delete body.image_urls;
+    }
+  }
   // Sent for every Seedance tier now — backend validates + auto-retries
   // without it if a given tier actually rejects the field.
   if (isSeedanceFamily(selectedFamily.key)) {
@@ -5159,11 +5191,16 @@ function openResultOverlay(payload) {
   var items = [
     { label: 'Type', value: isAudio ? 'AUDIO' : (isImage ? 'IMAGE' : 'VIDEO') },
     { label: 'Model', value: modelLabel },
-    { label: qLabel, value: qualityVal },
-    { label: isImage ? 'Resolution' : 'Duration', value: durationVal },
+    { label: isImage ? 'Variant' : qLabel, value: isImage && rec ? rec.modelTier : qualityVal },
+    { label: 'Quality', value: isImage && rec ? rec.imageQuality : '' },
+    { label: isImage ? 'Resolution' : 'Duration', value: isImage && rec ? rec.resolution : durationVal },
     { label: 'Aspect Ratio', value: ratioVal },
+    { label: 'Image Count', value: isImage && rec ? rec.imageCount : '' },
+    { label: 'Output Format', value: isImage && rec ? String(rec.outputFormat || '').toUpperCase() : '' },
     { label: 'Generation Time', value: genTimeTxt },
-    { label: 'Generated At', value: genAtTxt }
+    { label: 'Created At', value: genAtTxt },
+    { label: 'Status', value: rec ? (rec.status || 'COMPLETED') : 'COMPLETED' },
+    { label: 'Archive Status', value: rec ? (rec.archived ? 'ARCHIVED' : 'HISTORY') : 'HISTORY' }
   ].filter(function(it) {
     // Kartu tanpa nilai (mis. Duration untuk image/audio, ratio record lama)
     // tidak ditampilkan sama sekali — bukan "undefined"/kosong.
@@ -5562,6 +5599,11 @@ function saveGenerationToHistory(res, meta) {
       prompt: (meta.prompt || '').trim(),
       model: meta.fullModelLabel || meta.modelDisplayName || '',
       quality: meta.resolution || '',
+      resolution: meta.resolution || '',
+      imageQuality: meta.family === 'gptimage' ? ({LOW:'low',STANDARD:'medium',HIGH:'high'}[meta.model] || '') : '',
+      imageCount: meta.num_images || 1,
+      outputFormat: meta.output_format || '',
+      status: 'COMPLETED',
       duration: (meta.activeMode === 'image' || meta.activeMode === 'audio') ? '' : ((meta.duration || '') + 's'),
       ratio: meta.aspect_ratio || '',
       elapsedMs: res.elapsedMs || 0,
@@ -5591,6 +5633,11 @@ function saveGenerationToHistory(res, meta) {
       prompt: promptInput.value.trim(),
       model: fullModelLabel,
       quality: selectedResolution,
+      resolution: selectedResolution,
+      imageQuality: selectedFamily.key === 'gptimage' ? ({LOW:'low',STANDARD:'medium',HIGH:'high'}[selectedModelTier] || '') : '',
+      imageCount: qty,
+      outputFormat: selectedImageFormat.toLowerCase(),
+      status: 'COMPLETED',
       duration: (activeMode === 'image' || activeMode === 'audio') ? '' : (selectedDuration + 's'),
       ratio: selectedRatio,
       elapsedMs: res.elapsedMs || 0,
@@ -5778,6 +5825,8 @@ function restoreFromRecord(r) {
   var resLabelEl = document.getElementById('resolutionLabel');
   if (resLabelEl) resLabelEl.textContent = selectedResolution;
   selectedRatio = r.ratio || selectedRatio;
+  if (r.imageCount) qty = Math.max(1, Math.min(maxQty, parseInt(r.imageCount, 10) || 1));
+  if (r.outputFormat) selectedImageFormat = String(r.outputFormat).toUpperCase();
   var ratioLabelEl = document.getElementById('ratioLabel');
   if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
   syncCanvasPreviewAspect();

@@ -35,6 +35,37 @@ IMAGE_MODELS = {
     ("gptimage", "HIGH"): "/images/gpt-image-2",
 }
 
+# Public UI contract.  An empty list means that the provider contract in this
+# repository does not publish that setting; callers must omit the control and
+# the field rather than borrowing options from another model.
+GPT_IMAGE_2_RATIOS = ("1:1", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16",
+                      "3:2", "2:3", "21:9", "9:21", "2:1", "1:2")
+IMAGE_CAPABILITIES = {
+    ("flux2", "KLEIN"): {},
+    ("flux2", "PRO"): {},
+    ("flux2", "DEV"): {},
+    ("qwenbp", "STANDARD"): {},
+    ("seedream5", "LITE"): {},
+    ("seedream5", "PRO"): {"aspect_ratios": ("1:1", "3:4", "4:3", "9:16", "16:9"),
+                               "resolutions": ("1K", "2K")},
+    ("klingimage", "V3"): {},
+    ("klingimage", "OMNI"): {},
+    ("gptimage", "LOW"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
+                              "qualities": ("low", "medium", "high"), "image_count": (1, 4),
+                              "reference_images": 9, "formats": ("png", "jpeg")},
+    ("gptimage", "STANDARD"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
+                                   "qualities": ("low", "medium", "high"), "image_count": (1, 4),
+                                   "reference_images": 9, "formats": ("png", "jpeg")},
+    ("gptimage", "HIGH"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
+                               "qualities": ("low", "medium", "high"), "image_count": (1, 4),
+                               "reference_images": 9, "formats": ("png", "jpeg")},
+}
+
+
+def image_capabilities(family, variant="STANDARD"):
+    """Return a copy so request/UI code cannot mutate the verified registry."""
+    return dict(IMAGE_CAPABILITIES.get((str(family).lower(), str(variant).upper()), {}))
+
 
 class ProviderError(RuntimeError):
     def __init__(self, code, public_message, internal=""):
