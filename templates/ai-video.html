@@ -1706,7 +1706,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 
         <div class="ref-total-header" id="refTotalHeader" style="display:none">
           <span>References</span>
-          <span id="refTotalCount">0 / 50</span>
+          <span id="refTotalCount"></span>
         </div>
         <div class="media-row" id="mediaRow">
           <div class="type-rail" id="typeRail">
@@ -2267,9 +2267,7 @@ var media = { image: [], video: [], audio: [] };
 var frames = { first: null, last: null };
 var maxCounts = { image: 9, video: 3, audio: 3 };
 var currentUploadType = 'image';
-// Seedance 2.0 and 2.5 share every capability (bitrate control, mute-audio,
-// resolution-per-tier default, etc.) — this is the single place that
-// defines "is this a Seedance model" so both stay in sync automatically.
+// Seedance models share the controls that are genuinely common to the family.
 function isSeedanceFamily(key) { return key === 'seedance' || key === 'seedance25'; }
 var modelFamilies = {
   video: [
@@ -2286,18 +2284,29 @@ var modelFamilies = {
     {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
       subtitle: '30s \u2022 Multimodal',
-      desc: 'ByteDance — klip native sampai 30 detik dan hingga 50 referensi multimodal (30 gambar / 10 video / 10 audio) sekaligus. Spec penuh sampai 4K, tapi early-access API saat ini baru expose 480p/720p.',
-      // ByteDance's own launch spec (Volcano Engine FORCE, 23 Jun 2026): up
-      // to 50 multimodal references per generation, commonly broken down as
-      // ~30 images + 10 video clips + 10 audio clips, native single-pass
-      // duration up to 30s, output up to 4K. Not on Segmind (or any backend
-      // this app talks to) yet, and no FAST/PRO-style tier split has been
-      // confirmed — so `qualities` stays empty (no invented tier names) and
-      // `available:false` keeps Generate disabled until that's real.
-      available: false,
-      caps: { image: 30, video: 10, audio: 10, combinedCap: 50, frames: true, elements: true, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
-      durationSteps: [5, 10, 15, 20, 25, 30],
+      desc: 'Multimodal video generation with separate image, video and audio references, plus first/last-frame control.',
+      caps: {
+        image: 15, video: 5, audio: 5, frames: true, elements: true,
+        ratio: true, ratioOptions: ['1:1','3:4','4:3','9:16','16:9','21:9'],
+        resolution: true, resolutionOptions: ['480p','720p','1080p'],
+        duration: true, durationSteps: [4,5,6,8,10,12,15,20,25,30],
+        audioGeneration: true, qualityControl: true, motion: false
+      },
       qualities: []
+    },
+    {
+      key: 'wan30', brand: 'WAN', name: 'WAN 3.0', featured: true,
+      desc: 'One multimodal WAN family with Standard and Prime generation variants.',
+      caps: {
+        image: 10, video: 5, audio: 5, frames: true, elements: true,
+        ratio: true, ratioOptions: ['16:9'], resolution: true, resolutionOptions: ['720p'],
+        duration: true, durationSteps: [4,5,6,8,10,12,15,20,25,30],
+        audioGeneration: true, qualityControl: true, motion: false
+      },
+      qualities: [
+        { id: 'wan-3.0-standard', label: 'STANDARD' },
+        { id: 'wan-3.0-prime', label: 'PRIME' }
+      ]
     },
     {
       key: 'kling', brand: 'KLING', name: 'KLING 3.0', featured: true,
@@ -2356,6 +2365,16 @@ var modelFamilies = {
       desc: 'Ranked #2 globally on the Artificial Analysis benchmark — 1080P cinematic video up to 10s at 24-30 FPS, with physics simulation and body tracking.',
       caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
       qualities: []
+    },
+    {
+      key: 'minimaxh3', brand: 'MINIMAX', name: 'MINIMAX H3', featured: true,
+      desc: 'MiniMax H3 video workspace. Unverified controls remain unsupported until provider capabilities are connected.',
+      caps: {
+        image: 1, video: 1, audio: 0, frames: true, elements: true,
+        ratio: false, resolution: false, duration: false,
+        audioGeneration: false, motion: false
+      },
+      qualities: [{ id: 'minimax-h3', label: 'H3' }]
     }
   ],
   image: [
@@ -3106,7 +3125,7 @@ function applyModelCapabilities() {
   // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
   // see _run_segmind_task), so the option is available everywhere without
   // ever risking a failed generation.
-  var bitrateSupported = selectedFamily && isSeedanceFamily(selectedFamily.key);
+  var bitrateSupported = !!caps.qualityControl || (selectedFamily && isSeedanceFamily(selectedFamily.key));
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
   if (!bitrateSupported) {
     selectedBitrate = 'high';
@@ -3119,7 +3138,7 @@ function applyModelCapabilities() {
   // inherit the source video's track). Reset the toggle when switching
   // away so it can't silently apply to a family the user never chose it
   // for.
-  var muteAudioSupported = selectedFamily && (isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo');
+  var muteAudioSupported = !!caps.audioGeneration || (selectedFamily && (selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo'));
   // Chips khusus mode Audio (Seed Audio): Output format + Sample rate
   var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
   var afChip = document.getElementById('audioFormatChip');
@@ -3133,11 +3152,12 @@ function applyModelCapabilities() {
     renderMuteAudioChip();
   }
 
-  // Aspect ratio: Kling 3.0 and Kling Character Swap only support 16:9 / 9:16
-  // / 1:1; Veo 3.1 only 16:9 / 9:16 (per Segmind's published API docs) —
-  // both narrower than Seedance's set.
+  // Prefer a model-declared option set; retain the established fallbacks for
+  // connected legacy families that predate the capability registry fields.
   if (sheetDefs && sheetDefs.ratio) {
-    if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
+    if (caps.ratioOptions) {
+      sheetDefs.ratio.options = caps.ratioOptions.slice();
+    } else if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.ratio.options = ['1:1','9:16','16:9'];
     } else if (selectedFamily && selectedFamily.key === 'veo') {
       sheetDefs.ratio.options = ['9:16','16:9'];
@@ -3156,12 +3176,9 @@ function applyModelCapabilities() {
   // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
   // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
   // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per Segmind's API docs.
-  // Seedance 2.5 (ByteDance's own launch spec, Volcano Engine FORCE, 23 Jun
-  // 2026): native single-pass generation up to 30s, doubling 2.0's 15s cap.
-  // Not on Segmind yet — UI is ready ahead of the API.
   if (sheetDefs && sheetDefs.duration) {
-    if (selectedFamily && selectedFamily.key === 'seedance25') {
-      sheetDefs.duration.options = (selectedFamily.durationSteps || [5,10,15,20,25,30]).map(function(s){ return s+'s'; });
+    if (caps.durationSteps) {
+      sheetDefs.duration.options = caps.durationSteps.map(function(s){ return s+'s'; });
     } else if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.duration.options = [3,4,5,6,8,10,12,15].map(function(s){ return s+'s'; });
     } else if (selectedFamily && selectedFamily.key === 'veo') {
@@ -3183,13 +3200,8 @@ function applyModelCapabilities() {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
       sheetDefs.resolution.disabled = (selectedFamily && selectedFamily.key === 'seedream') ? ['4K'] : [];
-    } else if (selectedFamily && selectedFamily.key === 'seedance25') {
-      // Corrected against ByteDance/MuAPI's actual early-access launch spec:
-      // Seedance 2.5 ships with only a 480p and a 720p tier per endpoint —
-      // 1080p and 4K are explicitly "not yet available" on this model, even
-      // though 2.0 already has them. Previously this listed
-      // 720p/1080p/4K (no 480p) which was backwards on both counts.
-      sheetDefs.resolution.options = ['480p','720p'];
+    } else if (caps.resolutionOptions) {
+      sheetDefs.resolution.options = caps.resolutionOptions.slice();
       sheetDefs.resolution.disabled = [];
     } else if (selectedFamily && isSeedanceFamily(selectedFamily.key)) {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
@@ -3563,9 +3575,12 @@ function updateGenerateButtonState() {
   // so far — don't let the button imply it'll work when it can't.
   if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
     btn.disabled = true;
-    if (txt) txt.textContent = 'MODEL BELUM TERSEDIA';
+    btn.setAttribute('aria-disabled', 'true');
+    btn.title = 'Backend model belum terhubung';
+    if (txt) txt.textContent = 'GENERATE';
     return;
   }
+  btn.title = '';
   var hasPrompt = !!(promptInput && promptInput.value.trim());
   // Motion Control: prompt is optional — the video reference alone is
   // enough to edit/swap; text just refines it further.
