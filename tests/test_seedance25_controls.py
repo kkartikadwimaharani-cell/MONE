@@ -28,12 +28,12 @@ class Seedance25ControlsTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return captured["body"]
 
-    def test_seedance25_declares_aspect_ratio_and_advanced_video_controls(self):
+    def test_seedance25_reuses_compact_video_controls(self):
         caps = budgetpixel_provider.video_capabilities("seedance25", "STANDARD")
         self.assertEqual(caps["aspect_ratios"], ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"))
-        self.assertIn('id="seedance25Advanced"', self.template)
-        self.assertIn("Advanced Video Settings", self.template)
-        self.assertIn("30s | 720p | 16:9 | Audio On".replace("30s", "5s"), self.template)
+        self.assertNotIn("Advanced Video Settings", self.template)
+        self.assertIn("settingsRow.classList.toggle('seedance25-settings'", self.template)
+        self.assertIn("options: ['Audio On','Audio Off']", self.template)
 
     def test_selected_ratio_reaches_existing_provider_field(self):
         body = self.capture_body({"family": "seedance25", "model": "STANDARD", "prompt": "A person walks.",
