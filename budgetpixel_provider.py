@@ -4,6 +4,7 @@ Only fields in the supplied Phase 1 contract are emitted.  Reference media is
 intentionally rejected until its provider request schema and Derabox upload
 contract are known.
 """
+import re
 import time
 
 import requests
@@ -67,9 +68,9 @@ def _json(response):
     try:
         data = response.json()
     except (TypeError, ValueError) as exc:
-        raise ProviderError("MALFORMED_RESPONSE", "Generation failed. Please try again.", str(exc))
+        raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", str(exc))
     if not isinstance(data, dict):
-        raise ProviderError("MALFORMED_RESPONSE", "Generation failed. Please try again.", repr(data))
+        raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", repr(data))
     return data
 
 
@@ -83,7 +84,7 @@ def _submit(endpoint, payload, api_key, session=requests, timeout=30):
     data = _json(response)
     job_id = data.get("job_id") or data.get("id")
     if not isinstance(job_id, (str, int)) or not str(job_id):
-        raise ProviderError("MALFORMED_RESPONSE", "Generation failed. Please try again.", repr(data))
+        raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", repr(data))
     return {"job_id": str(job_id), "raw": data}
 
 
@@ -122,7 +123,7 @@ def normalize_result(data):
     }
     status = statuses.get(raw_status)
     if not status:
-        raise ProviderError("MALFORMED_RESPONSE", "Generation failed. Please try again.", repr(data))
+        raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", repr(data))
     output = data.get("output") or data.get("result") or {}
     if isinstance(output, str):
         output = {"url": output}
@@ -151,6 +152,8 @@ def normalize_error(response):
         detail += ": " + str(response.json())[:1000]
     except (TypeError, ValueError):
         detail += ": " + str(getattr(response, "text", ""))[:1000]
+    detail = re.sub(r'(?i)(authorization|api[_ -]?key|token|secret)(["\'\s:=]+)[^,}\s]+',
+                    r'\1\2[REDACTED]', detail)
     return ProviderError(code, "Selected model is unavailable." if code == "MODEL_UNAVAILABLE" else "Generation failed. Please try again.", detail)
 
 
@@ -162,4 +165,4 @@ def poll(job_id, api_key, kind="video", session=requests, timeout_seconds=600, i
         if result["status"] in ("completed", "failed"):
             return result
         sleep(interval)
-    raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", "poll timeout")
+    raise ProviderError("GENERATION_TIMEOUT", "Generation timed out. Please try again.", "poll timeout")

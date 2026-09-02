@@ -1,34 +1,30 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MII // SYSTEM DIAGNOSTICS</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store"><title>MII // SYSTEM DIAGNOSTICS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#05070a;--panel:#0d151c;--line:#392127;--text:#f3e2e0;--dim:#a98783;--ok:#39ff88;--bad:#ff4560}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#240810,var(--bg) 55%);color:var(--text);font:14px ui-monospace,SFMono-Regular,Menlo,monospace;padding:32px 16px}.wrap{max-width:680px;margin:auto}h1{font-size:20px;letter-spacing:.08em;margin:0 0 8px}.sub{color:var(--dim);margin-bottom:28px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin:14px 0}.panel.error{border-color:var(--bad)}h2{font-size:14px;letter-spacing:.12em;margin:0 0 18px}.row{display:flex;justify-content:space-between;gap:20px;padding:9px 0;border-top:1px solid var(--line)}.label{color:var(--dim)}.value{font-weight:700;text-align:right}.ready{color:var(--ok)}.error,.not-configured{color:var(--bad)}.actions{display:flex;gap:10px;margin-top:24px}.btn{color:var(--text);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:10px 14px}
-</style>
-</head>
-<body>
-<main class="wrap">
-<h1>MII AI Diagnostics</h1>
-<div class="sub">Safe service readiness overview</div>
-<section class="panel {{ 'error' if storage.status == 'ERROR' else '' }}" id="storagePanel">
-<h2>STORAGE</h2>
-<div class="row"><span class="label">STATUS</span><span class="value {{ storage.status|lower|replace(' ', '-') }}" id="storageStatus">{{ storage.status }}</span></div>
-<div class="row"><span class="label">DETAIL</span><span class="value" id="storageDetail">{{ storage.detail }}</span></div>
-</section>
-<section class="panel {{ 'error' if generation.status == 'ERROR' else '' }}" id="generationPanel">
-<h2>AI GENERATION</h2>
-<div class="row"><span class="label">STATUS</span><span class="value {{ generation.status|lower|replace(' ', '-') }}" id="generationStatus">{{ generation.status }}</span></div>
-<div class="row"><span class="label">DETAIL</span><span class="value" id="generationDetail">{{ generation.detail }}</span></div>
-</section>
-<div class="actions"><a class="btn" href="/ai-video/debug">Refresh</a><a class="btn" href="/ai-video">Back</a></div>
-</main>
-<script>
-setInterval(function(){fetch('/api/aivideo/debug-data',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(data){
-  [['storage',data.storage],['generation',data.generation]].forEach(function(pair){var name=pair[0], state=pair[1];if(!state)return;var cap=name.charAt(0).toUpperCase()+name.slice(1);var status=document.getElementById(name+'Status'),detail=document.getElementById(name+'Detail'),panel=document.getElementById(name+'Panel');status.textContent=state.status;status.className='value '+state.status.toLowerCase().replace(/ /g,'-');detail.textContent=state.detail;panel.classList.toggle('error',state.status==='ERROR')})
-}).catch(function(){})},5000)
-</script>
-</body>
-</html>
+:root{color-scheme:dark;--bg:#05070a;--panel:#0b1118;--line:rgba(255,32,64,.2);--hot:#ff2040;--text:#f3e2e0;--dim:#9a716e;--ok:#39ff88;--warn:#ffb300;--bad:#ff4560;--display:'Orbitron',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px 14px 80px;color:var(--text);font:12px var(--mono);background:radial-gradient(ellipse at 50% -10%,rgba(255,32,64,.17),transparent 52%),linear-gradient(#080d12,var(--bg));overflow-x:hidden}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,32,64,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,32,64,.045) 1px,transparent 1px);background-size:34px 34px}.wrap{position:relative;max-width:760px;margin:auto}.eyebrow{color:var(--hot);letter-spacing:.16em;font-weight:700}.title{font:800 clamp(19px,5vw,29px) var(--display);letter-spacing:.06em;margin:9px 0 5px;text-shadow:0 0 18px rgba(255,32,64,.5)}.sub{color:var(--dim);letter-spacing:.13em}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:20px}.overall{font-weight:700;letter-spacing:.1em;border:1px solid rgba(57,255,136,.35);color:var(--ok);padding:7px 10px}.overall.warning{color:var(--warn);border-color:rgba(255,179,0,.4)}.overall.error{color:var(--bad);border-color:rgba(255,69,96,.4)}.scan{margin:18px 0 22px}.scan-head{display:flex;justify-content:space-between;color:var(--dim);font-size:10px;letter-spacing:.12em}.track{height:2px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden}.bar{height:100%;width:100%;background:var(--hot);box-shadow:0 0 10px var(--hot);transform-origin:left;animation:count 5s linear infinite}@keyframes count{from{transform:scaleX(1)}to{transform:scaleX(0)}}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{position:relative;background:linear-gradient(180deg,rgba(15,23,31,.97),rgba(7,11,16,.97));border:1px solid var(--line);padding:17px;box-shadow:0 14px 36px rgba(0,0,0,.4)}.panel:before,.panel:after{content:"";position:absolute;width:10px;height:10px;border-color:var(--hot);border-style:solid}.panel:before{left:-1px;top:-1px;border-width:1px 0 0 1px}.panel:after{right:-1px;bottom:-1px;border-width:0 1px 1px 0}.wide{grid-column:1/-1}.panel-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:13px}.panel h2{font:700 12px var(--display);letter-spacing:.12em;margin:0}.badge{font-size:9px;font-weight:700;letter-spacing:.09em;padding:4px 8px;border:1px solid currentColor}.ready{color:var(--ok)}.not-configured,.warning{color:var(--warn)}.error{color:var(--bad)}.rows{border-top:1px solid var(--line)}.row{display:grid;grid-template-columns:minmax(115px,42%) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,32,64,.1)}.label{color:var(--dim);letter-spacing:.05em}.value{text-align:right;font-weight:700;overflow-wrap:anywhere}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}.btn{min-height:44px;display:flex;justify-content:center;align-items:center;padding:8px;text-align:center;text-decoration:none;color:var(--text);border:1px solid rgba(255,32,64,.38);background:rgba(255,32,64,.05);font:700 10px var(--mono);letter-spacing:.08em;transition:.15s}.btn:hover{border-color:var(--hot);box-shadow:0 0 18px rgba(255,32,64,.2)}.btn.primary{background:linear-gradient(135deg,rgba(255,32,64,.25),rgba(255,106,0,.15));border-color:var(--hot)}@media(max-width:590px){.hero{display:block}.overall{display:inline-block;margin-top:14px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.actions{grid-template-columns:1fr}.row{grid-template-columns:42% 58%}}@media(prefers-reduced-motion:reduce){.bar{animation:none}}
+</style></head>
+<body><main class="wrap">
+<div class="hero"><div><div class="eyebrow">MII AI VIDEO — DIAGNOSTICS</div><h1 class="title">SYSTEM DIAGNOSTICS</h1><div class="sub">SERVER SNAPSHOT · LIVE AUTO-SCAN</div></div><div class="overall" id="overall">NOMINAL</div></div>
+<div class="scan"><div class="scan-head"><span>NEXT SCAN</span><span id="countdown">05.0S</span></div><div class="track"><div class="bar" id="scanBar"></div></div></div>
+<div class="grid">
+<section class="panel" id="storagePanel"><div class="panel-head"><h2>STORAGE</h2><span class="badge" id="storageBadge">{{ storage.status }}</span></div><div class="rows" id="storageRows"></div></section>
+<section class="panel" id="generationPanel"><div class="panel-head"><h2>AI GENERATION</h2><span class="badge" id="generationBadge">{{ generation.status }}</span></div><div class="rows" id="generationRows"></div></section>
+<section class="panel"><div class="panel-head"><h2>RESULT PIPELINE</h2></div><div class="rows" id="pipelineRows"></div></section>
+<section class="panel"><div class="panel-head"><h2>MOTION CONTROL</h2><span class="badge ready" id="motionBadge">READY</span></div><div class="rows"><div class="row"><span class="label">STATUS</span><span class="value" id="motionStatus">READY</span></div></div></section>
+<section class="panel wide"><div class="panel-head"><h2>REQUEST LOG SUMMARY</h2><span class="badge" id="logBadge">INTERNAL ONLY</span></div><div class="rows" id="logRows"></div><div class="row"><span class="label">REQUEST LOG</span><span class="value">REDACTED · SERVER LOG ONLY</span></div></section>
+</div>
+<div class="actions"><a class="btn primary" href="/ai-video/debug">REFRESH DIAGNOSTICS</a><a class="btn" href="/ai-video">BACK TO AI VIDEO</a><a class="btn" href="/ai-video/app-secrets">CONNECTION SETTINGS</a></div>
+</main><script>
+(function(){
+var keys={storage:[['status','STATUS'],['mode','MODE'],['archive','ARCHIVE'],['auto_refresh','AUTO REFRESH'],['detail','DETAIL'],['checked_at','CHECKED AT']],generation:[['status','STATUS'],['api_configuration','API CONFIGURATION'],['video_backend','VIDEO BACKEND'],['image_backend','IMAGE BACKEND'],['task_engine','TASK ENGINE'],['polling','POLLING'],['last_request','LAST REQUEST'],['detail','DETAIL'],['checked_at','CHECKED AT']],pipeline:[['archive','ARCHIVE'],['image_preview','IMAGE PREVIEW'],['video_preview','VIDEO PREVIEW'],['history','HISTORY'],['last_save','LAST SAVE']],request_log:[['status','STATUS'],['total','TOTAL'],['errors','ERRORS']]};
+function safe(v){return v===undefined||v===null?'—':String(v)} function rows(id,data,list){document.getElementById(id).innerHTML=list.map(function(k){return '<div class="row"><span class="label">'+k[1]+'</span><span class="value">'+safe(data[k[0]])+'</span></div>'}).join('')}
+function cls(status){return String(status).toLowerCase().replace(/ /g,'-')} function render(d){rows('storageRows',d.storage,keys.storage);rows('generationRows',d.generation,keys.generation);rows('pipelineRows',d.pipeline,keys.pipeline);rows('logRows',d.request_log,keys.request_log);['storage','generation'].forEach(function(n){var b=document.getElementById(n+'Badge');b.textContent=d[n].status;b.className='badge '+cls(d[n].status)});document.getElementById('motionStatus').textContent=d.motion.status;var errors=[d.storage.status,d.generation.status].filter(function(x){return x==='ERROR'}).length,warn=d.storage.status==='NOT CONFIGURED'||d.generation.status==='NOT CONFIGURED',o=document.getElementById('overall');o.textContent=errors?'ERRORS DETECTED':warn?'WARNING':'NOMINAL';o.className='overall '+(errors?'error':warn?'warning':'')}
+render({{ {'storage':storage,'generation':generation,'pipeline':pipeline,'motion':motion,'request_log':request_log}|tojson }});var left=50;setInterval(function(){left--;document.getElementById('countdown').textContent=(left/10).toFixed(1).padStart(4,'0')+'S';if(left<=0){left=50;fetch('/api/aivideo/debug-data',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json()}).then(render).catch(function(){});var bar=document.getElementById('scanBar');bar.style.animation='none';void bar.offsetWidth;bar.style.animation='count 5s linear infinite'}},100);
+})();
+</script></body></html>
