@@ -1211,7 +1211,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .model-dock-overlay{position:fixed;inset:0;z-index:32;display:none;background:transparent}.model-dock-overlay.show{display:block}
 .model-dock{
   position:fixed;left:10px;right:10px;bottom:var(--dock-bottom);z-index:56;display:none;max-width:660px;margin:0 auto;
-  max-height:var(--dock-max-h);overflow:auto;overscroll-behavior:contain;padding:14px;border-radius:26px;
+  max-height:min(var(--dock-max-h),calc(100vh - 96px));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:14px;border-radius:26px;
   background:linear-gradient(180deg,rgba(25,25,25,.98),rgba(13,13,13,.985));border:1px solid rgba(255,255,255,.105);
   box-shadow:0 26px 80px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.025) inset,0 0 44px -26px rgba(255,32,64,.85);
   transform-origin:bottom center;will-change:transform,opacity;
@@ -1221,6 +1221,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .model-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 12px}.model-dock-title{font-family:var(--disp);font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--accent-hover);text-transform:uppercase}.model-dock-close{width:30px;height:30px;border-radius:12px;background:rgba(255,255,255,.055);display:grid;place-items:center;color:#fff}
 .model-dock-grid{display:flex;flex-direction:column;gap:8px}.model-dock-col{min-width:0;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dock-label{grid-column:1/-1;font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:0 4px 2px}.dock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.25);color:#ff6d80;font-size:.58rem;font-weight:900;letter-spacing:.08em}
 .dock-feature-card,.dock-list-row{position:relative;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#202020,#151515);box-shadow:0 1px 0 rgba(255,255,255,.045) inset;cursor:pointer;overflow:hidden;transition:transform .16s var(--ease-pop),border-color .18s ease,background .18s ease,box-shadow .22s ease}
+.duration-card.unavailable{opacity:.72}.duration-card.unavailable .duration-slider-wrap{pointer-events:none;filter:saturate(0)}.chip.locked{cursor:not-allowed;opacity:.8}
 .dock-feature-card{border-radius:20px;padding:13px;min-height:116px;display:flex;flex-direction:column;gap:9px}.dock-list-row{border-radius:14px;min-height:auto;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
 .dock-feature-card:hover,.dock-list-row:hover{transform:translateY(-1px);border-color:rgba(255,60,90,.32)}.dock-feature-card.selected,.dock-list-row.selected{background:linear-gradient(90deg,rgba(255,32,64,.20),rgba(255,32,64,.055));border-color:rgba(255,32,64,.55);box-shadow:0 10px 26px -18px rgba(255,32,64,.75),0 0 0 1px rgba(255,32,64,.18) inset}
 .dock-icon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.72rem;box-shadow:0 8px 16px -10px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;font-size:.66rem;line-height:1.18}
@@ -2272,90 +2273,69 @@ function isSeedanceFamily(key) { return key === 'seedance' || key === 'seedance2
 var modelFamilies = {
   video: [
     {
-      key: 'seedance', brand: 'SEEDANCE', name: 'SEEDANCE 2.0', featured: true,
-      desc: 'Supports image, video references and Elements for precise control.',
-      caps: { image: 9, video: 3, audio: 3, frames: true, elements: true, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
-      qualities: [
-        { id: 'MINI', label: 'MINI' },
-        { id: 'FAST', label: 'FAST' },
-        { id: 'PRO', label: 'PRO' }
-      ]
-    },
-    {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
-      subtitle: '30s \u2022 Multimodal',
-      desc: 'Multimodal video generation with separate image, video and audio references, plus first/last-frame control.',
-      caps: {
-        durationMin: 4, durationMax: 30, durationStep: 1,
-        resolutions: ['480p','720p','1080p'],
-        aspectRatios: ['1:1','3:4','4:3','9:16','16:9','21:9'],
-        maxReferenceImages: 15, maxReferenceVideos: 5, maxReferenceAudios: 5,
-        supportsFirstFrame: true, supportsLastFrame: true,
-        supportsT2V: true, supportsI2V: true,
-        supportsReferenceVideo: true, supportsReferenceAudio: true,
-        supportsGeneratedAudio: true, variants: []
-      },
-      qualities: []
+      desc: 'Multimodal generation with up to 15 images, 5 videos and 5 audio references.',
+      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, resolutions:['480p','720p','1080p'], supportsAudioGeneration:true }, qualities: []
     },
     {
-      key: 'wan30', brand: 'WAN', name: 'WAN 3.0', featured: true,
-      desc: 'One multimodal WAN family with Standard and Prime generation variants.',
-      caps: {
-        durationMin: 2, durationMax: 30, durationStep: 1,
-        resolutions: ['480p','720p','1080p'], aspectRatios: ['16:9'],
-        maxReferenceImages: 10, maxReferenceVideos: 5, maxReferenceAudios: 5,
-        supportsFirstFrame: true, supportsLastFrame: true,
-        supportsT2V: true, supportsI2V: true,
-        supportsReferenceVideo: true, supportsReferenceAudio: true,
-        supportsGeneratedAudio: true,
-        variants: [
-          { id: 'wan-3.0-standard', label: 'STANDARD' },
-          { id: 'wan-3.0-prime', label: 'PRIME' }
-        ]
-      },
-      qualities: [
-        { id: 'wan-3.0-standard', label: 'STANDARD' },
-        { id: 'wan-3.0-prime', label: 'PRIME' }
+      key:'seedance', brand:'SEEDANCE', name:'SEEDANCE 2.0', featured:true, desc:'Mini, Fast and Pro in one reference-capable family.',
+      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:9, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, supportsAudioGeneration:true },
+      qualities:[
+        {id:'MINI',label:'MINI',caps:{resolutions:['480p','720p']}},
+        {id:'FAST',label:'FAST',caps:{resolutions:['480p','720p']}},
+        {id:'PRO',label:'PRO',caps:{resolutions:['480p','720p','1080p','4K']}}
       ]
     },
     {
-      key: 'kling', brand: 'KLING', name: 'KLING 3.0', featured: true,
-      desc: 'Text-to-video or image-to-video, with start/end frame control and cinematic motion.',
-      caps: { image: 0, video: 0, audio: 0, frames: true, elements: false, ratio: true, resolution: false, resolutionSet: 'video', duration: true, motion: false },
-      qualities: [
-        { id: 'kling-3.0-std', label: 'STANDARD' },
-        { id: 'kling-3.0-pro', label: 'PRO' }
+      key:'wan30',brand:'WAN',name:'WAN 3.0',featured:true,desc:'30fps multimodal video with Standard and Prime tiers.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:10,maxReferenceVideos:5,maxReferenceAudios:5,durationMode:'range',supportsDuration:true,durationMin:2,durationMax:30,durationStep:1,resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},
+      qualities:[{id:'wan-3.0-standard',label:'STANDARD'},{id:'wan-3.0-prime',label:'PRIME'}]
+    },
+    {
+      key:'kling',brand:'KLING',name:'KLING 3.0',featured:true,desc:'Standard, Pro, Turbo, 4K and Omni generation modes.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1},
+      qualities:[
+        {id:'kling-3.0-std',label:'STANDARD',caps:{resolutions:['720p']}},
+        {id:'kling-3.0-pro',label:'PRO',caps:{resolutions:['1080p'],supportsAudioGeneration:true}},
+        {id:'kling-3.0-turbo',label:'TURBO',caps:{supportsFrames:true,supportsLastFrame:false,resolutions:['720p','1080p'],supportsAudioGeneration:true,audioAlwaysOn:true}},
+        {id:'kling-3.0-4k',label:'4K',caps:{resolutions:['4K'],supportsAudioGeneration:true}},
+        {id:'kling-3.0-omni',label:'OMNI',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,maxReferenceImages:1,maxReferenceVideos:1,supportsVideoEdit:true,resolutions:[]}}
       ]
     },
     {
-      key: 'veo', brand: 'GOOGLE', name: 'VEO 3.1', featured: true,
-      desc: "Google's cinematic video with synced audio — text or image to video, start/end frames, up to 3 reference images.",
-      caps: { image: 3, video: 0, audio: 0, frames: true, elements: false, ratio: true, resolution: true, resolutionSet: 'video', duration: true, motion: false },
-      qualities: [
-        { id: 'veo-3.1-lite', label: 'LITE' },
-        { id: 'veo-3.1-fast', label: 'FAST' },
-        { id: 'veo-3.1',      label: 'PRO' }
-      ]
+      key:'minimaxh3',brand:'MINIMAX',name:'MINIMAX H3',featured:true,desc:'Text, image, start/end frame and reference video generation.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:1,maxReferenceVideos:1,durationMode:'unknown',supportsDuration:true,resolutions:[]},qualities:[{id:'minimax-h3',label:'H3'}]
     },
+    {
+      key:'veo',brand:'GOOGLE',name:'VEO 3.1',featured:true,desc:'1080p generation with audio output.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,maxReferenceImages:3,supportsDuration:false,resolutions:['1080p'],supportsAudioGeneration:true},
+      qualities:[{id:'veo-3.1',label:'STANDARD'},{id:'veo-3.1-fast',label:'FAST',caps:{supportsElements:false,maxReferenceImages:0}}]
+    },
+    {
+      key:'pixverse',brand:'PIXVERSE',name:'PIXVERSE',featured:true,desc:'C1 and V6 reference-capable generation.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:3,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['360p','720p','1080p']},
+      qualities:[{id:'pixverse-c1',label:'C1'},{id:'pixverse-v6',label:'V6',caps:{supportsAudioGeneration:true}}]
+    },
+    {
+      key:'hailuo23',brand:'MINIMAX',name:'HAILUO 2.3',featured:true,desc:'Discrete 6s or 10s generation; 1080p is 6s only.',
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
+      qualities:[{id:'hailuo-2.3',label:'STANDARD'},{id:'hailuo-2.3-fast',label:'FAST',caps:{supportsT2V:false,supportsI2V:true}}]
+    },
+    {key:'wan27',brand:'WAN',name:'WAN 2.7',featured:true,desc:'Narrative generation, frame guidance, video editing and audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceVideos:1,supportsVideoEdit:true,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
+    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,supportsDuration:false,supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,supportsDuration:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsDuration:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
+    {key:'happyhorse',brand:'HAPPYHORSE',name:'HAPPYHORSE',featured:true,desc:'Reference-to-video with two family versions.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1,resolutions:['720p','1080p']},qualities:[{id:'happyhorse-1.1',label:'1.1',caps:{maxReferenceImages:9,supportsVideoEdit:false}},{id:'happyhorse-1.0',label:'1.0',caps:{maxReferenceImages:3}}]},
+    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
+    {key:'viduq3',brand:'VIDU',name:'VIDU Q3 PRO',featured:true,desc:'Image-to-video with optional generated audio.',caps:{supportsT2V:false,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[4,8],resolutions:['540p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFrames:false,supportsDuration:false,resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
+    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:false,resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:false,supportsAudioGeneration:true},qualities:[]},
     {
       key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
       caps: { image: 4, video: 1, audio: 0, frames: false, elements: true, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
-      qualities: [
-        { id: 'STD', label: 'STD' },
-        { id: 'PRO', label: 'PRO' }
-      ]
+      qualities: [{ id: 'STD', label: 'STD' },{ id: 'PRO', label: 'PRO' }]
     },
-    {
-      key: 'minimaxh3', brand: 'MINIMAX', name: 'MINIMAX H3', featured: true,
-      desc: 'MiniMax H3 video workspace. Unverified controls remain unsupported until provider capabilities are connected.',
-      caps: {
-        image: 1, video: 1, audio: 0, frames: true, elements: true,
-        ratio: false, resolution: false, duration: false,
-        audioGeneration: false, motion: false
-      },
-      qualities: [{ id: 'minimax-h3', label: 'H3' }]
-    }
   ],
   image: [
     {
@@ -2428,6 +2408,11 @@ var modelFamilies = {
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
 var CONNECTED_FAMILIES = ['seedance', 'kling', 'veo', 'klingswap', 'nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'];
+var UI_ONLY_MODEL_IDS = ['kling-3.0-turbo','kling-3.0-4k','kling-3.0-omni'];
+function isBackendConnected() {
+  return !!selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) !== -1
+    && UI_ONLY_MODEL_IDS.indexOf(selectedModel) === -1;
+}
 // Families where a reference image/video/frame is mandatory. Nano Banana Pro
 // (and other pure text-to-image models) can generate from prompt alone.
 var FAMILIES_REQUIRING_MEDIA = []; // Seedance AND Kling 3.0 both confirmed to support plain text-to-video against Segmind's own docs/sample code
@@ -2435,9 +2420,9 @@ var FAMILIES_REQUIRING_VIDEO = ['klingswap']; // Character Swap is fundamentally
 var activeMode = 'video';
 var selectedFamily = modelFamilies.video[0];
 var selectedQualityIdx = 0;
-var selectedModel = selectedFamily.qualities[0].id;
+var selectedModel = selectedFamily.qualities.length ? selectedFamily.qualities[0].id : selectedFamily.key;
 var selectedModelName = selectedFamily.name;
-var selectedModelTier = selectedFamily.qualities[0].label;
+var selectedModelTier = selectedFamily.qualities.length ? selectedFamily.qualities[0].label : null;
 var selectedRatio = '16:9';
 var selectedResolution = '720p';
 var selectedDuration = 5;
@@ -2519,12 +2504,11 @@ function formatBalance(v) {
   return v.toLocaleString() + ' CREDITS';
 }
 function updateCreditEstimate() {
-  var cost = estimateCredits();
   var costEl = document.getElementById('creditCostTxt');
   var balEl = document.getElementById('creditBalanceTxt');
   if (costEl) {
-    costEl.textContent = '−' + cost;
-    costEl.classList.toggle('free', cost === 0);
+    costEl.textContent = '— CREDITS';
+    costEl.classList.remove('free');
   }
   if (balEl) balEl.textContent = formatBalance(creditBalance);
 }
@@ -2784,7 +2768,7 @@ var sheetDefs = {
     disabled: ['4K'],
     desc: function(v){ return resDesc[v]; },
     get: function(){ return selectedResolution; },
-    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; updateCreditEstimate(); }
+    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); }
   },
   duration: {
     title: 'Duration',
@@ -3031,27 +3015,37 @@ function applyModelCapabilities() {
     image: 9, video: 3, frames: true, elements: true,
     ratio: true, resolution: true, duration: true, motion: false
   };
+  var variant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
+  if (variant && variant.caps) rawCaps = Object.assign({}, rawCaps, variant.caps);
   // New BudgetPixel video families declare the public capability contract
   // verbatim.  Translate it once here so the established UI remains intact;
   // model-specific conditionals must not leak into individual controls.
-  var canonical = rawCaps.durationMin != null || rawCaps.resolutions || rawCaps.variants;
+  var canonical = rawCaps.supportsT2V != null || rawCaps.supportsI2V != null;
   var durationSteps = [];
-  if (canonical && rawCaps.durationMin != null && rawCaps.durationMax != null) {
+  if (rawCaps.durationMode === 'discrete' && rawCaps.durationOptions) {
+    durationSteps = rawCaps.durationOptions.slice();
+  } else if (rawCaps.durationMode === 'range' && rawCaps.durationMin != null && rawCaps.durationMax != null) {
     for (var second = rawCaps.durationMin; second <= rawCaps.durationMax; second += (rawCaps.durationStep || 1)) durationSteps.push(second);
+  }
+  if (rawCaps.durationByResolution && rawCaps.durationByResolution[selectedResolution]) {
+    durationSteps = rawCaps.durationByResolution[selectedResolution].slice();
   }
   var caps = canonical ? {
     image: rawCaps.maxReferenceImages || 0,
-    video: rawCaps.supportsReferenceVideo ? (rawCaps.maxReferenceVideos || 0) : 0,
-    audio: rawCaps.supportsReferenceAudio ? (rawCaps.maxReferenceAudios || 0) : 0,
-    frames: !!(rawCaps.supportsFirstFrame || rawCaps.supportsLastFrame),
-    elements: !!((rawCaps.maxReferenceImages || 0) || rawCaps.supportsReferenceVideo || rawCaps.supportsReferenceAudio),
+    video: rawCaps.maxReferenceVideos || 0,
+    audio: rawCaps.maxReferenceAudios || 0,
+    frames: !!rawCaps.supportsFrames,
+    lastFrame: rawCaps.supportsLastFrame !== false,
+    elements: !!rawCaps.supportsElements,
     ratio: !!(rawCaps.aspectRatios && rawCaps.aspectRatios.length),
     ratioOptions: rawCaps.aspectRatios,
     resolution: !!(rawCaps.resolutions && rawCaps.resolutions.length),
     resolutionOptions: rawCaps.resolutions,
-    duration: durationSteps.length > 0,
+    duration: rawCaps.supportsDuration !== false,
+    durationUnknown: rawCaps.supportsDuration === true && durationSteps.length === 0,
     durationSteps: durationSteps,
-    audioGeneration: !!rawCaps.supportsGeneratedAudio,
+    audioGeneration: !!rawCaps.supportsAudioGeneration,
+    audioAlwaysOn: !!rawCaps.audioAlwaysOn,
     motion: false
   } : rawCaps;
 
@@ -3110,6 +3104,8 @@ function applyModelCapabilities() {
   if (!caps.elements && caps.frames && framesTabBtn) {
     switchElTab('frames', framesTabBtn);
   }
+  var lastFrameCard = document.getElementById('cardLastFrame');
+  if (lastFrameCard) lastFrameCard.style.display = caps.frames && caps.lastFrame ? '' : 'none';
 
   // Settings chips
   var ratioChip = document.getElementById('ratioChip');
@@ -3120,6 +3116,16 @@ function applyModelCapabilities() {
   if (ratioChip)  ratioChip.style.display  = caps.ratio      ? '' : 'none';
   if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
   if (durChip)    durChip.style.display    = caps.duration   ? '' : 'none';
+  if (durChip) durChip.classList.toggle('unavailable', !!caps.durationUnknown);
+  var durationSlider = document.getElementById('durationSlider');
+  if (durationSlider) durationSlider.disabled = !!caps.durationUnknown;
+  if (caps.durationUnknown) {
+    document.getElementById('durationLabel').textContent = 'Unavailable';
+    document.getElementById('durationLabelSub').textContent = '';
+    document.getElementById('durationStateBadge').textContent = 'UNKNOWN';
+    document.getElementById('durationMinLabel').textContent = 'Provider range';
+    document.getElementById('durationMaxLabel').textContent = 'not published';
+  }
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
   // Bitrate control: confirmed via Segmind's official docs only for
   // seedance-2.0 (PRO). For Fast/Mini it's unconfirmed either way — no
@@ -3128,7 +3134,7 @@ function applyModelCapabilities() {
   // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
   // see _run_segmind_task), so the option is available everywhere without
   // ever risking a failed generation.
-  var bitrateSupported = !!caps.qualityControl || (selectedFamily && isSeedanceFamily(selectedFamily.key));
+  var bitrateSupported = !!caps.qualityControl || (selectedFamily && selectedFamily.key === 'seedance');
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
   if (!bitrateSupported) {
     selectedBitrate = 'high';
@@ -3141,7 +3147,7 @@ function applyModelCapabilities() {
   // inherit the source video's track). Reset the toggle when switching
   // away so it can't silently apply to a family the user never chose it
   // for.
-  var muteAudioSupported = !!caps.audioGeneration || (selectedFamily && (selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo'));
+  var muteAudioSupported = !!caps.audioGeneration || (selectedFamily && selectedFamily.key === 'klingswap');
   // Chips khusus mode Audio (Seed Audio): Output format + Sample rate
   var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
   var afChip = document.getElementById('audioFormatChip');
@@ -3154,6 +3160,11 @@ function applyModelCapabilities() {
     muteAudioEnabled = false;
     renderMuteAudioChip();
   }
+  if (muteAudioChip) {
+    muteAudioChip.classList.toggle('locked', !!caps.audioAlwaysOn);
+    muteAudioChip.setAttribute('aria-disabled', caps.audioAlwaysOn ? 'true' : 'false');
+  }
+  if (caps.audioAlwaysOn) { muteAudioEnabled = false; renderMuteAudioChip(); }
 
   // Prefer a model-declared option set; retain the established fallbacks for
   // connected legacy families that predate the capability registry fields.
@@ -3179,7 +3190,7 @@ function applyModelCapabilities() {
   // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
   // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
   // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per Segmind's API docs.
-  if (sheetDefs && sheetDefs.duration) {
+  if (sheetDefs && sheetDefs.duration && !caps.durationUnknown) {
     if (caps.durationSteps) {
       sheetDefs.duration.options = caps.durationSteps.map(function(s){ return s+'s'; });
     } else if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
@@ -3277,6 +3288,9 @@ function renderMuteAudioChip() {
   }
 }
 function toggleMuteAudio() {
+  var variant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
+  var activeCaps = Object.assign({}, selectedFamily && selectedFamily.caps, variant && variant.caps);
+  if (activeCaps.audioAlwaysOn) return;
   muteAudioEnabled = !muteAudioEnabled;
   renderMuteAudioChip();
 }
@@ -3567,7 +3581,7 @@ function updateGenerateButtonState() {
   // Only families in CONNECTED_FAMILIES are actually wired to a real
   // backend/Segmind endpoint right now. Every other model card is UI-only
   // so far — don't let the button imply it'll work when it can't.
-  if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
+  if (!isBackendConnected()) {
     btn.disabled = true;
     btn.setAttribute('aria-disabled', 'true');
     btn.title = 'Backend model belum terhubung';
@@ -3580,6 +3594,9 @@ function updateGenerateButtonState() {
   // enough to edit/swap; text just refines it further.
   var promptOptional = selectedFamily && selectedFamily.key === 'klingswap';
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
+  var activeVariant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
+  var workflowCaps = Object.assign({}, selectedFamily && selectedFamily.caps, activeVariant && activeVariant.caps);
+  if (workflowCaps.supportsI2V && !workflowCaps.supportsT2V) needsMedia = true;
   var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var hasMedia = (!needsMedia || media.image.length > 0 || media.video.length > 0 || !!(frames.first && frames.first.url))
     && (!needsVideo || media.video.length > 0);
@@ -4596,7 +4613,7 @@ function dismissGenQueueItem(taskId) {
 function startGenerate() {
   var prompt = promptInput.value.trim();
 
-  if (selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) === -1) {
+  if (!isBackendConnected()) {
     showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Veo 3.1 (Lite/Fast/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, Flux (Schnell/Dev/Pro), Imagen 4, dan Qwen Image.');
     return;
   }
