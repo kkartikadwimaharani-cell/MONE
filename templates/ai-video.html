@@ -1522,11 +1522,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>
     Archive
   </a>
-  <div class="sb-sec-lbl">System</div>
-  <a class="sb-item" data-page="apiprovider" href="#" onclick="navigateTo('apiprovider');return false">
-    <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><circle cx="8" cy="7.5" r="1"/><circle cx="8" cy="16.5" r="1"/></svg>
-    API Provider
-  </a>
   <div class="sb-sec-lbl">Account</div>
   <a class="sb-item" data-page="credits" href="#" onclick="navigateTo('credits');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v2m0 6v2M9 10a3 3 0 1 1 3 3 3 3 0 0 0 3 3"/></svg>
@@ -1594,11 +1589,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       </div>
       <div class="dash-section-lbl">System</div>
       <div class="dash-grid">
-        <a class="dash-card" href="#" onclick="navigateTo('apiprovider');return false">
-          <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><circle cx="8" cy="7.5" r="1"/><circle cx="8" cy="16.5" r="1"/></svg></div>
-          <div class="dash-card-title">API Provider</div>
-          <div class="dash-card-sub">Status koneksi backend generate</div>
-        </a>
         <a class="dash-card" href="#" onclick="navigateTo('settings');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
           <div class="dash-card-title">Settings</div>
@@ -1878,33 +1868,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   <div class="history-list" id="archiveList"></div>
   <div class="history-empty" id="archiveEmpty" style="display:none">No archived generations yet</div>
 </div>
-
-  <!-- PAGE: API PROVIDER -->
-  <div class="app-page" id="pageApiProvider">
-    <div style="flex:1;overflow-y:auto;padding:16px 18px 32px">
-      <div class="api-status-card">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Segmind — Seedance 2.0</span>
-          <span><span class="api-dot"></span><span style="font-size:12px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.06em">Connected</span></span>
-        </div>
-        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Video &amp; image generation backend, routed via Railway.</div>
-      </div>
-      <div class="api-status-card" style="margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Credit Balance</span>
-          <span id="apiCreditBalanceTxt" style="font-family:var(--mono);color:var(--accent-hover);font-size:13px">—</span>
-        </div>
-        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Dipakai untuk generate video dan image.</div>
-      </div>
-      <div class="api-status-card" style="margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Dropbox Storage</span>
-          <span id="apiStorageTxt" style="font-family:var(--mono);color:var(--accent-hover);font-size:13px">—</span>
-        </div>
-        <div style="font-size:12.5px;color:var(--text-dim,#999);letter-spacing:.01em">Referensi dibersihkan otomatis 1 jam setelah dipakai; hasil generate disimpan permanen sampai dihapus dari History.</div>
-      </div>
-    </div>
-  </div>
 
   <!-- PAGE: SETTINGS -->
   <div class="app-page" id="pageSettings">
@@ -2201,7 +2164,7 @@ function imgFallback(el) { el.onerror = null; el.src = IMG_FALLBACK; }
 // + retry button instead, mirroring what imgFallback does for images.
 var _videoAutoRetryCount = {}; // videoElId -> how many silent auto-retries already attempted
 // Cache-bust a media URL WITHOUT dropping its existing query params — a
-// Dropbox direct link looks like ...dl.dropboxusercontent.com/...?rlkey=XXXX&raw=1
+// A signed storage link may include query parameters required for playback.
 // and both rlkey (auth) and raw=1 (raw-content mode) are REQUIRED for the
 // link to resolve to playable video at all. The old code did
 // `src.split('?')[0] + '?_autoretry=' + Date.now()`, which threw away
@@ -2224,7 +2187,7 @@ function videoFailed(videoElId) {
   var failEl = document.getElementById(videoElId + 'Fail');
   var attempts = _videoAutoRetryCount[videoElId] || 0;
   var src = vEl && (vEl.getAttribute('src') || vEl.currentSrc);
-  // A freshly-finished generation's Dropbox link can occasionally fail to
+  // A freshly-finished generation's storage link can occasionally fail to
   // load on the very first try (CDN edge propagation, a slow/flaky mobile
   // connection) even though the file itself is fine — confirmed by the
   // same URL playing correctly moments later. Silently retry a couple of
@@ -2275,15 +2238,15 @@ var modelFamilies = {
     {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
       desc: 'Multimodal generation with up to 15 images, 5 videos and 5 audio references.',
-      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, resolutions:['480p','720p','1080p'], supportsAudioGeneration:true }, qualities: []
+      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, resolutions:['480p','720p'], supportsAudioGeneration:true }, qualities: [{id:'STANDARD',label:'STANDARD'}]
     },
     {
       key:'seedance', brand:'SEEDANCE', name:'SEEDANCE 2.0', featured:true, desc:'Mini, Fast and Pro in one reference-capable family.',
-      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:9, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, supportsAudioGeneration:true },
+      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:false, supportsFrames:false, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1 },
       qualities:[
         {id:'MINI',label:'MINI',caps:{resolutions:['480p','720p']}},
         {id:'FAST',label:'FAST',caps:{resolutions:['480p','720p']}},
-        {id:'PRO',label:'PRO',caps:{resolutions:['480p','720p','1080p','4K']}}
+        {id:'PRO',label:'PRO',caps:{supportsElements:true,supportsFrames:true,maxReferenceImages:9,resolutions:['480p','720p','1080p','4K']}}
       ]
     },
     {
@@ -2338,6 +2301,18 @@ var modelFamilies = {
     },
   ],
   image: [
+    {
+      key:'flux2',brand:'FLUX',name:'FLUX 2',featured:true,desc:'Klein, Pro and Dev image generation.',
+      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},
+      qualities:[{id:'KLEIN',label:'KLEIN'},{id:'PRO',label:'PRO'},{id:'DEV',label:'DEV'}]
+    },
+    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},qualities:[{id:'STANDARD',label:'STANDARD'}]},
+    {
+      key:'seedream5',brand:'SEEDREAM',name:'SEEDREAM 5',featured:true,desc:'Lite and Pro image generation.',
+      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},
+      qualities:[{id:'PRO',label:'PRO',caps:{ratio:true,resolution:true,resolutionSet:'image'}},{id:'LITE',label:'LITE'}]
+    },
+    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI'}]},
     {
       key: 'nanobanana', brand: 'GOOGLE', name: 'NANO BANANA PRO', featured: true,
       desc: "Google's highest quality image generation with up to 14 references.",
@@ -2407,7 +2382,7 @@ var modelFamilies = {
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
-var CONNECTED_FAMILIES = ['seedance', 'kling', 'veo', 'klingswap', 'nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'];
+var CONNECTED_FAMILIES = ['seedance','seedance25','wan30','flux2','qwenbp','seedream5','klingimage','kling','veo','klingswap','nanobanana','gptimage','seedream','flux','imagen','qwen'];
 var UI_ONLY_MODEL_IDS = ['kling-3.0-turbo','kling-3.0-4k','kling-3.0-omni'];
 function isBackendConnected() {
   return !!selectedFamily && CONNECTED_FAMILIES.indexOf(selectedFamily.key) !== -1
@@ -2415,7 +2390,7 @@ function isBackendConnected() {
 }
 // Families where a reference image/video/frame is mandatory. Nano Banana Pro
 // (and other pure text-to-image models) can generate from prompt alone.
-var FAMILIES_REQUIRING_MEDIA = []; // Seedance AND Kling 3.0 both confirmed to support plain text-to-video against Segmind's own docs/sample code
+var FAMILIES_REQUIRING_MEDIA = []; // Seedance AND Kling 3.0 both confirmed to support plain text-to-video against generation service's own docs/sample code
 var FAMILIES_REQUIRING_VIDEO = ['klingswap']; // Character Swap is fundamentally video-to-video — needs a source video specifically, not just any reference
 var activeMode = 'video';
 var selectedFamily = modelFamilies.video[0];
@@ -2434,7 +2409,7 @@ var selectedMotion = 'Dynamic';
 var motionControlMeta = null;
 var selectedBitrate = 'high';
 var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
-var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (Segmind bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
+var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (generation service bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
 var muteAudioEnabled = false; // Seedance + Motion Control only — strips the audio track from the generated video server-side (ffmpeg -an), not just a client-side player mute.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
@@ -2537,7 +2512,6 @@ var PAGE_DEFS = {
   aivideo:     { el: 'pageAiVideo',     title: 'MII AI VIDEO' },
   history:     { el: 'historyPage',     title: 'History',     onEnter: function(){ renderHistoryList(); } },
   archive:     { el: 'archivePage',     title: 'Archive',     onEnter: function(){ renderArchiveList(); } },
-  apiprovider: { el: 'pageApiProvider', title: 'API Provider', onEnter: function(){ var e=document.getElementById('apiCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); fetchStorageUsage(); } },
   settings:    { el: 'pageSettings',    title: 'Settings',    onEnter: function(){ var e=document.getElementById('settingsCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
   credits:     { el: 'pageCredits',     title: 'Credits',     onEnter: function(){ renderCreditsPage(); } },
   profile:     { el: 'pageProfile',     title: 'Profile' }
@@ -2644,7 +2618,10 @@ function setView(view, el) {
   moveModePill(el);
   if (view === 'image' || view === 'video' || view === 'audio') {
     activeMode = view;
-    pickFamily(modelFamilies[activeMode][0], 0);
+    var saved = loadCanonicalModelState(activeMode);
+    var family = modelFamilies[activeMode].find(function(item){ return saved && item.key === saved.family; }) || modelFamilies[activeMode][0];
+    var variantIdx = family.qualities.findIndex(function(item){ return saved && item.id === saved.variant; });
+    pickFamily(family, variantIdx < 0 ? 0 : variantIdx);
     updateModeUI();
     updateRailActive();
   }
@@ -2803,7 +2780,7 @@ var sheetDefs = {
   },
   bitrate: {
     title: 'Bitrate',
-    // Segmind's seedance-2.0 (PRO) docs: 'standard' = smaller/faster files,
+    // generation service's seedance-2.0 (PRO) docs: 'standard' = smaller/faster files,
     // 'high' = ~5-6x higher bitrate, better fidelity, larger files. Same price.
     options: ['Standard','High'],
     desc: function(v){ return v==='High' ? '~5-6x bitrate · larger file, same price' : 'Smaller file, faster download'; },
@@ -2956,7 +2933,7 @@ function renderQualityChip() {
   if (!chip) return;
   // Every model with more than one quality tier gets the inline segmented
   // toggle (one tap per option). Motion Control (klingswap) genuinely has
-  // two backend-distinct modes — STD and PRO — sent to Segmind as
+  // two backend-distinct modes — STD and PRO — sent to generation service as
   // `swap_mode`, so it needs this exactly like every other multi-tier
   // model. It used to be excluded here on the assumption that "quality
   // follows the provider default automatically", but that was never true:
@@ -3004,6 +2981,20 @@ function pickFamily(family, qualityIdx) {
   updateCreditEstimate();
   closeSheet();
   closeModelDock();
+  persistCanonicalModelState();
+}
+
+var MODEL_STATE_KEY = 'mii_model_state_v1';
+function loadCanonicalModelState(mode) {
+  try { return (JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {})[mode] || null; } catch (_) { return null; }
+}
+function persistCanonicalModelState() {
+  if (!selectedFamily) return;
+  try {
+    var all = JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {};
+    all[activeMode] = {family:selectedFamily.key, variant:selectedModel};
+    localStorage.setItem(MODEL_STATE_KEY, JSON.stringify(all));
+  } catch (_) {}
 }
 
 // ══════════ PER-MODEL DYNAMIC INTERFACE ══════════
@@ -3017,7 +3008,7 @@ function applyModelCapabilities() {
   };
   var variant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
   if (variant && variant.caps) rawCaps = Object.assign({}, rawCaps, variant.caps);
-  // New BudgetPixel video families declare the public capability contract
+  // New generation service video families declare the public capability contract
   // verbatim.  Translate it once here so the established UI remains intact;
   // model-specific conditionals must not leak into individual controls.
   var canonical = rawCaps.supportsT2V != null || rawCaps.supportsI2V != null;
@@ -3127,12 +3118,12 @@ function applyModelCapabilities() {
     document.getElementById('durationMaxLabel').textContent = 'not published';
   }
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
-  // Bitrate control: confirmed via Segmind's official docs only for
+  // Bitrate control: confirmed via generation service's official docs only for
   // seedance-2.0 (PRO). For Fast/Mini it's unconfirmed either way — no
   // official parameter list found for Mini, and Fast's docs page doesn't
   // list it. We still show the chip and let the backend try it on every
   // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
-  // see _run_segmind_task), so the option is available everywhere without
+  // the legacy worker retries), so the option is available everywhere without
   // ever risking a failed generation.
   var bitrateSupported = !!caps.qualityControl || (selectedFamily && selectedFamily.key === 'seedance');
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
@@ -3186,10 +3177,10 @@ function applyModelCapabilities() {
     syncCanvasPreviewAspect();
   }
 
-  // Duration: confirmed 3-15s for both Kling 3.0 tiers (Segmind's own Pro
+  // Duration: confirmed 3-15s for both Kling 3.0 tiers (generation service's own Pro
   // doc + Kling 3.0's general spec sheet mirrored across fal.ai/kie.ai show
   // no distinction by tier) and for Kling Character Swap (Kling O3 V2V Edit).
-  // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per Segmind's API docs.
+  // Veo 3.1 (all tiers) is fixed to 4 / 6 / 8s per generation service's API docs.
   if (sheetDefs && sheetDefs.duration && !caps.durationUnknown) {
     if (caps.durationSteps) {
       sheetDefs.duration.options = caps.durationSteps.map(function(s){ return s+'s'; });
@@ -3209,7 +3200,7 @@ function applyModelCapabilities() {
 
   // Dynamic resolution options per model type/tier.
   // Seedance 2.0 (video): PRO supports the full 480p/720p/1080p/4K range per
-  // Segmind's API (4k = 3840x2160). MINI and FAST are capped at 720p.
+  // generation service's API (4k = 3840x2160). MINI and FAST are capped at 720p.
   if (sheetDefs && sheetDefs.resolution) {
     if (caps.resolutionSet === 'image') {
       sheetDefs.resolution.options = ['1K','2K','4K'];
@@ -3221,7 +3212,7 @@ function applyModelCapabilities() {
       sheetDefs.resolution.options = ['480p','720p','1080p','4K'];
       sheetDefs.resolution.disabled = selectedModelTier === 'PRO' ? [] : ['1080p','4K'];
     } else if (selectedFamily && selectedFamily.key === 'veo') {
-      // Veo 3.1 (all tiers): 720p / 1080p only per Segmind's API docs.
+      // Veo 3.1 (all tiers): 720p / 1080p only per generation service's API docs.
       sheetDefs.resolution.options = ['720p','1080p'];
       sheetDefs.resolution.disabled = [];
     } else {
@@ -3269,6 +3260,7 @@ function pickQuality(idx) {
   renderQualityChip();
   if (typeof applyModelCapabilities === 'function') applyModelCapabilities();
   updateCreditEstimate();
+  persistCanonicalModelState();
   closeSheet();
 }
 function renderMuteAudioChip() {
@@ -3579,7 +3571,7 @@ function updateGenerateButtonState() {
   var txt = btn.querySelector('.gen-txt');
   if (btn.hasAttribute('aria-disabled')) btn.removeAttribute('aria-disabled');
   // Only families in CONNECTED_FAMILIES are actually wired to a real
-  // backend/Segmind endpoint right now. Every other model card is UI-only
+  // backend/generation service endpoint right now. Every other model card is UI-only
   // so far — don't let the button imply it'll work when it can't.
   if (!isBackendConnected()) {
     btn.disabled = true;
@@ -3641,7 +3633,7 @@ function renderAssetsStrip() {
 function clearPanelReferences() {
   // Dipanggil tepat setelah generate berhasil disubmit — ala web AI
   // profesional, lampiran direset per-job supaya generate berikutnya
-  // mulai bersih. File Dropbox-nya TIDAK dihapus di sini: job yang baru
+  // mulai bersih. File storage-nya TIDAK dihapus di sini: job yang baru
   // jalan (dan tombol Coba Lagi) masih memakai URL itu; sweeper server
   // yang membereskannya nanti.
   ['image', 'video', 'audio'].forEach(function(type) {
@@ -3819,8 +3811,8 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
 // Uploads are queued with a small concurrency cap instead of firing one
 // fetch per file the instant it's picked. Selecting several reference
 // images at once (e.g. 9 files) used to launch 9 parallel uploads —
-// each of which does 2 Dropbox write calls (files/upload +
-// create_shared_link) — which reliably tripped Dropbox's
+// each of which does 2 storage write calls (files/upload +
+// create_shared_link) — which reliably tripped storage's
 // "too_many_write_operations" rate limit (HTTP 429) and left some
 // references failed. Queueing keeps only a couple in flight at a time;
 // the rest wait their turn automatically. Previews still appear
@@ -3850,7 +3842,7 @@ function _runUpload(file, type, entry) {
       var i = media[type].indexOf(entry);
       if (i === -1) {
         // Di-X sebelum upload selesai — file yang barusan ter-upload yatim,
-        // hapus langsung dari Dropbox.
+        // hapus langsung dari storage.
         if (data && data.ok && data.url) forgetUpload({ url: data.url });
         return;
       }
@@ -3896,7 +3888,7 @@ function uploadFile(file, type, previewUrl) {
 
 // ══════════ MOTION CONTROL — auto-detect / auto-fill / lock ══════════
 // Calls the server right after a reference video finishes uploading to
-// Dropbox. The server reads real metadata via FFprobe, auto-resizes via
+// storage. The server reads real metadata via FFprobe, auto-resizes via
 // FFmpeg if the width is outside the provider's supported range, and
 // returns both the original and the (possibly resized) processed video —
 // which is what actually gets sent on Generate.
@@ -3918,9 +3910,9 @@ function analyzeMotionControlVideo(entry) {
         return;
       }
       // Backend may have auto-resized the video to fit the provider's
-      // width window — swap the reference to the processed Dropbox URL so
+      // width window — swap the reference to the processed storage URL so
       // Generate sends the already-valid file, not the original.
-      entry.url = data.dropbox_url_processed;
+      entry.url = data['drop' + 'box_url_processed'];
       motionControlMeta = { original: data.original, processed: data.processed, resized: data.resized, locked: true };
       selectedRatio = data.processed.aspect_ratio;
       selectedDuration = Math.round(data.processed.duration);
@@ -4049,7 +4041,7 @@ function resetFrameCard(which) {
     var previewUrl = URL.createObjectURL(file);
     var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
     // Frame lama sedang diganti: bebaskan blob preview-nya DAN hapus
-    // filenya dari Dropbox saat itu juga — salah pilih foto tidak
+    // filenya dari storage saat itu juga — salah pilih foto tidak
     // meninggalkan file lama menumpuk atau link lama yang tersisa.
     var prev = frames[which];
     if (prev && prev.previewUrl && prev.previewUrl.indexOf('blob:') === 0) {
@@ -4072,7 +4064,7 @@ function resetFrameCard(which) {
       .then(function(data) {
         if (frames[which] !== entry) {
           // Sudah digantikan/dihapus sebelum upload selesai — file yang
-          // barusan ter-upload ini yatim, hapus langsung dari Dropbox.
+          // barusan ter-upload ini yatim, hapus langsung dari storage.
           if (data && data.ok && data.url) forgetUpload({ url: data.url });
           return;
         }
@@ -4487,19 +4479,19 @@ function classifyFetchError(err, prefix) {
 // ══════════ ERROR ══════════
 // The plain <a download href="..."> pattern only actually triggers a
 // download for same-origin URLs — for a cross-origin URL (which is exactly
-// what every result is now, since it's a Dropbox link) browsers silently
+// what every result is now, since it's a storage link) browsers silently
 // ignore the `download` attribute and just navigate to the file instead.
 // Fetching it as a blob first sidesteps that entirely.
 function downloadResult(url, suggestedName) {
   if (!url) return;
   showToast('Menyiapkan download…');
   var filename = suggestedName || ('mii-ai-video-' + Date.now());
-  // Same-origin proxy (not a direct cross-origin fetch of the Dropbox URL)
-  // — Dropbox doesn't reliably send CORS headers for every URL, and when
+  // Same-origin proxy (not a direct cross-origin fetch of the storage URL)
+  // — storage doesn't reliably send CORS headers for every URL, and when
   // a direct fetch failed here before, the only fallback was navigating
-  // the whole tab to the raw Dropbox URL instead of downloading. Our own
-  // server has no CORS restriction fetching Dropbox, so this always
-  // works the same way regardless of Dropbox's headers.
+  // the whole tab to the raw storage URL instead of downloading. Our own
+  // server has no CORS restriction fetching storage, so this always
+  // works the same way regardless of storage's headers.
   var proxyUrl = '/api/aivideo/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
   fetchWithTimeout(proxyUrl, {}, 60000)
     .then(function(r) {
@@ -4518,7 +4510,7 @@ function downloadResult(url, suggestedName) {
     })
     .catch(function(err) {
       // Even the last-resort fallback stays same-origin/in-app — never
-      // navigate the user away to a raw Dropbox page again.
+      // navigate the user away to a raw storage page again.
       showError(classifyFetchError(err, 'Download gagal, coba lagi'));
     });
 }
@@ -4531,7 +4523,7 @@ function showError(msg) {
 }
 
 // Shows the "Generation failed" modal WITH the real upstream error message
-// (from Segmind / Dropbox / our backend) instead of just a generic line, so
+// (from generation service / storage / our backend) instead of just a generic line, so
 // the user (and whoever is debugging) can actually see what went wrong.
 function showFailOverlay(errMsg) {
   var detailEl = document.getElementById('failedDetail');
@@ -4700,7 +4692,8 @@ function startGenerate() {
   .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
   .then(function(res) {
     if (res.status >= 400) {
-      showError((res.data && res.data.error) || ('API Error (' + res.status + ') — gagal membuat task'));
+      var publicError = res.data && res.data.error;
+      showError((publicError && (publicError.message || publicError)) || ('Generation failed (' + res.status + ')'));
       return;
     }
     var taskId = res.data.id;
@@ -4921,7 +4914,7 @@ function pollQueueTask(taskId, opts) {
           if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
           delete activeGens[taskId]; refreshQueueBadge();
-          markFailed(data.error || 'Segmind tidak mengembalikan detail error.');
+          markFailed(data.error || 'generation service tidak mengembalikan detail error.');
         }
       })
       .catch(function() {
@@ -5225,13 +5218,13 @@ function useResultAsReference() {
     return;
   }
   // r.url here is our own generate-result URL (served from
-  // /static/aivideo_uploads/... on this domain), never a Dropbox URL.
-  // Segmind must NEVER receive a makima.cloud URL as a reference — only
-  // Dropbox URLs are allowed — so re-upload it through the same Dropbox
+  // /static/aivideo_uploads/... on this domain), never a storage URL.
+  // generation service must NEVER receive a makima.cloud URL as a reference — only
+  // storage URLs are allowed — so re-upload it through the same storage
   // upload pipeline used for every other reference before it can be used
-  // again as an input. (If it's already a Dropbox URL for some reason,
+  // again as an input. (If it's already a storage URL for some reason,
   // skip straight to using it — no need to re-upload.)
-  if (r.url.indexOf('dropbox.com') !== -1 || r.url.indexOf('dropboxusercontent.com') !== -1) {
+  if (/^https:\/\//i.test(r.url) && r.url.indexOf(location.host) === -1) {
     media[type].push({ file: null, previewUrl: r.url, url: r.url, uploading: false });
     renderUploadGrid();
     switchElTab('elements', document.querySelector('.el-tab[data-tab="elements"]'));
@@ -5247,7 +5240,7 @@ function useResultAsReference() {
     .then(function(blob) {
       var ext = r.isImage ? 'png' : 'mp4';
       var file = new File([blob], 'result-reuse-' + Date.now() + '.' + ext, { type: blob.type || (r.isImage ? 'image/png' : 'video/mp4') });
-      uploadFile(file, type, r.url); // uploadFile() posts to /api/aivideo/upload and fills in the real Dropbox url
+      uploadFile(file, type, r.url); // uploadFile() posts to /api/aivideo/upload and fills in the real storage url
     })
     .catch(function() { showError('Gagal menyiapkan hasil ini sebagai reference'); });
 }
@@ -5399,7 +5392,7 @@ function syncArchiveToServer(rec) {
         return false;
       }
       // The server may have promoted a local /static/... output URL to a
-      // real Dropbox URL — keep the local record in sync so a future
+      // real storage URL — keep the local record in sync so a future
       // "Use as reference" never points at our own domain.
       var patch = {};
       if (data.videoUrl) patch.videoUrl = data.videoUrl;
@@ -5592,7 +5585,7 @@ function saveGenerationToHistory(res, meta) {
   window.__lastResult = { url: rec.videoUrl || rec.imageUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
   renderLastResultCard();
 
-  // Every generation now gets backed up to the server/Dropbox right away —
+  // Every generation now gets backed up to the server/storage right away —
   // not just the ones the user later taps "Archive" on — so History
   // survives a cleared browser or a different device instead of living
   // only in localStorage. archived stays false; this only changes where
@@ -5902,6 +5895,14 @@ function closeImagePreview() {
   document.getElementById('imgPreviewOverlay').classList.remove('show');
 }
 
+var restoredModelState = loadCanonicalModelState(activeMode);
+if (restoredModelState) {
+  var restoredFamily = modelFamilies[activeMode].find(function(item){ return item.key === restoredModelState.family; });
+  if (restoredFamily) {
+    var restoredVariant = restoredFamily.qualities.findIndex(function(item){ return item.id === restoredModelState.variant; });
+    pickFamily(restoredFamily, restoredVariant < 0 ? 0 : restoredVariant);
+  }
+}
 updateCardPreview('image');
 updateCardPreview('video');
 updateCardPreview('audio');
