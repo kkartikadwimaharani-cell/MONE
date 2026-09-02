@@ -189,6 +189,8 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--card);animation:workspaceIn .3s var(--ease-spring) both}
 .gen-q-item.failed{border-color:rgba(255,32,64,.5);background:rgba(255,32,64,.06)}
 .gen-q-item.done{border-color:rgba(60,255,176,.4)}
+.gen-q-item.save-failed{border-color:#d99b32;background:rgba(217,155,50,.08)}
+.gen-q-item.save-failed .gen-q-stage{color:#ffc45c}
 .gen-q-ring{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
 .gen-q-thumb{width:34px;height:34px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2);animation:workspaceIn .25s var(--ease-spring) both}
 .gen-q-ring::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:brandRingSpin 3.2s linear infinite}
@@ -198,6 +200,9 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-item.failed .gen-q-ring-m{color:var(--accent-hover)}
 .gen-q-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .gen-q-title{font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-meta,.gen-q-detail,.gen-q-prompt{font-family:var(--mono);font-size:.62rem;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-meta{color:var(--text-dim)}
+.gen-q-prompt{opacity:.75}
 .gen-q-stage{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gen-q-stage.err{color:var(--accent-hover)}
 .gen-q-bar{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
@@ -656,6 +661,19 @@ input[type=file].hidden-input{display:none}
 .hist-act.danger:hover{background:rgba(255,32,64,.14);border-color:rgba(255,32,64,.4);color:#ff5a75}
 .hist-act svg{width:14px;height:14px;display:block}
 .hist-thumb-glyph svg{width:18px;height:18px;display:block}
+.hist-grid-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
+.hist-grid-fallback{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-faint);font-size:.65rem;text-transform:uppercase}
+.history-loading{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text-dim);font-family:var(--mono);font-size:.7rem;text-transform:uppercase}
+.history-loading .gen-q-ring{width:28px;height:28px}
+@media(max-width:590px){
+  .history-list{padding-left:12px;padding-right:12px}
+  .hist-item{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:10px}
+  .hist-info{min-width:0}.hist-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-actions{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);width:100%;gap:7px}
+  .hist-act{width:100%;min-height:38px}
+  .history-list.grid-mode{grid-template-columns:repeat(3,minmax(0,1fr));padding-left:12px;padding-right:12px}
+}
+@media(max-width:370px){.history-list.grid-mode{gap:6px}.hist-item{padding:9px}.hist-thumb{width:68px;height:68px}}
 .hist-meta{font-family:var(--mono);letter-spacing:.02em}
 .rb-ico{display:flex;align-items:center;justify-content:center}
 .rb-ico svg{width:17px;height:17px;display:block}
@@ -4664,49 +4682,74 @@ function lockGenerateForm(locked) { window.__generating = false; }
 var activeGens = {};
 
 function refreshQueueBadge() {
-  var n = Object.keys(activeGens).length;
+  var n = Object.keys(activeGens).filter(function(id) { return !activeGens[id].completed && !activeGens[id].failed; }).length;
   var progressTxt = document.getElementById('collapsedProgressTxt');
   if (progressTxt) progressTxt.textContent = n > 0 ? (n + ' diproses') : '';
 }
 
-function genQueueItemHtml(taskId, title) {
-  // Workflow tracker: the same 4 stages stageForProgress() already maps
-  // progress % onto, shown as a small step row instead of only changing
-  // text — so each step of the generation is visibly reached, not just
-  // narrated by a label that overwrites itself.
-  var steps = ['Upload', 'Prepare', 'Generate', 'Render'];
+function queueMode(meta) {
+  var mode = String((meta && meta.activeMode) || 'video').toLowerCase();
+  return mode === 'image' || mode === 'audio' ? mode : 'video';
+}
+function queueReferenceCounts(meta) {
+  meta = meta || {};
+  return {
+    image: (meta.image_urls || meta.reference_images || []).length + (meta.first_frame_url ? 1 : 0) + (meta.last_frame_url ? 1 : 0),
+    video: (meta.video_urls || []).length,
+    audio: (meta.audio_urls || []).length
+  };
+}
+function stageForProgress(meta, progress, status) {
+  var mode = queueMode(meta);
+  if (status === 'completed' || progress >= 100) return 'Complete';
+  if (status === 'saving') return 'Saving Result';
+  if (progress < 10) return 'Preparing Request';
+  if (progress < 60) return 'Preparing ' + mode.charAt(0).toUpperCase() + mode.slice(1) + ' Model';
+  return 'Generating ' + mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+function queueMetaSummary(meta) {
+  var mode = queueMode(meta), bits = [mode.toUpperCase()];
+  if (mode === 'video' && meta.duration) bits.push(meta.duration + 's');
+  if (meta.aspect_ratio) bits.push(meta.aspect_ratio);
+  if (meta.resolution) bits.push(meta.resolution);
+  if (mode === 'video' && meta.audioApplicable) bits.push(meta.mute_audio ? 'Audio Off' : 'Audio On');
+  return bits.join(' · ');
+}
+function genQueueItemHtml(taskId, meta) {
+  meta = meta || {};
+  var title = meta.fullModelLabel || meta.modelDisplayName || meta.model || 'Generating';
+  var refs = queueReferenceCounts(meta);
+  var refText = (refs.image || refs.video || refs.audio) ? 'IMG ' + refs.image + ' · VID ' + refs.video + ' · AUD ' + refs.audio : '';
+  var prompt = String(meta.prompt || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  var steps = ['Generate', 'Save', 'Ready'];
   var stepsHtml = steps.map(function(label, i) {
     return '<div class="gen-q-step" id="genqStep_' + taskId + '_' + i + '"><span class="gen-q-step-dot"></span><span class="gen-q-step-lbl">' + label + '</span></div>';
   }).join('<div class="gen-q-step-line"></div>');
-  return (
-    '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
-      '<div class="gen-q-ring" id="genqRing_' + taskId + '"><span class="gen-q-ring-m">M</span></div>' +
-      '<img class="gen-q-thumb" id="genqThumb_' + taskId + '" style="display:none" alt="">' +
-      '<div class="gen-q-info">' +
-        '<div class="gen-q-title">' + escapeHtml(title) + '</div>' +
-        '<div class="gen-q-stage" id="genqStage_' + taskId + '">Uploading Assets</div>' +
-        '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
-        '<div class="gen-q-steps" id="genqSteps_' + taskId + '">' + stepsHtml + '</div>' +
-      '</div>' +
-      '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="gen-q-eta-txt" id="genqEtaTxt_' + taskId + '">Estimating…</span></span>' +
-      '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div>' +
-      '<button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Sembunyikan" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">\u2715</button>' +
-    '</div>'
-  );
+  return '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
+    '<div class="gen-q-ring" id="genqRing_' + taskId + '"><span class="gen-q-ring-m">M</span></div>' +
+    '<img class="gen-q-thumb" id="genqThumb_' + taskId + '" style="display:none" alt="Result thumbnail" onerror="this.style.display=\'none\';document.getElementById(\'genqRing_' + taskId + '\').style.display=\'grid\'">' +
+    '<div class="gen-q-info"><div class="gen-q-title">' + escapeHtml(title) + '</div>' +
+    '<div class="gen-q-meta">' + escapeHtml(queueMetaSummary(meta)) + '</div>' +
+    '<div class="gen-q-stage" id="genqStage_' + taskId + '">' + escapeHtml(stageForProgress(meta, 0, 'pending')) + '</div>' +
+    '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
+    '<div class="gen-q-steps" id="genqSteps_' + taskId + '">' + stepsHtml + '</div>' +
+    (refText ? '<div class="gen-q-detail">' + refText + '</div>' : '') +
+    (prompt ? '<div class="gen-q-prompt">' + escapeHtml(prompt) + '</div>' : '') + '</div>' +
+    '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="genqEtaTxt_' + taskId + '">Estimating…</span></span>' +
+    '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div><button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Dismiss" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">✕</button></div>';
 }
-function stepIndexForProgress(p) {
-  if (p < 10) return 0;
-  if (p < 60) return 1;
-  if (p < 85) return 2;
-  return 3; // includes 100 (Render finishing / Complete)
+function stepIndexForProgress(p, status) {
+  if (status === 'completed' || p >= 100) return 3;
+  if (status === 'saving') return 1;
+  return 0;
 }
-function updateWorkflowSteps(taskId, progress) {
-  var activeIdx = stepIndexForProgress(progress);
-  for (var i = 0; i < 4; i++) {
+function updateWorkflowSteps(taskId, progress, status) {
+  var activeIdx = stepIndexForProgress(progress, status);
+  for (var i = 0; i < 3; i++) {
     var stepEl = document.getElementById('genqStep_' + taskId + '_' + i);
     if (!stepEl) continue;
     stepEl.classList.remove('done', 'active');
-    if (i < activeIdx || progress >= 100) stepEl.classList.add('done');
+    if (i < activeIdx || activeIdx === 3) stepEl.classList.add('done');
     else if (i === activeIdx) stepEl.classList.add('active');
   }
 }
@@ -4813,6 +4856,7 @@ function startGenerate() {
     modelDisplayName: selectedModelName,
     fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
     bitrateSnapshot: selectedFamily.key === 'seedance' ? selectedBitrate : '',
+    audioApplicable: activeMode === 'video' && (isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo'),
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
 
@@ -4841,7 +4885,7 @@ function startGenerate() {
     var taskInfo = res.data.task_info || {};
     var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
     var list = document.getElementById('genQueueList');
-    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, titleLabel));
+    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, meta));
     var etaEl = document.getElementById('genqEtaTxt_' + taskId);
     if (etaEl) etaEl.textContent = formatEta(taskInfo.estimated_time);
     activeGens[taskId] = { meta: meta, startTs: Date.now() };
@@ -4857,13 +4901,6 @@ function startGenerate() {
   });
 }
 
-function stageForProgress(p) {
-  if (p < 10) return 'Uploading Assets';
-  if (p < 60) return 'Preparing Model';
-  if (p < 85) return 'Generating Motion';
-  if (p < 100) return 'Rendering Video';
-  return 'Complete';
-}
 function formatEta(seconds) {
   seconds = Math.round(parseFloat(seconds));
   if (!seconds || seconds <= 0 || isNaN(seconds)) return 'Estimating…';
@@ -4955,8 +4992,8 @@ function pollQueueTask(taskId, opts) {
         var status = data.status;
         var progress = data.progress || 0;
         if (e.bar) e.bar.style.width = progress + '%';
-        if (e.stage) e.stage.textContent = stageForProgress(progress);
-        updateWorkflowSteps(taskId, progress);
+        if (e.stage) e.stage.textContent = stageForProgress(meta, progress, status);
+        updateWorkflowSteps(taskId, progress, status);
 
         // ETA reconciliation: blend the server's initial estimate with the
         // pace actually observed so far, so the displayed time tracks
@@ -4993,14 +5030,21 @@ function pollQueueTask(taskId, opts) {
           if (videoUrl || imageUrl || audioUrl) {
             var elapsedMs = state.startTs ? (Date.now() - state.startTs) : 0;
             var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, imageUrls: imageUrls, audioUrl: audioUrl, sizeBytes: out.size_bytes || 0, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
+            state.resultPayload = resultPayload;
             // Saved using THIS job's own snapshotted meta — never live
             // panel state — so the History entry can never end up
             // mismatched with whatever you've since changed the panel to.
+            if (e.stage) e.stage.textContent = stageForProgress(meta, progress, 'saving');
+            updateWorkflowSteps(taskId, progress, 'saving');
             var rec = out.archive_available === false ? null : saveGenerationToHistory(resultPayload, meta);
+            state.resultRecordId = rec && rec.id;
             if (e.stage) e.stage.textContent = out.archive_available === false
-              ? 'Result generated. Cloud save is temporarily unavailable.' : 'Tersimpan di History';
+              ? 'Result generated — save failed' : 'Saved to History';
+            state.completed = true;
             markDone();
-            delete activeGens[taskId]; refreshQueueBadge();
+            if (out.archive_available === false && e.item) e.item.classList.add('save-failed');
+            if (e.actions) e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="openQueueResult(\'' + taskId + '\')">Open Result</button>';
+            refreshQueueBadge();
             // Show the result inline on the Generate canvas right away —
             // previously nothing called showCanvasResult/showCanvasResultUI
             // even though both existed, so the canvas stayed empty and the
@@ -5051,16 +5095,16 @@ function pollQueueTask(taskId, opts) {
             showToastAction(completionText, 'Lihat', function() {
               if (rec) openHistoryItem(rec.id);
             });
-            setTimeout(function() { var el = document.getElementById('genq_' + taskId); if (el) el.remove(); }, 3500);
+            // Keep completed cards available until the user opens or dismisses them.
           } else {
-            delete activeGens[taskId]; refreshQueueBadge();
+            state.failed = true; refreshQueueBadge();
             markFailed('Selesai tapi URL tidak ditemukan di response (Invalid response)');
           }
         } else if (status === 'failed') {
           if (state.interval) clearInterval(state.interval);
           if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
-          delete activeGens[taskId]; refreshQueueBadge();
+          state.failed = true; refreshQueueBadge();
           markFailed(data.error || 'generation service tidak mengembalikan detail error.');
         }
       })
@@ -5075,7 +5119,7 @@ function pollQueueTask(taskId, opts) {
         }
         if (state.interval) clearInterval(state.interval);
           if (state.clockInterval) clearInterval(state.clockInterval);
-        delete activeGens[taskId]; refreshQueueBadge();
+        state.failed = true; refreshQueueBadge();
         markFailed('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
       });
   }
@@ -5097,6 +5141,13 @@ function pollQueueTask(taskId, opts) {
   }, 1000);
 }
 
+function openQueueResult(taskId) {
+  var state = activeGens[taskId];
+  if (!state || !state.resultPayload) return;
+  var rec = state.resultRecordId ? findHistoryRecord(state.resultRecordId) : null;
+  openResultOverlay(Object.assign({}, state.resultPayload, rec ? { reopenRecord: rec } : {}));
+}
+
 function retryQueueItem(taskId) {
   var g = activeGens[taskId];
   var el = document.getElementById('genq_' + taskId);
@@ -5115,7 +5166,7 @@ function retryQueueItem(taskId) {
       if (res.status >= 400) { showError((res.data && res.data.error) || 'Retry gagal'); return; }
       var taskId2 = res.data.id;
       var list = document.getElementById('genQueueList');
-      list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId2, g.meta.fullModelLabel || 'Generating'));
+      list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId2, g.meta));
       activeGens[taskId2] = { meta: g.meta, startTs: Date.now() };
       saveActiveTaskEntry(taskId2, g.meta);
       refreshQueueBadge();
@@ -5151,7 +5202,7 @@ function resumeActiveTaskIfAny() {
     if (ageMs > 30 * 60 * 1000) { removeActiveTaskEntry(saved.taskId); return; } // stale beyond any realistic generation time
     var meta = saved.meta || {};
     var titleLabel = (meta.fullModelLabel || meta.model || 'Generating') + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
-    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(saved.taskId, titleLabel));
+    list.insertAdjacentHTML('afterbegin', genQueueItemHtml(saved.taskId, meta));
     var stageEl = document.getElementById('genqStage_' + saved.taskId);
     if (stageEl) stageEl.textContent = 'Reconnecting to your generation…';
     activeGens[saved.taskId] = { meta: meta, startTs: saved.ts };
@@ -5245,6 +5296,19 @@ function openResultOverlay(payload) {
       if (vEl.videoHeight > vEl.videoWidth) vEl.classList.add('is-portrait');
     };
     vEl.style.display = 'block'; vEl.src = videoUrl;
+  }
+
+  var oldGallery = document.getElementById('resultImageGallery');
+  if (oldGallery) oldGallery.remove();
+  var allImages = payload.imageUrls || (rec && rec.imageUrls) || [];
+  if (isImage && allImages.length > 1) {
+    var gallery = document.createElement('div'); gallery.id = 'resultImageGallery'; gallery.className = 'result-refs-row';
+    allImages.forEach(function(url, idx) {
+      var img = document.createElement('img'); img.className = 'result-ref-thumb'; img.src = url; img.alt = 'Result ' + (idx + 1);
+      img.onerror = function() { imgFallback(this); }; img.onclick = function() { iEl.src = url; };
+      gallery.appendChild(img);
+    });
+    iEl.insertAdjacentElement('afterend', gallery);
   }
 
   var dlBtnFull = document.getElementById('downloadBtnFull');
@@ -5416,6 +5480,9 @@ function doLogout() {
 
 // ══════════ HISTORY (client-side, saved in this browser) ══════════
 var HISTORY_KEY = 'mii_ai_video_history_v1';
+var historyMutationVersion = 0;
+var deletedHistoryIds = {};
+function noteHistoryMutation(deletedId) { historyMutationVersion++; if (deletedId) deletedHistoryIds[deletedId] = true; }
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(_) { return []; }
 }
@@ -5443,7 +5510,7 @@ function showRecordInCanvas(id) {
     showCanvasResult(r.videoUrl || '', r.imageUrl || '');
   }
   showCanvasResultUI({
-    videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', audioUrl: r.audioUrl || '',
+    videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', imageUrls: r.imageUrls || (r.imageUrl ? [r.imageUrl] : []), audioUrl: r.audioUrl || '',
     elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r
   });
   var canvasEl = document.getElementById('canvas');
@@ -5549,6 +5616,7 @@ function syncArchiveToServer(rec) {
       var patch = {};
       if (data.videoUrl) patch.videoUrl = data.videoUrl;
       if (data.imageUrl) patch.imageUrl = data.imageUrl;
+      if (data.imageUrls) patch.imageUrls = data.imageUrls;
       if (data.audioUrl) patch.audioUrl = data.audioUrl;
       if (Object.keys(patch).length) updateHistoryRecord(rec.id, patch);
       return true;
@@ -5561,43 +5629,45 @@ function syncArchiveToServer(rec) {
 function removeArchiveFromServer(id) {
   if (!id) return Promise.resolve(false);
   return fetchWithTimeout('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }, 15000)
-    .then(function(r) { return r.ok; })
+    .then(function(r) { return r.json().catch(function() { return {}; }).then(function(data) { return r.ok && data && data.ok === true; }); })
     .catch(function(err) {
       showError(classifyFetchError(err, 'Gagal menghapus dari Archive'));
       return false;
     });
 }
+function dedupeHistoryRecords(list) {
+  var seen = {};
+  return (list || []).filter(function(r) {
+    if (!r || !r.id || seen[r.id] || deletedHistoryIds[r.id]) return false;
+    seen[r.id] = true; return true;
+  });
+}
 function mergeServerArchiveIntoLocal(items) {
   if (!items) return;
-  var list = loadHistory();
+  var list = dedupeHistoryRecords(loadHistory());
   var serverIds = {};
   items.forEach(function(srv) {
+    if (!srv || !srv.id || deletedHistoryIds[srv.id]) return;
     serverIds[srv.id] = true;
     var idx = list.findIndex(function(r) { return r.id === srv.id; });
-    var merged = Object.assign({}, srv, { archived: true });
-    if (idx > -1) list[idx] = Object.assign({}, list[idx], merged);
-    else list.unshift(merged);
+    var merged = Object.assign({}, idx > -1 ? list[idx] : {}, srv, { archived: true });
+    if (idx > -1) list[idx] = merged; else list.unshift(merged);
   });
-  // Trust the server as the source of truth for archive membership: a local
-  // record flagged archived=true that the server doesn't actually have
-  // means a previous sync failed silently — without this it stayed hidden
-  // from History forever while never truly being in the Archive either.
-  list.forEach(function(r) {
-    if (r.archived && !serverIds[r.id]) r.archived = false;
-  });
-  saveHistoryList(list);
+  list.forEach(function(r) { if (r.archived && !serverIds[r.id]) r.archived = false; });
+  saveHistoryList(dedupeHistoryRecords(list));
 }
 function refreshArchiveFromServer(onDone) {
+  var requestVersion = historyMutationVersion;
   fetchWithTimeout('/api/aivideo/archive', {}, 15000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data && data.ok && data.items) mergeServerArchiveIntoLocal(data.items);
+      if (requestVersion === historyMutationVersion && data && data.ok && data.items) mergeServerArchiveIntoLocal(data.items);
       else if (data && data.error) showError(data.error);
-      if (onDone) onDone();
+      if (onDone) onDone(true);
     })
     .catch(function(err) {
       showError(classifyFetchError(err, 'Gagal memuat Archive'));
-      if (onDone) onDone();
+      if (onDone) onDone(false);
     });
 }
 // History now also has a server-side home (same table, archived=false) so
@@ -5609,27 +5679,29 @@ function refreshArchiveFromServer(onDone) {
 // yet) instead of letting a blank server thumb erase it.
 function mergeServerHistoryIntoLocal(items) {
   if (!items) return;
-  var list = loadHistory();
+  var list = dedupeHistoryRecords(loadHistory());
   items.forEach(function(srv) {
+    if (!srv || !srv.id || deletedHistoryIds[srv.id]) return;
     var idx = list.findIndex(function(r) { return r.id === srv.id; });
     var base = idx > -1 ? list[idx] : {};
     var merged = Object.assign({}, base, srv);
     if (!merged.thumb && base.thumb) merged.thumb = base.thumb;
     if (idx > -1) list[idx] = merged; else list.unshift(merged);
   });
-  saveHistoryList(list);
+  saveHistoryList(dedupeHistoryRecords(list));
 }
 function refreshHistoryFromServer(onDone) {
+  var requestVersion = historyMutationVersion;
   fetchWithTimeout('/api/aivideo/archive?scope=all', {}, 15000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data && data.ok && data.items) mergeServerHistoryIntoLocal(data.items);
+      if (requestVersion === historyMutationVersion && data && data.ok && data.items) mergeServerHistoryIntoLocal(data.items);
       else if (data && data.error) showError(data.error);
-      if (onDone) onDone();
+      if (onDone) onDone(true);
     })
     .catch(function(err) {
       showError(classifyFetchError(err, 'Gagal memuat History'));
-      if (onDone) onDone();
+      if (onDone) onDone(false);
     });
 }
 
@@ -5684,6 +5756,11 @@ function saveGenerationToHistory(res, meta) {
       imageUrl: res.imageUrl || '',
       imageUrls: res.imageUrls || (res.imageUrl ? [res.imageUrl] : []),
       audioUrl: res.audioUrl || '',
+      mediaType: meta ? queueMode(meta) : recordMediaType(res),
+      finalPrompt: res.finalPrompt || '',
+      audioEnabled: meta && meta.audioApplicable ? !meta.mute_audio : null,
+      refAudios: (meta && meta.audio_urls) || [],
+      referenceCounts: meta ? queueReferenceCounts(meta) : null,
       sizeBytes: res.sizeBytes || 0,
       thumb: meta.thumbSeed || res.imageUrl || '',
       prompt: (meta.prompt || '').trim(),
@@ -5718,6 +5795,7 @@ function saveGenerationToHistory(res, meta) {
       imageUrl: res.imageUrl || '',
       imageUrls: res.imageUrls || (res.imageUrl ? [res.imageUrl] : []),
       audioUrl: res.audioUrl || '',
+      mediaType: res.videoUrl ? 'video' : (res.audioUrl ? 'audio' : 'image'),
       sizeBytes: res.sizeBytes || 0,
       thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
       prompt: promptInput.value.trim(),
@@ -5746,7 +5824,7 @@ function saveGenerationToHistory(res, meta) {
   list.unshift(rec);
   if (list.length > 200) list = list.slice(0, 200);
   saveHistoryList(list);
-  window.__lastResult = { url: rec.videoUrl || rec.imageUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
+  window.__lastResult = { url: rec.videoUrl || rec.imageUrl || rec.audioUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };
   renderLastResultCard();
 
   // Every generation now gets backed up to the server/storage right away —
@@ -5785,9 +5863,10 @@ function reopenLastResult() {
 }
 
 function buildHistGridItem(r) {
-  var bg = safeCssUrl(r.thumb || r.imageUrl || '');
-  var style = bg ? ' style="background-image:url(\'' + bg + '\')"' : '';
-  return '<div class="hist-grid-item"' + style + ' onclick="openHistoryItem(\'' + r.id + '\')"></div>';
+  var url = r.thumb || r.imageUrl || '';
+  return '<div class="hist-grid-item" onclick="openHistoryItem(\'' + r.id + '\')">' +
+    '<span class="hist-grid-fallback">Image</span>' +
+    (url ? '<img loading="lazy" src="' + escapeHtml(url) + '" alt="Generated image" onerror="this.remove()">' : '') + '</div>';
 }
 function fetchStorageUsage() {
   var el = document.getElementById('apiStorageTxt');
@@ -5847,6 +5926,7 @@ function buildHistItemRow(r) {
 // chronological feed — Video/Image tabs (mirroring the main generate
 // page's own mode toggle) keep them properly separated instead.
 var historyTypeFilter = 'video';
+var historyFetchState = { history: 'idle', archive: 'idle' };
 var archiveTypeFilter = 'video';
 function setHistTypeFilter(page, type, el) {
   if (page === 'history') historyTypeFilter = type; else archiveTypeFilter = type;
@@ -5856,6 +5936,7 @@ function setHistTypeFilter(page, type, el) {
   if (page === 'history') renderHistoryList(); else renderArchiveList();
 }
 function recordMediaType(r) {
+  if (r.mediaType === 'video' || r.mediaType === 'image' || r.mediaType === 'audio') return r.mediaType;
   if (r.videoUrl) return 'video';
   if (r.audioUrl) return 'audio';
   return 'image';
@@ -5871,6 +5952,13 @@ function renderHistTypeList(archived, listId, emptyId, typeFilter) {
   if (list.length === 0) {
     el.innerHTML = '';
     empty.style.display = 'block';
+    var pageKey = archived ? 'archive' : 'history';
+    if (historyFetchState[pageKey] === 'loading') {
+      empty.innerHTML = '<span class="history-loading"><span class="gen-q-ring"><span class="gen-q-ring-m">M</span></span>Loading ' + pageKey + '…</span>'; return;
+    }
+    if (historyFetchState[pageKey] === 'error') {
+      empty.innerHTML = 'Could not refresh ' + pageKey + '. <button class="gen-q-btn" onclick="' + (archived ? 'renderArchiveList()' : 'renderHistoryList()') + '">Retry</button>'; return;
+    }
     empty.textContent = (archived ? 'No archived ' : 'No ') + (typeFilter === 'video' ? 'videos' : (typeFilter === 'audio' ? 'audio' : 'images')) + ' yet';
     return;
   }
@@ -5878,12 +5966,16 @@ function renderHistTypeList(archived, listId, emptyId, typeFilter) {
   el.innerHTML = list.map(typeFilter === 'image' ? buildHistGridItem : buildHistItemRow).join('');
 }
 function renderHistoryList() {
+  if (historyFetchState.history === 'loading') { renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter); return; }
+  historyFetchState.history = 'loading';
   renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter);
-  refreshHistoryFromServer(function() { renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter); });
+  refreshHistoryFromServer(function(ok) { historyFetchState.history = ok === false ? 'error' : 'done'; renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter); });
 }
 function renderArchiveList() {
+  if (historyFetchState.archive === 'loading') { renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter); return; }
+  historyFetchState.archive = 'loading';
   renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter);
-  refreshArchiveFromServer(function() { renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter); });
+  refreshArchiveFromServer(function(ok) { historyFetchState.archive = ok === false ? 'error' : 'done'; renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter); });
 }
 function openHistoryItem(id) {
   var r = findHistoryRecord(id);
@@ -5896,14 +5988,16 @@ function openHistoryItem(id) {
   // — it doesn't need the generate canvas underneath it, so opening a
   // History item no longer routes through the generate page first. Closing
   // it now lands you right back on History/Archive/wherever you came from.
-  window.__lastResult = { url: r.videoUrl || r.imageUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
-  openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', audioUrl: r.audioUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
+  window.__lastResult = { url: r.videoUrl || r.imageUrl || r.audioUrl, isImage: !!r.imageUrl && !r.videoUrl, id: r.id };
+  openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', imageUrls: r.imageUrls || (r.imageUrl ? [r.imageUrl] : []), audioUrl: r.audioUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
 function downloadHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   var a = document.createElement('a');
-  a.href = r.videoUrl || r.imageUrl; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+  a.href = r.videoUrl || r.imageUrl || r.audioUrl;
+  if (!a.href) { showError('File tidak tersedia untuk diunduh'); return; }
+  a.download = ''; document.body.appendChild(a); a.click(); a.remove();
 }
 function restoreFromRecord(r) {
   // Restore model + quality
@@ -5943,7 +6037,8 @@ function restoreFromRecord(r) {
     }
     forgetUpload(item);
   });
-  media.audio = [];
+  media.audio = (r.refAudios || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
+  if (typeof r.audioEnabled === 'boolean') { muteAudioEnabled = !r.audioEnabled; renderMuteAudioChip(); }
   resetFrameCard('first');
   resetFrameCard('last');
   media.image = (r.refImages || []).map(function(u) { return { file: null, previewUrl: u, url: u, uploading: false }; });
@@ -5964,53 +6059,63 @@ function reuseHistoryItem(id) {
   restoreFromRecord(r);
   navigateTo('aivideo');
 }
+var archiveOpsInFlight = {};
+function renderHistoryArchiveCaches() {
+  renderHistTypeList(false, 'historyList', 'historyEmpty', historyTypeFilter);
+  renderHistTypeList(true, 'archiveList', 'archiveEmpty', archiveTypeFilter);
+}
 function toggleArchiveItem(id) {
   var r = findHistoryRecord(id);
-  if (!r) return;
+  if (!r || archiveOpsInFlight[id]) return;
   var nowArchived = !r.archived;
-  var btn = document.querySelector('[onclick="toggleArchiveItem(\'' + id + '\')"]');
-  if (btn) btn.disabled = true;
-  var settle = function(ok) {
-    if (btn) btn.disabled = false;
-    if (ok) {
-      updateHistoryRecord(id, { archived: nowArchived });
-      showToast(nowArchived ? 'Tersimpan di Archive' : 'Dikembalikan ke History');
-    }
-    renderHistoryList();
-    renderArchiveList();
-  };
-  if (nowArchived) syncArchiveToServer(Object.assign({}, r, { archived: true })).then(settle);
-  else syncArchiveToServer(Object.assign({}, r, { archived: false })).then(settle);
+  archiveOpsInFlight[id] = true;
+  document.querySelectorAll('[onclick="toggleArchiveItem(\'' + id + '\')"]').forEach(function(btn) { btn.disabled = true; });
+  syncArchiveToServer(Object.assign({}, r, { archived: nowArchived })).then(function(ok) {
+    delete archiveOpsInFlight[id];
+    if (!ok) { renderHistoryArchiveCaches(); return; }
+    noteHistoryMutation();
+    updateHistoryRecord(id, { archived: nowArchived });
+    renderHistoryArchiveCaches();
+    showToast(nowArchived ? 'Tersimpan di Archive' : 'Dikembalikan ke History');
+  });
 }
 var pendingDeleteId = null;
+var deleteInFlight = false;
 function confirmDeleteHistoryItem(id) {
+  var rec = findHistoryRecord(id);
+  if (!rec || deleteInFlight) return;
   pendingDeleteId = id;
-  document.getElementById('confirmTitle').textContent = 'Delete this generation?';
-  document.getElementById('confirmSub').textContent = 'Item ini dihapus dari History beserta file hasilnya di penyimpanan. Tidak bisa dikembalikan.';
+  var label = recordMediaType(rec) === 'video' ? 'Video' : (recordMediaType(rec) === 'audio' ? 'Audio' : 'Image');
+  document.getElementById('confirmTitle').textContent = 'Delete this ' + label.toLowerCase() + '?';
+  document.getElementById('confirmSub').textContent = label + ' ini dihapus dari History/Archive beserta file hasilnya. Tidak bisa dikembalikan.';
   var btn = document.getElementById('confirmActionBtn');
+  btn.disabled = false; btn.textContent = 'Delete';
   btn.onclick = function() {
-    removeArchiveFromServer(pendingDeleteId);
-    deleteHistoryRecord(pendingDeleteId);
-    // If the deleted item is the one currently shown in the result overlay
-    // (or set as "last result"), close/clear it — otherwise the overlay
-    // keeps showing the just-deleted video and it looks like nothing happened.
-    var wasShowingDeleted = window.__lastResult && window.__lastResult.id === pendingDeleteId;
-    if (wasShowingDeleted) {
-      window.__lastResult = null;
-      closeResultOverlay();
-      hideCanvasResultUI();
-      updateCanvasPreview();
-    }
-    renderHistoryList();
-    renderArchiveList();
-    renderLastResultCard();
-    showToast('Video dihapus');
-    closeConfirm();
+    if (deleteInFlight || !pendingDeleteId) return;
+    var deletingId = pendingDeleteId;
+    deleteInFlight = true; btn.disabled = true; btn.textContent = 'Deleting…';
+    removeArchiveFromServer(deletingId).then(function(ok) {
+      if (!ok) {
+        deleteInFlight = false; btn.disabled = false; btn.textContent = 'Delete';
+        showError('Gagal menghapus ' + label.toLowerCase() + '. Item tetap tersimpan.');
+        return;
+      }
+      noteHistoryMutation(deletingId);
+      deleteHistoryRecord(deletingId);
+      if (window.__lastResult && window.__lastResult.id === deletingId) {
+        window.__lastResult = null; window.__lastResultPayload = null;
+        closeResultOverlay(); hideCanvasResultUI(); updateCanvasPreview();
+      }
+      deleteInFlight = false;
+      closeConfirm(); renderHistoryArchiveCaches(); renderLastResultCard();
+      showToast(label + ' dihapus');
+    });
   };
   document.getElementById('confirmBackdrop').classList.add('show');
   document.getElementById('confirmBox').classList.add('show');
 }
 function closeConfirm() {
+  if (deleteInFlight) return;
   document.getElementById('confirmBackdrop').classList.remove('show');
   document.getElementById('confirmBox').classList.remove('show');
   pendingDeleteId = null;
@@ -6020,7 +6125,7 @@ function resolveCurrentResultId() {
   if (r && r.id) return r.id;
   var list = loadHistory();
   if (r && r.url) {
-    var match = list.find(function(rec) { return rec.videoUrl === r.url || rec.imageUrl === r.url; });
+    var match = list.find(function(rec) { return rec.videoUrl === r.url || rec.imageUrl === r.url || rec.audioUrl === r.url; });
     if (match) return match.id;
   }
   return list.length > 0 ? list[0].id : null;
