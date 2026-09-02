@@ -2325,8 +2325,8 @@ var modelFamilies = {
     },
     {
       key: 'gptimage', brand: 'OPENAI', name: 'GPT IMAGE 2', featured: true,
-      desc: "OpenAI's latest image model — aspect ratio + quality tiers.",
-      caps: { image: 10, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: false, resolutionSet: 'image', duration: false, motion: false },
+      desc: "Image generation with independent quality and resolution controls.",
+      caps: { image: 9, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false },
       qualities: [
         { id: 'gpt-image-2-low',      label: 'LOW' },
         { id: 'gpt-image-2-standard', label: 'STANDARD' },
@@ -4841,6 +4841,8 @@ function pollQueueTask(taskId, opts) {
           var out = data.output || data.result || {};
           var videoUrl = out.video_url || (out.type === 'video' ? out.url : '') || '';
           var imageUrl = out.image_url || (out.type === 'image' ? out.url : '') || '';
+          var imageUrls = (out.images || []).map(function(item){ return item && item.url; }).filter(Boolean);
+          if (!imageUrl && imageUrls.length) imageUrl = imageUrls[0];
           var audioUrl = out.audio_url || (out.type === 'audio' ? out.url : '') || '';
           if (!videoUrl && !imageUrl && !audioUrl && out.url) {
             if (meta.activeMode === 'image') imageUrl = out.url;
@@ -4849,7 +4851,7 @@ function pollQueueTask(taskId, opts) {
           }
           if (videoUrl || imageUrl || audioUrl) {
             var elapsedMs = state.startTs ? (Date.now() - state.startTs) : 0;
-            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, audioUrl: audioUrl, sizeBytes: out.size_bytes || 0, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
+            var resultPayload = { videoUrl: videoUrl, imageUrl: imageUrl, imageUrls: imageUrls, audioUrl: audioUrl, sizeBytes: out.size_bytes || 0, elapsedMs: elapsedMs, generatedAt: formatClock(new Date()) };
             // Saved using THIS job's own snapshotted meta — never live
             // panel state — so the History entry can never end up
             // mismatched with whatever you've since changed the panel to.
@@ -5530,6 +5532,7 @@ function saveGenerationToHistory(res, meta) {
       id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       videoUrl: res.videoUrl || '',
       imageUrl: res.imageUrl || '',
+      imageUrls: res.imageUrls || (res.imageUrl ? [res.imageUrl] : []),
       audioUrl: res.audioUrl || '',
       sizeBytes: res.sizeBytes || 0,
       thumb: meta.thumbSeed || res.imageUrl || '',
@@ -5558,6 +5561,7 @@ function saveGenerationToHistory(res, meta) {
       id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       videoUrl: res.videoUrl || '',
       imageUrl: res.imageUrl || '',
+      imageUrls: res.imageUrls || (res.imageUrl ? [res.imageUrl] : []),
       audioUrl: res.audioUrl || '',
       sizeBytes: res.sizeBytes || 0,
       thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',

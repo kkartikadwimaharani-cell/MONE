@@ -205,7 +205,7 @@
 
     <div class="panel" id="panelSegmind" style="animation-delay:.06s">
       <span class="br-tr"></span><span class="br-bl"></span>
-      <h2><span class="dot {{ 'ok' if segmind and segmind.ok else 'bad' }}" id="dotSegmind"></span> Segmind</h2>
+      <h2><span class="dot {{ 'ok' if segmind and segmind.ok else 'bad' }}" id="dotSegmind"></span> AI Generation</h2>
       <div class="row"><span class="k">API key configured</span><span class="v" id="segmindKeyTxt">{{ 'YES' if segmind and segmind.ok else 'NO' }}</span></div>
       <div class="row"><span class="k">Detail</span><span class="v" id="segmindDetail">{{ segmind.detail if segmind else '-' }}</span></div>
     </div>
@@ -224,8 +224,8 @@
       <div class="row"><span class="k">Processed Height</span><span class="v">{{ motion_control.processed_height if motion_control.processed_height is not none else '-' }}</span></div>
       <div class="row"><span class="k">Processed Duration</span><span class="v">{{ (motion_control.processed_duration ~ 's') if motion_control.processed_duration is not none else '-' }}</span></div>
       <div class="row"><span class="k">Resized</span><span class="v"><span class="badge {{ 'ok' if motion_control.resized else '' }}">{{ 'YES' if motion_control.resized else 'NO' }}</span></span></div>
-      <div class="row"><span class="k">Dropbox URL Original</span><span class="v">{% if motion_control.dropbox_url_original %}<a href="{{ motion_control.dropbox_url_original }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
-      <div class="row"><span class="k">Dropbox URL Processed</span><span class="v">{% if motion_control.dropbox_url_processed %}<a href="{{ motion_control.dropbox_url_processed }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
+      <div class="row"><span class="k">Storage URL Original</span><span class="v">{% if motion_control.dropbox_url_original %}<a href="{{ motion_control.dropbox_url_original }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
+      <div class="row"><span class="k">Storage URL Processed</span><span class="v">{% if motion_control.dropbox_url_processed %}<a href="{{ motion_control.dropbox_url_processed }}" target="_blank" rel="noopener">link</a>{% else %}-{% endif %}</span></div>
       <div class="row"><span class="k">Elapsed Time</span><span class="v">{{ (motion_control.elapsed_ms ~ ' ms') if motion_control.elapsed_ms is not none else '-' }}</span></div>
       <div class="row"><span class="k">Provider</span><span class="v">{{ motion_control.provider or '-' }}</span></div>
       {% if motion_control.error %}
@@ -275,7 +275,7 @@
 
     <div class="panel" style="animation-delay:.09s">
       <span class="br-tr"></span><span class="br-bl"></span>
-      <h2>Last Upload (Dropbox Image/Video URL)</h2>
+      <h2>Last Upload (Image/Video URL)</h2>
       {% if last_upload %}
       <div class="row"><span class="k">Filename</span><span class="v">{{ last_upload.filename }}</span></div>
       {% set lfn = (last_upload.filename or '')|lower %}
@@ -341,14 +341,14 @@
 
     <div class="panel" style="animation-delay:.18s">
       <span class="br-tr"></span><span class="br-bl"></span>
-      <h2>Last Segmind Response</h2>
+      <h2>Last Generation Response</h2>
       {% if last_segmind_response %}
       <div class="row"><span class="k">Status code</span><span class="v">{{ last_segmind_response.status_code }}</span></div>
       <div class="row"><span class="k">Content-Type</span><span class="v">{{ last_segmind_response.content_type }}</span></div>
       <div class="row"><span class="k">At</span><span class="v">{{ last_segmind_response.at }}</span></div>
       <pre>{{ last_segmind_response.snippet }}</pre>
       {% else %}
-      <div class="empty">Belum ada response Segmind tercatat.</div>
+      <div class="empty">Belum ada generation response tercatat.</div>
       {% endif %}
     </div>
 
@@ -515,8 +515,8 @@ function applySnapshot(data) {
         '<div class="row"><span class="k">Processed Height</span><span class="v">' + (mc.processed_height != null ? mc.processed_height : '-') + '</span></div>' +
         '<div class="row"><span class="k">Processed Duration</span><span class="v">' + (mc.processed_duration != null ? mc.processed_duration + 's' : '-') + '</span></div>' +
         '<div class="row"><span class="k">Resized</span><span class="v"><span class="badge ' + (mc.resized ? 'ok' : '') + '">' + (mc.resized ? 'YES' : 'NO') + '</span></span></div>' +
-        '<div class="row"><span class="k">Dropbox URL Original</span><span class="v">' + (mc.dropbox_url_original ? '<a href="' + esc(mc.dropbox_url_original) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
-        '<div class="row"><span class="k">Dropbox URL Processed</span><span class="v">' + (mc.dropbox_url_processed ? '<a href="' + esc(mc.dropbox_url_processed) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Storage URL Original</span><span class="v">' + (mc.dropbox_url_original ? '<a href="' + esc(mc.dropbox_url_original) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
+        '<div class="row"><span class="k">Storage URL Processed</span><span class="v">' + (mc.dropbox_url_processed ? '<a href="' + esc(mc.dropbox_url_processed) + '" target="_blank" rel="noopener">link</a>' : '-') + '</span></div>' +
         '<div class="row"><span class="k">Elapsed Time</span><span class="v">' + (mc.elapsed_ms != null ? mc.elapsed_ms + ' ms' : '-') + '</span></div>' +
         '<div class="row"><span class="k">Provider</span><span class="v">' + esc(mc.provider || '-') + '</span></div>' +
         (mc.error ? '<div class="row"><span class="k">Error</span><span class="v err-txt">' + esc(mc.error) + '</span></div>' : '') +

@@ -23,6 +23,9 @@ class BudgetPixelProviderTests(unittest.TestCase):
             ('seedream5', 'PRO'): '/images/seedream-5.0-pro',
             ('klingimage', 'V3'): '/images/kling-v3',
             ('klingimage', 'OMNI'): '/images/kling-v3-omni',
+            ('gptimage', 'LOW'): '/images/gpt-image-2',
+            ('gptimage', 'STANDARD'): '/images/gpt-image-2',
+            ('gptimage', 'HIGH'): '/images/gpt-image-2',
         }
         self.assertEqual(provider.VIDEO_MODELS, expected_video)
         self.assertEqual(provider.IMAGE_MODELS, expected_image)
@@ -55,6 +58,18 @@ class BudgetPixelProviderTests(unittest.TestCase):
         result = provider.poll('job-1', 'secret', session=session, interval=0, sleep=lambda _: None)
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(result['url'], 'https://cdn/x.mp4')
+        self.assertTrue(all(call.args[0].endswith('/videos/job-1') for call in session.get.call_args_list))
+
+    def test_image_poll_and_multi_image_normalization(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {'status': 'succeeded', 'images': [
+            {'url': 'https://cdn/one.png'}, 'https://cdn/two.png']}
+        session = Mock(get=Mock(return_value=response))
+        result = provider.poll('image-1', 'secret', kind='image', session=session,
+                               interval=0, sleep=lambda _: None)
+        self.assertEqual(result['url'], 'https://cdn/one.png')
+        self.assertEqual(len(result['images']), 2)
+        self.assertTrue(session.get.call_args.args[0].endswith('/images/image-1'))
 
     def test_poll_failed_and_timeout(self):
         failed = Mock(status_code=200)
