@@ -3627,6 +3627,70 @@ def _fetch_generated_result(url, output_type):
     raise RuntimeError('too many result redirects')
 
 
+SEEDANCE20_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9')
+
+
+def _is_public_reference_url(value):
+    """Accept only provider-fetchable HTTPS references, never local/private URLs."""
+    try:
+        parsed = urlparse(str(value or '').strip())
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:
+            return False
+        hostname = parsed.hostname.lower().rstrip('.')
+        if hostname == 'localhost' or hostname.endswith('.localhost') or hostname.endswith('.local'):
+            return False
+        try:
+            return ipaddress.ip_address(hostname).is_global
+        except ValueError:
+            return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
+                               audio_urls, first_frame_url, last_frame_url, mute_audio=False):
+    """Validate Mii inputs and emit only the documented Seedance 2.0 schema."""
+    references = image_urls + video_urls + audio_urls + [u for u in (first_frame_url, last_frame_url) if u]
+    if any(not _is_public_reference_url(url) for url in references):
+        raise ValueError('Reference harus memakai URL publik HTTPS yang valid.')
+    if len(image_urls) > 9 or len(video_urls) > 1 or len(audio_urls) > 1:
+        raise ValueError('Jumlah reference melebihi batas model.')
+    has_frames = bool(first_frame_url or last_frame_url)
+    if last_frame_url and not first_frame_url:
+        raise ValueError('Last frame membutuhkan first frame.')
+    if has_frames and (image_urls or video_urls):
+        raise ValueError('Elements dan Frames tidak dapat digunakan bersamaan.')
+    if video_urls and len(image_urls) > 6:
+        raise ValueError('Video edit mendukung maksimal 6 reference image.')
+    if audio_urls and not (image_urls or video_urls or first_frame_url):
+        raise ValueError('Audio membutuhkan image atau video pendamping.')
+
+    try:
+        length = int(payload.get('duration', 4))
+    except (TypeError, ValueError):
+        length = 4
+    allowed_resolutions = ('480p', '720p', '1080p', '4K') if variant == 'PRO' else ('480p', '720p')
+    resolution = payload.get('resolution')
+    body = {
+        'prompt': prompt,
+        'length_seconds': max(4, min(15, length)),
+        'resolution': resolution if resolution in allowed_resolutions else '720p',
+        'aspect_ratio': payload.get('aspect_ratio') if payload.get('aspect_ratio') in SEEDANCE20_RATIOS else '16:9',
+        'generate_audio': not mute_audio,
+    }
+    if image_urls:
+        body['reference_images'] = image_urls
+    if video_urls:
+        body['video'] = video_urls[0]
+    if audio_urls:
+        body['audio'] = audio_urls[0]
+    if first_frame_url:
+        body['image'] = first_frame_url
+    if last_frame_url:
+        body['end_image'] = last_frame_url
+    return body
+
+
 def _run_budgetpixel_task(task_id, family, variant, body, output_type):
     """Run the async provider job inside the existing Mii task lifecycle."""
     def _set(**values):
@@ -3849,9 +3913,9 @@ def aivideo_generate():
     if not prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
-    image_urls = [u for u in (payload.get('image_urls') or []) if u][:9]
-    video_urls = [u for u in (payload.get('video_urls') or []) if u][:3]
-    audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:3]
+    image_urls = [u for u in (payload.get('image_urls') or []) if u]
+    video_urls = [u for u in (payload.get('video_urls') or []) if u]
+    audio_urls = [u for u in (payload.get('audio_urls') or []) if u]
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
     last_frame_url = str(payload.get('last_frame_url') or '').strip()
     aspect_ratio_in = payload.get('aspect_ratio')
@@ -3860,10 +3924,11 @@ def aivideo_generate():
     budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimage'}
     if family in budget_video_families or family in budget_image_families:
         output_type = 'image' if family in budget_image_families else 'video'
-        # The Phase 1 contract does not define reference/frame request field
-        # names. Never forward local/private URLs or guess provider fields.
+        # References remain blocked for contracts that have not been verified.
+        # Seedance 2.0 is handled below using its documented singular media fields.
         gpt_references = family == 'gptimage' and image_urls and not (video_urls or audio_urls or first_frame_url or last_frame_url)
-        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not gpt_references:
+        seedance20_references = family == 'seedance'
+        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or seedance20_references):
             code = 'INVALID_IMAGE_SETTINGS' if output_type == 'image' else 'GENERATION_FAILED'
             return jsonify({'ok': False, 'error': {'code': code, 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         variant = model_key or 'STANDARD'
@@ -3874,7 +3939,14 @@ def aivideo_generate():
             code = 'IMAGE_MODEL_UNAVAILABLE' if output_type == 'image' else 'MODEL_UNAVAILABLE'
             return jsonify({'ok': False, 'error': {'code': code, 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         body = {'prompt': prompt}
-        if output_type == 'video':
+        if family == 'seedance':
+            try:
+                body = _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
+                                                  audio_urls, first_frame_url, last_frame_url, mute_audio)
+            except ValueError as exc:
+                return jsonify({'ok': False, 'error': {'code': 'INVALID_VIDEO_SETTINGS', 'message': str(exc),
+                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+        elif output_type == 'video':
             ranges = {'seedance': (4, 15), 'seedance25': (4, 30), 'wan30': (2, 30)}
             low, high = ranges[family]
             try:
@@ -3882,9 +3954,7 @@ def aivideo_generate():
             except (TypeError, ValueError):
                 duration = low
             body['duration'] = max(low, min(high, duration))
-            if family == 'seedance':
-                allowed = ('480p', '720p', '1080p', '4K') if variant == 'PRO' else ('480p', '720p')
-            elif family == 'seedance25':
+            if family == 'seedance25':
                 allowed = ('480p', '720p')
             else:
                 allowed = ('480p', '720p', '1080p')

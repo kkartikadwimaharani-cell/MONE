@@ -2242,11 +2242,11 @@ var modelFamilies = {
     },
     {
       key:'seedance', brand:'SEEDANCE', name:'SEEDANCE 2.0', featured:true, desc:'Mini, Fast and Pro in one reference-capable family.',
-      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:false, supportsFrames:false, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1 },
+      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, supportsVideoEdit:true, maxReferenceImages:9, maxReferenceVideos:1, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], supportsAudioGeneration:true },
       qualities:[
         {id:'MINI',label:'MINI',caps:{resolutions:['480p','720p']}},
         {id:'FAST',label:'FAST',caps:{resolutions:['480p','720p']}},
-        {id:'PRO',label:'PRO',caps:{supportsElements:true,supportsFrames:true,maxReferenceImages:9,resolutions:['480p','720p','1080p','4K']}}
+        {id:'PRO',label:'PRO',caps:{resolutions:['480p','720p','1080p','4K']}}
       ]
     },
     {
@@ -2271,7 +2271,7 @@ var modelFamilies = {
     },
     {
       key:'veo',brand:'GOOGLE',name:'VEO 3.1',featured:true,desc:'1080p generation with audio output.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,maxReferenceImages:3,supportsDuration:false,resolutions:['1080p'],supportsAudioGeneration:true},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,supportsLastFrame:false,maxReferenceImages:3,supportsDuration:true,durationMode:'unknown',resolutions:['1080p'],supportsAudioGeneration:true},
       qualities:[{id:'veo-3.1',label:'STANDARD'},{id:'veo-3.1-fast',label:'FAST',caps:{supportsElements:false,maxReferenceImages:0}}]
     },
     {
@@ -2281,18 +2281,18 @@ var modelFamilies = {
     },
     {
       key:'hailuo23',brand:'MINIMAX',name:'HAILUO 2.3',featured:true,desc:'Discrete 6s or 10s generation; 1080p is 6s only.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
       qualities:[{id:'hailuo-2.3',label:'STANDARD'},{id:'hailuo-2.3-fast',label:'FAST',caps:{supportsT2V:false,supportsI2V:true}}]
     },
     {key:'wan27',brand:'WAN',name:'WAN 2.7',featured:true,desc:'Narrative generation, frame guidance, video editing and audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceVideos:1,supportsVideoEdit:true,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
-    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,supportsDuration:false,supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,supportsDuration:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsDuration:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
+    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
+    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsFrames:false,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
     {key:'happyhorse',brand:'HAPPYHORSE',name:'HAPPYHORSE',featured:true,desc:'Reference-to-video with two family versions.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1,resolutions:['720p','1080p']},qualities:[{id:'happyhorse-1.1',label:'1.1',caps:{maxReferenceImages:9,supportsVideoEdit:false}},{id:'happyhorse-1.0',label:'1.0',caps:{maxReferenceImages:3}}]},
-    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
+    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
     {key:'viduq3',brand:'VIDU',name:'VIDU Q3 PRO',featured:true,desc:'Image-to-video with optional generated audio.',caps:{supportsT2V:false,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[4,8],resolutions:['540p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFrames:false,supportsDuration:false,resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
-    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:false,resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:false,supportsAudioGeneration:true},qualities:[]},
+    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFrames:false,supportsDuration:true,durationMode:'unknown',resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
+    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:true,durationMode:'unknown',resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[]},
     {
       key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
@@ -2997,17 +2997,21 @@ function persistCanonicalModelState() {
   } catch (_) {}
 }
 
+function resolveEffectiveCapabilities(family, variantIndex) {
+  var familyCaps = (family && family.caps) || {};
+  var variant = family && family.qualities && family.qualities[variantIndex];
+  return variant && variant.caps ? Object.assign({}, familyCaps, variant.caps) : Object.assign({}, familyCaps);
+}
+
 // ══════════ PER-MODEL DYNAMIC INTERFACE ══════════
 // Each model exposes its own controls. This function reshapes the panel
 // (upload slots, tabs, chips) so the UI matches what the selected model
 // actually supports — no shared layout for every model.
 function applyModelCapabilities() {
-  var rawCaps = (selectedFamily && selectedFamily.caps) || {
+  var rawCaps = selectedFamily ? resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx) : {
     image: 9, video: 3, frames: true, elements: true,
     ratio: true, resolution: true, duration: true, motion: false
   };
-  var variant = selectedFamily && selectedFamily.qualities && selectedFamily.qualities[selectedQualityIdx];
-  if (variant && variant.caps) rawCaps = Object.assign({}, rawCaps, variant.caps);
   // New generation service video families declare the public capability contract
   // verbatim.  Translate it once here so the established UI remains intact;
   // model-specific conditionals must not leak into individual controls.
@@ -4630,6 +4634,21 @@ function startGenerate() {
       && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
     showError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup)');
     return;
+  }
+  if (selectedFamily && selectedFamily.key === 'seedance') {
+    var hasFrames = hasFirstFrame || !!(frames.last && frames.last.url);
+    if (frames.last && frames.last.url && !hasFirstFrame) {
+      showError('Last frame membutuhkan first frame'); return;
+    }
+    if (hasFrames && (media.image.length || media.video.length)) {
+      showError('Elements dan Frames tidak dapat digunakan bersamaan'); return;
+    }
+    if (media.image.length > 9 || media.video.length > 1 || media.audio.length > 1) {
+      showError('Jumlah reference melebihi batas model'); return;
+    }
+    if (media.video.length && media.image.length > 6) {
+      showError('Video edit mendukung maksimal 6 reference image'); return;
+    }
   }
   var pendingUpload = media.image.concat(media.video, media.audio).some(function(m) { return m.uploading; })
     || (frames.first && frames.first.uploading) || (frames.last && frames.last.uploading);
