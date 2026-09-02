@@ -2536,6 +2536,33 @@ _AIVIDEO_REQUEST_LOG_LOCK = threading.Lock()
 _AIVIDEO_REQUEST_LOG = []
 _AIVIDEO_REQUEST_LOG_MAX = 50
 
+_AIVIDEO_SECRET_KEY_RE = re.compile(
+    r'(authorization|bearer|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|oauth|cookie|session|secret)',
+    re.IGNORECASE,
+)
+
+
+def _aivideo_safe_debug_value(value, depth=0):
+    """Return browser-safe diagnostic data without credentials or provider IDs."""
+    if depth > 8:
+        return '[TRUNCATED]'
+    if isinstance(value, dict):
+        return {
+            str(key): ('[REDACTED]' if _AIVIDEO_SECRET_KEY_RE.search(str(key))
+                       else _aivideo_safe_debug_value(item, depth + 1))
+            for key, item in value.items()
+            if str(key).lower() not in ('provider_job_id', 'job_id')
+        }
+    if isinstance(value, (list, tuple)):
+        return [_aivideo_safe_debug_value(item, depth + 1) for item in value]
+    if isinstance(value, str):
+        value = re.sub(r'(?i)\b(bearer\s+)[^\s,;]+', r'\1[REDACTED]', value)
+        value = re.sub(
+            r'(?i)\b(api[_ -]?key|access[_ -]?token|refresh[_ -]?token|oauth|cookie|session|secret)'
+            r'(["\'\s:=]+)[^,}\s]+', r'\1\2[REDACTED]', value)
+        return value[:4000]
+    return value
+
 
 def _aivideo_log_request(provider, endpoint, status_code=None, duration_ms=None,
                           retry_count=0, request_body=None, response_body=None,
@@ -2558,10 +2585,10 @@ def _aivideo_log_request(provider, endpoint, status_code=None, duration_ms=None,
         'status_code': status_code,
         'duration_ms': duration_ms,
         'retry_count': retry_count,
-        'request_body': _trim(request_body),
-        'response_body': _trim(response_body),
+        'request_body': _trim(_aivideo_safe_debug_value(request_body)),
+        'response_body': _trim(_aivideo_safe_debug_value(response_body)),
         'error_source': error_source,
-        'error_detail': _trim(error_detail, 1000),
+        'error_detail': _trim(_aivideo_safe_debug_value(error_detail), 1000),
         'ok': (status_code is not None and status_code < 400 and not error_source),
     }
     with _AIVIDEO_REQUEST_LOG_LOCK:
@@ -2586,7 +2613,7 @@ def _aivideo_debug_append_upload(entry):
     # a bounded rolling history instead so all recent uploads stay visible.
     with _AIVIDEO_DEBUG_LOCK:
         lst = _AIVIDEO_DEBUG.setdefault('last_uploads', [])
-        lst.append(entry)
+        lst.append(_aivideo_safe_debug_value(entry))
         del lst[:-_AIVIDEO_DEBUG_MAX_UPLOADS]
 
 
@@ -2594,7 +2621,7 @@ def _aivideo_debug_set(section, **kw):
     with _AIVIDEO_DEBUG_LOCK:
         if section not in _AIVIDEO_DEBUG or not isinstance(_AIVIDEO_DEBUG.get(section), dict):
             _AIVIDEO_DEBUG[section] = {}
-        _AIVIDEO_DEBUG[section].update(kw)
+        _AIVIDEO_DEBUG[section].update(_aivideo_safe_debug_value(kw))
         _AIVIDEO_DEBUG[section]['at'] = _utc_timestamp()
 
 
@@ -2606,7 +2633,11 @@ def _aivideo_debug_snapshot():
 def _aivideo_last_error(source, message):
     app.logger.error('[ai-video] %s error: %s', source, message)
     with _AIVIDEO_DEBUG_LOCK:
-        _AIVIDEO_DEBUG['last_error'] = {'source': source, 'message': str(message)[:2000], 'at': _utc_timestamp()}
+        _AIVIDEO_DEBUG['last_error'] = {
+            'source': _aivideo_safe_debug_value(str(source)),
+            'message': _aivideo_safe_debug_value(str(message))[:2000],
+            'at': _utc_timestamp(),
+        }
 
 
 def _aivideo_authed():
@@ -3087,22 +3118,39 @@ def _browser_debug_status():
         'history': 'READY', 'last_save': 'AVAILABLE' if recent else 'NONE',
     }
     try:
-        tasks = aivideo_archive.list_recent_tasks(20)
+        tasks = aivideo_archive.list_recent_tasks(50)
     except Exception:
         tasks = []
-    records = [dict(task['diagnostic']) for task in tasks if isinstance(task.get('diagnostic'), dict)]
+    records = [_aivideo_safe_debug_value(dict(task['diagnostic']))
+               for task in tasks if isinstance(task.get('diagnostic'), dict)]
     total = len(records)
     errors = sum(record.get('status') == 'FAILED' for record in records)
     successes = sum(record.get('status') == 'COMPLETED' for record in records)
     completed_durations = [record.get('elapsed_ms') for record in records
                            if record.get('status') in ('COMPLETED', 'FAILED') and isinstance(record.get('elapsed_ms'), (int, float))]
     avg_duration = round(sum(completed_durations) / len(completed_durations)) if completed_durations else None
+    debug = _aivideo_debug_snapshot()
+    motion_detail = debug.get('motion_control') or {}
+    motion = {'status': ('FAILED' if motion_detail.get('error') else
+                         ('VALIDATED' if motion_detail else 'READY')),
+              'detail': motion_detail}
+    last_record = records[0] if records else None
+    result_detail = ({'generation_status': last_record.get('status'),
+                      'archive_status': last_record.get('archive_status'),
+                      'preview_status': last_record.get('preview_status'),
+                      'history_status': last_record.get('history_status', 'PERSISTED'),
+                      'last_save': last_record.get('completed_at'),
+                      'timestamp': last_record.get('completed_at') or last_record.get('created_at')}
+                     if last_record else {})
     return {'storage': storage, 'generation': generation, 'pipeline': pipeline,
-            'motion': {'status': 'READY'},
+            'motion': motion,
             'request_log': {'total': total, 'success': successes, 'errors': errors,
                             'avg_duration': avg_duration, 'last_request': records[0].get('created_at') if records else 'NONE',
-                            'entries': records},
-            'reference_storage_route': 'NOT CONFIGURED — no Derabox/reference-management route or integration exists; uploads use Dropbox relay only.',
+                            'entries': records[:20]},
+            'last_upload': debug.get('last_upload'), 'recent_uploads': debug.get('last_uploads', []),
+            'last_generate_request': debug.get('last_request'),
+            'last_error': debug.get('last_error'), 'result_detail': result_detail,
+            'transport_log': _aivideo_request_log_snapshot(),
             'checked_at': checked_at}
 
 
@@ -3361,6 +3409,8 @@ def validateVideo(dropbox_url):
             'dropbox_url_original': dropbox_url,
             'dropbox_url_processed': dropbox_url_processed,
             'resized': resized,
+            'format': 'MP4',
+            'size': os.path.getsize(final_path),
             'elapsed_ms': round((time.time() - started) * 1000),
         }
         _aivideo_debug_set(
@@ -3371,8 +3421,9 @@ def validateVideo(dropbox_url):
             processed_width=final_w, processed_height=final_h,
             processed_duration=duration_clamped, processed_aspect_ratio=aspect_ratio,
             dropbox_url_original=dropbox_url, dropbox_url_processed=dropbox_url_processed,
-            resized=resized, elapsed_ms=result['elapsed_ms'], provider='segmind (kling-o3)',
-            error=None,
+            resized=resized, processed_state='RESIZED' if resized else 'UNCHANGED',
+            validation_result='VALID', format='MP4', size=os.path.getsize(final_path),
+            elapsed_ms=result['elapsed_ms'], error=None,
         )
         return result
     except RuntimeError as e:
@@ -3442,7 +3493,7 @@ def _diagnostic_update(task_id, status=None, **values):
     _persist_task(task_id)
 
 
-def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body):
+def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body, incoming_payload=None):
     """Attach the exact sanitized provider payload and matching upload traces."""
     reference_fields = {
         'image': ('reference_images', 'image_urls', 'image_input', 'image', 'first_frame_url', 'start_image_url', 'frontal_image_url'),
@@ -3479,6 +3530,8 @@ def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body)
                   'created_at': datetime.fromtimestamp(now, timezone.utc).isoformat(), 'created_ts': now,
                   'status': 'QUEUED', 'user_prompt': user_prompt,
                   'prompt_sent': body.get('prompt') or body.get('text_prompt') or '',
+                  'incoming_payload': _aivideo_safe_debug_value(incoming_payload or {}),
+                  'final_payload': _aivideo_safe_debug_value(body),
                   'payload_summary': summary, 'references': refs,
                   'result_save_status': 'PENDING', 'archive_status': 'PENDING',
                   'preview_status': 'PENDING', 'elapsed_ms': 0}
@@ -3884,6 +3937,12 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
                  error='Result was generated but could not be saved. Please try again.',
                  error_code='RESULT_SAVE_FAILED')
             _diagnostic_update(task_id, 'failed', result_save_status='FAILED', archive_status='FAILED', preview_status='READY')
+            _aivideo_last_error('result_archive', 'Result generated but cloud archive save failed.')
+        _aivideo_log_request('budgetpixel', 'generation', status_code=200 if archive_available else 502,
+                             duration_ms=round((time.time() - started) * 1000), request_body=body,
+                             response_body={'status': 'completed', 'archive': archive_available},
+                             error_source=None if archive_available else 'result_archive',
+                             error_detail=None if archive_available else 'Cloud archive save failed.', task_id=task_id)
         app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
                         task_id, family, variant, round((time.time() - started) * 1000))
     except budgetpixel_provider.ProviderError as exc:
@@ -3891,6 +3950,10 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
                          task_id, family, variant, str(exc), round((time.time() - started) * 1000))
         _set(status='failed', error=exc.public_message, error_code=exc.code, progress=100)
         _diagnostic_update(task_id, 'failed', result_save_status='NOT STARTED', archive_status='NOT STARTED', preview_status='FAILED', error_detail=exc.public_message)
+        _aivideo_last_error('generation', exc.public_message)
+        _aivideo_log_request('budgetpixel', 'generation', duration_ms=round((time.time() - started) * 1000),
+                             request_body=body, error_source='generation', error_detail=exc.public_message,
+                             task_id=task_id)
     except Exception:
         app.logger.exception('[ai-generation][internal] provider task failed task=%s model=%s/%s', task_id, family, variant)
         if generated:
@@ -3898,6 +3961,11 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         else:
             _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
         _diagnostic_update(task_id, 'failed', result_save_status='FAILED' if generated else 'NOT STARTED', archive_status='FAILED' if generated else 'NOT STARTED', preview_status='FAILED')
+        safe_message = ('Result generated but could not be saved.' if generated else 'Generation failed.')
+        _aivideo_last_error('result_archive' if generated else 'generation', safe_message)
+        _aivideo_log_request('budgetpixel', 'generation', duration_ms=round((time.time() - started) * 1000),
+                             request_body=body, error_source='result_archive' if generated else 'generation',
+                             error_detail=safe_message, task_id=task_id)
 
 
 @app.route('/ai-video')
@@ -4146,7 +4214,7 @@ def aivideo_generate():
             AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
                                       'model': variant, 'family': family, 'output_type': output_type,
                                       'request_metadata': {'prompt': prompt, **body}, 'created': time.time()}
-        _diagnostic_record(task_id, family, variant, output_type, prompt, body)
+        _diagnostic_record(task_id, family, variant, output_type, prompt, body, payload)
         _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
         _persist_task(task_id)
         threading.Thread(target=_run_budgetpixel_task,
@@ -4660,13 +4728,23 @@ def aivideo_upload():
     try:
         url = _dropbox_upload_and_link(file_bytes, f.filename)
         app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
-        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=url, ok=True, error=None)
-        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': url, 'ok': True, 'error': None, 'at': _utc_timestamp()})
+        media_type = ('IMAGE' if ext in ('.jpg', '.jpeg', '.png', '.webp') else
+                      ('VIDEO' if ext in ('.mp4', '.mov') else 'AUDIO'))
+        upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
+                        'status': 'READY', 'final_url': url, 'url': url, 'ok': True,
+                        'error': None, 'at': _utc_timestamp()}
+        _aivideo_debug_set('last_upload', **upload_debug)
+        _aivideo_debug_append_upload(upload_debug)
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
-        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=None, ok=False, error=str(e))
-        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
+        media_type = ('IMAGE' if ext in ('.jpg', '.jpeg', '.png', '.webp') else
+                      ('VIDEO' if ext in ('.mp4', '.mov') else 'AUDIO'))
+        upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
+                        'status': 'FAILED', 'final_url': None, 'url': None, 'ok': False,
+                        'error': _aivideo_safe_debug_value(str(e)), 'at': _utc_timestamp()}
+        _aivideo_debug_set('last_upload', **upload_debug)
+        _aivideo_debug_append_upload(upload_debug)
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
 
