@@ -22,6 +22,7 @@ import analytics
 import aivideo_archive
 import dropbox_oauth
 import secrets_store
+import budgetpixel_provider
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -3594,6 +3595,41 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         _set(status='failed', error=str(e), progress=100)
 
 
+def _run_budgetpixel_task(task_id, family, variant, body, output_type):
+    """Run the async provider job inside the existing Mii task lifecycle."""
+    def _set(**values):
+        with AIVIDEO_TASKS_LOCK:
+            if task_id in AIVIDEO_TASKS:
+                AIVIDEO_TASKS[task_id].update(values)
+        if {'status', 'output', 'error'} & set(values):
+            _persist_task(task_id)
+
+    started = time.time()
+    try:
+        _set(status='processing', progress=10)
+        api_key = get_secret("BUDGETPIXEL_API_KEY")
+        submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
+        submitted = submit(family, variant, body, api_key)
+        with AIVIDEO_TASKS_LOCK:
+            if task_id in AIVIDEO_TASKS:
+                AIVIDEO_TASKS[task_id]['provider_job_id'] = submitted['job_id']
+        _persist_task(task_id)
+        result = budgetpixel_provider.poll(submitted['job_id'], api_key)
+        if result['status'] != 'completed' or not result.get('url'):
+            raise budgetpixel_provider.ProviderError('GENERATION_FAILED', 'Generation failed. Please try again.', repr(result.get('raw')))
+        output_key = 'image_url' if output_type == 'image' else 'video_url'
+        _set(status='completed', progress=100, output={output_key: result['url']})
+        app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
+                        task_id, family, variant, round((time.time() - started) * 1000))
+    except budgetpixel_provider.ProviderError as exc:
+        app.logger.error('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=failed error=%s elapsed=%dms',
+                         task_id, family, variant, str(exc), round((time.time() - started) * 1000))
+        _set(status='failed', error=exc.public_message, error_code=exc.code, progress=100)
+    except Exception:
+        app.logger.exception('[ai-generation][internal] provider task failed task=%s model=%s/%s', task_id, family, variant)
+        _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
+
+
 @app.route('/ai-video')
 def ai_video_view():
     if not _aivideo_authed():
@@ -3751,9 +3787,6 @@ def aivideo_enhance():
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not _segmind_api_key():
-        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
-        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
     app.logger.info('[ai-video][generate] incoming request body=%s', json.dumps(payload)[:3000])
     _aivideo_debug_set('last_request', incoming_payload=payload)
@@ -3772,6 +3805,61 @@ def aivideo_generate():
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
     last_frame_url = str(payload.get('last_frame_url') or '').strip()
     aspect_ratio_in = payload.get('aspect_ratio')
+
+    budget_video_families = {'seedance', 'seedance25', 'wan30'}
+    budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage'}
+    if family in budget_video_families or family in budget_image_families:
+        output_type = 'image' if family in budget_image_families else 'video'
+        # The Phase 1 contract does not define reference/frame request field
+        # names. Never forward local/private URLs or guess provider fields.
+        if image_urls or video_urls or audio_urls or first_frame_url or last_frame_url:
+            code = 'INVALID_IMAGE_SETTINGS' if output_type == 'image' else 'GENERATION_FAILED'
+            return jsonify({'ok': False, 'error': {'code': code, 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+        variant = model_key or 'STANDARD'
+        try:
+            endpoint = (budgetpixel_provider.resolve_image_model(family, variant) if output_type == 'image'
+                        else budgetpixel_provider.resolve_video_model(family, variant))
+        except budgetpixel_provider.ProviderError:
+            code = 'IMAGE_MODEL_UNAVAILABLE' if output_type == 'image' else 'MODEL_UNAVAILABLE'
+            return jsonify({'ok': False, 'error': {'code': code, 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+        body = {'prompt': prompt}
+        if output_type == 'video':
+            ranges = {'seedance': (4, 15), 'seedance25': (4, 30), 'wan30': (2, 30)}
+            low, high = ranges[family]
+            try:
+                duration = int(payload.get('duration', low))
+            except (TypeError, ValueError):
+                duration = low
+            body['duration'] = max(low, min(high, duration))
+            if family == 'seedance':
+                allowed = ('480p', '720p', '1080p', '4K') if variant == 'PRO' else ('480p', '720p')
+            elif family == 'seedance25':
+                allowed = ('480p', '720p')
+            else:
+                allowed = ('480p', '720p', '1080p')
+            body['resolution'] = payload.get('resolution') if payload.get('resolution') in allowed else '720p'
+            if aspect_ratio_in:
+                body['aspect_ratio'] = aspect_ratio_in
+        elif family == 'seedream5' and variant == 'PRO':
+            # Only this exact image schema was supplied as verified.
+            if aspect_ratio_in:
+                body['aspect_ratio'] = aspect_ratio_in
+            if payload.get('resolution'):
+                body['resolution'] = payload['resolution']
+
+        task_id = uuid.uuid4().hex
+        with AIVIDEO_TASKS_LOCK:
+            _prune_aivideo_tasks()
+            AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
+                                      'model': variant, 'family': family, 'created': time.time()}
+        _persist_task(task_id)
+        threading.Thread(target=_run_budgetpixel_task,
+                         args=(task_id, family, variant, body, output_type), daemon=True).start()
+        return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': 20}})
+
+    if not _segmind_api_key():
+        _aivideo_last_error('config', 'generation provider is not configured')
+        return jsonify({'ok': False, 'error': {'code': 'MODEL_UNAVAILABLE', 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 503
 
     if family == 'seedance':
         if model_key not in SEGMIND_MODEL_MAP:
