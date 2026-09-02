@@ -3046,7 +3046,27 @@ def _dropbox_status_check():
         return ok, detail
     except Exception as e:
         _aivideo_debug_set('dropbox', mode=mode, ok=False, detail=str(e)[:300])
+        app.logger.warning('[storage][health] connection check failed: %s', e)
         return False, str(e)
+
+
+def _browser_debug_status():
+    """Build the provider-neutral diagnostic safe to send to a browser."""
+    storage_state = _dropbox_manager.status()['state']
+    if storage_state == 'not_connected':
+        storage = {'status': 'NOT CONFIGURED', 'detail': 'Storage is not configured.'}
+    else:
+        storage_ok, _internal_detail = _dropbox_status_check()
+        storage = ({'status': 'READY', 'detail': 'Storage is ready.'} if storage_ok else
+                   {'status': 'ERROR', 'detail': 'Storage connection requires attention.'})
+
+    configured = bool(get_secret('BUDGETPIXEL_API_KEY'))
+    generation = {
+        'configured': configured,
+        'status': 'READY' if configured else 'NOT CONFIGURED',
+        'detail': 'AI generation is ready.' if configured else 'AI generation is not configured.',
+    }
+    return {'storage': storage, 'generation': generation}
 
 
 def _segmind_extract_error(resp):
@@ -3718,15 +3738,30 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         _set(status='processing', progress=90)
         sources = result.get('images') if output_type == 'image' and result.get('images') else [{'url': result['url']}]
         archived, total_bytes = [], 0
+        archive_available = True
         for index, source in enumerate(sources):
             media = _fetch_generated_result(source['url'], output_type)
             total_bytes += len(media)
             ext = 'png' if output_type == 'image' else 'mp4'
             name = '%s%s.%s' % (task_id, ('-%d' % (index + 1)) if len(sources) > 1 else '', ext)
-            archived.append({'url': _dropbox_upload_and_link(media, name, folder='results')})
+            try:
+                saved_url = _dropbox_upload_and_link(media, name, folder='results')
+            except Exception as archive_error:
+                archive_available = False
+                upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
+                os.makedirs(upload_dir, exist_ok=True)
+                with open(os.path.join(upload_dir, name), 'wb') as local_file:
+                    local_file.write(media)
+                saved_url = '/static/aivideo_uploads/' + name
+                app.logger.warning('[ai-generation][archive] task=%s save failed; using local preview: %s',
+                                   task_id, archive_error)
+            archived.append({'url': saved_url})
         output_key = 'image_url' if output_type == 'image' else 'video_url'
         output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
-                  'original_url': None, 'size_bytes': total_bytes}
+                  'original_url': None, 'size_bytes': total_bytes,
+                  'archive_available': archive_available}
+        if not archive_available:
+            output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
         if output_type == 'image':
             output['images'] = archived
         _set(status='completed', progress=100, output=output)
@@ -4723,39 +4758,14 @@ def ai_video_debug_clear():
 def ai_video_debug_page():
     if not _aivideo_authed():
         return render_template('ai-video-lock.html')
-    dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(_segmind_api_key())
-    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
-    snap = _aivideo_debug_snapshot()
-    log = _aivideo_request_log_snapshot()
-    return render_template(
-        'ai-video-debug.html',
-        dropbox=snap.get('dropbox'),
-        segmind=snap.get('segmind'),
-        last_upload=snap.get('last_upload'),
-        last_uploads=list(reversed(snap.get('last_uploads') or [])),
-        last_request=snap.get('last_request'),
-        last_segmind_response=snap.get('last_segmind_response'),
-        last_error=snap.get('last_error'),
-        motion_control=snap.get('motion_control'),
-        request_log=log['entries'],
-        request_log_total=log['total'],
-        request_log_errors=log['errors'],
-        request_log_avg_ms=log['avg_duration_ms'],
-        dropbox_mode=_dropbox_manager.status()['state'],
-    )
+    return render_template('ai-video-debug.html', **_browser_debug_status())
 
 
 @app.route('/api/aivideo/debug-data')
 def ai_video_debug_data():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(_segmind_api_key())
-    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
-    snap = _aivideo_debug_snapshot()
-    snap['request_log'] = _aivideo_request_log_snapshot()
-    return jsonify(snap)
+    return jsonify(_browser_debug_status())
 
 
 @app.route('/ai-video/app-secrets')
