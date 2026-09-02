@@ -67,7 +67,11 @@ def init_db():
         for column, declaration in (
             ('resolution', "TEXT DEFAULT ''"), ('image_quality', "TEXT DEFAULT ''"),
             ('image_count', 'INTEGER DEFAULT 1'), ('output_format', "TEXT DEFAULT ''"),
-            ('generation_status', "TEXT DEFAULT 'COMPLETED'")):
+            ('generation_status', "TEXT DEFAULT 'COMPLETED'"), ('image_urls', "TEXT DEFAULT '[]'"),
+            ('ref_audios', "TEXT DEFAULT '[]'"), ('elapsed_ms', 'INTEGER DEFAULT 0'),
+            ('size_bytes', 'INTEGER DEFAULT 0'), ('audio_enabled', 'INTEGER'),
+            ('reference_counts', "TEXT DEFAULT '{}'"), ('final_prompt', "TEXT DEFAULT ''"),
+            ('bitrate', "TEXT DEFAULT ''")):
             if column not in existing_cols:
                 conn.execute('ALTER TABLE aivideo_archive ADD COLUMN %s %s' % (column, declaration))
         conn.commit()
@@ -181,8 +185,8 @@ def upsert_archive(rec):
                 (id, media_type, video_url, image_url, audio_url, thumb, prompt, model, quality,
                  duration, ratio, created_at_label, created_at_ts, ref_images, ref_videos,
                  model_key, model_tier, archived, resolution, image_quality, image_count,
-                 output_format, generation_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 output_format, generation_status, image_urls, ref_audios, elapsed_ms, size_bytes, audio_enabled, reference_counts, final_prompt, bitrate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 media_type=excluded.media_type, video_url=excluded.video_url,
                 image_url=excluded.image_url, audio_url=excluded.audio_url,
@@ -194,7 +198,10 @@ def upsert_archive(rec):
                 model_tier=excluded.model_tier, archived=excluded.archived,
                 resolution=excluded.resolution, image_quality=excluded.image_quality,
                 image_count=excluded.image_count, output_format=excluded.output_format,
-                generation_status=excluded.generation_status
+                generation_status=excluded.generation_status, image_urls=excluded.image_urls,
+                ref_audios=excluded.ref_audios, elapsed_ms=excluded.elapsed_ms,
+                size_bytes=excluded.size_bytes, audio_enabled=excluded.audio_enabled,
+                reference_counts=excluded.reference_counts, final_prompt=excluded.final_prompt, bitrate=excluded.bitrate
         ''', (
             rec.get('id'),
             rec.get('media_type') or ('video' if rec.get('videoUrl') else ('audio' if rec.get('audioUrl') else 'image')),
@@ -216,7 +223,10 @@ def upsert_archive(rec):
             1 if rec.get('archived', True) else 0,
             rec.get('resolution') or '', rec.get('imageQuality') or '',
             int(rec.get('imageCount') or 1), rec.get('outputFormat') or '',
-            rec.get('status') or 'COMPLETED',
+            rec.get('status') or 'COMPLETED', json.dumps(rec.get('imageUrls') or []),
+            json.dumps(rec.get('refAudios') or []), int(rec.get('elapsedMs') or 0),
+            int(rec.get('sizeBytes') or 0), None if rec.get('audioEnabled') is None else (1 if rec.get('audioEnabled') else 0),
+            json.dumps(rec.get('referenceCounts') or {}), rec.get('finalPrompt') or '', rec.get('bitrate') or '',
         ))
         conn.commit()
 
@@ -238,8 +248,11 @@ def list_archive(archived=None):
     out = []
     for row in cur.fetchall():
         d = dict(row)
+        d['mediaType'] = d.pop('media_type', '') or ''
         d['refImages'] = json.loads(d.pop('ref_images') or '[]')
         d['refVideos'] = json.loads(d.pop('ref_videos') or '[]')
+        d['refAudios'] = json.loads(d.pop('ref_audios', '[]') or '[]')
+        d['imageUrls'] = json.loads(d.pop('image_urls', '[]') or '[]')
         d['videoUrl'] = d.pop('video_url')
         d['imageUrl'] = d.pop('image_url')
         d['audioUrl'] = d.pop('audio_url', '') or ''
@@ -252,6 +265,12 @@ def list_archive(archived=None):
         d['imageCount'] = d.pop('image_count', 1) or 1
         d['outputFormat'] = d.pop('output_format', '') or ''
         d['status'] = d.pop('generation_status', '') or 'COMPLETED'
+        d['elapsedMs'] = d.pop('elapsed_ms', 0) or 0
+        d['sizeBytes'] = d.pop('size_bytes', 0) or 0
+        raw_audio_enabled = d.pop('audio_enabled', None)
+        d['audioEnabled'] = None if raw_audio_enabled is None else bool(raw_audio_enabled)
+        d['referenceCounts'] = json.loads(d.pop('reference_counts', '{}') or '{}')
+        d['finalPrompt'] = d.pop('final_prompt', '') or ''
         out.append(d)
     return out
 

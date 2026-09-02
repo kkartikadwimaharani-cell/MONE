@@ -4936,14 +4936,18 @@ def aivideo_archive_save():
     try:
         if rec.get('videoUrl'):
             rec['videoUrl'] = _ensure_dropbox_url(rec['videoUrl'])
+        if rec.get('imageUrls'):
+            rec['imageUrls'] = [_ensure_dropbox_url(url) for url in rec['imageUrls'] if url]
         if rec.get('imageUrl'):
             rec['imageUrl'] = _ensure_dropbox_url(rec['imageUrl'])
+        elif rec.get('imageUrls'):
+            rec['imageUrl'] = rec['imageUrls'][0]
         if rec.get('audioUrl'):
             rec['audioUrl'] = _ensure_dropbox_url(rec['audioUrl'])
         aivideo_archive.upsert_archive(rec)
         app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s archived=%s',
                          rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')), bool(rec.get('archived', True)))
-        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', ''), 'audioUrl': rec.get('audioUrl', '')})
+        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', ''), 'audioUrl': rec.get('audioUrl', ''), 'imageUrls': rec.get('imageUrls', [])})
     except Exception as e:
         app.logger.error('[ai-video][archive] save failed id=%s: %s', rec_id, e, exc_info=True)
         _aivideo_last_error('archive', str(e))
@@ -4967,8 +4971,13 @@ def aivideo_archive_delete(archive_id):
             rec = None
         aivideo_archive.delete_archive(archive_id)
         if rec and not keep_file:
-            for key in ('video_url', 'image_url', 'audio_url'):
-                u = (rec.get(key) or '') if isinstance(rec, dict) else ''
+            cleanup_urls = [(key, rec.get(key) or '') for key in ('video_url', 'image_url', 'audio_url')]
+            try:
+                cleanup_urls += [('image_urls', u) for u in json.loads(rec.get('image_urls') or '[]') if u != rec.get('image_url')]
+            except (TypeError, ValueError):
+                pass
+            for key, u in cleanup_urls:
+                u = u if isinstance(rec, dict) else ''
                 if u:
                     ok, detail = _dropbox_delete_result_url(u)
                     app.logger.info('[ai-video][archive] delete id=%s %s dropbox cleanup: %s (%s)',
