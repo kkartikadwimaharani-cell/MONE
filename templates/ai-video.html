@@ -4874,8 +4874,9 @@ function pollQueueTask(taskId, opts) {
             // Saved using THIS job's own snapshotted meta — never live
             // panel state — so the History entry can never end up
             // mismatched with whatever you've since changed the panel to.
-            var rec = saveGenerationToHistory(resultPayload, meta);
-            if (e.stage) e.stage.textContent = 'Tersimpan di History';
+            var rec = out.archive_available === false ? null : saveGenerationToHistory(resultPayload, meta);
+            if (e.stage) e.stage.textContent = out.archive_available === false
+              ? 'Result generated. Cloud save is temporarily unavailable.' : 'Tersimpan di History';
             markDone();
             delete activeGens[taskId]; refreshQueueBadge();
             // Show the result inline on the Generate canvas right away —
@@ -4922,7 +4923,10 @@ function pollQueueTask(taskId, opts) {
                 });
               }
             }
-            showToastAction((isAudioResult ? 'Audio selesai' : (isImageResult ? 'Gambar selesai' : 'Video selesai')) + ' — tersimpan di History', 'Lihat', function() {
+            var completionText = out.archive_available === false
+              ? 'Result generated. Cloud save is temporarily unavailable.'
+              : (isAudioResult ? 'Audio selesai' : (isImageResult ? 'Gambar selesai' : 'Video selesai')) + ' — tersimpan di History';
+            showToastAction(completionText, 'Lihat', function() {
               if (rec) openHistoryItem(rec.id);
             });
             setTimeout(function() { var el = document.getElementById('genq_' + taskId); if (el) el.remove(); }, 3500);
