@@ -2286,11 +2286,14 @@ var modelFamilies = {
       subtitle: '30s \u2022 Multimodal',
       desc: 'Multimodal video generation with separate image, video and audio references, plus first/last-frame control.',
       caps: {
-        image: 15, video: 5, audio: 5, frames: true, elements: true,
-        ratio: true, ratioOptions: ['1:1','3:4','4:3','9:16','16:9','21:9'],
-        resolution: true, resolutionOptions: ['480p','720p','1080p'],
-        duration: true, durationSteps: [4,5,6,8,10,12,15,20,25,30],
-        audioGeneration: true, qualityControl: true, motion: false
+        durationMin: 4, durationMax: 30, durationStep: 1,
+        resolutions: ['480p','720p','1080p'],
+        aspectRatios: ['1:1','3:4','4:3','9:16','16:9','21:9'],
+        maxReferenceImages: 15, maxReferenceVideos: 5, maxReferenceAudios: 5,
+        supportsFirstFrame: true, supportsLastFrame: true,
+        supportsT2V: true, supportsI2V: true,
+        supportsReferenceVideo: true, supportsReferenceAudio: true,
+        supportsGeneratedAudio: true, variants: []
       },
       qualities: []
     },
@@ -2298,10 +2301,17 @@ var modelFamilies = {
       key: 'wan30', brand: 'WAN', name: 'WAN 3.0', featured: true,
       desc: 'One multimodal WAN family with Standard and Prime generation variants.',
       caps: {
-        image: 10, video: 5, audio: 5, frames: true, elements: true,
-        ratio: true, ratioOptions: ['16:9'], resolution: true, resolutionOptions: ['720p'],
-        duration: true, durationSteps: [4,5,6,8,10,12,15,20,25,30],
-        audioGeneration: true, qualityControl: true, motion: false
+        durationMin: 2, durationMax: 30, durationStep: 1,
+        resolutions: ['480p','720p','1080p'], aspectRatios: ['16:9'],
+        maxReferenceImages: 10, maxReferenceVideos: 5, maxReferenceAudios: 5,
+        supportsFirstFrame: true, supportsLastFrame: true,
+        supportsT2V: true, supportsI2V: true,
+        supportsReferenceVideo: true, supportsReferenceAudio: true,
+        supportsGeneratedAudio: true,
+        variants: [
+          { id: 'wan-3.0-standard', label: 'STANDARD' },
+          { id: 'wan-3.0-prime', label: 'PRIME' }
+        ]
       },
       qualities: [
         { id: 'wan-3.0-standard', label: 'STANDARD' },
@@ -2335,36 +2345,6 @@ var modelFamilies = {
         { id: 'STD', label: 'STD' },
         { id: 'PRO', label: 'PRO' }
       ]
-    },
-    // Placeholders below: verified directly against segmind.com/models
-    // live (fetched, not from memory/secondhand articles), each currently
-    // listed as "1mo ago" — genuinely current. Workspace (references/
-    // duration/resolution/tiers) hasn't been built out yet — name + card +
-    // disabled "COMING SOON" Generate only, same pattern as Seedance 2.5.
-    // No invented pricing/params.
-    {
-      key: 'happyhorse', brand: 'ALIBABA', name: 'HAPPYHORSE 1.1', featured: true, available: false,
-      desc: 'Generate cinematic video with synchronized native audio and multilingual lip-sync from text, an image, or reference images.',
-      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
-      qualities: []
-    },
-    {
-      key: 'lumaray32', brand: 'LUMA', name: 'LUMA RAY 3.2', featured: true, available: false,
-      desc: 'Cinematic text-to-video and image-to-video clips up to 1080p.',
-      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
-      qualities: []
-    },
-    {
-      key: 'grokvideo', brand: 'XAI', name: 'GROK IMAGINE VIDEO', featured: true, available: false,
-      desc: 'Text-to-video and image-to-video with native synchronized audio, by xAI.',
-      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
-      qualities: []
-    },
-    {
-      key: 'hailuo2', brand: 'MINIMAX', name: 'MINIMAX HAILUO 2', featured: true, available: false,
-      desc: 'Ranked #2 globally on the Artificial Analysis benchmark — 1080P cinematic video up to 10s at 24-30 FPS, with physics simulation and body tracking.',
-      caps: { image: 0, video: 0, audio: 0, frames: false, elements: false, ratio: false, resolution: false, resolutionSet: 'video', duration: false, motion: false },
-      qualities: []
     },
     {
       key: 'minimaxh3', brand: 'MINIMAX', name: 'MINIMAX H3', featured: true,
@@ -3047,10 +3027,33 @@ function pickFamily(family, qualityIdx) {
 // (upload slots, tabs, chips) so the UI matches what the selected model
 // actually supports — no shared layout for every model.
 function applyModelCapabilities() {
-  var caps = (selectedFamily && selectedFamily.caps) || {
+  var rawCaps = (selectedFamily && selectedFamily.caps) || {
     image: 9, video: 3, frames: true, elements: true,
     ratio: true, resolution: true, duration: true, motion: false
   };
+  // New BudgetPixel video families declare the public capability contract
+  // verbatim.  Translate it once here so the established UI remains intact;
+  // model-specific conditionals must not leak into individual controls.
+  var canonical = rawCaps.durationMin != null || rawCaps.resolutions || rawCaps.variants;
+  var durationSteps = [];
+  if (canonical && rawCaps.durationMin != null && rawCaps.durationMax != null) {
+    for (var second = rawCaps.durationMin; second <= rawCaps.durationMax; second += (rawCaps.durationStep || 1)) durationSteps.push(second);
+  }
+  var caps = canonical ? {
+    image: rawCaps.maxReferenceImages || 0,
+    video: rawCaps.supportsReferenceVideo ? (rawCaps.maxReferenceVideos || 0) : 0,
+    audio: rawCaps.supportsReferenceAudio ? (rawCaps.maxReferenceAudios || 0) : 0,
+    frames: !!(rawCaps.supportsFirstFrame || rawCaps.supportsLastFrame),
+    elements: !!((rawCaps.maxReferenceImages || 0) || rawCaps.supportsReferenceVideo || rawCaps.supportsReferenceAudio),
+    ratio: !!(rawCaps.aspectRatios && rawCaps.aspectRatios.length),
+    ratioOptions: rawCaps.aspectRatios,
+    resolution: !!(rawCaps.resolutions && rawCaps.resolutions.length),
+    resolutionOptions: rawCaps.resolutions,
+    duration: durationSteps.length > 0,
+    durationSteps: durationSteps,
+    audioGeneration: !!rawCaps.supportsGeneratedAudio,
+    motion: false
+  } : rawCaps;
 
   // Enforce per-model reference limits
   maxCounts.image = caps.image || 0;
@@ -3560,15 +3563,6 @@ function updateGenerateButtonState() {
   var btn = document.getElementById('generateBtn');
   if (!btn) return;
   var txt = btn.querySelector('.gen-txt');
-  // available:false is an explicit, config-declared "not wired to a real
-  // backend yet" flag (e.g. Seedance 2.5 pre-API) — gets its own clear
-  // "<MODEL> COMING SOON" state instead of the generic message below.
-  if (selectedFamily && selectedFamily.available === false) {
-    btn.disabled = true;
-    btn.setAttribute('aria-disabled', 'true');
-    if (txt) txt.textContent = selectedFamily.name + ' COMING SOON';
-    return;
-  }
   if (btn.hasAttribute('aria-disabled')) btn.removeAttribute('aria-disabled');
   // Only families in CONNECTED_FAMILIES are actually wired to a real
   // backend/Segmind endpoint right now. Every other model card is UI-only
