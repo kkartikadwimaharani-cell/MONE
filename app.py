@@ -23,6 +23,7 @@ import aivideo_archive
 import dropbox_oauth
 import secrets_store
 import budgetpixel_provider
+import mii_quality_filter
 import ipaddress
 import socket
 import google.generativeai as genai
@@ -4133,8 +4134,9 @@ def aivideo_generate():
     family = str(payload.get('family', 'seedance')).lower()
     mute_audio = bool(payload.get('mute_audio', False))
 
-    prompt = str(payload.get('prompt', '')).strip()
-    if not prompt and family != 'klingswap':
+    original_prompt = str(payload.get('prompt', '')).strip()
+    prompt = original_prompt
+    if not original_prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
     image_urls = [u for u in (payload.get('reference_images') or payload.get('image_urls') or []) if u]
@@ -4160,6 +4162,20 @@ def aivideo_generate():
                         else budgetpixel_provider.resolve_video_model(family, variant))
         except budgetpixel_provider.ProviderError:
             return jsonify({'ok': False, 'error': {'code': 'MODEL_UNAVAILABLE', 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+        if output_type == 'video':
+            try:
+                prompt = mii_quality_filter.build_final_prompt(
+                    original_prompt,
+                    family=family,
+                    duration=payload.get('duration'),
+                    references={
+                        'images': image_urls, 'videos': video_urls, 'audio': audio_urls,
+                        'first_frame': first_frame_url, 'last_frame': last_frame_url,
+                    },
+                )
+            except Exception:
+                app.logger.exception('[ai-video][quality-filter] failed; using original prompt')
+                prompt = original_prompt
         body = {'prompt': prompt}
         if family == 'seedance':
             try:
@@ -4213,8 +4229,9 @@ def aivideo_generate():
             _prune_aivideo_tasks()
             AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
                                       'model': variant, 'family': family, 'output_type': output_type,
-                                      'request_metadata': {'prompt': prompt, **body}, 'created': time.time()}
-        _diagnostic_record(task_id, family, variant, output_type, prompt, body, payload)
+                                      'request_metadata': {'original_prompt': original_prompt,
+                                                           'final_prompt': prompt, **body}, 'created': time.time()}
+        _diagnostic_record(task_id, family, variant, output_type, original_prompt, body, payload)
         _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
         _persist_task(task_id)
         threading.Thread(target=_run_budgetpixel_task,
