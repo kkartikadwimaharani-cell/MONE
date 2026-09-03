@@ -102,7 +102,7 @@ class ArchivePersistenceTests(unittest.TestCase):
     def test_multi_image_and_generation_metadata_round_trip(self):
         rec = {"id":"images", "imageUrl":"one", "imageUrls":["one","two","three"],
                "mediaType":"image", "archived":False, "elapsedMs":1234, "sizeBytes":99,
-               "refAudios":["audio-ref"], "audioEnabled":True}
+               "refAudios":["audio-ref"], "audioEnabled":True, "sourceTaskId":"provider-task-1"}
         aivideo_archive.upsert_archive(rec)
         saved = aivideo_archive.list_archive(None)[0]
         self.assertEqual(saved["imageUrls"], rec["imageUrls"])
@@ -111,6 +111,7 @@ class ArchivePersistenceTests(unittest.TestCase):
         self.assertEqual(saved["sizeBytes"], 99)
         self.assertTrue(saved["audioEnabled"])
         self.assertFalse(saved["archived"])
+        self.assertEqual(saved["sourceTaskId"], "provider-task-1")
 
 
 if __name__ == "__main__": unittest.main()

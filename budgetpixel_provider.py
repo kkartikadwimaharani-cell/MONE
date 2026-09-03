@@ -51,21 +51,33 @@ IMAGE_MODELS = {
     ("gptimage", "HIGH"): "/images/gpt-image-2",
 }
 
-# Public UI contract.  An empty list means that the provider contract in this
-# repository does not publish that setting; callers must omit the control and
-# the field rather than borrowing options from another model.
+# Public request contract.  This registry is also the allow-list used by the
+# payload builder below; a UI choice can therefore never be silently dropped
+# or replaced by an unrelated model's default.
+FLUX2_RATIOS = ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3",
+                "21:9", "9:21", "5:4", "4:5", "match_input_image")
 GPT_IMAGE_2_RATIOS = ("1:1", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16",
                       "3:2", "2:3", "21:9", "9:21", "2:1", "1:2")
 IMAGE_CAPABILITIES = {
-    ("flux2", "KLEIN"): {},
-    ("flux2", "PRO"): {},
-    ("flux2", "DEV"): {},
-    ("qwenbp", "STANDARD"): {},
-    ("seedream5", "LITE"): {},
+    ("flux2", "KLEIN"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
+        "megapixels": ("0.5", "1", "2", "4"), "default_megapixel": "1",
+        "image_count": (1, 4), "reference_images": 3, "seed": True},
+    ("flux2", "PRO"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
+        "megapixels": ("1", "2", "4"), "default_megapixel": "1", "image_count": (1, 4),
+        "reference_images": 3, "seed": True},
+    ("flux2", "DEV"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
+        "megapixels": ("1", "2", "4"), "default_megapixel": "1", "image_count": (1, 4),
+        "reference_images": 3, "seed": True},
+    ("qwenbp", "STANDARD"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"),
+        "default_aspect_ratio": "1:1", "image_count": (1, 4), "seed": True},
+    ("seedream5", "LITE"): {"aspect_ratios": ("1:1", "3:4", "4:3", "9:16", "16:9"),
+        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K"), "image_count": (1, 4)},
     ("seedream5", "PRO"): {"aspect_ratios": ("1:1", "3:4", "4:3", "9:16", "16:9"),
-                               "resolutions": ("1K", "2K")},
-    ("klingimage", "V3"): {},
-    ("klingimage", "OMNI"): {},
+        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K"), "image_count": (1, 4)},
+    ("klingimage", "V3"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4"),
+        "default_aspect_ratio": "1:1", "image_count": (1, 4)},
+    ("klingimage", "OMNI"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4"),
+        "default_aspect_ratio": "1:1", "image_count": (1, 4), "reference_images": 10},
     ("gptimage", "LOW"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
                               "qualities": ("low", "medium", "high"), "image_count": (1, 4),
                               "reference_images": 9, "formats": ("png", "jpeg")},
@@ -81,6 +93,61 @@ IMAGE_CAPABILITIES = {
 def image_capabilities(family, variant="STANDARD"):
     """Return a copy so request/UI code cannot mutate the verified registry."""
     return dict(IMAGE_CAPABILITIES.get((str(family).lower(), str(variant).upper()), {}))
+
+
+def build_image_payload(family, variant, incoming, prompt, reference_images=None):
+    """Validate and translate image UI state into the exact model contract.
+
+    Unknown/video fields are intentionally impossible to emit.  Invalid
+    optional values use documented defaults; invalid counts/references fail
+    loudly because silently shrinking those changes what the user purchased.
+    """
+    caps = image_capabilities(family, variant)
+    if not caps:
+        raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.")
+    refs = [u for u in (reference_images or []) if isinstance(u, str) and u]
+    limit = int(caps.get("reference_images", 0))
+    if refs and (not limit or len(refs) > limit):
+        raise ProviderError("INVALID_INPUT", "Reference image settings exceed model limits.")
+    body = {"prompt": prompt}
+    ratios = caps.get("aspect_ratios", ())
+    if ratios:
+        ratio = incoming.get("aspect_ratio")
+        ratio = ratio if ratio in ratios else caps.get("default_aspect_ratio", ratios[0])
+        if ratio == "match_input_image" and not refs:
+            raise ProviderError("INVALID_INPUT", "match_input_image requires a reference image.")
+        body["aspect_ratio"] = ratio
+    if caps.get("megapixels"):
+        raw_mp = str(incoming.get("megapixel", incoming.get("resolution", ""))).replace("MP", "").strip()
+        mp = raw_mp if raw_mp in caps["megapixels"] else caps["default_megapixel"]
+        body["megapixel"] = float(mp) if "." in mp else int(mp)
+    if caps.get("resolutions"):
+        resolution = str(incoming.get("resolution") or caps["resolutions"][0]).upper()
+        body["resolution"] = resolution if resolution in caps["resolutions"] else caps["resolutions"][0]
+    if caps.get("qualities"):
+        tier_quality = {"LOW": "low", "STANDARD": "medium", "HIGH": "high"}.get(str(variant).upper())
+        quality = str(incoming.get("quality") or tier_quality or caps["qualities"][0]).lower()
+        body["quality"] = quality if quality in caps["qualities"] else (tier_quality or caps["qualities"][0])
+    if caps.get("image_count"):
+        try:
+            count = int(incoming.get("num_images", 1))
+        except (TypeError, ValueError):
+            count = 0
+        if not caps["image_count"][0] <= count <= caps["image_count"][1]:
+            raise ProviderError("INVALID_INPUT", "Image count is outside model limits.")
+        body["num_images"] = count
+    if caps.get("formats"):
+        fmt = str(incoming.get("output_format") or caps["formats"][0]).lower()
+        body["output_format"] = fmt if fmt in caps["formats"] else caps["formats"][0]
+    if refs:
+        body["reference_images"] = refs
+    if caps.get("seed") and incoming.get("seed") not in (None, ""):
+        try:
+            seed = int(incoming["seed"])
+        except (TypeError, ValueError):
+            raise ProviderError("INVALID_INPUT", "Seed must be an integer.")
+        body["seed"] = seed
+    return body
 
 
 class ProviderError(RuntimeError):
@@ -176,10 +243,14 @@ def normalize_result(data):
         output = {"url": output}
     images = data.get("images") or output.get("images") or []
     normalized_images = []
+    seen_urls = set()
     if isinstance(images, list):
-        for item in images:
+        ordered = sorted(enumerate(images), key=lambda pair: (
+            pair[1].get("position", pair[0]) if isinstance(pair[1], dict) else pair[0]))
+        for _, item in ordered:
             candidate = item.get("url") if isinstance(item, dict) else item
-            if isinstance(candidate, str) and candidate:
+            if isinstance(candidate, str) and candidate and candidate not in seen_urls:
+                seen_urls.add(candidate)
                 normalized_images.append({"url": candidate})
     url = (output.get("url") or output.get("video_url") or output.get("image_url")
            or data.get("url") or data.get("video_url") or data.get("image_url"))
