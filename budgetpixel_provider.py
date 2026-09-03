@@ -14,7 +14,6 @@ BASE_URL = "https://api.budgetpixel.com/v1"
 
 VIDEO_MODELS = {
     ("seedance", "MINI"): "/videos/seedance-2.0-mini",
-    ("seedance", "FAST"): "/videos/seedance-2.0-fast",
     ("seedance", "PRO"): "/videos/seedance-2.0",
     ("seedance25", "STANDARD"): "/videos/seedance-2.5",
     ("wan30", "STANDARD"): "/videos/wan-3.0-video",
@@ -24,18 +23,78 @@ VIDEO_MODELS = {
 # Verified public request controls.  Keep this separate from endpoint routing so
 # UI/request validation can share the contract without introducing new fields.
 VIDEO_CAPABILITIES = {
+    ("seedance", "MINI"): {"resolutions": ("480p", "720p"), "duration": (4, 15),
+        "start_frame": True, "end_frame": True, "generate_audio": True},
+    ("seedance", "PRO"): {"resolutions": ("480p", "720p", "1080p", "4K"), "duration": (4, 15),
+        "start_frame": True, "end_frame": True, "generate_audio": True},
     ("seedance25", "STANDARD"): {
         "aspect_ratios": ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"),
-        "resolutions": ("480p", "720p"),
+        "resolutions": ("480p", "720p", "1080p"),
         "duration": (4, 30),
+        "start_frame": True, "end_frame": True,
+        "reference_images": 15, "reference_videos": 5, "reference_audios": 5,
         "generate_audio": True,
     },
+    ("wan30", "STANDARD"): {"resolutions": ("480p", "720p", "1080p"), "duration": (2, 30),
+        "start_frame": True, "end_frame": True, "reference_images": 10,
+        "reference_videos": 5, "reference_audios": 5, "generate_audio": True},
+    ("wan30", "PRIME"): {"resolutions": ("480p", "720p", "1080p"), "duration": (2, 30),
+        "start_frame": True, "end_frame": True, "reference_images": 10,
+        "reference_videos": 5, "reference_audios": 5, "generate_audio": True},
 }
 
 
 def video_capabilities(family, variant="STANDARD"):
     """Return a copy of verified video controls for capability-driven callers."""
     return dict(VIDEO_CAPABILITIES.get((str(family).lower(), str(variant).upper()), {}))
+
+
+def build_video_payload(family, variant, incoming, prompt, reference_images=None,
+                        reference_videos=None, reference_audios=None,
+                        first_frame="", last_frame="", generate_audio=True):
+    """Validate UI media modes and emit only BudgetPixel's video fields."""
+    caps = video_capabilities(family, variant)
+    if not caps:
+        raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.")
+    refs = {
+        "reference_images": [u for u in (reference_images or []) if u],
+        "reference_videos": [u for u in (reference_videos or []) if u],
+        "reference_audios": [u for u in (reference_audios or []) if u],
+    }
+    has_frames = bool(first_frame or last_frame)
+    if last_frame and not first_frame:
+        raise ProviderError("INVALID_INPUT", "Last frame requires a first frame.")
+    if has_frames and any(refs.values()):
+        raise ProviderError("INVALID_INPUT", "Elements and Frames cannot be used together.")
+    for field, values in refs.items():
+        if len(values) > int(caps.get(field, 0)):
+            raise ProviderError("INVALID_INPUT", "Reference settings exceed model limits.")
+    try:
+        duration = int(incoming.get("duration", caps["duration"][0]))
+    except (TypeError, ValueError):
+        duration = caps["duration"][0]
+    if not caps["duration"][0] <= duration <= caps["duration"][1]:
+        raise ProviderError("INVALID_INPUT", "Duration is outside model limits.")
+    resolution = incoming.get("resolution") or caps["resolutions"][0]
+    if resolution not in caps["resolutions"]:
+        raise ProviderError("INVALID_INPUT", "Resolution is not supported by this model.")
+    body = {"prompt": prompt, "duration_seconds": duration, "resolution": resolution}
+    ratios = caps.get("aspect_ratios", ())
+    if ratios:
+        ratio = incoming.get("aspect_ratio") or ratios[0]
+        if ratio not in ratios:
+            raise ProviderError("INVALID_INPUT", "Aspect ratio is not supported by this model.")
+        body["aspect_ratio"] = ratio
+    for field, values in refs.items():
+        if values:
+            body[field] = values
+    if first_frame:
+        body["image"] = first_frame
+    if last_frame:
+        body["end_image"] = last_frame
+    if caps.get("generate_audio"):
+        body["generate_audio"] = bool(generate_audio)
+    return body
 
 IMAGE_MODELS = {
     ("flux2", "KLEIN"): "/images/flux-2-klein",

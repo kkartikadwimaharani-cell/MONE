@@ -62,7 +62,7 @@ class PreApiAuditTests(unittest.TestCase):
         for family, model, seconds in (('seedance25', 'STANDARD', 30), ('wan30', 'PRIME', 22)):
             video = self._capture_generation_body({'family': family, 'model': model,
                                                     'prompt': 'x', 'duration': seconds})
-            self.assertEqual(video['length_seconds'], seconds)
+            self.assertEqual(video['duration_seconds'], seconds)
             self.assertNotIn('duration', video)
 
     def test_budgetpixel_video_uses_filtered_prompt_and_preserves_original(self):
