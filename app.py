@@ -3989,7 +3989,10 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bi
                 saved_url = '/static/aivideo_uploads/' + name
                 app.logger.warning('[ai-generation][archive] task=%s save failed; using local preview: %s',
                                    task_id, archive_error)
-            archived.append({'url': saved_url})
+            mime_by_ext = {'png': 'image/png', 'jpg': 'image/jpeg', 'webp': 'image/webp',
+                           'gif': 'image/gif', 'mp4': 'video/mp4'}
+            archived.append({'url': saved_url, 'extension': ext,
+                             'mime': mime_by_ext.get(ext, 'application/octet-stream')})
         output_key = 'image_url' if output_type == 'image' else 'video_url'
         output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
                   'original_url': None, 'size_bytes': total_bytes,
@@ -3999,6 +4002,8 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bi
             output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
         if output_type == 'image':
             output['images'] = archived
+            output['extension'] = archived[0]['extension']
+            output['mime'] = archived[0]['mime']
         if archive_available:
             _diagnostic_update(task_id, 'archiving', result_save_status='SAVED', archive_status='READY', preview_status='READY')
             _set(status='completed', progress=100, output=output)
@@ -4059,7 +4064,8 @@ def ai_video_view():
             pass
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
-    return render_template('ai-video.html')
+    return render_template('ai-video.html',
+                           image_capabilities=budgetpixel_provider.public_image_capabilities())
 
 
 @app.route('/ai-video/lock-visit', methods=['POST'])
@@ -4194,6 +4200,46 @@ def aivideo_enhance():
         return jsonify({'error': 'Enhance gagal: ' + str(e)[:140]}), 502
 
 
+@app.route('/api/aivideo/image-capabilities')
+def aivideo_image_capabilities():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    return jsonify({'ok': True, 'capabilities': budgetpixel_provider.public_image_capabilities()})
+
+
+@app.route('/api/aivideo/credits')
+def aivideo_credits():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        data = budgetpixel_provider.get_credits(get_secret('BUDGETPIXEL_API_KEY'))
+        return jsonify({key: data.get(key) for key in ('total_available', 'monthly_remaining',
+                        'monthly_used', 'monthly_limit', 'extra_credits')})
+    except budgetpixel_provider.ProviderError as exc:
+        return jsonify({'error': {'code': exc.code, 'message': exc.public_message}}), 502
+
+
+@app.route('/api/aivideo/cost', methods=['POST'])
+def aivideo_cost():
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    incoming = request.get_json(silent=True) or {}
+    family = str(incoming.get('family', '')).lower()
+    variant = str(incoming.get('model') or 'STANDARD').upper()
+    try:
+        endpoint = budgetpixel_provider.resolve_image_model(family, variant)
+        refs = [u for u in (incoming.get('reference_images') or incoming.get('image_urls') or []) if u]
+        final_payload = budgetpixel_provider.build_image_payload(
+            family, variant, incoming, str(incoming.get('prompt') or ''), refs)
+        final_payload['model'] = endpoint.rsplit('/', 1)[-1]
+        result = budgetpixel_provider.estimate_cost(
+            final_payload, get_secret('BUDGETPIXEL_API_KEY'))
+        return jsonify(result)
+    except budgetpixel_provider.ProviderError as exc:
+        status = 422 if exc.code in ('INVALID_INPUT', 'MODEL_UNAVAILABLE') else 502
+        return jsonify({'error': {'code': exc.code, 'message': exc.public_message}}), status
+
+
 @app.route('/api/aivideo/generate', methods=['POST'])
 def aivideo_generate():
     if not _aivideo_authed():
@@ -4224,8 +4270,9 @@ def aivideo_generate():
         output_type = 'image' if family in budget_image_families else 'video'
         # References remain blocked for contracts that have not been verified.
         # Seedance 2.0 is handled below using its documented singular media fields.
-        image_reference_cap = (budgetpixel_provider.image_capabilities(family, model_key or 'STANDARD')
-                               .get('reference_images', 0) if output_type == 'image' else 0)
+        image_caps = (budgetpixel_provider.image_capabilities(family, model_key or 'STANDARD')
+                      if output_type == 'image' else {})
+        image_reference_cap = 1 if image_caps.get('singular_image') else image_caps.get('reference_images', 0)
         gpt_references = bool(output_type == 'image' and image_reference_cap and image_urls
                               and not (video_urls or audio_urls or first_frame_url or last_frame_url))
         seedance20_references = family == 'seedance'

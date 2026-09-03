@@ -131,8 +131,9 @@ class Seedance25ControlsTests(unittest.TestCase):
         wan_line = next(line for line in self.template.splitlines() if "key:'wan30'" in line)
         self.assertNotIn("aspectRatios", wan_line)
         self.assertEqual(budgetpixel_provider.image_capabilities("gptimage", "HIGH")["image_count"], (1, 4))
-        self.assertIn("modelSpecificSettings[previousFamilyKey]", self.template)
+        self.assertIn("modelSpecificSettings[previousStateKey]", self.template)
         self.assertIn("bitrate:selectedBitrate", self.template)
+        self.assertNotIn(".settings-row.image-settings{", self.template)
 
 
 if __name__ == "__main__":
