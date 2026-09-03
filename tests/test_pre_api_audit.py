@@ -52,7 +52,7 @@ class PreApiAuditTests(unittest.TestCase):
 
     def test_gpt_image_contract_and_video_length_field(self):
         body = self._capture_generation_body({'family': 'gptimage', 'model': 'HIGH', 'prompt': 'x',
-            'quality': 'ignored', 'resolution': '4K', 'num_images': 4, 'output_format': 'jpeg',
+            'quality': 'high', 'resolution': '4K', 'num_images': 4, 'output_format': 'jpeg',
             'aspect_ratio': '16:9', 'image_urls': ['https://cdn.example.com/r.png']})
         self.assertEqual(body, {'prompt': 'x', 'quality': 'high', 'resolution': '4K',
             'aspect_ratio': '16:9', 'num_images': 4, 'output_format': 'jpeg',

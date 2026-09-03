@@ -53,7 +53,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);max-width:100%}
 
 body{
   font-family:var(--body);color:var(--text);
-  height:100svh;display:flex;position:relative;
+  height:100dvh;display:flex;position:relative;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100vw;
 }
 button,input,textarea{font-family:inherit;color:inherit}
@@ -85,7 +85,7 @@ button{background:none;border:none;cursor:pointer}
 .sb-spacer{flex:1}
 
 /* ============ MAIN ============ */
-.main{flex:1;min-width:0;display:flex;flex-direction:column;height:100svh;position:relative}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;height:100dvh;position:relative}
 
 /* TOP BAR — hamburger · MII AI Video Beta · settings, all balanced & centered */
 .topbar{
@@ -526,6 +526,8 @@ input[type=file].hidden-input{display:none}
 .sheet-opt.selected .sheet-opt-check::after{content:"";position:absolute;left:2px;top:5px;width:9px;height:5px;border-left:2px solid var(--accent-hover);border-bottom:2px solid var(--accent-hover);transform:rotate(-45deg)}
 .sheet-opt-desc{font-size:.72rem;color:var(--text-faint);font-weight:500;letter-spacing:.02em;text-transform:uppercase;margin-top:2px}
 .sheet-opt-main{display:flex;flex-direction:column;gap:1px}
+.ratio-frame{width:30px;height:22px;max-height:28px;border:2px solid currentColor;border-radius:4px;opacity:.72;flex:0 0 auto}
+.sheet-opt.ratio-option{flex-direction:row;gap:12px;align-items:center}
 .model-sheet-featured{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .model-featured-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--border);background:var(--card2);transition:border-color .15s,background .15s}
 .model-featured-card:active{background:#232323}
@@ -551,7 +553,7 @@ input[type=file].hidden-input{display:none}
 .slot-plus::before{top:10px;left:0;right:0;height:2.5px}
 .slot-plus::after{left:10px;top:0;bottom:0;width:2.5px}
 .slot-tag{position:absolute;bottom:4px;left:4px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.7);font-family:var(--mono);font-size:.6rem;font-weight:700;color:var(--accent-hover)}
-.slot-remove{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;z-index:2}
+.slot-remove{position:absolute;top:0;right:0;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;z-index:2}
 .slot-remove::before,.slot-remove::after{content:"";position:absolute;width:9px;height:1.5px;background:#fff}
 .slot-remove::before{transform:rotate(45deg)}
 .slot-remove::after{transform:rotate(-45deg)}
@@ -1281,7 +1283,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 @media (min-width:1100px){
   :root{--rail:432px}
   .main{
-    display:grid;height:100svh;
+    display:grid;height:100dvh;
     grid-template-columns:minmax(0,1fr) var(--rail);
     grid-template-rows:auto auto minmax(0,1fr);
   }
@@ -1332,7 +1334,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   .model-dock{
     left:auto;right:calc(var(--rail) + 24px);bottom:24px;margin:0;
     width:min(660px,calc(100vw - var(--rail) - 64px));
-    max-height:min(580px,calc(100svh - 48px));
+    max-height:min(580px,calc(100dvh - 48px));
     transform-origin:bottom right;
   }
   .model-dock-grid{flex-direction:row;align-items:flex-start;gap:12px}
@@ -1386,8 +1388,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 /* Seedance 2.5 uses the established Seedance 2.0 chips. Flex sizing is the
    only model-specific adaptation needed to keep all five inside the card. */
 .settings-row.seedance25-settings{overflow-x:visible}
-.settings-row.image-settings{overflow-x:visible;flex-wrap:wrap}
-.settings-row.image-settings>.chip,.settings-row.image-settings>.qty-stepper,.settings-row.image-settings>.tier-seg{min-height:44px}
 .settings-row.seedance25-settings>.chip{flex:1 1 auto;min-width:0;justify-content:center;padding-inline:7px}
 .settings-row.seedance25-settings>.credit-chip{flex:1.2 1 auto}
 .settings-row.seedance25-settings .credit-chip-balance{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -1507,6 +1507,13 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .cr-tag{position:absolute;bottom:4px;left:4px;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.72);font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.06em;color:var(--accent-hover);pointer-events:none}
 .cr-x{position:absolute;top:3px;right:3px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:13px;line-height:1;cursor:pointer;z-index:2}
 .cr-x:active{transform:scale(.9)}
+
+@media(max-width:590px){
+  .canvas-result-actions,.result-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .settings-row{scroll-snap-type:x proximity;overscroll-behavior-inline:contain;}
+  .settings-row>.chip,.settings-row>.tier-seg{scroll-snap-align:start;min-height:44px;flex:0 0 auto;}
+  .sheet{max-width:calc(100vw - 16px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 16px);}
+}
 </style>
 </head>
 
@@ -1853,7 +1860,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
              ratio/resolution/duration — matches the reference's "Fast | Pro"
              segmented control placement exactly, instead of a chip that opens
              a separate sheet. -->
-        <div class="tier-seg" id="qualityChip" style="display:none"></div>
+        <div class="tier-seg" id="variantControl" style="display:none"></div>
         <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
         <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
         <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
@@ -1862,11 +1869,9 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
           <span id="muteAudioLabel">Audio On</span>
           <span class="chip-car" id="muteAudioCaret" style="display:none"></span>
         </div>
-        <div class="qty-stepper" id="imageCountControl">
-          <div class="qty-btn" onclick="changeQty(-1)">&minus;</div>
-          <div class="qty-val" id="qtyVal">1/4</div>
-          <div class="qty-btn" onclick="changeQty(1)">+</div>
-        </div>
+        <div class="chip" id="imageQualityControl" onclick="openSheet('imagequality',this)" style="display:none"><span>Quality</span><span id="imageQualityLabel">Medium</span><span class="chip-car"></span></div>
+        <div class="chip" id="imageCountControl" onclick="openSheet('imagecount',this)" style="display:none"><span>Images</span><span id="qtyVal">1</span><span class="chip-car"></span></div>
+        <div class="chip" id="imageAdvancedControl" onclick="openImageAdvanced(this)" style="display:none"><span>Advanced</span><span class="chip-car"></span></div>
       </div>
 
       <div class="action-row">
@@ -2336,21 +2341,10 @@ var modelFamilies = {
     },
   ],
   image: [
-    {
-      key:'flux2',brand:'FLUX',name:'FLUX 2',featured:true,desc:'Klein, Pro and Dev image generation.',
-      caps:{image:3,video:0,audio:0,frames:false,elements:true,ratio:true,resolution:true,resolutionSet:'image',duration:false,motion:false},
-      qualities:[
-        {id:'KLEIN',label:'KLEIN',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['0.5 MP','1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}},
-        {id:'PRO',label:'PRO',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}},
-        {id:'DEV',label:'DEV',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}}]
-    },
-    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:false,duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3'],supportsResolution:false,resolutions:[],supportsImageCount:true,minImages:1,maxImages:4},qualities:[{id:'STANDARD',label:'STANDARD'}]},
-    {
-      key:'seedream5',brand:'SEEDREAM',name:'SEEDREAM 5',featured:true,desc:'Lite and Pro image generation.',
-      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:true,resolutionSet:'image',duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','3:4','4:3','9:16','16:9'],supportsResolution:true,resolutions:['1K','2K'],supportsImageCount:true,minImages:1,maxImages:4},
-      qualities:[{id:'PRO',label:'PRO'},{id:'LITE',label:'LITE'}]
-    },
-    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:false,duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4'],supportsImageCount:true,minImages:1,maxImages:4},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI',caps:{image:10,elements:true,supportsReferenceImages:true,maxReferenceImages:10}}]},
+    {key:'flux2',brand:'FLUX',name:'FLUX 2',featured:true,desc:'Klein, Pro and Dev image generation.',caps:{},qualities:[{id:'KLEIN',label:'KLEIN'},{id:'PRO',label:'PRO'},{id:'DEV',label:'DEV'}]},
+    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{},qualities:[{id:'STANDARD',label:'STANDARD'}]},
+    {key:'seedream5',brand:'SEEDREAM',name:'SEEDREAM 5',featured:true,desc:'Lite and Pro image generation.',caps:{},qualities:[{id:'PRO',label:'PRO'},{id:'LITE',label:'LITE'}]},
+    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI'}]},
     {
       key: 'nanobanana', brand: 'GOOGLE', name: 'NANO BANANA PRO', featured: true,
       desc: "Google's highest quality image generation with up to 14 references.",
@@ -2361,16 +2355,7 @@ var modelFamilies = {
         { id: 'nano-banana-pro-ultra',    label: 'ULTRA' }
       ]
     },
-    {
-      key: 'gptimage', brand: 'OPENAI', name: 'GPT IMAGE 2', featured: true,
-      desc: "Image generation with independent quality and resolution controls.",
-      caps: { image: 9, video: 0, audio: 0, frames: false, elements: false, ratio: true, resolution: true, resolutionSet: 'image', duration: false, motion: false, supportsAspectRatio:true, aspectRatios:['1:1','4:3','3:4','5:4','4:5','16:9','9:16','3:2','2:3','21:9','9:21','2:1','1:2'], supportsResolution:true, resolutions:['1K','2K','4K'], supportsQuality:true, qualities:['low','medium','high'], supportsImageCount:true, minImages:1, maxImages:4, supportsReferenceImages:true, maxReferenceImages:9, supportsOutputFormat:true, formats:['png','jpeg'] },
-      qualities: [
-        { id: 'gpt-image-2-low',      label: 'LOW' },
-        { id: 'gpt-image-2-standard', label: 'STANDARD' },
-        { id: 'gpt-image-2-high',     label: 'HIGH' }
-      ]
-    },
+    {key:'gptimage',brand:'OPENAI',name:'GPT IMAGE 2',featured:true,desc:'Image generation with independent quality and resolution controls.',caps:{},qualities:[{id:'LOW',label:'LOW'},{id:'STANDARD',label:'STANDARD'},{id:'HIGH',label:'HIGH'}]},
     {
       key: 'seedream', brand: 'SEEDREAM', name: 'SEEDREAM 5.0 PRO', featured: true,
       desc: 'Region-precise, grounded image editing with multilingual text rendering — up to 10 reference images.',
@@ -2438,6 +2423,16 @@ var selectedModelName = selectedFamily.name;
 var selectedModelTier = selectedFamily.qualities.length ? selectedFamily.qualities[0].label : null;
 var selectedRatio = '16:9';
 var selectedResolution = '720p';
+var selectedImageSize = '';
+var selectedImageMegapixel = '';
+var selectedImageResolution = '';
+var selectedImageQuality = '';
+var selectedImageCount = 1;
+var selectedImageSeed = '';
+var selectedNegativePrompt = '';
+var selectedSequentialMode = 'disabled';
+var selectedMaxImages = 1;
+var IMAGE_CAPABILITIES = {{ image_capabilities|tojson }};
 var selectedDuration = 5;
 var selectedMotion = 'Dynamic';
 // Motion Control (Kling Swap) — set once a reference video has been
@@ -2455,6 +2450,30 @@ var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
 var qty = 1;
 var maxQty = 4;
 var mentionAutoTriggered = false;
+
+function captureTierState() {
+  return {ratio:selectedRatio, resolution:selectedResolution, duration:selectedDuration,
+    muteAudio:muteAudioEnabled, bitrate:selectedBitrate, aspectRatio:selectedRatio,
+    size:selectedImageSize, megapixel:selectedImageMegapixel,
+    imageResolution:selectedImageResolution, imageQuality:selectedImageQuality,
+    imageCount:selectedImageCount, outputFormat:selectedImageFormat, seed:selectedImageSeed,
+    negativePrompt:selectedNegativePrompt, sequentialMode:selectedSequentialMode,
+    maxImages:selectedMaxImages, references:(media.image || []).slice()};
+}
+function restoreTierState(saved) {
+  selectedRatio = saved.aspectRatio || saved.ratio || '1:1';
+  selectedImageSize = saved.size || '';
+  selectedImageMegapixel = saved.megapixel || '';
+  selectedImageResolution = saved.imageResolution || '';
+  selectedImageQuality = saved.imageQuality || '';
+  selectedImageCount = saved.imageCount || 1;
+  selectedImageFormat = saved.outputFormat || 'PNG';
+  selectedImageSeed = saved.seed == null ? '' : saved.seed;
+  selectedNegativePrompt = saved.negativePrompt || '';
+  selectedSequentialMode = saved.sequentialMode || 'disabled';
+  selectedMaxImages = saved.maxImages || 1;
+  media.image = (saved.references || []).slice();
+}
 
 // ══════════ BUILDER 3-STATE PANEL (collapsed / half / expanded) — swipe or tap the handle ══════════
 var panelStates = ['collapsed', 'half', 'expanded'];
@@ -2504,41 +2523,39 @@ function updateCollapsedBar(modelTxt, progressTxt) {
 }
 
 // ══════════ CREDITS (estimate + remaining balance) ══════════
-var creditBaseByTier = { MINI: 25, FAST: 45, PRO: 90, STANDARD: 20, HIGH: 35 };
-var creditByResolution = { '480p': 1, '720p': 1.4, '1080p': 2, '4K': 3.2 };
-var creditBalance = null; // null = unknown / not fetched yet
-function estimateCredits() {
-  var base = creditBaseByTier[selectedModelTier] || 25;
-  var resMult = creditByResolution[selectedResolution] || 1;
-  var durMult = selectedDuration / 5;
-  var cost = Math.round(base * resMult * durMult * qty);
-  return Math.max(cost, 1);
-}
-function formatBalance(v) {
-  if (v == null) return '— CREDITS';
-  return v.toLocaleString() + ' CREDITS';
+var creditBalance = null;
+var creditEstimate = null;
+var creditEstimateTimer = null;
+function estimateCredits() { return creditEstimate; }
+function formatBalance(v) { return v == null ? '— CREDITS' : Number(v).toLocaleString() + ' CREDITS'; }
+function currentCostPayload() {
+  var body={family:selectedFamily.key,model:selectedModelTier,prompt:promptInput ? promptInput.value.trim() : '',aspect_ratio:selectedRatio};
+  if(activeMode==='image'){
+    var caps=resolveEffectiveCapabilities(selectedFamily,selectedQualityIdx);
+    body.image_urls=media.image.map(function(m){return m.url;}).filter(Boolean); body.num_images=selectedImageCount;
+    if(caps.supportsMegapixel) body.megapixel=Number(selectedImageMegapixel);
+    if(caps.supportsSize) body.size=selectedImageSize;
+    if(caps.supportsResolution) body.resolution=selectedImageResolution;
+    if(caps.supportsQuality) body.quality=({LOW:'low',STANDARD:'medium',HIGH:'high'}[selectedModelTier]||selectedImageQuality);
+    if(caps.supportsOutputFormat) body.output_format=selectedImageFormat.toLowerCase();
+  }
+  return body;
 }
 function updateCreditEstimate() {
-  var costEl = document.getElementById('creditCostTxt');
-  var balEl = document.getElementById('creditBalanceTxt');
-  if (costEl) {
-    costEl.textContent = '— CREDITS';
-    costEl.classList.remove('free');
-  }
-  if (balEl) balEl.textContent = formatBalance(creditBalance);
+  clearTimeout(creditEstimateTimer);
+  var costEl=document.getElementById('creditCostTxt'), balEl=document.getElementById('creditBalanceTxt');
+  if(costEl) costEl.textContent='ESTIMATING…'; if(balEl) balEl.textContent=formatBalance(creditBalance);
+  if(activeMode!=='image'){ if(costEl) costEl.textContent='ESTIMATE UNAVAILABLE'; return; }
+  creditEstimateTimer=setTimeout(function(){ fetchWithTimeout('/api/aivideo/cost',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentCostPayload())},15000)
+    .then(function(r){if(!r.ok) throw new Error('cost');return r.json();}).then(function(data){
+      var amount=data.cost != null ? data.cost : (data.credits != null ? data.credits : data.total);
+      creditEstimate=Number(amount); if(!Number.isFinite(creditEstimate)) throw new Error('cost');
+      if(costEl) costEl.textContent=(data.exact===false?'UP TO ':'')+creditEstimate+' CREDITS';
+    }).catch(function(){creditEstimate=null;if(costEl) costEl.textContent='ESTIMATE UNAVAILABLE';}); },350);
 }
-function fetchCreditBalance() {
-  fetch('/api/aivideo/credits')
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if (!data) return;
-      var v = (typeof data.balance === 'number') ? data.balance
-            : (typeof data.credits === 'number') ? data.credits
-            : (typeof data.remaining === 'number') ? data.remaining : null;
-      if (v != null) { creditBalance = v; updateCreditEstimate(); }
-    })
-    .catch(function(){});
-}
+function fetchCreditBalance() { fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
+  if(data && typeof data.total_available==='number'){creditBalance=data.total_available;updateCreditEstimate();}
+}).catch(function(){}); }
 
 // ══════════ SIDEBAR ══════════
 function toggleSidebar(open) {
@@ -2557,7 +2574,7 @@ var PAGE_DEFS = {
   profile:     { el: 'pageProfile',     title: 'Profile' }
 };
 function renderCreditsPage() {
-  var cost = estimateCredits();
+  var cost = estimateCredits() || 0;
   var afterTxt = (creditBalance != null) ? Math.max(0, creditBalance - cost).toLocaleString() : '—';
   var b = document.getElementById('creditsBalanceVal'); if (b) b.textContent = formatBalance(creditBalance);
   var c = document.getElementById('creditsEstCostVal'); if (c) c.textContent = '−' + cost;
@@ -2592,7 +2609,7 @@ function openAccountSheet() {
   closeModelDock();
   document.getElementById('sheetTitle').textContent = 'Account';
   var list = document.getElementById('sheetList');
-  var cost = estimateCredits();
+  var cost = estimateCredits() || 0;
   var afterTxt = (creditBalance != null) ? Math.max(0, creditBalance - cost).toLocaleString() : '—';
   list.innerHTML =
     '<div class="account-credit-card">' +
@@ -2787,7 +2804,16 @@ var sheetDefs = {
     disabled: ['4K'],
     desc: function(v){ return resDesc[v]; },
     get: function(){ return selectedResolution; },
-    set: function(v){ selectedResolution = v; document.getElementById('resolutionLabel').textContent = v; applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); persistCanonicalModelState(); }
+    set: function(v){
+      if (activeMode === 'image') {
+        var c = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
+        if (c.supportsMegapixel) selectedImageMegapixel = v;
+        else if (c.supportsSize) selectedImageSize = v;
+        else selectedImageResolution = v;
+      } else selectedResolution = v;
+      document.getElementById('resolutionLabel').textContent = v;
+      applyModelCapabilities(); updateCreditEstimate(); renderSeedance25Settings(); persistCanonicalModelState();
+    }
   },
   audio: {
     title: 'Audio',
@@ -2800,6 +2826,17 @@ var sheetDefs = {
     desc: function(v){ return v === 'PNG' ? 'Lossless image' : 'Smaller file'; },
     get: function(){ return selectedImageFormat; },
     set: function(v){ selectedImageFormat=v; document.getElementById('imageFormatLabel').textContent=v; }
+  },
+  imagecount: {
+    title:'Image Count', options:['1','2','3','4'],
+    desc:function(v){ return v + (v === '1' ? ' Image' : ' Images'); },
+    get:function(){ return String(selectedImageCount); },
+    set:function(v){ selectedImageCount=parseInt(v,10); qty=selectedImageCount; document.getElementById('qtyVal').textContent=v; persistCanonicalModelState(); updateCreditEstimate(); }
+  },
+  imagequality: {
+    title:'Quality', options:['low','medium','high'],
+    get:function(){ return selectedImageQuality; },
+    set:function(v){ selectedImageQuality=v; document.getElementById('imageQualityLabel').textContent=v; persistCanonicalModelState(); }
   },
   duration: {
     title: 'Duration',
@@ -2911,7 +2948,9 @@ function openSheet(key, anchorEl) {
       row.style.animation = 'sheetRowIn .2s var(--ease-out-soft) both';
       row.style.animationDelay = (i * 12) + 'ms';
       var descTxt = def.desc ? def.desc(opt) : '';
-      row.innerHTML = '<div class="sheet-opt-main"><span>' + opt + '</span>' +
+      if (key === 'ratio') row.classList.add('ratio-option');
+      var ratioShape = key === 'ratio' ? '<span class="ratio-frame" style="aspect-ratio:' + String(opt).replace(':','/') + ';width:auto;height:24px"></span>' : '';
+      row.innerHTML = ratioShape + '<div class="sheet-opt-main"><span>' + (opt === 'match_input_image' ? 'Match Reference' : opt) + '</span>' +
         (descTxt ? '<span class="sheet-opt-desc">' + descTxt + '</span>' : '') +
         '</div><span class="sheet-opt-check"></span>';
       row.onclick = function() {
@@ -2991,6 +3030,29 @@ function closeSheet() {
   setModelSelectOpen(false);
 }
 
+function openImageAdvanced() {
+  var caps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
+  document.getElementById('sheetTitle').textContent = 'Advanced';
+  var list = document.getElementById('sheetList');
+  list.innerHTML = '';
+  if (caps.seed) list.innerHTML += '<label class="sheet-opt"><span>Seed</span><input id="advancedSeed" type="number" step="1" value="' + escapeHtml(String(selectedImageSeed)) + '"><span><button type="button" onclick="randomImageSeed()">Random</button><button type="button" onclick="clearImageSeed()">Clear</button></span></label>';
+  if (caps.negativePrompt) list.innerHTML += '<label class="sheet-opt"><span>Negative Prompt</span><textarea id="advancedNegativePrompt">' + escapeHtml(selectedNegativePrompt) + '</textarea>' + (caps.singularImage && media.image.length ? '<small>Provider ignores this when a source image is used.</small>' : '') + '</label>';
+  if (caps.sequentialModes && caps.sequentialModes.length) list.innerHTML += '<label class="sheet-opt"><span>Sequential Generation</span><select id="advancedSequential"><option value="disabled">Disabled</option><option value="auto">Auto</option></select></label><label class="sheet-opt" id="advancedMaxWrap"><span>Max Images</span><input id="advancedMaxImages" type="number" min="1" max="14" value="' + selectedMaxImages + '"></label>';
+  list.innerHTML += '<button class="sheet-opt selected" type="button" onclick="saveImageAdvanced()">Save settings</button>';
+  var seq = document.getElementById('advancedSequential'); if (seq) { seq.value=selectedSequentialMode; seq.onchange=function(){ document.getElementById('advancedMaxWrap').style.display=this.value==='auto'?'':'none'; }; seq.onchange(); }
+  document.getElementById('sheetOverlay').classList.add('show'); document.getElementById('sheet').classList.add('show');
+}
+function randomImageSeed(){ var el=document.getElementById('advancedSeed'); if(el) el.value=String(Math.floor(Math.random()*2147483647)); }
+function clearImageSeed(){ var el=document.getElementById('advancedSeed'); if(el) el.value=''; }
+function saveImageAdvanced(){
+  var seed=document.getElementById('advancedSeed'); if(seed && seed.value && !/^-?\d+$/.test(seed.value)){ showError('Seed must be an integer.'); return; }
+  selectedImageSeed=seed?seed.value:'';
+  var neg=document.getElementById('advancedNegativePrompt'); selectedNegativePrompt=neg?neg.value:'';
+  var seq=document.getElementById('advancedSequential'); selectedSequentialMode=seq?seq.value:'disabled';
+  var max=document.getElementById('advancedMaxImages'); selectedMaxImages=max?parseInt(max.value,10)||1:1;
+  persistCanonicalModelState(); closeSheet(); updateCreditEstimate();
+}
+
 
 // ══════════ MODEL SHEET (categorized: Image models / Video models) ══════════
 // The generator card only ever shows the clean family name (e.g. SEEDANCE 2.0),
@@ -3002,7 +3064,7 @@ function applyQualityBadge() {
   if (tierEl) tierEl.style.display = 'none';
 }
 function renderQualityChip() {
-  var chip = document.getElementById('qualityChip');
+  var chip = document.getElementById('variantControl');
   if (!chip) return;
   // Every model with more than one quality tier gets the inline segmented
   // toggle (one tap per option). Motion Control (klingswap) genuinely has
@@ -3033,11 +3095,24 @@ function renderQualityChip() {
 function applySelectedFamily(family, qualityIdx, options) {
   options = options || {};
   if (!family || (modelFamilies[activeMode] || []).indexOf(family) === -1) return false;
+  if (activeMode === 'image' && family.qualities && family.qualities.length) {
+    var targetVariant = family.qualities[qualityIdx >= 0 ? qualityIdx : 0].label;
+    var targetCaps = IMAGE_CAPABILITIES[family.key + ':' + targetVariant];
+    if (targetCaps) {
+      var targetLimit = targetCaps.singular_image ? 1 : (targetCaps.reference_images || 0);
+      if (media.image.length > targetLimit) {
+        var message = targetLimit ? ('Tier ini hanya mendukung ' + targetLimit + ' reference. Remove extras?') : 'Tier ini tidak mendukung reference. Remove references?';
+        if (!window.confirm(message)) return false;
+        media.image.splice(targetLimit);
+        if (selectedRatio === 'match_input_image' && !media.image.length) {
+          selectedRatio = '1:1'; showToast('Aspect ratio changed to 1:1 because the reference was removed.');
+        }
+      }
+    }
+  }
   var previousFamilyKey = selectedFamily && selectedFamily.key;
-  if (previousFamilyKey) modelSpecificSettings[previousFamilyKey] = {
-    ratio:selectedRatio, resolution:selectedResolution, duration:selectedDuration,
-    muteAudio:muteAudioEnabled, bitrate:selectedBitrate
-  };
+  var previousStateKey = selectedFamily ? activeMode + ':' + selectedFamily.key + ':' + (selectedModelTier || selectedModel) : '';
+  if (previousStateKey) modelSpecificSettings[previousStateKey] = captureTierState();
   var variants = family.qualities || [];
   qualityIdx = Number.isInteger(qualityIdx) && qualityIdx >= 0 && qualityIdx < variants.length ? qualityIdx : 0;
   selectedFamily = family;
@@ -3065,8 +3140,9 @@ function applySelectedFamily(family, qualityIdx, options) {
     selectedResolution = '720p';
     muteAudioEnabled = false;
   }
-  var familySaved = modelSpecificSettings[family.key];
-  if (familySaved && previousFamilyKey !== family.key) options.saved = familySaved;
+  var tierStateKey = activeMode + ':' + family.key + ':' + (selectedModelTier || selectedModel);
+  var familySaved = modelSpecificSettings[tierStateKey];
+  if (familySaved) options.saved = familySaved;
   if (q && isSeedanceFamily(family.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
   }
@@ -3076,6 +3152,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     if (Number.isFinite(options.saved.duration)) selectedDuration = options.saved.duration;
     if (typeof options.saved.muteAudio === 'boolean') muteAudioEnabled = options.saved.muteAudio;
     if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate;
+    if (activeMode === 'image') restoreTierState(options.saved);
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
   updateCollapsedBar(family.name);
@@ -3134,6 +3211,29 @@ function persistCanonicalModelState() {
 }
 
 function resolveEffectiveCapabilities(family, variantIndex) {
+  if (activeMode === 'image' && family && family.qualities && family.qualities[variantIndex]) {
+    var variantName = family.qualities[variantIndex].label;
+    var providerCaps = IMAGE_CAPABILITIES[family.key + ':' + variantName];
+    if (providerCaps) {
+      return {
+        image: providerCaps.singular_image ? 1 : (providerCaps.reference_images || 0),
+        video:0, audio:0, frames:false, elements:!!(providerCaps.singular_image || providerCaps.reference_images),
+        supportsAspectRatio:!!providerCaps.aspect_ratios, aspectRatios:providerCaps.aspect_ratios || [],
+        defaultAspectRatio:providerCaps.default_aspect_ratio || '1:1',
+        supportsResolution:!!providerCaps.resolutions, resolutions:providerCaps.resolutions || [],
+        supportsSize:!!providerCaps.sizes, sizes:providerCaps.sizes || [],
+        supportsMegapixel:!!providerCaps.megapixels, megapixels:providerCaps.megapixels || [],
+        supportsQuality:!!providerCaps.qualities, qualities:providerCaps.qualities || [],
+        supportsImageCount:!!providerCaps.image_count,
+        minImages:providerCaps.image_count ? providerCaps.image_count[0] : 1,
+        maxImages:providerCaps.image_count ? providerCaps.image_count[1] : 1,
+        supportsOutputFormat:!!providerCaps.formats, formats:providerCaps.formats || [],
+        seed:!!providerCaps.seed, negativePrompt:!!providerCaps.negative_prompt,
+        sequentialModes:providerCaps.sequential_modes || [], maxImagesRange:providerCaps.max_images || [],
+        singularImage:!!providerCaps.singular_image
+      };
+    }
+  }
   var familyCaps = (family && family.caps) || {};
   var variant = family && family.qualities && family.qualities[variantIndex];
   return variant && variant.caps ? Object.assign({}, familyCaps, variant.caps) : Object.assign({}, familyCaps);
@@ -3188,9 +3288,6 @@ function applyModelCapabilities() {
   // Enforce per-model reference limits
   maxCounts.image = caps.image || 0;
   maxCounts.video = caps.video || 0;
-  if (media.image.length > maxCounts.image) media.image = media.image.slice(0, maxCounts.image);
-  if (media.video.length > maxCounts.video) media.video = media.video.slice(0, maxCounts.video);
-  if (media.audio && media.audio.length > (caps.audio||0)) media.audio = media.audio.slice(0, caps.audio||0);
 
   // Grup referensi (label + kartu tambah + thumbnail) ikut kapabilitas model
   var grpImage = document.getElementById('refGroupImage');
@@ -3251,20 +3348,32 @@ function applyModelCapabilities() {
   var bitrateChip = document.getElementById('bitrateChip');
   var imageFormatChip = document.getElementById('imageFormatChip');
   var imageCountControl = document.getElementById('imageCountControl');
+  var imageQualityControl = document.getElementById('imageQualityControl');
+  var imageAdvancedControl = document.getElementById('imageAdvancedControl');
   var settingsRow = document.querySelector('.settings-row');
   var isSeedance25Video = activeMode === 'video' && selectedFamily && selectedFamily.key === 'seedance25';
   if (settingsRow) {
     settingsRow.classList.toggle('seedance25-settings', isSeedance25Video);
-    settingsRow.classList.toggle('image-settings', activeMode === 'image');
+    // Image intentionally shares Video's horizontally scrolling settings row.
   }
   if (ratioChip)  ratioChip.style.display  = caps.ratio ? '' : 'none';
-  if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
+  var imageDetailSupported = activeMode === 'image' && (rawCaps.supportsSize || rawCaps.supportsMegapixel || rawCaps.supportsResolution);
+  if (resChip) resChip.style.display = (caps.resolution || imageDetailSupported) ? '' : 'none';
+  if (activeMode === 'image' && resChip) {
+    var detailTitle = rawCaps.supportsMegapixel ? 'MP' : (rawCaps.supportsSize ? 'Size' : 'Resolution');
+    var detailValue = rawCaps.supportsMegapixel ? selectedImageMegapixel : (rawCaps.supportsSize ? selectedImageSize : selectedImageResolution);
+    resChip.setAttribute('data-label', detailTitle);
+    document.getElementById('resolutionLabel').textContent = detailTitle + ' · ' + detailValue;
+  }
   if (imageFormatChip) imageFormatChip.style.display = rawCaps.supportsOutputFormat ? '' : 'none';
   if (imageCountControl) imageCountControl.style.display = rawCaps.supportsImageCount ? '' : 'none';
+  if (imageQualityControl) imageQualityControl.style.display = (rawCaps.supportsQuality && selectedFamily.key !== 'gptimage') ? '' : 'none';
+  if (imageAdvancedControl) imageAdvancedControl.style.display = (rawCaps.seed || rawCaps.negativePrompt || (rawCaps.sequentialModes || []).length) ? '' : 'none';
   maxQty = rawCaps.supportsImageCount ? (rawCaps.maxImages || 1) : 1;
-  qty = Math.max(rawCaps.minImages || 1, Math.min(maxQty, qty));
+  qty = Math.max(rawCaps.minImages || 1, Math.min(maxQty, activeMode === 'image' ? selectedImageCount : qty));
+  if (activeMode === 'image') selectedImageCount = qty;
   var qtyValEl = document.getElementById('qtyVal');
-  if (qtyValEl) qtyValEl.textContent = qty + '/' + maxQty;
+  if (qtyValEl) qtyValEl.textContent = String(qty);
   if (durChip)    durChip.style.display    = caps.duration   ? '' : 'none';
   if (durChip) durChip.classList.toggle('unavailable', !!caps.durationUnknown);
   var durationSlider = document.getElementById('durationSlider');
@@ -3367,7 +3476,21 @@ function applyModelCapabilities() {
   // Seedance 2.0 (video): PRO supports the full 480p/720p/1080p/4K range per
   // generation service's API (4k = 3840x2160). MINI and FAST are capped at 720p.
   if (sheetDefs && sheetDefs.resolution) {
-    if (caps.resolutionOptions) {
+    if (activeMode === 'image' && rawCaps.supportsMegapixel) {
+      sheetDefs.resolution.title = 'Megapixel';
+      sheetDefs.resolution.options = rawCaps.megapixels.map(String);
+      sheetDefs.resolution.disabled = [];
+      if (sheetDefs.resolution.options.indexOf(String(selectedImageMegapixel)) < 0) selectedImageMegapixel = sheetDefs.resolution.options[0];
+    } else if (activeMode === 'image' && rawCaps.supportsSize) {
+      sheetDefs.resolution.title = 'Size';
+      sheetDefs.resolution.options = rawCaps.sizes.slice(); sheetDefs.resolution.disabled = [];
+      if (sheetDefs.resolution.options.indexOf(selectedImageSize) < 0) selectedImageSize = sheetDefs.resolution.options[0];
+    } else if (activeMode === 'image' && rawCaps.supportsResolution) {
+      sheetDefs.resolution.title = 'Resolution';
+      sheetDefs.resolution.options = rawCaps.resolutions.slice(); sheetDefs.resolution.disabled = [];
+      if (sheetDefs.resolution.options.indexOf(selectedImageResolution) < 0) selectedImageResolution = sheetDefs.resolution.options[0];
+    } else if (caps.resolutionOptions) {
+      sheetDefs.resolution.title = 'Resolution';
       sheetDefs.resolution.options = caps.resolutionOptions.slice();
       sheetDefs.resolution.disabled = [];
     } else if (caps.resolutionSet === 'image') {
@@ -3387,11 +3510,16 @@ function applyModelCapabilities() {
     // Snap current selection to a valid, enabled option
     var resLabelEl = document.getElementById('resolutionLabel');
     var opts = sheetDefs.resolution.options.filter(function(o){ return sheetDefs.resolution.disabled.indexOf(o) === -1; });
-    if (resLabelEl && opts.indexOf(selectedResolution) === -1) {
+    if (activeMode === 'image' && resLabelEl) {
+      var kind = rawCaps.supportsMegapixel ? 'MP' : (rawCaps.supportsSize ? 'Size' : 'Resolution');
+      var value = rawCaps.supportsMegapixel ? selectedImageMegapixel : (rawCaps.supportsSize ? selectedImageSize : selectedImageResolution);
+      resLabelEl.textContent = kind + ' · ' + value;
+    } else if (resLabelEl && opts.indexOf(selectedResolution) === -1) {
       selectedResolution = opts[opts.length - 1] || opts[0];
       resLabelEl.textContent = selectedResolution;
     }
   }
+  if (sheetDefs.imagecount) sheetDefs.imagecount.options = Array.from({length:maxQty}, function(_, i){ return String(i + 1); });
 
   // Refresh count badges to reflect new max
   if (typeof updateCardPreview === 'function') {
@@ -3705,7 +3833,7 @@ function showCanvasResultUI(payload) {
   var dlBtn = document.getElementById('canvasDownloadBtn');
   if (dlBtn) {
     dlBtn.setAttribute('data-url', mediaUrl);
-    dlBtn.setAttribute('data-filename', 'mii-ai-video-' + Date.now() + (isImg ? '.png' : '.mp4'));
+    dlBtn.setAttribute('data-filename', 'mii-ai-video-' + Date.now() + (isImg ? imageDownloadExtension(payload, mediaUrl) : '.mp4'));
   }
 
   var boxEl = document.getElementById('canvasResultBox');
@@ -3713,6 +3841,13 @@ function showCanvasResultUI(payload) {
   var wrapEl = document.getElementById('canvasResultWrap');
   if (wrapEl) wrapEl.classList.add('has-result');
   window.__lastResultPayload = payload;
+}
+function imageDownloadExtension(meta, url) {
+  var mime = String((meta && (meta.mime || meta.MIME)) || '').toLowerCase();
+  if (mime === 'image/jpeg') return '.jpg'; if (mime === 'image/webp') return '.webp';
+  if (mime === 'image/gif') return '.gif'; if (mime === 'image/png') return '.png';
+  var match = String(url || '').split(/[?#]/)[0].match(/\.(png|jpe?g|webp|gif)$/i);
+  return match ? (match[1].toLowerCase() === 'jpeg' ? '.jpg' : '.' + match[1].toLowerCase()) : '.png';
 }
 function hideCanvasResultUI() {
   var boxEl = document.getElementById('canvasResultBox');
@@ -4862,18 +4997,19 @@ function startGenerate() {
     var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
     delete body.duration; delete body.video_urls; delete body.audio_urls;
     delete body.first_frame_url; delete body.last_frame_url;
-    if (!imageCaps.supportsResolution) delete body.resolution;
-    if (imageCaps.resolutionKind === 'megapixel') {
-      body.megapixel = Number(String(selectedResolution).replace(/\s*MP$/i, ''));
-      delete body.resolution;
-    }
-    if (imageCaps.supportsImageCount) body.num_images = qty;
+    delete body.resolution;
+    if (imageCaps.supportsMegapixel) body.megapixel = Number(selectedImageMegapixel);
+    if (imageCaps.supportsSize) body.size = selectedImageSize;
+    if (imageCaps.supportsResolution) body.resolution = selectedImageResolution;
+    if (imageCaps.supportsQuality) body.quality = selectedFamily.key === 'gptimage'
+      ? ({LOW:'low',STANDARD:'medium',HIGH:'high'}[selectedModelTier] || selectedImageQuality) : selectedImageQuality;
+    if (imageCaps.supportsImageCount) body.num_images = selectedImageCount;
     if (imageCaps.supportsOutputFormat) body.output_format = selectedImageFormat.toLowerCase();
-    // GPT Image 2's provider contract calls this reference_images.  Keep
-    // image_urls only for older adapters whose schemas explicitly use it.
-    if (selectedFamily.key === 'gptimage') {
-      body.reference_images = body.image_urls;
-      delete body.image_urls;
+    if (selectedImageSeed !== '') body.seed = Number(selectedImageSeed);
+    if (imageCaps.negativePrompt && !(imageCaps.singularImage && body.image_urls.length)) body.negative_prompt = selectedNegativePrompt;
+    if (imageCaps.sequentialModes && imageCaps.sequentialModes.length) {
+      body.sequential_image_generation = selectedSequentialMode;
+      if (selectedSequentialMode === 'auto') body.max_images = selectedMaxImages;
     }
   }
   // Seedance 2.0 retains its verified provider option. Seedance 2.5 sends an
@@ -5364,7 +5500,7 @@ function openResultOverlay(payload) {
 
   var dlBtnFull = document.getElementById('downloadBtnFull');
   dlBtnFull.setAttribute('data-url', mediaUrl);
-  dlBtnFull.setAttribute('data-filename', 'mii-ai-' + Date.now() + (isAudio ? '.wav' : (isImage ? '.png' : '.mp4')));
+  dlBtnFull.setAttribute('data-filename', 'mii-ai-' + Date.now() + (isAudio ? '.wav' : (isImage ? imageDownloadExtension(rec || payload, mediaUrl) : '.mp4')));
 
   document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
 
@@ -5820,11 +5956,22 @@ function saveGenerationToHistory(res, meta) {
       thumb: meta.thumbSeed || res.imageUrl || '',
       prompt: (meta.prompt || '').trim(),
       model: meta.fullModelLabel || meta.modelDisplayName || '',
-      quality: meta.resolution || '',
+      variant: meta.model || '',
+      providerQuality: meta.quality || '',
+      quality: meta.quality || '',
+      aspectRatio: meta.aspect_ratio || '',
+      megapixel: meta.megapixel || '',
+      size: meta.size || '',
       resolution: meta.resolution || '',
       imageQuality: meta.family === 'gptimage' ? ({LOW:'low',STANDARD:'medium',HIGH:'high'}[meta.model] || '') : '',
       imageCount: meta.num_images || 1,
       outputFormat: meta.output_format || '',
+      seed: meta.seed == null ? '' : meta.seed,
+      negativePrompt: meta.negative_prompt || '',
+      sequentialMode: meta.sequential_image_generation || '',
+      maxImages: meta.max_images || '',
+      providerJobId: res.providerJobId || '',
+      mime: res.mime || '', extension: res.extension || '', width: res.width || 0, height: res.height || 0,
       status: 'COMPLETED',
       duration: (meta.activeMode === 'image' || meta.activeMode === 'audio') ? '' : ((meta.duration || '') + 's'),
       ratio: meta.aspect_ratio || '',
@@ -5855,7 +6002,12 @@ function saveGenerationToHistory(res, meta) {
       thumb: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || res.imageUrl || '',
       prompt: promptInput.value.trim(),
       model: fullModelLabel,
-      quality: selectedResolution,
+      variant: selectedModelTier || '',
+      providerQuality: selectedImageQuality || '',
+      quality: activeMode === 'image' ? selectedImageQuality : selectedResolution,
+      aspectRatio: selectedRatio,
+      megapixel: selectedImageMegapixel,
+      size: selectedImageSize,
       resolution: selectedResolution,
       imageQuality: selectedFamily.key === 'gptimage' ? ({LOW:'low',STANDARD:'medium',HIGH:'high'}[selectedModelTier] || '') : '',
       imageCount: qty,
@@ -6056,7 +6208,7 @@ function downloadHistoryItem(id) {
   var a = document.createElement('a');
   a.href = r.videoUrl || r.imageUrl || r.audioUrl;
   if (!a.href) { showError('File tidak tersedia untuk diunduh'); return; }
-  a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+  a.download = 'mii-ai-' + Date.now() + (r.imageUrl ? imageDownloadExtension(r, r.imageUrl) : (r.audioUrl ? '.wav' : '.mp4')); document.body.appendChild(a); a.click(); a.remove();
 }
 function restoreFromRecord(r) {
   // Restore model + quality
@@ -6064,7 +6216,15 @@ function restoreFromRecord(r) {
   var fam = families.find(function(f) { return f.key === r.modelKey; }) || selectedFamily;
   var qIdx = fam.qualities.findIndex(function(q) { return q.label === r.modelTier; });
   pickFamily(fam, qIdx > -1 ? qIdx : 0);
-  selectedResolution = r.quality || selectedResolution;
+  if (recordMediaType(r) === 'image') {
+    selectedImageMegapixel = r.megapixel == null ? selectedImageMegapixel : String(r.megapixel);
+    selectedImageSize = r.size || selectedImageSize;
+    selectedImageResolution = r.resolution || selectedImageResolution;
+    selectedImageQuality = r.providerQuality || r.imageQuality || selectedImageQuality;
+    selectedImageSeed = r.seed == null ? '' : r.seed;
+    selectedNegativePrompt = r.negativePrompt || '';
+    selectedSequentialMode = r.sequentialMode || 'disabled'; selectedMaxImages = r.maxImages || 1;
+  } else selectedResolution = r.resolution || r.quality || selectedResolution;
   var resLabelEl = document.getElementById('resolutionLabel');
   if (resLabelEl) resLabelEl.textContent = selectedResolution;
   selectedRatio = r.ratio || selectedRatio;
@@ -6230,6 +6390,12 @@ function closeImagePreview() {
 var bootModelState = resolveCanonicalModelState(activeMode);
 applySelectedFamily(bootModelState.family, bootModelState.qualityIdx,
   { initialize: true, saved: bootModelState.saved });
+// Refresh from the authenticated metadata endpoint. The server-rendered value
+// above is generated from that exact same Python registry and is the offline
+// fallback, not a second manually maintained contract.
+fetch('/api/aivideo/image-capabilities').then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+  if (data && data.capabilities) { IMAGE_CAPABILITIES = data.capabilities; if (activeMode === 'image') applyModelCapabilities(); }
+}).catch(function(){});
 updateCardPreview('image');
 updateCardPreview('video');
 updateCardPreview('audio');

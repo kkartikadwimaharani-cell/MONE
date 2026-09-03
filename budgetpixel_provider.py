@@ -62,22 +62,26 @@ IMAGE_CAPABILITIES = {
     ("flux2", "KLEIN"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
         "megapixels": ("0.5", "1", "2", "4"), "default_megapixel": "1",
         "image_count": (1, 4), "reference_images": 3, "seed": True},
-    ("flux2", "PRO"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
-        "megapixels": ("1", "2", "4"), "default_megapixel": "1", "image_count": (1, 4),
-        "reference_images": 3, "seed": True},
-    ("flux2", "DEV"): {"aspect_ratios": FLUX2_RATIOS, "default_aspect_ratio": "1:1",
-        "megapixels": ("1", "2", "4"), "default_megapixel": "1", "image_count": (1, 4),
-        "reference_images": 3, "seed": True},
-    ("qwenbp", "STANDARD"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"),
+    ("flux2", "PRO"): {"aspect_ratios": ("1:1", "4:3", "3:4", "9:16", "16:9", "2:3", "3:2"),
+        "default_aspect_ratio": "1:1", "sizes": ("0.5MP", "1MP", "2MP", "4MP"),
+        "default_size": "1MP", "image_count": (1, 4), "singular_image": True, "seed": True},
+    ("flux2", "DEV"): {"aspect_ratios": ("1:1", "4:3", "3:4", "9:16", "16:9", "2:3", "3:2"),
+        "default_aspect_ratio": "1:1", "image_count": (1, 4), "reference_images": 4, "seed": True},
+    ("qwenbp", "STANDARD"): {"aspect_ratios": ("1:1", "16:9", "9:16", "21:9", "9:21", "4:3", "3:4", "3:2", "2:3"),
         "default_aspect_ratio": "1:1", "image_count": (1, 4), "seed": True},
-    ("seedream5", "LITE"): {"aspect_ratios": ("1:1", "3:4", "4:3", "9:16", "16:9"),
-        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K"), "image_count": (1, 4)},
-    ("seedream5", "PRO"): {"aspect_ratios": ("1:1", "3:4", "4:3", "9:16", "16:9"),
-        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K"), "image_count": (1, 4)},
-    ("klingimage", "V3"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4"),
-        "default_aspect_ratio": "1:1", "image_count": (1, 4)},
-    ("klingimage", "OMNI"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4"),
-        "default_aspect_ratio": "1:1", "image_count": (1, 4), "reference_images": 10},
+    ("seedream5", "LITE"): {"aspect_ratios": ("1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9", "9:21"),
+        "default_aspect_ratio": "1:1", "sizes": ("2K", "3K"), "default_size": "2K",
+        "image_count": (1, 4), "reference_images": 9,
+        "sequential_modes": ("disabled", "auto"), "max_images": (1, 14)},
+    ("seedream5", "PRO"): {"aspect_ratios": ("1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9", "9:21"),
+        "default_aspect_ratio": "1:1", "sizes": ("1K", "2K"), "default_size": "1K",
+        "image_count": (1, 4), "reference_images": 9},
+    ("klingimage", "V3"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "21:9"),
+        "default_aspect_ratio": "1:1", "sizes": ("1K", "2K"), "default_size": "1K",
+        "image_count": (1, 4), "singular_image": True, "negative_prompt": True},
+    ("klingimage", "OMNI"): {"aspect_ratios": ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "21:9"),
+        "default_aspect_ratio": "1:1", "sizes": ("1K", "2K", "4K"), "default_size": "1K",
+        "image_count": (1, 4), "reference_images": 9},
     ("gptimage", "LOW"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
                               "qualities": ("low", "medium", "high"), "image_count": (1, 4),
                               "reference_images": 9, "formats": ("png", "jpeg")},
@@ -106,28 +110,40 @@ def build_image_payload(family, variant, incoming, prompt, reference_images=None
     if not caps:
         raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.")
     refs = [u for u in (reference_images or []) if isinstance(u, str) and u]
-    limit = int(caps.get("reference_images", 0))
+    limit = 1 if caps.get("singular_image") else int(caps.get("reference_images", 0))
     if refs and (not limit or len(refs) > limit):
         raise ProviderError("INVALID_INPUT", "Reference image settings exceed model limits.")
     body = {"prompt": prompt}
     ratios = caps.get("aspect_ratios", ())
     if ratios:
-        ratio = incoming.get("aspect_ratio")
-        ratio = ratio if ratio in ratios else caps.get("default_aspect_ratio", ratios[0])
+        ratio = incoming.get("aspect_ratio", caps.get("default_aspect_ratio", ratios[0]))
+        if ratio not in ratios:
+            raise ProviderError("INVALID_INPUT", "Aspect ratio is not supported by this model.")
         if ratio == "match_input_image" and not refs:
             raise ProviderError("INVALID_INPUT", "match_input_image requires a reference image.")
         body["aspect_ratio"] = ratio
     if caps.get("megapixels"):
-        raw_mp = str(incoming.get("megapixel", incoming.get("resolution", ""))).replace("MP", "").strip()
-        mp = raw_mp if raw_mp in caps["megapixels"] else caps["default_megapixel"]
+        raw_mp = str(incoming.get("megapixel", caps["default_megapixel"])).replace("MP", "").strip()
+        if raw_mp not in caps["megapixels"]:
+            raise ProviderError("INVALID_INPUT", "Megapixel is not supported by this model.")
+        mp = raw_mp
         body["megapixel"] = float(mp) if "." in mp else int(mp)
+    if caps.get("sizes"):
+        size = str(incoming.get("size", caps["default_size"])).upper()
+        if size not in caps["sizes"]:
+            raise ProviderError("INVALID_INPUT", "Size is not supported by this model.")
+        body["size"] = size
     if caps.get("resolutions"):
         resolution = str(incoming.get("resolution") or caps["resolutions"][0]).upper()
-        body["resolution"] = resolution if resolution in caps["resolutions"] else caps["resolutions"][0]
+        if resolution not in caps["resolutions"]:
+            raise ProviderError("INVALID_INPUT", "Resolution is not supported by this model.")
+        body["resolution"] = resolution
     if caps.get("qualities"):
         tier_quality = {"LOW": "low", "STANDARD": "medium", "HIGH": "high"}.get(str(variant).upper())
         quality = str(incoming.get("quality") or tier_quality or caps["qualities"][0]).lower()
-        body["quality"] = quality if quality in caps["qualities"] else (tier_quality or caps["qualities"][0])
+        if quality not in caps["qualities"]:
+            raise ProviderError("INVALID_INPUT", "Quality is not supported by this model.")
+        body["quality"] = quality
     if caps.get("image_count"):
         try:
             count = int(incoming.get("num_images", 1))
@@ -138,16 +154,54 @@ def build_image_payload(family, variant, incoming, prompt, reference_images=None
         body["num_images"] = count
     if caps.get("formats"):
         fmt = str(incoming.get("output_format") or caps["formats"][0]).lower()
-        body["output_format"] = fmt if fmt in caps["formats"] else caps["formats"][0]
+        if fmt not in caps["formats"]:
+            raise ProviderError("INVALID_INPUT", "Output format is not supported by this model.")
+        body["output_format"] = fmt
     if refs:
-        body["reference_images"] = refs
+        body["image" if caps.get("singular_image") else "reference_images"] = refs[0] if caps.get("singular_image") else refs
     if caps.get("seed") and incoming.get("seed") not in (None, ""):
         try:
             seed = int(incoming["seed"])
         except (TypeError, ValueError):
             raise ProviderError("INVALID_INPUT", "Seed must be an integer.")
         body["seed"] = seed
+    if caps.get("negative_prompt") and incoming.get("negative_prompt") not in (None, "") and not refs:
+        body["negative_prompt"] = str(incoming["negative_prompt"])
+    if caps.get("sequential_modes"):
+        mode = str(incoming.get("sequential_image_generation", "disabled")).lower()
+        if mode not in caps["sequential_modes"]:
+            raise ProviderError("INVALID_INPUT", "Sequential generation mode is invalid.")
+        body["sequential_image_generation"] = mode
+        if mode == "auto":
+            try:
+                maximum = int(incoming.get("max_images", caps["max_images"][0]))
+            except (TypeError, ValueError):
+                maximum = 0
+            if not caps["max_images"][0] <= maximum <= caps["max_images"][1]:
+                raise ProviderError("INVALID_INPUT", "Max images is outside model limits.")
+            body["max_images"] = maximum
     return body
+
+
+def public_image_capabilities():
+    """JSON-safe capability registry for the authenticated internal UI."""
+    return {family + ":" + variant: {key: list(value) if isinstance(value, tuple) else value
+                                     for key, value in caps.items()}
+            for (family, variant), caps in IMAGE_CAPABILITIES.items()}
+
+
+def get_credits(api_key, session=requests, timeout=30):
+    response = session.get(BASE_URL + "/account/credits", headers=_headers(api_key), timeout=timeout)
+    if response.status_code >= 400:
+        raise normalize_error(response)
+    return _json(response)
+
+
+def estimate_cost(payload, api_key, session=requests, timeout=30):
+    response = session.post(BASE_URL + "/cost", headers=_headers(api_key), json=payload, timeout=timeout)
+    if response.status_code >= 400:
+        raise normalize_error(response)
+    return _json(response)
 
 
 class ProviderError(RuntimeError):
