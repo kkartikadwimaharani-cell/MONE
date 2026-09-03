@@ -3443,6 +3443,56 @@ def validateVideo(dropbox_url):
                     pass
 
 
+# Mii-owned output profiles. These values are intentionally not part of any
+# provider schema: they are applied only after a generated video has been
+# securely fetched, and can be tuned here without changing provider payloads.
+VIDEO_OUTPUT_BITRATE_PROFILES = {
+    '480p': {'STANDARD': '1200k', 'HIGH': '2200k', 'MAX': '3500k'},
+    '720p': {'STANDARD': '2500k', 'HIGH': '4500k', 'MAX': '7000k'},
+}
+
+
+def _normalize_video_output_bitrate(value):
+    value = str(value or 'AUTO').upper()
+    return value if value in ('AUTO', 'STANDARD', 'HIGH', 'MAX') else 'AUTO'
+
+
+def _video_output_bitrate_target(profile, resolution):
+    """Return the resolution-aware Mii target, or None for pass-through."""
+    profile = _normalize_video_output_bitrate(profile)
+    if profile == 'AUTO':
+        return None
+    return VIDEO_OUTPUT_BITRATE_PROFILES.get(str(resolution).lower(),
+                                             VIDEO_OUTPUT_BITRATE_PROFILES['720p'])[profile]
+
+
+def _apply_video_output_bitrate(video_bytes, profile, resolution):
+    """Transcode video only while stream-copying audio and other streams."""
+    target = _video_output_bitrate_target(profile, resolution)
+    if target is None:
+        return video_bytes
+    path_in = path_out = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as src:
+            src.write(video_bytes)
+            path_in = src.name
+        path_out = path_in + '.output.mp4'
+        rate = int(target[:-1])
+        cmd = ['ffmpeg', '-y', '-i', path_in, '-map', '0', '-c', 'copy',
+               '-c:v', 'libx264', '-b:v', target, '-maxrate', target,
+               '-bufsize', f'{rate * 2}k', '-movflags', '+faststart', path_out]
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
+        with open(path_out, 'rb') as rendered:
+            return rendered.read()
+    finally:
+        for path in (path_in, path_out):
+            if path:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+
 def _friendly_motion_control_error(raw_msg):
     """Translate a raw provider error (e.g. Segmind's width validation
     message) into an easy-to-understand Indonesian message. Used as a
@@ -3871,7 +3921,7 @@ def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
     return body
 
 
-def _run_budgetpixel_task(task_id, family, variant, body, output_type):
+def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bitrate='AUTO', resolution='720p'):
     """Run the async provider job inside the existing Mii task lifecycle."""
     def _set(**values):
         with AIVIDEO_TASKS_LOCK:
@@ -3904,6 +3954,8 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         archive_available = True
         for index, source in enumerate(sources):
             media = _fetch_generated_result(source['url'], output_type)
+            if output_type == 'video' and family == 'seedance25' and output_bitrate != 'AUTO':
+                media = _apply_video_output_bitrate(media, output_bitrate, resolution)
             total_bytes += len(media)
             ext = 'png' if output_type == 'image' else 'mp4'
             name = '%s%s.%s' % (task_id, ('-%d' % (index + 1)) if len(sources) > 1 else '', ext)
@@ -3922,7 +3974,8 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type):
         output_key = 'image_url' if output_type == 'image' else 'video_url'
         output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
                   'original_url': None, 'size_bytes': total_bytes,
-                  'archive_available': archive_available}
+                  'archive_available': archive_available,
+                  'bitrate': output_bitrate if output_type == 'video' and family == 'seedance25' else None}
         if not archive_available:
             output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
         if output_type == 'image':
@@ -4229,18 +4282,22 @@ def aivideo_generate():
             if image_urls:
                 body['reference_images'] = image_urls
 
+        output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
+                          if family == 'seedance25' and output_type == 'video' else 'AUTO')
         task_id = uuid.uuid4().hex
         with AIVIDEO_TASKS_LOCK:
             _prune_aivideo_tasks()
             AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
                                       'model': variant, 'family': family, 'output_type': output_type,
+                                      'output_bitrate': output_bitrate,
                                       'request_metadata': {'original_prompt': original_prompt,
                                                            'final_prompt': prompt, **body}, 'created': time.time()}
         _diagnostic_record(task_id, family, variant, output_type, original_prompt, body, payload)
         _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
         _persist_task(task_id)
         threading.Thread(target=_run_budgetpixel_task,
-                         args=(task_id, family, variant, body, output_type), daemon=True).start()
+                         args=(task_id, family, variant, body, output_type, output_bitrate,
+                               body.get('resolution', '720p')), daemon=True).start()
         return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': 20}})
 
     if not _segmind_api_key():
