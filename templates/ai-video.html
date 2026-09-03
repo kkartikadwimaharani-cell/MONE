@@ -1383,15 +1383,16 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.mini .sheet-opt-desc{font-size:.62rem;margin-top:1px}
 .sheet.mini .sheet-opt-check{top:10px;right:8px}
 .sheet-overlay.mini-ov{background:transparent}
-/* Seedance 2.5 uses the established compact chip row without horizontal
-   scrolling. All four controls remain visible inside the mobile panel. */
+/* Seedance 2.5 uses the established Seedance 2.0 chips. Flex sizing is the
+   only model-specific adaptation needed to keep all five inside the card. */
 .settings-row.seedance25-settings{overflow-x:visible}
 .settings-row.seedance25-settings>.chip{flex:1 1 auto;min-width:0;justify-content:center;padding-inline:7px}
 .settings-row.seedance25-settings>.credit-chip{flex:1.2 1 auto}
 .settings-row.seedance25-settings .credit-chip-balance{min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:430px){
-  .settings-row.seedance25-settings{gap:4px}
+  .settings-row.seedance25-settings{gap:4px;max-width:100%;flex-wrap:wrap}
   .settings-row.seedance25-settings>.chip{padding-inline:5px;font-size:10.5px;gap:3px}
+  .settings-row.seedance25-settings>.credit-chip{flex-basis:58px}
   .settings-row.seedance25-settings .chip-ico{display:none}
   .settings-row.seedance25-settings .chip-car{margin-left:0;border-left-width:3px;border-right-width:3px}
 }
@@ -2439,7 +2440,8 @@ var selectedMotion = 'Dynamic';
 // duration are auto-filled from the video and locked in the UI (spec:
 // user doesn't pick these manually once a video is selected).
 var motionControlMeta = null;
-var selectedBitrate = 'high';
+var selectedBitrate = 'AUTO';
+var modelSpecificSettings = {};
 var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
 var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (generation service bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
 var selectedImageFormat = 'PNG';
@@ -2830,9 +2832,19 @@ var sheetDefs = {
     // generation service's seedance-2.0 (PRO) docs: 'standard' = smaller/faster files,
     // 'high' = ~5-6x higher bitrate, better fidelity, larger files. Same price.
     options: ['Standard','High'],
-    desc: function(v){ return v==='High' ? '~5-6x bitrate · larger file, same price' : 'Smaller file, faster download'; },
-    get: function(){ return selectedBitrate === 'high' ? 'High' : 'Standard'; },
-    set: function(v){ selectedBitrate = v.toLowerCase(); document.getElementById('bitrateLabel').textContent = v; }
+    desc: function(v){
+      if (v === 'AUTO') return 'Preserve provider output';
+      if (v === 'STANDARD') return 'Moderate Mii output size';
+      if (v === 'HIGH') return 'Higher Mii output bitrate';
+      if (v === 'MAX') return 'Highest reasonable Mii output bitrate';
+      return v === 'High' ? '~5-6x bitrate · larger file, same price' : 'Smaller file, faster download';
+    },
+    get: function(){ return selectedFamily && selectedFamily.key === 'seedance25' ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard'); },
+    set: function(v){
+      selectedBitrate = selectedFamily && selectedFamily.key === 'seedance25' ? v : v.toLowerCase();
+      document.getElementById('bitrateLabel').textContent = v;
+      persistCanonicalModelState();
+    }
   }
 };
 
@@ -3017,6 +3029,10 @@ function applySelectedFamily(family, qualityIdx, options) {
   options = options || {};
   if (!family || (modelFamilies[activeMode] || []).indexOf(family) === -1) return false;
   var previousFamilyKey = selectedFamily && selectedFamily.key;
+  if (previousFamilyKey) modelSpecificSettings[previousFamilyKey] = {
+    ratio:selectedRatio, resolution:selectedResolution, duration:selectedDuration,
+    muteAudio:muteAudioEnabled, bitrate:selectedBitrate
+  };
   var variants = family.qualities || [];
   qualityIdx = Number.isInteger(qualityIdx) && qualityIdx >= 0 && qualityIdx < variants.length ? qualityIdx : 0;
   selectedFamily = family;
@@ -3037,12 +3053,15 @@ function applySelectedFamily(family, qualityIdx, options) {
     selectedRatio = '16:9';
     selectedDuration = 5;
     muteAudioEnabled = false;
+    selectedBitrate = family.key === 'seedance25' ? 'AUTO' : (family.key === 'seedance' ? 'high' : 'AUTO');
   }
   if (family.key === 'seedance25' && resetFamilyDefaults) {
     selectedRatio = '16:9';
     selectedResolution = '720p';
     muteAudioEnabled = false;
   }
+  var familySaved = modelSpecificSettings[family.key];
+  if (familySaved && previousFamilyKey !== family.key) options.saved = familySaved;
   if (q && isSeedanceFamily(family.key) && seedanceDefaultRes[q.label]) {
     selectedResolution = seedanceDefaultRes[q.label];
   }
@@ -3051,6 +3070,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     if (typeof options.saved.resolution === 'string') selectedResolution = options.saved.resolution;
     if (Number.isFinite(options.saved.duration)) selectedDuration = options.saved.duration;
     if (typeof options.saved.muteAudio === 'boolean') muteAudioEnabled = options.saved.muteAudio;
+    if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate;
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
   updateCollapsedBar(family.name);
@@ -3064,6 +3084,8 @@ function applySelectedFamily(family, qualityIdx, options) {
   if (ratioLabel) ratioLabel.textContent = selectedRatio;
   if (resolutionLabel) resolutionLabel.textContent = selectedResolution;
   renderMuteAudioChip();
+  var bitrateLabel = document.getElementById('bitrateLabel');
+  if (bitrateLabel) bitrateLabel.textContent = family.key === 'seedance25' ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard');
   updateCreditEstimate();
   updateGenerateButtonState();
   closeSheet();
@@ -3100,7 +3122,8 @@ function persistCanonicalModelState() {
   try {
     var all = JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {};
     all[activeMode] = {family:selectedFamily.key, variant:selectedModel, ratio:selectedRatio,
-      resolution:selectedResolution, duration:selectedDuration, muteAudio:muteAudioEnabled};
+      resolution:selectedResolution, duration:selectedDuration, muteAudio:muteAudioEnabled,
+      bitrate:selectedBitrate};
     localStorage.setItem(MODEL_STATE_KEY, JSON.stringify(all));
   } catch (_) {}
 }
@@ -3246,19 +3269,23 @@ function applyModelCapabilities() {
     document.getElementById('durationMaxLabel').textContent = 'not published';
   }
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
-  // Bitrate control: confirmed via generation service's official docs only for
-  // seedance-2.0 (PRO). For Fast/Mini it's unconfirmed either way — no
-  // official parameter list found for Mini, and Fast's docs page doesn't
-  // list it. We still show the chip and let the backend try it on every
-  // tier (with an automatic no-bitrate_mode retry if a tier rejects it —
-  // the legacy worker retries), so the option is available everywhere without
-  // ever risking a failed generation.
-  var bitrateSupported = !!caps.qualityControl || (selectedFamily && selectedFamily.key === 'seedance');
+  // Seedance 2.0 keeps its legacy provider option. Seedance 2.5 uses the same
+  // chip for Mii-owned post-result output profiles; those never enter its
+  // BudgetPixel payload.
+  var bitrateSupported = !!caps.qualityControl || (selectedFamily && isSeedanceFamily(selectedFamily.key));
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
   if (!bitrateSupported) {
-    selectedBitrate = 'high';
+    selectedBitrate = 'AUTO';
     var bitrateLabelEl = document.getElementById('bitrateLabel');
     if (bitrateLabelEl) bitrateLabelEl.textContent = 'High';
+  }
+  if (sheetDefs && sheetDefs.bitrate) {
+    var outputProfiles = isSeedance25Video;
+    sheetDefs.bitrate.options = outputProfiles ? ['AUTO','STANDARD','HIGH','MAX'] : ['Standard','High'];
+    if (outputProfiles && ['AUTO','STANDARD','HIGH','MAX'].indexOf(selectedBitrate) === -1) selectedBitrate = 'AUTO';
+    if (!outputProfiles && ['standard','high'].indexOf(selectedBitrate) === -1) selectedBitrate = 'high';
+    var bitrateLabel = document.getElementById('bitrateLabel');
+    if (bitrateLabel) bitrateLabel.textContent = outputProfiles ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard');
   }
 
   // Mute-audio: only meaningful for the two video-output families that can
@@ -4832,10 +4859,14 @@ function startGenerate() {
       delete body.image_urls;
     }
   }
-  // Legacy Seedance 2.0 alone retains its existing verified provider option.
-  // Seedance 2.5 deliberately emits no bitrate or output-quality field.
+  // Seedance 2.0 retains its verified provider option. Seedance 2.5 sends an
+  // explicitly Mii-owned output preference; the server strips it before the
+  // BudgetPixel request and snapshots it for post-result processing.
   if (selectedFamily.key === 'seedance') {
     body.bitrate_mode = selectedBitrate;
+  }
+  if (selectedFamily.key === 'seedance25' && activeMode === 'video') {
+    body.output_bitrate = selectedBitrate;
   }
   if (selectedFamily.key === 'seedaudio') {
     body.audio_format = selectedAudioFormat.toLowerCase();
@@ -4855,7 +4886,7 @@ function startGenerate() {
     activeMode: activeMode,
     modelDisplayName: selectedModelName,
     fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
-    bitrateSnapshot: selectedFamily.key === 'seedance' ? selectedBitrate : '',
+    bitrateSnapshot: isSeedanceFamily(selectedFamily.key) ? selectedBitrate : '',
     audioApplicable: activeMode === 'video' && (isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo'),
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
@@ -5816,7 +5847,7 @@ function saveGenerationToHistory(res, meta) {
       refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
       modelKey: selectedFamily.key,
       modelTier: selectedModelTier,
-      bitrate: selectedFamily.key === 'seedance' ? selectedBitrate : '',
+      bitrate: isSeedanceFamily(selectedFamily.key) ? selectedBitrate : '',
       archived: false
     };
   }
@@ -6021,7 +6052,7 @@ function restoreFromRecord(r) {
   if (r.bitrate) {
     selectedBitrate = r.bitrate;
     var bitrateLabelEl2 = document.getElementById('bitrateLabel');
-    if (bitrateLabelEl2) bitrateLabelEl2.textContent = r.bitrate === 'high' ? 'High' : 'Standard';
+    if (bitrateLabelEl2) bitrateLabelEl2.textContent = r.modelKey === 'seedance25' ? r.bitrate : (r.bitrate === 'high' ? 'High' : 'Standard');
   }
   // Restore prompt
   promptInput.value = r.prompt || '';
