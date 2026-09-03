@@ -71,7 +71,7 @@ def init_db():
             ('ref_audios', "TEXT DEFAULT '[]'"), ('elapsed_ms', 'INTEGER DEFAULT 0'),
             ('size_bytes', 'INTEGER DEFAULT 0'), ('audio_enabled', 'INTEGER'),
             ('reference_counts', "TEXT DEFAULT '{}'"), ('final_prompt', "TEXT DEFAULT ''"),
-            ('bitrate', "TEXT DEFAULT ''")):
+            ('bitrate', "TEXT DEFAULT ''"), ('source_task_id', "TEXT DEFAULT ''")):
             if column not in existing_cols:
                 conn.execute('ALTER TABLE aivideo_archive ADD COLUMN %s %s' % (column, declaration))
         conn.commit()
@@ -185,8 +185,8 @@ def upsert_archive(rec):
                 (id, media_type, video_url, image_url, audio_url, thumb, prompt, model, quality,
                  duration, ratio, created_at_label, created_at_ts, ref_images, ref_videos,
                  model_key, model_tier, archived, resolution, image_quality, image_count,
-                 output_format, generation_status, image_urls, ref_audios, elapsed_ms, size_bytes, audio_enabled, reference_counts, final_prompt, bitrate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 output_format, generation_status, image_urls, ref_audios, elapsed_ms, size_bytes, audio_enabled, reference_counts, final_prompt, bitrate, source_task_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 media_type=excluded.media_type, video_url=excluded.video_url,
                 image_url=excluded.image_url, audio_url=excluded.audio_url,
@@ -201,7 +201,8 @@ def upsert_archive(rec):
                 generation_status=excluded.generation_status, image_urls=excluded.image_urls,
                 ref_audios=excluded.ref_audios, elapsed_ms=excluded.elapsed_ms,
                 size_bytes=excluded.size_bytes, audio_enabled=excluded.audio_enabled,
-                reference_counts=excluded.reference_counts, final_prompt=excluded.final_prompt, bitrate=excluded.bitrate
+                reference_counts=excluded.reference_counts, final_prompt=excluded.final_prompt,
+                bitrate=excluded.bitrate, source_task_id=excluded.source_task_id
         ''', (
             rec.get('id'),
             rec.get('media_type') or ('video' if rec.get('videoUrl') else ('audio' if rec.get('audioUrl') else 'image')),
@@ -227,6 +228,7 @@ def upsert_archive(rec):
             json.dumps(rec.get('refAudios') or []), int(rec.get('elapsedMs') or 0),
             int(rec.get('sizeBytes') or 0), None if rec.get('audioEnabled') is None else (1 if rec.get('audioEnabled') else 0),
             json.dumps(rec.get('referenceCounts') or {}), rec.get('finalPrompt') or '', rec.get('bitrate') or '',
+            rec.get('sourceTaskId') or '',
         ))
         conn.commit()
 
@@ -271,6 +273,7 @@ def list_archive(archived=None):
         d['audioEnabled'] = None if raw_audio_enabled is None else bool(raw_audio_enabled)
         d['referenceCounts'] = json.loads(d.pop('reference_counts', '{}') or '{}')
         d['finalPrompt'] = d.pop('final_prompt', '') or ''
+        d['sourceTaskId'] = d.pop('source_task_id', '') or ''
         out.append(d)
     return out
 

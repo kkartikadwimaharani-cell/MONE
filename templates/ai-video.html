@@ -108,7 +108,7 @@ button{background:none;border:none;cursor:pointer}
 
 /* MODE / FILTER BAR — centered, equal spacing */
 .modebar{display:flex;align-items:center;justify-content:center;gap:8px;padding:2px 16px 10px;flex-shrink:0}
-.mode-btn{padding:9px 18px;border-radius:11px;font-size:.9rem;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--text-dim);background:transparent;transition:all .15s}
+.mode-btn{padding:9px 18px;border-radius:11px;font-size:.9rem;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--text-dim);background:#0c0c0c;transition:all .15s}
 .mode-btn.active{background:var(--btn);color:#fff}
 
 /* ============ CANVAS ============ */
@@ -228,7 +228,7 @@ button{background:none;border:none;cursor:pointer}
 
 /* Always-16:9 animated preview shown while generating, regardless of output ratio */
 .task-preview{position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:radial-gradient(ellipse 90% 70% at 50% 30%,rgba(255,32,64,.16),transparent 65%),#0c0c0c}
-.task-preview::before,.task-preview::after{content:'';position:absolute;border-radius:50%;filter:blur(34px);opacity:.55}
+.task-preview::before,.task-preview::after{content:'';position:absolute;border-radius:50%;filter:blur(34px);opacity:.12}
 .task-preview::before{width:55%;height:110%;left:-15%;top:-20%;background:radial-gradient(circle,rgba(255,32,64,.5),transparent 70%);animation:blobMove1 7s ease-in-out infinite}
 .task-preview::after{width:45%;height:90%;right:-10%;bottom:-25%;background:radial-gradient(circle,rgba(255,60,90,.35),transparent 70%);animation:blobMove2 8.5s ease-in-out infinite}
 @keyframes blobMove1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(14%,10%) scale(1.15)}}
@@ -1386,6 +1386,8 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 /* Seedance 2.5 uses the established Seedance 2.0 chips. Flex sizing is the
    only model-specific adaptation needed to keep all five inside the card. */
 .settings-row.seedance25-settings{overflow-x:visible}
+.settings-row.image-settings{overflow-x:visible;flex-wrap:wrap}
+.settings-row.image-settings>.chip,.settings-row.image-settings>.qty-stepper,.settings-row.image-settings>.tier-seg{min-height:44px}
 .settings-row.seedance25-settings>.chip{flex:1 1 auto;min-width:0;justify-content:center;padding-inline:7px}
 .settings-row.seedance25-settings>.credit-chip{flex:1.2 1 auto}
 .settings-row.seedance25-settings .credit-chip-balance{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -2336,16 +2338,19 @@ var modelFamilies = {
   image: [
     {
       key:'flux2',brand:'FLUX',name:'FLUX 2',featured:true,desc:'Klein, Pro and Dev image generation.',
-      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},
-      qualities:[{id:'KLEIN',label:'KLEIN'},{id:'PRO',label:'PRO'},{id:'DEV',label:'DEV'}]
+      caps:{image:3,video:0,audio:0,frames:false,elements:true,ratio:true,resolution:true,resolutionSet:'image',duration:false,motion:false},
+      qualities:[
+        {id:'KLEIN',label:'KLEIN',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['0.5 MP','1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}},
+        {id:'PRO',label:'PRO',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}},
+        {id:'DEV',label:'DEV',caps:{supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','9:21','5:4','4:5','match_input_image'],supportsResolution:true,resolutionKind:'megapixel',resolutions:['1 MP','2 MP','4 MP'],supportsImageCount:true,minImages:1,maxImages:4,supportsReferenceImages:true,maxReferenceImages:3}}]
     },
-    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},qualities:[{id:'STANDARD',label:'STANDARD'}]},
+    {key:'qwenbp',brand:'QWEN',name:'QWEN IMAGE',featured:true,desc:'Text-to-image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:false,duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4','3:2','2:3'],supportsResolution:false,resolutions:[],supportsImageCount:true,minImages:1,maxImages:4},qualities:[{id:'STANDARD',label:'STANDARD'}]},
     {
       key:'seedream5',brand:'SEEDREAM',name:'SEEDREAM 5',featured:true,desc:'Lite and Pro image generation.',
-      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},
-      qualities:[{id:'PRO',label:'PRO',caps:{ratio:true,resolution:true,resolutionSet:'image',supportsAspectRatio:true,aspectRatios:['1:1','3:4','4:3','9:16','16:9'],supportsResolution:true,resolutions:['1K','2K']}},{id:'LITE',label:'LITE'}]
+      caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:true,resolutionSet:'image',duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','3:4','4:3','9:16','16:9'],supportsResolution:true,resolutions:['1K','2K'],supportsImageCount:true,minImages:1,maxImages:4},
+      qualities:[{id:'PRO',label:'PRO'},{id:'LITE',label:'LITE'}]
     },
-    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:false,resolution:false,duration:false,motion:false,supportsAspectRatio:false,aspectRatios:[],supportsResolution:false,resolutions:[],supportsQuality:false,qualities:[],supportsImageCount:false,minImages:1,maxImages:1,supportsReferenceImages:false,maxReferenceImages:0,supportsOutputFormat:false,formats:[]},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI'}]},
+    {key:'klingimage',brand:'KLING',name:'KLING IMAGE',featured:true,desc:'V3 and Omni image generation.',caps:{image:0,video:0,audio:0,frames:false,elements:false,ratio:true,resolution:false,duration:false,motion:false,supportsAspectRatio:true,defaultAspectRatio:'1:1',aspectRatios:['1:1','16:9','9:16','4:3','3:4'],supportsImageCount:true,minImages:1,maxImages:4},qualities:[{id:'V3',label:'V3'},{id:'OMNI',label:'OMNI',caps:{image:10,elements:true,supportsReferenceImages:true,maxReferenceImages:10}}]},
     {
       key: 'nanobanana', brand: 'GOOGLE', name: 'NANO BANANA PRO', featured: true,
       desc: "Google's highest quality image generation with up to 14 references.",
@@ -3248,7 +3253,10 @@ function applyModelCapabilities() {
   var imageCountControl = document.getElementById('imageCountControl');
   var settingsRow = document.querySelector('.settings-row');
   var isSeedance25Video = activeMode === 'video' && selectedFamily && selectedFamily.key === 'seedance25';
-  if (settingsRow) settingsRow.classList.toggle('seedance25-settings', isSeedance25Video);
+  if (settingsRow) {
+    settingsRow.classList.toggle('seedance25-settings', isSeedance25Video);
+    settingsRow.classList.toggle('image-settings', activeMode === 'image');
+  }
   if (ratioChip)  ratioChip.style.display  = caps.ratio ? '' : 'none';
   if (resChip)    resChip.style.display    = caps.resolution ? '' : 'none';
   if (imageFormatChip) imageFormatChip.style.display = rawCaps.supportsOutputFormat ? '' : 'none';
@@ -3318,7 +3326,7 @@ function applyModelCapabilities() {
   // connected legacy families that predate the capability registry fields.
   if (sheetDefs && sheetDefs.ratio) {
     if (caps.ratioOptions) {
-      sheetDefs.ratio.options = caps.ratioOptions.slice();
+      sheetDefs.ratio.options = caps.ratioOptions.filter(function(v){ return v !== 'match_input_image' || media.image.length > 0; });
     } else if (selectedFamily && (selectedFamily.key === 'kling' || selectedFamily.key === 'klingswap')) {
       sheetDefs.ratio.options = ['1:1','9:16','16:9'];
     } else if (selectedFamily && selectedFamily.key === 'veo') {
@@ -3327,7 +3335,7 @@ function applyModelCapabilities() {
       sheetDefs.ratio.options = ['1:1','3:4','4:3','9:16','16:9','21:9'];
     }
     if (sheetDefs.ratio.options.indexOf(selectedRatio) === -1) {
-      selectedRatio = '16:9';
+      selectedRatio = rawCaps.defaultAspectRatio || (activeMode === 'image' ? '1:1' : '16:9');
       var ratioLabelEl = document.getElementById('ratioLabel');
       if (ratioLabelEl) ratioLabelEl.textContent = selectedRatio;
     }
@@ -3666,11 +3674,12 @@ function updateCanvasPreview() {
   wrap.style.display = 'none';
   document.getElementById('emptyState').style.display = 'flex';
 }
-function showCanvasResult(videoUrl, imageUrl) {
+function showCanvasResult(videoUrl, imageUrl, aspectRatio) {
   var wrap = document.getElementById('canvasPreview');
   var imgEl = document.getElementById('canvasPreviewImg');
   var vidEl = document.getElementById('canvasPreviewVideo');
   if (!wrap) return;
+  if (aspectRatio && /^\d+:\d+$/.test(aspectRatio)) wrap.style.aspectRatio = aspectRatio.replace(':', ' / ');
   document.getElementById('emptyState').style.display = 'none';
   if (videoUrl) {
     imgEl.style.display = 'none';
@@ -3680,6 +3689,7 @@ function showCanvasResult(videoUrl, imageUrl) {
   } else if (imageUrl) {
     vidEl.pause && vidEl.pause();
     vidEl.style.display = 'none';
+    imgEl.onload = function() { if (!aspectRatio && imgEl.naturalWidth && imgEl.naturalHeight) wrap.style.aspectRatio = imgEl.naturalWidth + ' / ' + imgEl.naturalHeight; };
     imgEl.src = imageUrl;
     imgEl.style.display = 'block';
   }
@@ -4850,6 +4860,13 @@ function startGenerate() {
   };
   if (activeMode === 'image') {
     var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
+    delete body.duration; delete body.video_urls; delete body.audio_urls;
+    delete body.first_frame_url; delete body.last_frame_url;
+    if (!imageCaps.supportsResolution) delete body.resolution;
+    if (imageCaps.resolutionKind === 'megapixel') {
+      body.megapixel = Number(String(selectedResolution).replace(/\s*MP$/i, ''));
+      delete body.resolution;
+    }
     if (imageCaps.supportsImageCount) body.num_images = qty;
     if (imageCaps.supportsOutputFormat) body.output_format = selectedImageFormat.toLowerCase();
     // GPT Image 2's provider contract calls this reference_images.  Keep
@@ -5044,6 +5061,8 @@ function pollQueueTask(taskId, opts) {
         }
 
         if (status === 'completed') {
+          if (state.completionHandled) return;
+          state.completionHandled = true;
           if (state.interval) clearInterval(state.interval);
           if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
@@ -5067,6 +5086,7 @@ function pollQueueTask(taskId, opts) {
             // mismatched with whatever you've since changed the panel to.
             if (e.stage) e.stage.textContent = stageForProgress(meta, progress, 'saving');
             updateWorkflowSteps(taskId, progress, 'saving');
+            meta.sourceTaskId = taskId;
             var rec = out.archive_available === false ? null : saveGenerationToHistory(resultPayload, meta);
             state.resultRecordId = rec && rec.id;
             if (e.stage) e.stage.textContent = out.archive_available === false
@@ -5099,7 +5119,7 @@ function pollQueueTask(taskId, opts) {
               }
               showCanvasResultUI(resultPayload);
             } else {
-              showCanvasResult(videoUrl, imageUrl);
+              showCanvasResult(videoUrl, imageUrl, meta.aspect_ratio);
               showCanvasResultUI(resultPayload);
             }
             var isImageResult = !!imageUrl && !videoUrl;
@@ -5538,7 +5558,7 @@ function showRecordInCanvas(id) {
     var cvv = document.getElementById('canvasPreviewVideo'); if (cvv) { cvv.pause && cvv.pause(); cvv.style.display = 'none'; }
     if (aPrev) { aPrev.src = r.audioUrl; aPrev.style.display = 'block'; }
   } else {
-    showCanvasResult(r.videoUrl || '', r.imageUrl || '');
+    showCanvasResult(r.videoUrl || '', r.imageUrl || '', r.ratio || '');
   }
   showCanvasResultUI({
     videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', imageUrls: r.imageUrls || (r.imageUrl ? [r.imageUrl] : []), audioUrl: r.audioUrl || '',
@@ -5669,8 +5689,11 @@ function removeArchiveFromServer(id) {
 function dedupeHistoryRecords(list) {
   var seen = {};
   return (list || []).filter(function(r) {
-    if (!r || !r.id || seen[r.id] || deletedHistoryIds[r.id]) return false;
-    seen[r.id] = true; return true;
+    if (!r || !r.id || deletedHistoryIds[r.id]) return false;
+    var urls = (r.imageUrls || []).concat([r.videoUrl, r.imageUrl, r.audioUrl]).filter(Boolean).sort().join('|');
+    var identity = r.sourceTaskId ? 'task:' + r.sourceTaskId : (urls ? 'url:' + urls : 'id:' + r.id);
+    if (seen[identity] || seen['id:' + r.id]) return false;
+    seen[identity] = true; seen['id:' + r.id] = true; return true;
   });
 }
 function mergeServerArchiveIntoLocal(items) {
@@ -5782,7 +5805,8 @@ function saveGenerationToHistory(res, meta) {
     // — which may already reflect a completely different job by the time
     // this one finishes.
     rec = {
-      id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      id: meta.sourceTaskId ? 'task_' + meta.sourceTaskId : ('h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)),
+      sourceTaskId: meta.sourceTaskId || '',
       videoUrl: res.videoUrl || '',
       imageUrl: res.imageUrl || '',
       imageUrls: res.imageUrls || (res.imageUrl ? [res.imageUrl] : []),
@@ -5851,8 +5875,12 @@ function saveGenerationToHistory(res, meta) {
       archived: false
     };
   }
+  rec.imageUrls = Array.from(new Set((rec.imageUrls || []).filter(Boolean)));
+  if (!rec.imageUrl && rec.imageUrls.length) rec.imageUrl = rec.imageUrls[0];
   var list = loadHistory();
-  list.unshift(rec);
+  var existingIndex = list.findIndex(function(item) { return (rec.sourceTaskId && item.sourceTaskId === rec.sourceTaskId) || item.id === rec.id; });
+  if (existingIndex >= 0) list[existingIndex] = Object.assign({}, list[existingIndex], rec);
+  else list.unshift(rec);
   if (list.length > 200) list = list.slice(0, 200);
   saveHistoryList(list);
   window.__lastResult = { url: rec.videoUrl || rec.imageUrl || rec.audioUrl, isImage: !!rec.imageUrl && !rec.videoUrl, id: rec.id };

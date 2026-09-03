@@ -3957,7 +3957,26 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bi
             if output_type == 'video' and family == 'seedance25' and output_bitrate != 'AUTO':
                 media = _apply_video_output_bitrate(media, output_bitrate, resolution)
             total_bytes += len(media)
-            ext = 'png' if output_type == 'image' else 'mp4'
+            # Preserve provider bytes verbatim and name them for their actual
+            # magic type.  A JPEG/WebP must never be disguised as a PNG.
+            if output_type == 'image':
+                if media.startswith(b'\xff\xd8\xff'):
+                    ext = 'jpg'
+                elif media.startswith(b'RIFF') and media[8:12] == b'WEBP':
+                    ext = 'webp'
+                elif media.startswith(b'GIF8'):
+                    ext = 'gif'
+                elif media.startswith(b'\x89PNG\r\n\x1a\n'):
+                    ext = 'png'
+                else:
+                    # Some object stores strip Content-Type and a few test/
+                    # legacy adapters return opaque bytes.  Fall back only to
+                    # the format that was actually requested, never blindly
+                    # rename every image PNG.
+                    requested_format = str(body.get('output_format') or 'png').lower()
+                    ext = 'jpg' if requested_format in ('jpg', 'jpeg') else requested_format
+            else:
+                ext = 'mp4'
             name = '%s%s.%s' % (task_id, ('-%d' % (index + 1)) if len(sources) > 1 else '', ext)
             try:
                 saved_url = _dropbox_upload_and_link(media, name, folder='results')
@@ -4205,7 +4224,10 @@ def aivideo_generate():
         output_type = 'image' if family in budget_image_families else 'video'
         # References remain blocked for contracts that have not been verified.
         # Seedance 2.0 is handled below using its documented singular media fields.
-        gpt_references = family == 'gptimage' and image_urls and not (video_urls or audio_urls or first_frame_url or last_frame_url)
+        image_reference_cap = (budgetpixel_provider.image_capabilities(family, model_key or 'STANDARD')
+                               .get('reference_images', 0) if output_type == 'image' else 0)
+        gpt_references = bool(output_type == 'image' and image_reference_cap and image_urls
+                              and not (video_urls or audio_urls or first_frame_url or last_frame_url))
         seedance20_references = family == 'seedance'
         if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or seedance20_references):
             return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
@@ -4230,7 +4252,14 @@ def aivideo_generate():
                 app.logger.exception('[ai-video][quality-filter] failed; using original prompt')
                 prompt = original_prompt
         body = {'prompt': prompt}
-        if family == 'seedance':
+        if output_type == 'image':
+            try:
+                body = budgetpixel_provider.build_image_payload(
+                    family, variant, payload, original_prompt, image_urls)
+            except budgetpixel_provider.ProviderError as exc:
+                return jsonify({'ok': False, 'error': {'code': exc.code, 'message': exc.public_message,
+                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+        elif family == 'seedance':
             try:
                 body = _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
                                                   audio_urls, first_frame_url, last_frame_url, mute_audio)
@@ -4257,30 +4286,6 @@ def aivideo_generate():
                 body['generate_audio'] = not mute_audio
             elif aspect_ratio_in:
                 body['aspect_ratio'] = aspect_ratio_in
-        elif family == 'seedream5' and variant == 'PRO':
-            # Only this exact image schema was supplied as verified.
-            if aspect_ratio_in:
-                body['aspect_ratio'] = aspect_ratio_in
-            if payload.get('resolution'):
-                body['resolution'] = payload['resolution']
-        elif family == 'gptimage':
-            quality = {'LOW': 'low', 'STANDARD': 'medium', 'HIGH': 'high'}[variant]
-            ratios = ('1:1', '4:3', '3:4', '5:4', '4:5', '16:9', '9:16',
-                      '3:2', '2:3', '21:9', '9:21', '2:1', '1:2')
-            resolution = str(payload.get('resolution') or '1K').upper()
-            output_format = str(payload.get('output_format') or 'png').lower()
-            try:
-                count = int(payload.get('num_images', 1))
-            except (TypeError, ValueError):
-                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'Image count must be 1–4.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-            if len(image_urls) > 9 or count not in range(1, 5):
-                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'Image settings exceed model limits.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-            body.update({'quality': quality, 'resolution': resolution if resolution in ('1K', '2K', '4K') else '1K',
-                         'aspect_ratio': aspect_ratio_in if aspect_ratio_in in ratios else '1:1',
-                         'num_images': count,
-                         'output_format': output_format if output_format in ('png', 'jpeg') else 'png'})
-            if image_urls:
-                body['reference_images'] = image_urls
 
         output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
                           if family == 'seedance25' and output_type == 'video' else 'AUTO')
