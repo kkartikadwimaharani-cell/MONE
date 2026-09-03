@@ -184,34 +184,34 @@ button{background:none;border:none;cursor:pointer}
 .canvas-task{width:100%;max-width:480px;display:none;flex-direction:column;gap:14px;padding:16px;border-radius:22px;border:1px solid var(--border);background:var(--card)}
 .canvas-task.show{display:flex}
 
-.gen-queue{width:100%;display:flex;flex-direction:column;gap:10px}
+.gen-queue{width:100%;display:flex;flex-direction:column;gap:7px}
 .gen-queue:empty{display:none}
-.gen-q-item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--card);animation:workspaceIn .3s var(--ease-spring) both}
+.gen-q-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;align-items:start;column-gap:8px;width:100%;min-width:0;padding:8px 9px;border-radius:13px;border:1px solid var(--border);background:var(--card);animation:workspaceIn .3s var(--ease-spring) both}
 .gen-q-item.failed{border-color:rgba(255,32,64,.5);background:rgba(255,32,64,.06)}
 .gen-q-item.done{border-color:rgba(60,255,176,.4)}
 .gen-q-item.save-failed{border-color:#d99b32;background:rgba(217,155,50,.08)}
 .gen-q-item.save-failed .gen-q-stage{color:#ffc45c}
-.gen-q-ring{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
-.gen-q-thumb{width:34px;height:34px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2);animation:workspaceIn .25s var(--ease-spring) both}
+.gen-q-ring{width:32px;height:32px;margin-top:1px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;background:radial-gradient(circle,rgba(255,32,64,.22),transparent 70%)}
+.gen-q-thumb{width:32px;height:32px;margin-top:1px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2);animation:workspaceIn .25s var(--ease-spring) both}
 .gen-q-ring::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,32,64,0),rgba(255,60,90,.9),rgba(255,32,64,0) 45%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:brandRingSpin 3.2s linear infinite}
 .gen-q-item.done .gen-q-ring::before,.gen-q-item.failed .gen-q-ring::before{animation:none;background:none}
 .gen-q-ring-m{font-family:var(--disp);font-size:.72rem;font-weight:900;color:#ff1638;position:relative;z-index:1}
 .gen-q-item.done .gen-q-ring-m{color:#3cffb0}
 .gen-q-item.failed .gen-q-ring-m{color:var(--accent-hover)}
-.gen-q-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-.gen-q-title{font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.gen-q-title{font-size:.78rem;line-height:1.15;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gen-q-meta,.gen-q-detail,.gen-q-prompt{font-family:var(--mono);font-size:.62rem;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gen-q-meta{color:var(--text-dim)}
 .gen-q-prompt{opacity:.75}
-.gen-q-stage{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-q-stage{font-family:var(--mono);font-size:.65rem;line-height:1.2;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gen-q-stage.err{color:var(--accent-hover)}
-.gen-q-bar{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
+.gen-q-bar{width:100%;height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px}
 .gen-q-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));width:0%;transition:width .5s ease}
-.gen-q-steps{display:flex;align-items:center;margin-top:7px}
-.gen-q-step{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none}
+.gen-q-steps{display:flex;align-items:center;margin-top:4px}
+.gen-q-step{display:flex;align-items:center;gap:3px;flex:none}
 .gen-q-step-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.14);transition:background .3s ease,box-shadow .3s ease,transform .3s ease}
 .gen-q-step-lbl{font-family:var(--mono);font-size:.56rem;letter-spacing:.03em;text-transform:uppercase;color:var(--text-faint);opacity:.6;white-space:nowrap}
-.gen-q-step-line{flex:1;height:1px;background:rgba(255,255,255,.1);margin:0 4px 14px}
+.gen-q-step-line{flex:1;height:1px;background:rgba(255,255,255,.1);margin:0 4px}
 .gen-q-step.active .gen-q-step-dot{background:var(--accent);box-shadow:0 0 8px var(--accent);transform:scale(1.35);animation:stepPulse 1.2s ease-in-out infinite}
 .gen-q-step.active .gen-q-step-lbl{color:var(--accent);opacity:1}
 .gen-q-step.done .gen-q-step-dot{background:#3cffb0;box-shadow:0 0 6px rgba(60,255,176,.6)}
@@ -219,12 +219,21 @@ button{background:none;border:none;cursor:pointer}
 .gen-q-step.done ~ .gen-q-step-line{background:rgba(60,255,176,.35)}
 @keyframes stepPulse{0%,100%{box-shadow:0 0 6px var(--accent)}50%{box-shadow:0 0 14px var(--accent)}}
 @media (prefers-reduced-motion: reduce){.gen-q-step.active .gen-q-step-dot{animation:none}}
-.gen-q-eta{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.gen-q-eta{font-family:var(--mono);font-size:.68rem;color:var(--text-faint);flex-shrink:0;display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums;line-height:1}
 .gen-q-eta-ico{width:11px;height:11px;flex-shrink:0;opacity:.85}
-.gen-q-actions{display:flex;gap:6px;flex-shrink:0}
-.gen-q-btn{background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.gen-q-actions{display:flex;align-self:end;gap:5px;flex-shrink:0}
+.gen-q-btn{background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:7px;padding:5px 8px;font-size:.66rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .gen-q-btn.primary{background:linear-gradient(135deg,#ff2040,#c4001c)}
-.gen-q-dismiss{background:none;border:none;color:var(--text-faint);font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0}
+.gen-q-dismiss{background:none;border:none;color:var(--text-faint);font-size:15px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}
+.gen-q-item.done .gen-q-bar,.gen-q-item.done .gen-q-steps,.gen-q-item.done .gen-q-eta,
+.gen-q-item.failed .gen-q-bar,.gen-q-item.failed .gen-q-steps,.gen-q-item.failed .gen-q-eta{display:none}
+@media (max-width:430px){
+  .gen-q-item{grid-template-columns:34px minmax(0,1fr) auto auto;column-gap:6px;padding:7px 8px}
+  .gen-q-eta-ico{display:none}
+  .gen-q-actions{grid-column:3;grid-row:1;align-self:end;margin-top:22px}
+  .gen-q-item:not(.done):not(.failed) .gen-q-actions:empty{display:none}
+  .gen-q-detail{display:none}
+}
 
 /* Always-16:9 animated preview shown while generating, regardless of output ratio */
 .task-preview{position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:radial-gradient(ellipse 90% 70% at 50% 30%,rgba(255,32,64,.16),transparent 65%),#0c0c0c}
@@ -4892,12 +4901,12 @@ function genQueueItemHtml(taskId, meta) {
   var title = meta.fullModelLabel || meta.modelDisplayName || meta.model || 'Generating';
   var refs = queueReferenceCounts(meta);
   var refText = (refs.image || refs.video || refs.audio) ? 'IMG ' + refs.image + ' · VID ' + refs.video + ' · AUD ' + refs.audio : '';
-  var prompt = String(meta.prompt || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  var promptAvailable = !!meta.prompt; // retained in the snapshot/overlay, intentionally omitted from this compact card
   var steps = ['Generate', 'Save', 'Ready'];
   var stepsHtml = steps.map(function(label, i) {
     return '<div class="gen-q-step" id="genqStep_' + taskId + '_' + i + '"><span class="gen-q-step-dot"></span><span class="gen-q-step-lbl">' + label + '</span></div>';
   }).join('<div class="gen-q-step-line"></div>');
-  return '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '">' +
+  return '<div class="gen-q-item" id="genq_' + taskId + '" data-task-id="' + taskId + '" data-has-prompt="' + promptAvailable + '">' +
     '<div class="gen-q-ring" id="genqRing_' + taskId + '"><span class="gen-q-ring-m">M</span></div>' +
     '<img class="gen-q-thumb" id="genqThumb_' + taskId + '" style="display:none" alt="Result thumbnail" onerror="this.style.display=\'none\';document.getElementById(\'genqRing_' + taskId + '\').style.display=\'grid\'">' +
     '<div class="gen-q-info"><div class="gen-q-title">' + escapeHtml(title) + '</div>' +
@@ -4905,9 +4914,8 @@ function genQueueItemHtml(taskId, meta) {
     '<div class="gen-q-stage" id="genqStage_' + taskId + '">' + escapeHtml(stageForProgress(meta, 0, 'pending')) + '</div>' +
     '<div class="gen-q-bar"><div class="gen-q-bar-fill" id="genqBar_' + taskId + '" style="width:0%"></div></div>' +
     '<div class="gen-q-steps" id="genqSteps_' + taskId + '">' + stepsHtml + '</div>' +
-    (refText ? '<div class="gen-q-detail">' + refText + '</div>' : '') +
-    (prompt ? '<div class="gen-q-prompt">' + escapeHtml(prompt) + '</div>' : '') + '</div>' +
-    '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="genqEtaTxt_' + taskId + '">Estimating…</span></span>' +
+    (refText ? '<div class="gen-q-detail">' + refText + '</div>' : '') + '</div>' +
+    '<span class="gen-q-eta" id="genqEta_' + taskId + '"><svg class="gen-q-eta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="genqEtaTxt_' + taskId + '">00:00</span></span>' +
     '<div class="gen-q-actions" id="genqActions_' + taskId + '"></div><button class="gen-q-dismiss" id="genqDismiss_' + taskId + '" title="Dismiss" style="display:none" onclick="dismissGenQueueItem(\'' + taskId + '\')">✕</button></div>';
 }
 function stepIndexForProgress(p, status) {
@@ -5066,14 +5074,11 @@ function startGenerate() {
       return;
     }
     var taskId = res.data.id;
-    var taskInfo = res.data.task_info || {};
     var titleLabel = meta.fullModelLabel + (meta.activeMode === 'image' ? ' · Image' : (meta.activeMode === 'audio' ? ' · Audio' : ''));
     var list = document.getElementById('genQueueList');
     list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, meta));
-    var etaEl = document.getElementById('genqEtaTxt_' + taskId);
-    if (etaEl) etaEl.textContent = formatEta(taskInfo.estimated_time);
     activeGens[taskId] = { meta: meta, startTs: Date.now() };
-    saveActiveTaskEntry(taskId, meta);
+    saveActiveTaskEntry(taskId, meta, activeGens[taskId].startTs);
     refreshQueueBadge();
     pollQueueTask(taskId);
     // Reset lampiran untuk job berikutnya — snapshot meta job ini sudah
@@ -5093,6 +5098,17 @@ function formatEta(seconds) {
   return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
+// Queue cards show real wall-clock time per task. Provider ETA remains in
+// state for polling diagnostics, but is deliberately not presented as fact.
+function formatElapsedTime(ms) {
+  var total = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  var h = Math.floor(total / 3600);
+  var m = Math.floor((total % 3600) / 60);
+  var s = total % 60;
+  var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+  return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+}
+
 // ══════════ MULTI-TASK ACTIVE QUEUE PERSISTENCE ══════════
 // A list now (previously a single object) — several generations can be in
 // flight at once and each needs to survive a page close/reopen on its own,
@@ -5103,10 +5119,10 @@ var ACTIVE_TASKS_KEY = 'mii_ai_video_active_tasks_v2';
 function loadActiveTaskEntries() {
   try { return JSON.parse(localStorage.getItem(ACTIVE_TASKS_KEY) || '[]'); } catch(_) { return []; }
 }
-function saveActiveTaskEntry(taskId, meta) {
+function saveActiveTaskEntry(taskId, meta, startTs) {
   try {
     var list = loadActiveTaskEntries().filter(function(t) { return t.taskId !== taskId; });
-    list.push({ taskId: taskId, ts: Date.now(), meta: meta || null });
+    list.push({ taskId: taskId, ts: startTs || Date.now(), meta: meta || null });
     localStorage.setItem(ACTIVE_TASKS_KEY, JSON.stringify(list));
   } catch(_) {}
 }
@@ -5148,8 +5164,15 @@ function pollQueueTask(taskId, opts) {
   }
   function markFailed(msg) {
     var e = els();
+    if (state.clockInterval) clearInterval(state.clockInterval);
+    state.failed = true;
+    refreshQueueBadge();
     if (e.item) e.item.classList.add('failed');
-    if (e.stage) { e.stage.textContent = msg || 'Generate gagal'; e.stage.classList.add('err'); }
+    if (e.stage) {
+      e.stage.textContent = '✕ Failed · ' + formatElapsedTime(Date.now() - state.startTs) + (msg ? ' · ' + msg : '');
+      e.stage.title = msg || 'Generate gagal';
+      e.stage.classList.add('err');
+    }
     if (e.bar) e.bar.style.width = '0%';
     if (e.eta) e.eta.textContent = '';
     if (e.dismiss) e.dismiss.style.display = 'block';
@@ -5190,10 +5213,8 @@ function pollQueueTask(taskId, opts) {
           var pacedRemaining = Math.max(pacedTotal - elapsedSec, 0);
           var remaining = serverRemaining != null ? (pacedRemaining * 0.7 + serverRemaining * 0.3) : pacedRemaining;
           state.remainingSec = remaining;
-          if (e.eta) e.eta.textContent = formatEta(remaining);
         } else if (serverRemaining != null) {
           state.remainingSec = serverRemaining;
-          if (e.eta) e.eta.textContent = formatEta(serverRemaining);
         }
 
         if (status === 'completed') {
@@ -5226,7 +5247,8 @@ function pollQueueTask(taskId, opts) {
             var rec = out.archive_available === false ? null : saveGenerationToHistory(resultPayload, meta);
             state.resultRecordId = rec && rec.id;
             if (e.stage) e.stage.textContent = out.archive_available === false
-              ? 'Result generated — save failed' : 'Saved to History';
+              ? '✓ Completed · ' + formatElapsed(elapsedMs) + ' · save failed'
+              : '✓ Completed · ' + formatElapsed(elapsedMs);
             state.completed = true;
             markDone();
             if (out.archive_available === false && e.item) e.item.classList.add('save-failed');
@@ -5314,17 +5336,16 @@ function pollQueueTask(taskId, opts) {
   state.tick = tick;
   if (!(opts && opts.silentResume)) tick(); // check right away instead of waiting for the first 3s tick
   state.interval = setInterval(tick, 3000);
-  // Real per-second countdown — ticks down every 1s so the ETA visibly
-  // counts like a clock instead of only jumping every 3s when a poll
-  // response lands. It never invents time: it just counts down whatever
-  // state.remainingSec was last resynced to from the server above, and
-  // freezes at 0 (never negative) until the next poll corrects it.
+  // Reuse the existing per-task clock for elapsed time. Each closure reads
+  // only its own persisted startTs, so concurrent and resumed jobs cannot
+  // reset or alter one another's clock.
   if (state.clockInterval) clearInterval(state.clockInterval);
+  var initialElapsedEl = document.getElementById('genqEtaTxt_' + taskId);
+  if (initialElapsedEl) initialElapsedEl.textContent = formatElapsedTime(Date.now() - state.startTs);
   state.clockInterval = setInterval(function() {
-    if (state.remainingSec == null || !activeGens[taskId]) return;
-    state.remainingSec = Math.max(state.remainingSec - 1, 0);
+    if (!activeGens[taskId] || state.completed || state.failed) return;
     var eEl = document.getElementById('genqEtaTxt_' + taskId);
-    if (eEl) eEl.textContent = formatEta(state.remainingSec);
+    if (eEl) eEl.textContent = formatElapsedTime(Date.now() - state.startTs);
   }, 1000);
 }
 
@@ -5355,7 +5376,7 @@ function retryQueueItem(taskId) {
       var list = document.getElementById('genQueueList');
       list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId2, g.meta));
       activeGens[taskId2] = { meta: g.meta, startTs: Date.now() };
-      saveActiveTaskEntry(taskId2, g.meta);
+      saveActiveTaskEntry(taskId2, g.meta, activeGens[taskId2].startTs);
       refreshQueueBadge();
       pollQueueTask(taskId2);
     })
