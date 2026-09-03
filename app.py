@@ -3447,27 +3447,29 @@ def validateVideo(dropbox_url):
 # provider schema: they are applied only after a generated video has been
 # securely fetched, and can be tuned here without changing provider payloads.
 VIDEO_OUTPUT_BITRATE_PROFILES = {
-    '480p': {'STANDARD': '1200k', 'HIGH': '2200k', 'MAX': '3500k'},
-    '720p': {'STANDARD': '2500k', 'HIGH': '4500k', 'MAX': '7000k'},
+    '480p': {'STANDARD': '1200k', 'HIGH': '2200k'},
+    '720p': {'STANDARD': '2500k', 'HIGH': '4500k'},
+    '768p': {'STANDARD': '3000k', 'HIGH': '5200k'},
+    '1080p': {'STANDARD': '4500k', 'HIGH': '8000k'},
+    '2k': {'STANDARD': '8000k', 'HIGH': '14000k'},
+    '4k': {'STANDARD': '16000k', 'HIGH': '28000k'},
 }
 
 
 def _normalize_video_output_bitrate(value):
-    value = str(value or 'AUTO').upper()
-    return value if value in ('AUTO', 'STANDARD', 'HIGH', 'MAX') else 'AUTO'
+    value = str(value or 'HIGH').upper()
+    return value if value in ('STANDARD', 'HIGH') else 'HIGH'
 
 
 def _video_output_bitrate_target(profile, resolution):
-    """Return the resolution-aware Mii target, or None for pass-through."""
+    """Return the resolution-aware Mii-owned final-video target."""
     profile = _normalize_video_output_bitrate(profile)
-    if profile == 'AUTO':
-        return None
     return VIDEO_OUTPUT_BITRATE_PROFILES.get(str(resolution).lower(),
                                              VIDEO_OUTPUT_BITRATE_PROFILES['720p'])[profile]
 
 
 def _apply_video_output_bitrate(video_bytes, profile, resolution):
-    """Transcode video only while stream-copying audio and other streams."""
+    """Apply a Mii output profile only when the source exceeds its target."""
     target = _video_output_bitrate_target(profile, resolution)
     if target is None:
         return video_bytes
@@ -3478,6 +3480,18 @@ def _apply_video_output_bitrate(video_bytes, profile, resolution):
             path_in = src.name
         path_out = path_in + '.output.mp4'
         rate = int(target[:-1])
+        probe = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+             '-show_entries', 'stream=bit_rate', '-of', 'default=nw=1:nk=1', path_in],
+            check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        try:
+            source_rate = int((probe.stdout or b'0').decode().strip() or 0)
+        except (ValueError, AttributeError):
+            source_rate = 0
+        # A lower/equal bitrate cannot be improved by re-encoding. Preserve
+        # provider bytes verbatim and avoid needless generational loss.
+        if source_rate and source_rate <= rate * 1000:
+            return video_bytes
         cmd = ['ffmpeg', '-y', '-i', path_in, '-map', '0', '-c', 'copy',
                '-c:v', 'libx264', '-b:v', target, '-maxrate', target,
                '-bufsize', f'{rate * 2}k', '-movflags', '+faststart', path_out]
@@ -3592,7 +3606,8 @@ def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body,
     _persist_task(task_id)
 
 
-def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None, mute_audio=False):
+def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
+                      mute_audio=False, output_bitrate='HIGH', resolution='720p'):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -3627,13 +3642,8 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
             headers={'x-api-key': _segmind_api_key(), 'Content-Type': 'application/json'},
             json=body, timeout=600,
         )
-        # We optimistically send bitrate_mode on every Seedance tier even
-        # though it's only confirmed in Segmind's docs for the PRO endpoint.
-        # If a tier doesn't actually support it, Segmind is expected to
-        # reject the request with a 400 — retry once, stripped of that one
-        # field, instead of failing the whole generation over an optional
-        # quality knob. (This also doubles as a live test of whether Fast/
-        # Mini accept it: check the logs for this warning to find out.)
+        # Defensive compatibility for the one endpoint with a verified native
+        # bitrate_mode. Universal Mii output_bitrate never enters this body.
         if resp.status_code == 400 and 'bitrate_mode' in body:
             app.logger.warning('%s endpoint=%s got 400 with bitrate_mode set (body snippet: %s) — retrying once without it',
                                 log_prefix, endpoint, resp.text[:300])
@@ -3763,6 +3773,9 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
                 # audio still attached rather than losing the output.
                 app.logger.warning('%s mute_audio requested but ffmpeg strip failed, keeping original audio: %s', log_prefix, mute_err)
 
+        if output_type == 'video':
+            result_bytes = _apply_video_output_bitrate(result_bytes, output_bitrate, resolution)
+
         # Save locally first (always works, and lets the result play back
         # immediately without waiting on a second network hop to Dropbox).
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
@@ -3795,7 +3808,10 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
 
         output_key = 'image_url' if is_image else ('audio_url' if is_audio else 'video_url')
         # size_bytes lets the frontend show the saved file size in History
-        _set(status='completed', progress=100, output={output_key: final_url, 'size_bytes': len(result_bytes)})
+        _set(status='completed', progress=100, output={
+            output_key: final_url, 'size_bytes': len(result_bytes),
+            'bitrate': output_bitrate if output_type == 'video' else None,
+        })
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
@@ -3921,7 +3937,7 @@ def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
     return body
 
 
-def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bitrate='AUTO', resolution='720p'):
+def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bitrate='HIGH', resolution='720p'):
     """Run the async provider job inside the existing Mii task lifecycle."""
     def _set(**values):
         with AIVIDEO_TASKS_LOCK:
@@ -3954,7 +3970,7 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bi
         archive_available = True
         for index, source in enumerate(sources):
             media = _fetch_generated_result(source['url'], output_type)
-            if output_type == 'video' and family == 'seedance25' and output_bitrate != 'AUTO':
+            if output_type == 'video':
                 media = _apply_video_output_bitrate(media, output_bitrate, resolution)
             total_bytes += len(media)
             # Preserve provider bytes verbatim and name them for their actual
@@ -3997,7 +4013,7 @@ def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bi
         output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
                   'original_url': None, 'size_bytes': total_bytes,
                   'archive_available': archive_available,
-                  'bitrate': output_bitrate if output_type == 'video' and family == 'seedance25' else None}
+                  'bitrate': output_bitrate if output_type == 'video' else None}
         if not archive_available:
             output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
         if output_type == 'image':
@@ -4266,7 +4282,8 @@ def aivideo_generate():
 
     budget_video_families = {'seedance', 'seedance25', 'wan30'}
     budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimage'}
-    if family in budget_video_families or family in budget_image_families:
+    use_budget_video = family in budget_video_families and not (family == 'seedance' and model_key == 'FAST')
+    if use_budget_video or family in budget_image_families:
         output_type = 'image' if family in budget_image_families else 'video'
         # References remain blocked for contracts that have not been verified.
         # Seedance 2.0 is handled below using its documented singular media fields.
@@ -4324,7 +4341,7 @@ def aivideo_generate():
                                 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
 
         output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
-                          if family == 'seedance25' and output_type == 'video' else 'AUTO')
+                          if output_type == 'video' else None)
         task_id = uuid.uuid4().hex
         with AIVIDEO_TASKS_LOCK:
             _prune_aivideo_tasks()
@@ -4390,18 +4407,12 @@ def aivideo_generate():
             'return_last_frame': False,
             'skip_moderation': False,
         }
-        # bitrate_mode: confirmed in Segmind's official seedance-2.0 (PRO)
-        # docs — 'standard' (default) or 'high' (~5-6x bitrate, no price
-        # difference). Not documented for seedance-2.0-fast or -mini, but the
-        # user wants max quality (least compression) across every tier, so
-        # we optimistically send bitrate_mode='high' on all three — if a
-        # tier actually rejects it, _run_segmind_task retries once
-        # automatically without the field, so generation never fails just
-        # because of this optional quality knob.
-        bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
-        if bitrate_mode not in ('standard', 'high'):
-            bitrate_mode = 'high'
-        body['bitrate_mode'] = bitrate_mode
+        # bitrate_mode is a provider-native field verified only for PRO.
+        # FAST stays on its existing Segmind route but receives no invented
+        # provider option; all tiers still use Mii's final output profile.
+        if model_key == 'PRO':
+            body['bitrate_mode'] = _normalize_video_output_bitrate(
+                payload.get('output_bitrate')).lower()
         if first_frame_url:
             body['first_frame_url'] = first_frame_url
         if last_frame_url:
@@ -4723,7 +4734,13 @@ def aivideo_generate():
     _persist_task(task_id)
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
                      task_id, family, model_key, endpoint)
-    threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family, mute_audio), daemon=True).start()
+    output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
+                      if output_type == 'video' else None)
+    if output_type == 'video':
+        AIVIDEO_TASKS[task_id]['output_bitrate'] = output_bitrate
+    threading.Thread(target=_run_segmind_task,
+                     args=(task_id, endpoint, body, output_type, family, mute_audio,
+                           output_bitrate, body.get('resolution', '720p')), daemon=True).start()
 
     estimated_time = (duration * 12) if duration else (30 if output_type == 'audio' else 20)
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})

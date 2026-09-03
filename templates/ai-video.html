@@ -512,13 +512,6 @@ button{background:none;border:none;cursor:pointer}
   box-shadow:0 0 28px rgba(255,32,64,.28),0 10px 26px rgba(0,0,0,.35);transition:transform .16s,box-shadow .16s;
   animation:genGlow 2.6s ease-in-out infinite;
 }
-/* Credit cost badge pinned to the right inside the Generate button — mirrors
-   the coin+cost chip shown inside the reference's Generate button. Text is
-   filled by updateCreditEstimate() (id=creditCostTxt); empty string collapses
-   the badge to nothing via :empty so it never shows a stray blank pill. */
-.gen-cost-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.02em;color:#fff}
-.gen-cost-badge:empty{display:none}
-.gen-cost-badge.free{color:#7CFF9C}
 @keyframes genGlow{
   0%,100%{box-shadow:0 0 22px rgba(255,32,64,.24),0 10px 26px rgba(0,0,0,.35)}
   50%{box-shadow:0 0 40px rgba(255,32,64,.44),0 10px 30px rgba(0,0,0,.4)}
@@ -932,13 +925,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible,.el-tab:foc
 }
 
 /* Credits chip in settings row */
-.credit-chip{background:rgba(255,32,64,.08);border-color:rgba(255,32,64,.28);color:#fff;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.02em;gap:8px}
-.credit-chip:hover{background:rgba(255,32,64,.14);border-color:rgba(255,32,64,.45)}
-.credit-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(255,32,64,.7);flex-shrink:0}
-.credit-chip-balance{color:#fff}
-.credit-chip-sep{color:var(--text-faint);opacity:.6}
-.credit-chip-cost{color:var(--accent-hover)}
-.credit-chip-cost.free{color:var(--text-faint)}
 .account-credit-card{background:linear-gradient(135deg,rgba(255,32,64,.14),rgba(255,32,64,.04));border:1px solid rgba(255,32,64,.32);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}
 .acc-row{display:flex;align-items:center;justify-content:space-between;font-family:var(--body);font-size:14px}
 .acc-row .lbl{color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.7rem}
@@ -1211,7 +1197,6 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
 .settings-row{gap:7px;padding-bottom:2px;scroll-snap-type:x proximity}
 .chip{scroll-snap-align:start;border-radius:13px;min-height:38px;padding:8px 11px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset;font-size:13px}
-.credit-chip{min-width:0;border-color:rgba(255,32,64,.42);background:linear-gradient(180deg,rgba(255,32,64,.16),rgba(255,32,64,.045));box-shadow:0 12px 28px -20px rgba(255,32,64,.7),0 1px 0 rgba(255,255,255,.06) inset}
 .action-row{gap:12px}.qty-stepper{min-height:58px;border-radius:20px;background:linear-gradient(180deg,#252525,#191919);box-shadow:0 1px 0 rgba(255,255,255,.055) inset}.qty-btn{width:26px;height:26px;border-radius:10px;background:rgba(255,255,255,.035)}
 .gen-btn{min-height:64px;border-radius:23px;background:linear-gradient(180deg,#ff2142 0%,#bf001e 100%)!important;box-shadow:0 18px 38px -16px rgba(255,32,64,.95),0 1px 0 rgba(255,255,255,.2) inset!important;position:relative;overflow:hidden}
 .gen-txt{position:relative;z-index:1}
@@ -1280,7 +1265,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   .mode-btn{min-width:70px;padding:9px 17px}.canvas{padding:16px 14px 4px}.canvas-title{font-size:31px}.canvas-sub{font-size:13px}
   .panel-wrap{padding-left:8px;padding-right:8px}.panel{padding:10px 12px calc(12px + var(--safe-b));border-radius:28px 28px 22px 22px}.model-select{min-height:50px}.model-select-txt{font-size:16px}.model-select-icon{width:29px;height:29px}.el-tab{font-size:16px;padding:10px 6px}.upload-row{gap:10px}.upload-card,.frame-card{border-radius:20px;height:88px}.uc-label{font-size:14px}.prompt-btn{min-height:52px;border-radius:20px}.chip{min-height:36px;font-size:13px}.qty-stepper{min-height:52px}.gen-btn{min-height:56px;border-radius:20px}.model-dock{left:8px;right:8px;padding:12px;border-radius:24px}.model-dock-grid{gap:9px}.dock-feature-card{min-height:96px;padding:11px}.dock-list-row{padding:8px 4px 7px}.dock-desc{font-size:.64rem}.dock-name{font-size:.62rem}
 }
-@media(max-width:360px){.dock-feature-card{min-height:auto}.upload-card,.frame-card{height:82px}.prompt-btn-txt{font-size:16px}.credit-chip-sep{display:none}}
+@media(max-width:360px){.dock-feature-card{min-height:auto}.upload-card,.frame-card{height:82px}.prompt-btn-txt{font-size:16px}}
 
 /* Media row now matches Dreamkreat's horizontal layout — see .upload-row rules above.
    Extra-specific overrides below so the shared .upload-card,.frame-card "polish" rule
@@ -1288,7 +1273,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .upload-row .upload-card{width:64px;height:64px;border-radius:16px}
 .upload-row .upload-card .uc-label{font-size:9.5px;font-weight:800;letter-spacing:.04em}
 .upload-row .upload-card .uc-icon{width:20px;height:20px}
-@media(max-width:360px){.upload-row .upload-card{width:56px!important;height:56px!important}}
+@media(max-width:360px){.upload-row .upload-card{width:60px;height:60px}}
 /* ============ SUCCESS TOAST — "Added N reference image", matches Dreamkreat behavior ============ */
 .toast-wrap{position:fixed;top:calc(12px + var(--safe-t));left:0;right:0;z-index:250;display:flex;justify-content:center;pointer-events:none;padding:0 16px}
 .toast{display:flex;align-items:center;gap:9px;padding:11px 18px;border-radius:999px;background:rgba(20,28,20,.92);border:1px solid rgba(80,220,140,.4);box-shadow:0 14px 34px -14px rgba(0,0,0,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateY(-14px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s ease;max-width:90vw}
@@ -1409,18 +1394,22 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.mini .sheet-opt-desc{font-size:.62rem;margin-top:1px}
 .sheet.mini .sheet-opt-check{top:10px;right:8px}
 .sheet-overlay.mini-ov{background:transparent}
-/* Seedance 2.5 uses the established Seedance 2.0 chips. Flex sizing is the
-   only model-specific adaptation needed to keep all five inside the card. */
-.settings-row.seedance25-settings{overflow-x:visible}
-.settings-row.seedance25-settings>.chip{flex:1 1 auto;min-width:0;justify-content:center;padding-inline:7px}
-.settings-row.seedance25-settings>.credit-chip{flex:1.2 1 auto}
-.settings-row.seedance25-settings .credit-chip-balance{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* Shared video settings reflow instead of shrinking controls or special-casing
+   one provider. */
+.settings-row.video-settings{overflow-x:visible;flex-wrap:wrap}
+.settings-row.video-settings>.chip,.settings-row.video-settings>.tier-seg{min-height:40px}
 @media(max-width:430px){
-  .settings-row.seedance25-settings{gap:4px;max-width:100%;flex-wrap:wrap}
-  .settings-row.seedance25-settings>.chip{padding-inline:5px;font-size:10.5px;gap:3px}
-  .settings-row.seedance25-settings>.credit-chip{flex-basis:58px}
-  .settings-row.seedance25-settings .chip-ico{display:none}
-  .settings-row.seedance25-settings .chip-car{margin-left:0;border-left-width:3px;border-right-width:3px}
+  .settings-row.video-settings{gap:6px;max-width:100%}
+  .settings-row.video-settings>.chip{padding-inline:10px;font-size:12px;gap:4px}
+  .settings-row.video-settings .chip-ico{display:none}
+  .settings-row.video-settings .chip-car{margin-left:1px}
+  .frames-media-row{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:stretch;gap:8px}
+  .frames-media-row>div:first-child{grid-column:1;grid-row:1;min-width:40px}
+  .frames-media-row .frame-row{grid-column:2;grid-row:1;gap:8px}
+  .frames-media-row .frame-card{min-height:88px;height:auto;aspect-ratio:4/3}
+  .frames-media-row .prompt-mount{grid-column:2;grid-row:2;min-width:0;min-height:54px}
+  .frames-media-row .prompt-btn{padding:11px 12px}
+  .frames-media-row .prompt-btn-txt{font-size:13px}
 }
 /* Thumbnail video (frame pertama) mengikuti gaya thumbnail gambar */
 .uc-thumb{object-fit:cover}
@@ -1871,9 +1860,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
       </div>
 
       <div class="settings-row">
-        <div class="chip credit-chip" onclick="navigateTo('credits')" title="Credits">
-          <span class="credit-chip-balance" id="creditBalanceTxt">— CREDITS</span>
-        </div>
         <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
         <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
         <div class="chip" id="imageFormatChip" onclick="openSheet('imageformat',this)" style="display:none"><span style="opacity:.6">Format</span><span id="imageFormatLabel">PNG</span><span class="chip-car"></span></div>
@@ -1900,7 +1886,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <button class="gen-btn edge-glow" id="generateBtn" onclick="startGenerate()" disabled>
           <span class="gen-btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.9 10.1a2.6 2.6 0 0 0-3.6-3.6L16 7.8a2.1 2.1 0 0 1-3-3l1.3-1.3a2.6 2.6 0 1 0-3.6-3.7"/><path d="m3 21 4.3-4.3"/><path d="M12.5 6.5 3 16l5 5 9.5-9.5"/></svg></span>
           <span class="gen-txt">GENERATE</span>
-          <span class="gen-cost-badge" id="creditCostTxt"></span>
         </button>
       </div>
 
@@ -2295,6 +2280,7 @@ var modelFamilies = {
       caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFirstFrame:true,supportsEndFrame:true, supportsVideoEdit:true, maxReferenceImages:9, maxReferenceVideos:1, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], supportsAudioGeneration:true },
       qualities:[
         {id:'MINI',label:'MINI',caps:{resolutions:['480p','720p']}},
+        {id:'FAST',label:'FAST',caps:{resolutions:['480p','720p']}},
         {id:'PRO',label:'PRO',caps:{resolutions:['480p','720p','1080p','4K']}}
       ]
     },
@@ -2449,7 +2435,7 @@ var selectedMotion = 'Dynamic';
 // duration are auto-filled from the video and locked in the UI (spec:
 // user doesn't pick these manually once a video is selected).
 var motionControlMeta = null;
-var selectedBitrate = 'AUTO';
+var selectedBitrate = 'HIGH';
 var modelSpecificSettings = {};
 var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
 var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (generation service bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
@@ -2531,18 +2517,12 @@ function updateCollapsedBar(modelTxt, progressTxt) {
   document.getElementById('collapsedProgressTxt').textContent = progressTxt || '';
 }
 
-// ══════════ CREDITS (estimate + remaining balance) ══════════
+// ══════════ CREDITS (actual balance only; never rendered in generator) ══════════
 var creditBalance = null;
-function estimateCredits() { return 0; }
 function formatBalance(v) { return v == null ? '— CREDITS' : Number(v).toLocaleString() + ' CREDITS'; }
-// Estimated costs are intentionally disabled. The real provider balance stays live.
-function updateCreditEstimate() {
-  var costEl=document.getElementById('creditCostTxt'), balEl=document.getElementById('creditBalanceTxt');
-  if(costEl) costEl.textContent='';
-  if(balEl) balEl.textContent=formatBalance(creditBalance);
-}
+function updateCreditEstimate() {}
 function fetchCreditBalance() { fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
-  if(data && typeof data.total_available==='number'){creditBalance=data.total_available;updateCreditEstimate();}
+  if(data && typeof data.total_available==='number') creditBalance=data.total_available;
 }).catch(function(){}); }
 
 // ══════════ SIDEBAR ══════════
@@ -2858,19 +2838,14 @@ var sheetDefs = {
   },
   bitrate: {
     title: 'Bitrate',
-    // generation service's seedance-2.0 (PRO) docs: 'standard' = smaller/faster files,
-    // 'high' = ~5-6x higher bitrate, better fidelity, larger files. Same price.
-    options: ['Standard','High'],
+    options: ['STANDARD','HIGH'],
     desc: function(v){
-      if (v === 'AUTO') return 'Preserve provider output';
       if (v === 'STANDARD') return 'Moderate Mii output size';
       if (v === 'HIGH') return 'Higher Mii output bitrate';
-      if (v === 'MAX') return 'Highest reasonable Mii output bitrate';
-      return v === 'High' ? '~5-6x bitrate · larger file, same price' : 'Smaller file, faster download';
     },
-    get: function(){ return selectedFamily && selectedFamily.key === 'seedance25' ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard'); },
+    get: function(){ return selectedBitrate; },
     set: function(v){
-      selectedBitrate = selectedFamily && selectedFamily.key === 'seedance25' ? v : v.toLowerCase();
+      selectedBitrate = v === 'STANDARD' ? 'STANDARD' : 'HIGH';
       document.getElementById('bitrateLabel').textContent = v;
       persistCanonicalModelState();
     }
@@ -3120,7 +3095,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     selectedRatio = '16:9';
     selectedDuration = 5;
     muteAudioEnabled = false;
-    selectedBitrate = isSeedanceFamily(family.key) ? 'high' : 'STANDARD';
+    selectedBitrate = 'HIGH';
   }
   if (family.key === 'seedance25' && resetFamilyDefaults) {
     selectedRatio = '16:9';
@@ -3138,7 +3113,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     if (typeof options.saved.resolution === 'string') selectedResolution = options.saved.resolution;
     if (Number.isFinite(options.saved.duration)) selectedDuration = options.saved.duration;
     if (typeof options.saved.muteAudio === 'boolean') muteAudioEnabled = options.saved.muteAudio;
-    if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate;
+    if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate === 'STANDARD' ? 'STANDARD' : 'HIGH';
     if (activeMode === 'image') restoreTierState(options.saved);
   }
   document.getElementById('modelSelectTxt').textContent = family.name;
@@ -3154,7 +3129,7 @@ function applySelectedFamily(family, qualityIdx, options) {
   if (resolutionLabel) resolutionLabel.textContent = selectedResolution;
   renderMuteAudioChip();
   var bitrateLabel = document.getElementById('bitrateLabel');
-  if (bitrateLabel) bitrateLabel.textContent = family.key === 'seedance25' ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard');
+  if (bitrateLabel) bitrateLabel.textContent = selectedBitrate;
   updateCreditEstimate();
   updateGenerateButtonState();
   closeSheet();
@@ -3340,9 +3315,8 @@ function applyModelCapabilities() {
   var imageQualityControl = document.getElementById('imageQualityControl');
   var imageAdvancedControl = document.getElementById('imageAdvancedControl');
   var settingsRow = document.querySelector('.settings-row');
-  var isSeedance25Video = activeMode === 'video' && selectedFamily && selectedFamily.key === 'seedance25';
   if (settingsRow) {
-    settingsRow.classList.toggle('seedance25-settings', isSeedance25Video);
+    settingsRow.classList.toggle('video-settings', activeMode === 'video');
     // Image intentionally shares Video's horizontally scrolling settings row.
   }
   if (ratioChip)  ratioChip.style.display  = caps.ratio ? '' : 'none';
@@ -3375,27 +3349,21 @@ function applyModelCapabilities() {
     document.getElementById('durationMaxLabel').textContent = 'not published';
   }
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
-  // Seedance 2.0 keeps its legacy provider option. Seedance 2.5 uses the same
-  // chip for Mii-owned post-result output profiles; those never enter its
-  // BudgetPixel payload.
-  var bitrateSupported = !!caps.qualityControl || (selectedFamily && isSeedanceFamily(selectedFamily.key));
+  // Bitrate is a Mii-owned final-video profile, independent of provider
+  // capability flags and never a reason to add a provider request field.
+  var modelProducesVideo = !!(rawCaps.supportsT2V || rawCaps.supportsI2V || caps.video || caps.frames);
+  var bitrateSupported = activeMode === 'video' && !!selectedFamily && modelProducesVideo;
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
-  if (bitrateChip) {
-    bitrateChip.classList.toggle('locked', isSeedance25Video);
-    bitrateChip.setAttribute('aria-disabled', isSeedance25Video ? 'true' : 'false');
-  }
+  if (bitrateChip) bitrateChip.removeAttribute('aria-disabled');
   if (!bitrateSupported) {
-    selectedBitrate = 'AUTO';
     var bitrateLabelEl = document.getElementById('bitrateLabel');
-    if (bitrateLabelEl) bitrateLabelEl.textContent = 'High';
+    if (bitrateLabelEl) bitrateLabelEl.textContent = 'HIGH';
   }
   if (sheetDefs && sheetDefs.bitrate) {
-    var outputProfiles = isSeedance25Video;
-    sheetDefs.bitrate.options = outputProfiles ? ['STANDARD','HIGH'] : ['Standard','High'];
-    if (outputProfiles) selectedBitrate = 'HIGH';
-    if (!outputProfiles && ['standard','high'].indexOf(selectedBitrate) === -1) selectedBitrate = 'high';
+    sheetDefs.bitrate.options = ['STANDARD','HIGH'];
+    if (['STANDARD','HIGH'].indexOf(selectedBitrate) === -1) selectedBitrate = 'HIGH';
     var bitrateLabel = document.getElementById('bitrateLabel');
-    if (bitrateLabel) bitrateLabel.textContent = outputProfiles ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard');
+    if (bitrateLabel) bitrateLabel.textContent = selectedBitrate;
   }
 
   // Mute-audio: only meaningful for the two video-output families that can
@@ -5016,13 +4984,8 @@ function startGenerate() {
       if (selectedSequentialMode === 'auto') body.max_images = selectedMaxImages;
     }
   }
-  // Seedance 2.0 retains its verified provider option. Seedance 2.5 sends an
-  // explicitly Mii-owned output preference; the server strips it before the
-  // BudgetPixel request and snapshots it for post-result processing.
-  if (selectedFamily.key === 'seedance') {
-    body.bitrate_mode = selectedBitrate;
-  }
-  if (selectedFamily.key === 'seedance25' && activeMode === 'video') {
+  // Internal Mii preference. Provider payload builders never forward it.
+  if (activeMode === 'video') {
     body.output_bitrate = selectedBitrate;
   }
   if (selectedFamily.key === 'seedaudio') {
@@ -5043,7 +5006,7 @@ function startGenerate() {
     activeMode: activeMode,
     modelDisplayName: selectedModelName,
     fullModelLabel: hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName,
-    bitrateSnapshot: isSeedanceFamily(selectedFamily.key) ? selectedBitrate : '',
+    bitrateSnapshot: activeMode === 'video' ? selectedBitrate : '',
     audioApplicable: activeMode === 'video' && (isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo'),
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
@@ -6040,7 +6003,7 @@ function saveGenerationToHistory(res, meta) {
       refVideos: media.video.map(function(m) { return m.url; }).filter(Boolean),
       modelKey: selectedFamily.key,
       modelTier: selectedModelTier,
-      bitrate: isSeedanceFamily(selectedFamily.key) ? selectedBitrate : '',
+      bitrate: activeMode === 'video' ? selectedBitrate : '',
       archived: false
     };
   }
@@ -6255,9 +6218,9 @@ function restoreFromRecord(r) {
     if (d) { selectedDuration = d; renderDurationSlider(); }
   }
   if (r.bitrate) {
-    selectedBitrate = r.bitrate;
+    selectedBitrate = r.bitrate === 'STANDARD' ? 'STANDARD' : 'HIGH';
     var bitrateLabelEl2 = document.getElementById('bitrateLabel');
-    if (bitrateLabelEl2) bitrateLabelEl2.textContent = r.modelKey === 'seedance25' ? r.bitrate : (r.bitrate === 'high' ? 'High' : 'Standard');
+    if (bitrateLabelEl2) bitrateLabelEl2.textContent = selectedBitrate;
   }
   // Restore prompt
   promptInput.value = r.prompt || '';
