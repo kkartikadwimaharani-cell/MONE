@@ -3316,8 +3316,16 @@ function applyModelCapabilities() {
   var imageAdvancedControl = document.getElementById('imageAdvancedControl');
   var settingsRow = document.querySelector('.settings-row');
   if (settingsRow) {
-    settingsRow.classList.toggle('video-settings', activeMode === 'video');
-    // Image intentionally shares Video's horizontally scrolling settings row.
+    // Image intentionally shares Video's horizontally scrolling settings row:
+    // ratio/resolution/quality chips stay on one line and slide to the side
+    // instead of wrapping and overlapping each other. The 'video-settings'
+    // wrap layout was being force-applied to Video mode, contradicting this
+    // and causing chips to stack/clip instead of scrolling — never add it.
+    settingsRow.classList.remove('video-settings');
+    // Always land back at the start of the row on a model/tier switch, so a
+    // scroll position left over from a previous, wider model's chip set
+    // can't clip the first chip on the newly selected model.
+    settingsRow.scrollLeft = 0;
   }
   if (ratioChip)  ratioChip.style.display  = caps.ratio ? '' : 'none';
   var imageDetailSupported = activeMode === 'image' && (rawCaps.supportsSize || rawCaps.supportsMegapixel || rawCaps.supportsResolution);
@@ -3352,6 +3360,9 @@ function applyModelCapabilities() {
   // Bitrate is a Mii-owned final-video profile, independent of provider
   // capability flags and never a reason to add a provider request field.
   var modelProducesVideo = !!(rawCaps.supportsT2V || rawCaps.supportsI2V || caps.video || caps.frames);
+  // Seedance 2.5's mute-audio chip opens a richer sheet (see openAudioSelector)
+  // instead of a plain toggle, so it alone gets the caret affordance.
+  var isSeedance25Video = !!(selectedFamily && selectedFamily.key === 'seedance25' && modelProducesVideo);
   var bitrateSupported = activeMode === 'video' && !!selectedFamily && modelProducesVideo;
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
   if (bitrateChip) bitrateChip.removeAttribute('aria-disabled');
