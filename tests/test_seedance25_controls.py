@@ -49,7 +49,7 @@ class Seedance25ControlsTests(unittest.TestCase):
         caps = budgetpixel_provider.video_capabilities("seedance25", "STANDARD")
         self.assertEqual(caps["aspect_ratios"], ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"))
         self.assertNotIn("Advanced Video Settings", self.template)
-        self.assertIn("settingsRow.classList.toggle('seedance25-settings'", self.template)
+        self.assertIn("settingsRow.classList.toggle('video-settings'", self.template)
         self.assertIn("options: ['Audio On','Audio Off']", self.template)
         for control in ('ratioChip', 'resolutionChip', 'bitrateChip', 'muteAudioChip'):
             self.assertIn('class="chip" id="%s"' % control, self.template)
@@ -58,7 +58,7 @@ class Seedance25ControlsTests(unittest.TestCase):
     def test_mobile_row_has_bounded_wrap_at_target_widths(self):
         css = self.template
         self.assertIn('@media(max-width:430px)', css)
-        self.assertIn('max-width:100%;flex-wrap:wrap', css)
+        self.assertIn('.settings-row.video-settings{overflow-x:visible;flex-wrap:wrap}', css)
         for width in (360, 390, 412, 430):
             self.assertLessEqual(width, 430)
 
@@ -84,11 +84,9 @@ class Seedance25ControlsTests(unittest.TestCase):
         self.assertNotIn("bitrate", args[3])
         self.assertEqual(args[5:], ("HIGH", "480p"))
 
-    def test_auto_output_processing_is_passthrough(self):
-        source = b"provider video"
-        with patch.object(app.subprocess, "run") as run:
-            self.assertIs(app._apply_video_output_bitrate(source, "AUTO", "720p"), source)
-        run.assert_not_called()
+    def test_invalid_output_profile_safely_defaults_high(self):
+        self.assertEqual(app._normalize_video_output_bitrate("AUTO"), "HIGH")
+        self.assertEqual(app._normalize_video_output_bitrate("MAX"), "HIGH")
 
     def test_profiles_are_resolution_aware(self):
         self.assertEqual(app._video_output_bitrate_target("STANDARD", "480p"), "1200k")
@@ -118,7 +116,7 @@ class Seedance25ControlsTests(unittest.TestCase):
         self.assertNotIn("'-an'", helper)
 
     def test_image_results_never_enter_bitrate_processing(self):
-        self.assertIn("output_type == 'video' and family == 'seedance25'", Path("app.py").read_text())
+        self.assertIn("if output_type == 'video':", Path("app.py").read_text())
 
     def test_audio_off_uses_verified_generate_audio_field(self):
         body = self.capture_body({"family": "seedance25", "model": "STANDARD", "prompt": "A person smiles.",
