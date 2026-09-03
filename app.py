@@ -3903,7 +3903,7 @@ def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
     resolution = payload.get('resolution')
     body = {
         'prompt': prompt,
-        'length_seconds': max(4, min(15, length)),
+        'duration_seconds': max(4, min(15, length)),
         'resolution': resolution if resolution in allowed_resolutions else '720p',
         'aspect_ratio': payload.get('aspect_ratio') if payload.get('aspect_ratio') in SEEDANCE20_RATIOS else '16:9',
         'generate_audio': not mute_audio,
@@ -3911,9 +3911,9 @@ def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
     if image_urls:
         body['reference_images'] = image_urls
     if video_urls:
-        body['video'] = video_urls[0]
+        body['reference_videos'] = video_urls
     if audio_urls:
-        body['audio'] = audio_urls[0]
+        body['reference_audios'] = audio_urls
     if first_frame_url:
         body['image'] = first_frame_url
     if last_frame_url:
@@ -4275,8 +4275,9 @@ def aivideo_generate():
         image_reference_cap = 1 if image_caps.get('singular_image') else image_caps.get('reference_images', 0)
         gpt_references = bool(output_type == 'image' and image_reference_cap and image_urls
                               and not (video_urls or audio_urls or first_frame_url or last_frame_url))
-        seedance20_references = family == 'seedance'
-        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or seedance20_references):
+        budget_video_references = output_type == 'video' and bool(
+            budgetpixel_provider.video_capabilities(family, model_key or 'STANDARD'))
+        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or budget_video_references):
             return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         variant = model_key or 'STANDARD'
         try:
@@ -4314,25 +4315,13 @@ def aivideo_generate():
                 return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': str(exc),
                                 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
         elif output_type == 'video':
-            ranges = {'seedance': (4, 15), 'seedance25': (4, 30), 'wan30': (2, 30)}
-            low, high = ranges[family]
             try:
-                duration = int(payload.get('duration', low))
-            except (TypeError, ValueError):
-                duration = low
-            body['length_seconds'] = max(low, min(high, duration))
-            if family == 'seedance25':
-                capabilities = budgetpixel_provider.video_capabilities(family, variant)
-                allowed = capabilities['resolutions']
-            else:
-                allowed = ('480p', '720p', '1080p')
-            body['resolution'] = payload.get('resolution') if payload.get('resolution') in allowed else '720p'
-            if family == 'seedance25':
-                ratios = capabilities['aspect_ratios']
-                body['aspect_ratio'] = aspect_ratio_in if aspect_ratio_in in ratios else '16:9'
-                body['generate_audio'] = not mute_audio
-            elif aspect_ratio_in:
-                body['aspect_ratio'] = aspect_ratio_in
+                body = budgetpixel_provider.build_video_payload(
+                    family, variant, payload, prompt, image_urls, video_urls, audio_urls,
+                    first_frame_url, last_frame_url, not mute_audio)
+            except budgetpixel_provider.ProviderError as exc:
+                return jsonify({'ok': False, 'error': {'code': exc.code, 'message': exc.public_message,
+                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
 
         output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
                           if family == 'seedance25' and output_type == 'video' else 'AUTO')

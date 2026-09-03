@@ -8,7 +8,6 @@ class BudgetPixelProviderTests(unittest.TestCase):
     def test_all_model_mappings(self):
         expected_video = {
             ('seedance', 'MINI'): '/videos/seedance-2.0-mini',
-            ('seedance', 'FAST'): '/videos/seedance-2.0-fast',
             ('seedance', 'PRO'): '/videos/seedance-2.0',
             ('seedance25', 'STANDARD'): '/videos/seedance-2.5',
             ('wan30', 'STANDARD'): '/videos/wan-3.0-video',

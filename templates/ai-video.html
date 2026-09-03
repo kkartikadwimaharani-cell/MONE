@@ -385,7 +385,7 @@ button{background:none;border:none;cursor:pointer}
 .prompt-btn-arrow{width:15px;height:15px;opacity:.4;flex-shrink:0}
 
 /* ---- FRAMES TAB CONTENT ---- */
-.frame-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.frames-media-row .frame-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1 1 auto;min-width:0}
 .frame-card{
   position:relative;border-radius:16px;border:1.5px dashed rgba(255,255,255,.14);background:var(--btn);
   aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;
@@ -393,6 +393,21 @@ button{background:none;border:none;cursor:pointer}
 .frame-card .uc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .frame-card .uc-label{font-size:16px;font-weight:600;z-index:1}
 .frame-card .uc-icon{width:20px;height:20px;opacity:.65;z-index:1}
+.frames-media-row .frame-card{aspect-ratio:auto;min-width:0;min-height:78px}
+.frames-media-row .frame-card .uc-label{font-size:11px;text-transform:uppercase;text-align:center}
+.prompt-mount{display:flex;flex:1 1 96px;min-width:0}
+.frames-media-row .prompt-mount{flex:0 1 118px;min-width:86px}
+.frames-media-row .prompt-btn{min-width:0}
+@media(max-width:430px){
+  .frames-media-row{gap:5px}
+  .frames-media-row>div:first-child{flex:0 0 36px}
+  .frames-media-row .frame-row{gap:5px}
+  .frames-media-row .frame-card{min-height:72px}
+  .frames-media-row .prompt-mount{flex:0 1 82px;min-width:68px}
+  .frames-media-row .prompt-btn{padding:8px}
+  .frames-media-row .prompt-btn-icon{width:25px;height:25px}
+  .frames-media-row .prompt-btn-txt{font-size:10px}
+}
 .frame-hint{font-size:.78rem;color:var(--text-faint);text-align:center;padding:2px 6px 0;line-height:1.5}
 
 /* Settings dropdown chip row */
@@ -1250,7 +1265,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .model-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 12px}.model-dock-title{font-family:var(--disp);font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--accent-hover);text-transform:uppercase}.model-dock-close{width:30px;height:30px;border-radius:12px;background:rgba(255,255,255,.055);display:grid;place-items:center;color:#fff}
 .model-dock-grid{display:flex;flex-direction:column;gap:8px}.model-dock-col{min-width:0;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dock-label{grid-column:1/-1;font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:0 4px 2px}.dock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.25);color:#ff6d80;font-size:.58rem;font-weight:900;letter-spacing:.08em}
 .dock-feature-card,.dock-list-row{position:relative;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#202020,#151515);box-shadow:0 1px 0 rgba(255,255,255,.045) inset;cursor:pointer;overflow:hidden;transition:transform .16s var(--ease-pop),border-color .18s ease,background .18s ease,box-shadow .22s ease}
-.duration-card.unavailable{opacity:.72}.duration-card.unavailable .duration-slider-wrap{pointer-events:none;filter:saturate(0)}.chip.locked{cursor:not-allowed;opacity:.8}
+.duration-card.unavailable{opacity:.72}.duration-card.unavailable .duration-slider-wrap{pointer-events:none;filter:saturate(0)}.chip.locked{cursor:not-allowed;opacity:.8;pointer-events:none}
 .dock-feature-card{border-radius:20px;padding:13px;min-height:116px;display:flex;flex-direction:column;gap:9px}.dock-list-row{border-radius:14px;min-height:auto;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
 .dock-feature-card:hover,.dock-list-row:hover{transform:translateY(-1px);border-color:rgba(255,60,90,.32)}.dock-feature-card.selected,.dock-list-row.selected{background:linear-gradient(90deg,rgba(255,32,64,.20),rgba(255,32,64,.055));border-color:rgba(255,32,64,.55);box-shadow:0 10px 26px -18px rgba(255,32,64,.75),0 0 0 1px rgba(255,32,64,.18) inset}
 .dock-icon{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,#ff2b4a,#940019);font-family:var(--disp);font-weight:900;font-size:.72rem;box-shadow:0 8px 16px -10px rgba(255,32,64,.9)}.dock-feature-top{display:flex;align-items:center;gap:10px}.dock-name{font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;font-size:.66rem;line-height:1.18}
@@ -1749,11 +1764,13 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
           <span id="refTotalCount"></span>
         </div>
         <div class="media-row" id="mediaRow">
+          <div id="elementsRailMount">
           <div class="type-rail" id="typeRail">
             <div class="rail-pill" id="railPill"></div>
             <button class="rail-btn" id="railImage" data-mode="image" title="Mode Image" onclick="setMode('image')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></button>
             <button class="rail-btn active" id="railVideo" data-mode="video" title="Mode Video" onclick="setMode('video')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></button>
             <button class="rail-btn" id="railAudio" data-mode="audio" title="Mode Audio" onclick="setMode('audio')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
+          </div>
           </div>
 
           <div class="ref-sections" id="refSections">
@@ -1789,17 +1806,19 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
             </div>
           </div>
 
-          <button class="prompt-btn prompt-btn-inline" id="promptBtn" onclick="openPromptEditor()">
+          <div id="elementsPromptMount" class="prompt-mount"><button class="prompt-btn prompt-btn-inline" id="promptBtn" onclick="openPromptEditor()">
             <span class="prompt-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
             <span class="prompt-btn-txt" id="promptBtnTxt">PROMPT</span>
             <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+          </button></div>
         </div>
       </div>
 
       <!-- FRAMES TAB -->
       <div class="tab-content" id="framesTab">
-        <div class="frame-row">
+        <div class="media-row frames-media-row" id="framesMediaRow">
+          <div id="framesRailMount"></div>
+          <div class="frame-row">
           <div class="frame-card" id="cardFirstFrame" onclick="openFrameInput('first')">
             <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
             <span class="uc-label">First Frame</span>
@@ -1808,14 +1827,9 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
             <svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
             <span class="uc-label">Last Frame</span>
           </div>
+          </div>
+          <div id="framesPromptMount" class="prompt-mount"></div>
         </div>
-        <div class="frame-hint">Set start and end keyframes to guide the motion between two images.</div>
-
-        <button class="prompt-btn" id="promptBtnFrames" onclick="openPromptEditor()">
-          <span class="prompt-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
-          <span class="prompt-btn-txt" id="promptBtnFramesTxt">PROMPT</span>
-          <svg class="prompt-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
       </div>
 
       <input type="file" id="imageFileInput" class="hidden-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple />
@@ -1829,7 +1843,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div class="mc-meta-chip" id="mcMetaDurChip"><span class="mc-meta-k">Duration</span><span class="mc-meta-v" id="mcMetaDur">-</span></div>
         <div class="mc-meta-chip"><span class="mc-meta-k">FPS</span><span class="mc-meta-v" id="mcMetaFps">-</span></div>
         <div class="mc-meta-chip"><span class="mc-meta-k">Aspect Ratio</span><span class="mc-meta-v" id="mcMetaRatio">-</span></div>
-        <div class="mc-meta-chip"><span class="mc-meta-k">Est. Credits</span><span class="mc-meta-v" id="mcMetaCredits">-</span></div>
       </div>
       <div class="mc-duration-warn" id="mcDurationWarn" style="display:none">
         \u26a0 Video referensi lebih dari 15 detik — Motion Control cuma mendukung maks 15 detik, jadi hasilnya akan dipotong ke 15 detik pertama.
@@ -1951,19 +1964,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Remaining Credits</span>
           <span id="creditsBalanceVal" style="font-family:var(--mono);color:var(--accent-hover);font-size:15px">—</span>
-        </div>
-      </div>
-      <div class="api-status-card" style="margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">Estimated Cost</span>
-          <span id="creditsEstCostVal" style="font-family:var(--mono);color:#ff5a75;font-size:15px">—</span>
-        </div>
-        <div style="font-size:12.5px;color:var(--text-dim,#999);text-transform:uppercase;letter-spacing:.01em">Berdasarkan setting generate saat ini.</div>
-      </div>
-      <div class="api-status-card" style="margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em">After Generate</span>
-          <span id="creditsAfterVal" style="font-family:var(--mono);color:var(--text-dim,#999);font-size:15px">—</span>
         </div>
       </div>
       <button class="gen-btn" style="width:100%;margin-top:18px" onclick="fetchCreditBalance()">
@@ -2278,6 +2278,7 @@ function retryVideoLoad(videoElId) {
 // ══════════ STATE ══════════
 var media = { image: [], video: [], audio: [] };
 var frames = { first: null, last: null };
+var activeInputTab = 'elements';
 var maxCounts = { image: 9, video: 3, audio: 3 };
 var currentUploadType = 'image';
 // Seedance models share the controls that are genuinely common to the family.
@@ -2287,61 +2288,60 @@ var modelFamilies = {
     {
       key: 'seedance25', brand: 'SEEDANCE', name: 'SEEDANCE 2.5', featured: true,
       desc: 'Multimodal generation with up to 15 images, 5 videos and 5 audio references.',
-      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], resolutions:['480p','720p'], supportsAudioGeneration:true }, qualities: [{id:'STANDARD',label:'STANDARD'}]
+      caps: { supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFirstFrame:true,supportsEndFrame:true, maxReferenceImages:15, maxReferenceVideos:5, maxReferenceAudios:5, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:30, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], resolutions:['480p','720p','1080p'], supportsAudioGeneration:true }, qualities: [{id:'STANDARD',label:'STANDARD'}]
     },
     {
       key:'seedance', brand:'SEEDANCE', name:'SEEDANCE 2.0', featured:true, desc:'Mini, Fast and Pro in one reference-capable family.',
-      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFrames:true, supportsVideoEdit:true, maxReferenceImages:9, maxReferenceVideos:1, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], supportsAudioGeneration:true },
+      caps:{ supportsT2V:true, supportsI2V:true, supportsElements:true, supportsFirstFrame:true,supportsEndFrame:true, supportsVideoEdit:true, maxReferenceImages:9, maxReferenceVideos:1, maxReferenceAudios:1, durationMode:'range', supportsDuration:true, durationMin:4, durationMax:15, durationStep:1, aspectRatios:['16:9','9:16','1:1','4:3','3:4','21:9'], supportsAudioGeneration:true },
       qualities:[
         {id:'MINI',label:'MINI',caps:{resolutions:['480p','720p']}},
-        {id:'FAST',label:'FAST',caps:{resolutions:['480p','720p']}},
         {id:'PRO',label:'PRO',caps:{resolutions:['480p','720p','1080p','4K']}}
       ]
     },
     {
       key:'wan30',brand:'WAN',name:'WAN 3.0',featured:true,desc:'30fps multimodal video with Standard and Prime tiers.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:10,maxReferenceVideos:5,maxReferenceAudios:5,durationMode:'range',supportsDuration:true,durationMin:2,durationMax:30,durationStep:1,resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceImages:10,maxReferenceVideos:5,maxReferenceAudios:5,durationMode:'range',supportsDuration:true,durationMin:2,durationMax:30,durationStep:1,resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},
       qualities:[{id:'wan-3.0-standard',label:'STANDARD'},{id:'wan-3.0-prime',label:'PRIME'}]
     },
     {
       key:'kling',brand:'KLING',name:'KLING 3.0',featured:true,desc:'Standard, Pro, Turbo, 4K and Omni generation modes.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:true,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1},
       qualities:[
         {id:'kling-3.0-std',label:'STANDARD',caps:{resolutions:['720p']}},
         {id:'kling-3.0-pro',label:'PRO',caps:{resolutions:['1080p'],supportsAudioGeneration:true}},
-        {id:'kling-3.0-turbo',label:'TURBO',caps:{supportsFrames:true,supportsLastFrame:false,resolutions:['720p','1080p'],supportsAudioGeneration:true,audioAlwaysOn:true}},
+        {id:'kling-3.0-turbo',label:'TURBO',caps:{supportsFirstFrame:true,supportsEndFrame:false,resolutions:['720p','1080p'],supportsAudioGeneration:true,audioAlwaysOn:true}},
         {id:'kling-3.0-4k',label:'4K',caps:{resolutions:['4K'],supportsAudioGeneration:true}},
-        {id:'kling-3.0-omni',label:'OMNI',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,maxReferenceImages:1,maxReferenceVideos:1,supportsVideoEdit:true,resolutions:[]}}
+        {id:'kling-3.0-omni',label:'OMNI',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:false,supportsEndFrame:false,maxReferenceImages:1,maxReferenceVideos:1,supportsVideoEdit:true,resolutions:[]}}
       ]
     },
     {
       key:'minimaxh3',brand:'MINIMAX',name:'MINIMAX H3',featured:true,desc:'Text, image, start/end frame and reference video generation.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:1,maxReferenceVideos:1,durationMode:'unknown',supportsDuration:true,resolutions:[]},qualities:[{id:'minimax-h3',label:'H3'}]
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceImages:5,maxReferenceVideos:1,durationMode:'range',supportsDuration:true,durationMin:4,durationMax:15,durationStep:1,resolutions:[],supportsAudioGeneration:false},qualities:[{id:'minimax-h3',label:'H3'}]
     },
     {
       key:'veo',brand:'GOOGLE',name:'VEO 3.1',featured:true,desc:'1080p generation with audio output.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,supportsLastFrame:false,maxReferenceImages:3,supportsDuration:true,durationMode:'unknown',resolutions:['1080p'],supportsAudioGeneration:true},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:false,maxReferenceImages:3,supportsDuration:true,durationMode:'unknown',resolutions:['1080p'],supportsAudioGeneration:true},
       qualities:[{id:'veo-3.1',label:'STANDARD'},{id:'veo-3.1-fast',label:'FAST',caps:{supportsElements:false,maxReferenceImages:0}}]
     },
     {
       key:'pixverse',brand:'PIXVERSE',name:'PIXVERSE',featured:true,desc:'C1 and V6 reference-capable generation.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceImages:3,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['360p','720p','1080p']},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceImages:3,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['360p','720p','1080p']},
       qualities:[{id:'pixverse-c1',label:'C1'},{id:'pixverse-v6',label:'V6',caps:{supportsAudioGeneration:true}}]
     },
     {
       key:'hailuo23',brand:'MINIMAX',name:'HAILUO 2.3',featured:true,desc:'Discrete 6s or 10s generation; 1080p is 6s only.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
+      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
       qualities:[{id:'hailuo-2.3',label:'STANDARD'},{id:'hailuo-2.3-fast',label:'FAST',caps:{supportsT2V:false,supportsI2V:true}}]
     },
-    {key:'wan27',brand:'WAN',name:'WAN 2.7',featured:true,desc:'Narrative generation, frame guidance, video editing and audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:true,maxReferenceVideos:1,supportsVideoEdit:true,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
-    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsFrames:false,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
-    {key:'happyhorse',brand:'HAPPYHORSE',name:'HAPPYHORSE',featured:true,desc:'Reference-to-video with two family versions.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFrames:false,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1,resolutions:['720p','1080p']},qualities:[{id:'happyhorse-1.1',label:'1.1',caps:{maxReferenceImages:9,supportsVideoEdit:false}},{id:'happyhorse-1.0',label:'1.0',caps:{maxReferenceImages:3}}]},
-    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
-    {key:'viduq3',brand:'VIDU',name:'VIDU Q3 PRO',featured:true,desc:'Image-to-video with optional generated audio.',caps:{supportsT2V:false,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsLastFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[4,8],resolutions:['540p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFrames:false,supportsDuration:true,durationMode:'unknown',resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
-    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:true,durationMode:'unknown',resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFrames:true,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[]},
+    {key:'wan27',brand:'WAN',name:'WAN 2.7',featured:true,desc:'Narrative generation, frame guidance, video editing and audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceVideos:1,supportsVideoEdit:true,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
+    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsFirstFrame:false,supportsEndFrame:false,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
+    {key:'happyhorse',brand:'HAPPYHORSE',name:'HAPPYHORSE',featured:true,desc:'Reference-to-video with two family versions.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:false,supportsEndFrame:false,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1,resolutions:['720p','1080p']},qualities:[{id:'happyhorse-1.1',label:'1.1',caps:{maxReferenceImages:9,supportsVideoEdit:false}},{id:'happyhorse-1.0',label:'1.0',caps:{maxReferenceImages:3}}]},
+    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
+    {key:'viduq3',brand:'VIDU',name:'VIDU Q3 PRO',featured:true,desc:'Image-to-video with optional generated audio.',caps:{supportsT2V:false,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[4,8],resolutions:['540p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFirstFrame:false,supportsEndFrame:false,supportsDuration:true,durationMode:'unknown',resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
+    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:true,supportsDuration:true,durationMode:'unknown',resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
+    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:true,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[]},
     {
       key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
@@ -2533,34 +2533,13 @@ function updateCollapsedBar(modelTxt, progressTxt) {
 
 // ══════════ CREDITS (estimate + remaining balance) ══════════
 var creditBalance = null;
-var creditEstimate = null;
-var creditEstimateTimer = null;
-function estimateCredits() { return creditEstimate; }
+function estimateCredits() { return 0; }
 function formatBalance(v) { return v == null ? '— CREDITS' : Number(v).toLocaleString() + ' CREDITS'; }
-function currentCostPayload() {
-  var body={family:selectedFamily.key,model:selectedModelTier,prompt:promptInput ? promptInput.value.trim() : '',aspect_ratio:selectedRatio};
-  if(activeMode==='image'){
-    var caps=resolveEffectiveCapabilities(selectedFamily,selectedQualityIdx);
-    body.image_urls=media.image.map(function(m){return m.url;}).filter(Boolean); body.num_images=selectedImageCount;
-    if(caps.supportsMegapixel) body.megapixel=Number(selectedImageMegapixel);
-    if(caps.supportsSize) body.size=selectedImageSize;
-    if(caps.supportsResolution) body.resolution=selectedImageResolution;
-    if(caps.supportsQuality) body.quality=({LOW:'low',STANDARD:'medium',HIGH:'high'}[selectedModelTier]||selectedImageQuality);
-    if(caps.supportsOutputFormat) body.output_format=selectedImageFormat.toLowerCase();
-  }
-  return body;
-}
+// Estimated costs are intentionally disabled. The real provider balance stays live.
 function updateCreditEstimate() {
-  clearTimeout(creditEstimateTimer);
   var costEl=document.getElementById('creditCostTxt'), balEl=document.getElementById('creditBalanceTxt');
-  if(costEl) costEl.textContent='ESTIMATING…'; if(balEl) balEl.textContent=formatBalance(creditBalance);
-  if(activeMode!=='image'){ if(costEl) costEl.textContent='ESTIMATE UNAVAILABLE'; return; }
-  creditEstimateTimer=setTimeout(function(){ fetchWithTimeout('/api/aivideo/cost',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentCostPayload())},15000)
-    .then(function(r){if(!r.ok) throw new Error('cost');return r.json();}).then(function(data){
-      var amount=data.cost != null ? data.cost : (data.credits != null ? data.credits : data.total);
-      creditEstimate=Number(amount); if(!Number.isFinite(creditEstimate)) throw new Error('cost');
-      if(costEl) costEl.textContent=(data.exact===false?'UP TO ':'')+creditEstimate+' CREDITS';
-    }).catch(function(){creditEstimate=null;if(costEl) costEl.textContent='ESTIMATE UNAVAILABLE';}); },350);
+  if(costEl) costEl.textContent='';
+  if(balEl) balEl.textContent=formatBalance(creditBalance);
 }
 function fetchCreditBalance() { fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
   if(data && typeof data.total_available==='number'){creditBalance=data.total_available;updateCreditEstimate();}
@@ -2583,11 +2562,7 @@ var PAGE_DEFS = {
   profile:     { el: 'pageProfile',     title: 'Profile' }
 };
 function renderCreditsPage() {
-  var cost = estimateCredits() || 0;
-  var afterTxt = (creditBalance != null) ? Math.max(0, creditBalance - cost).toLocaleString() : '—';
   var b = document.getElementById('creditsBalanceVal'); if (b) b.textContent = formatBalance(creditBalance);
-  var c = document.getElementById('creditsEstCostVal'); if (c) c.textContent = '−' + cost;
-  var a = document.getElementById('creditsAfterVal'); if (a) a.textContent = afterTxt;
 }
 var currentPage = 'aivideo';
 function hideAllPages() {
@@ -2618,13 +2593,9 @@ function openAccountSheet() {
   closeModelDock();
   document.getElementById('sheetTitle').textContent = 'Account';
   var list = document.getElementById('sheetList');
-  var cost = estimateCredits() || 0;
-  var afterTxt = (creditBalance != null) ? Math.max(0, creditBalance - cost).toLocaleString() : '—';
   list.innerHTML =
     '<div class="account-credit-card">' +
       '<div class="acc-row"><span class="lbl">Remaining Credits</span><span class="val" id="accBalanceVal">' + formatBalance(creditBalance) + '</span></div>' +
-      '<div class="acc-row"><span class="lbl">Estimated Cost</span><span class="val cost">−' + cost + '</span></div>' +
-      '<div class="acc-row"><span class="lbl">After Generate</span><span class="val">' + afterTxt + '</span></div>' +
     '</div>';
   [
     { label: 'Refresh Balance', action: function(){ fetchCreditBalance(); } },
@@ -2706,6 +2677,13 @@ function switchElTab(tab, el) {
   var frTab = document.getElementById('framesTab');
   elTab.classList.toggle('active', tab === 'elements');
   frTab.classList.toggle('active', tab === 'frames');
+  var rail = document.getElementById('typeRail');
+  var promptCard = document.getElementById('promptBtn');
+  var railMount = document.getElementById(tab === 'frames' ? 'framesRailMount' : 'elementsRailMount');
+  var promptMount = document.getElementById(tab === 'frames' ? 'framesPromptMount' : 'elementsPromptMount');
+  if (rail && railMount) railMount.appendChild(rail);
+  if (promptCard && promptMount) promptMount.appendChild(promptCard);
+  activeInputTab = tab;
   var shown = tab === 'elements' ? elTab : frTab;
   shown.classList.remove('fading');
   void shown.offsetWidth;
@@ -3142,7 +3120,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     selectedRatio = '16:9';
     selectedDuration = 5;
     muteAudioEnabled = false;
-    selectedBitrate = family.key === 'seedance25' ? 'AUTO' : (family.key === 'seedance' ? 'high' : 'AUTO');
+    selectedBitrate = isSeedanceFamily(family.key) ? 'high' : 'STANDARD';
   }
   if (family.key === 'seedance25' && resetFamilyDefaults) {
     selectedRatio = '16:9';
@@ -3274,8 +3252,8 @@ function applyModelCapabilities() {
     image: rawCaps.maxReferenceImages || 0,
     video: rawCaps.maxReferenceVideos || 0,
     audio: rawCaps.maxReferenceAudios || 0,
-    frames: !!rawCaps.supportsFrames,
-    lastFrame: rawCaps.supportsLastFrame !== false,
+    frames: !!rawCaps.supportsFirstFrame,
+    lastFrame: !!rawCaps.supportsEndFrame,
     elements: !!rawCaps.supportsElements,
     ratio: !!(rawCaps.aspectRatios && rawCaps.aspectRatios.length),
     ratioOptions: rawCaps.aspectRatios,
@@ -3348,6 +3326,8 @@ function applyModelCapabilities() {
   }
   var lastFrameCard = document.getElementById('cardLastFrame');
   if (lastFrameCard) lastFrameCard.style.display = caps.frames && caps.lastFrame ? '' : 'none';
+  if (!caps.frames && frames.first) resetFrameCard('first');
+  if ((!caps.frames || !caps.lastFrame) && frames.last) resetFrameCard('last');
 
   // Settings chips
   var ratioChip = document.getElementById('ratioChip');
@@ -3400,6 +3380,10 @@ function applyModelCapabilities() {
   // BudgetPixel payload.
   var bitrateSupported = !!caps.qualityControl || (selectedFamily && isSeedanceFamily(selectedFamily.key));
   if (bitrateChip) bitrateChip.style.display = bitrateSupported ? '' : 'none';
+  if (bitrateChip) {
+    bitrateChip.classList.toggle('locked', isSeedance25Video);
+    bitrateChip.setAttribute('aria-disabled', isSeedance25Video ? 'true' : 'false');
+  }
   if (!bitrateSupported) {
     selectedBitrate = 'AUTO';
     var bitrateLabelEl = document.getElementById('bitrateLabel');
@@ -3407,8 +3391,8 @@ function applyModelCapabilities() {
   }
   if (sheetDefs && sheetDefs.bitrate) {
     var outputProfiles = isSeedance25Video;
-    sheetDefs.bitrate.options = outputProfiles ? ['AUTO','STANDARD','HIGH','MAX'] : ['Standard','High'];
-    if (outputProfiles && ['AUTO','STANDARD','HIGH','MAX'].indexOf(selectedBitrate) === -1) selectedBitrate = 'AUTO';
+    sheetDefs.bitrate.options = outputProfiles ? ['STANDARD','HIGH'] : ['Standard','High'];
+    if (outputProfiles) selectedBitrate = 'HIGH';
     if (!outputProfiles && ['standard','high'].indexOf(selectedBitrate) === -1) selectedBitrate = 'high';
     var bitrateLabel = document.getElementById('bitrateLabel');
     if (bitrateLabel) bitrateLabel.textContent = outputProfiles ? selectedBitrate : (selectedBitrate === 'high' ? 'High' : 'Standard');
@@ -4347,6 +4331,12 @@ function resetFrameCard(which) {
   var card = document.getElementById('card' + (which === 'first' ? 'First' : 'Last') + 'Frame');
   if (card) card.innerHTML = FRAME_CARD_PLACEHOLDER.replace('__LABEL__', which === 'first' ? 'First Frame' : 'Last Frame');
 }
+function removeFrame(which, event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  resetFrameCard(which);
+  updateCanvasPreview();
+  updateGenerateButtonState();
+}
 ['first','last'].forEach(function(which) {
   document.getElementById(which + 'FrameInput').addEventListener('change', function(e) {
     var file = e.target.files[0];
@@ -4368,7 +4358,7 @@ function resetFrameCard(which) {
     // frame with the old upload's URL (a "double reference" bug).
     var entry = { file: file, previewUrl: previewUrl, uploading: true, url: null };
     frames[which] = entry;
-    card.innerHTML = '<img class="uc-thumb" src="' + previewUrl + '" onerror="imgFallback(this)"><div class="uc-thumb-dim"></div><span class="uc-label" style="position:absolute;bottom:9px;left:10px;z-index:1">' + (which === 'first' ? 'First Frame' : 'Last Frame') + '</span>';
+    card.innerHTML = '<img class="uc-thumb" src="' + previewUrl + '" onerror="imgFallback(this)"><div class="uc-thumb-dim"></div><span class="uc-label" style="position:absolute;bottom:9px;left:8px;z-index:1">' + (which === 'first' ? 'First Frame' : 'Last Frame') + '</span><button type="button" class="asset-remove" aria-label="Remove ' + which + ' frame" onclick="removeFrame(\'' + which + '\',event)"></button>';
     updateCanvasPreview();
     var fd = new FormData();
     fd.append('file', file);
@@ -4942,6 +4932,9 @@ function dismissGenQueueItem(taskId) {
 
 function startGenerate() {
   var prompt = promptInput.value.trim();
+  var usingFrames = activeInputTab === 'frames';
+  var selectedMedia = usingFrames ? {image:[], video:[], audio:[]} : media;
+  var selectedFrames = usingFrames ? frames : {first:null, last:null};
 
   if (!isBackendConnected()) {
     showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Veo 3.1 (Lite/Fast/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, Flux (Schnell/Dev/Pro), Imagen 4, dan Qwen Image.');
@@ -4953,28 +4946,31 @@ function startGenerate() {
   if (!prompt && !(selectedFamily && selectedFamily.key === 'klingswap')) {
     showError('Prompt wajib diisi'); openPromptEditor(); return;
   }
-  var hasFirstFrame = !!(frames.first && frames.first.url);
+  var hasFirstFrame = !!(selectedFrames.first && selectedFrames.first.url);
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
-  if (needsMedia && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
+  if (needsMedia && selectedMedia.image.length === 0 && selectedMedia.video.length === 0 && !hasFirstFrame) {
     showError('Minimal 1 gambar atau video referensi diperlukan');
     return;
   }
-  if (needsVideo && media.video.length === 0) {
+  if (needsVideo && selectedMedia.video.length === 0) {
     showError('Motion Control butuh 1 video sumber untuk diedit');
     return;
   }
-  if (selectedFamily && isSeedanceFamily(selectedFamily.key) && media.audio.length > 0
-      && media.image.length === 0 && media.video.length === 0 && !hasFirstFrame) {
+  if (selectedFamily && isSeedanceFamily(selectedFamily.key) && selectedMedia.audio.length > 0
+      && selectedMedia.image.length === 0 && selectedMedia.video.length === 0 && !hasFirstFrame) {
     showError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup)');
     return;
   }
+  if (selectedFrames.last && selectedFrames.last.url && !hasFirstFrame) {
+    showError('Last frame membutuhkan first frame'); return;
+  }
   if (selectedFamily && selectedFamily.key === 'seedance') {
-    var hasFrames = hasFirstFrame || !!(frames.last && frames.last.url);
-    if (frames.last && frames.last.url && !hasFirstFrame) {
+    var hasFrames = hasFirstFrame || !!(selectedFrames.last && selectedFrames.last.url);
+    if (selectedFrames.last && selectedFrames.last.url && !hasFirstFrame) {
       showError('Last frame membutuhkan first frame'); return;
     }
-    if (hasFrames && (media.image.length || media.video.length)) {
+    if (hasFrames && (selectedMedia.image.length || selectedMedia.video.length)) {
       showError('Elements dan Frames tidak dapat digunakan bersamaan'); return;
     }
     if (media.image.length > 9 || media.video.length > 1 || media.audio.length > 1) {
@@ -4984,19 +4980,19 @@ function startGenerate() {
       showError('Video edit mendukung maksimal 6 reference image'); return;
     }
   }
-  var pendingUpload = media.image.concat(media.video, media.audio).some(function(m) { return m.uploading; })
-    || (frames.first && frames.first.uploading) || (frames.last && frames.last.uploading);
+  var pendingUpload = selectedMedia.image.concat(selectedMedia.video, selectedMedia.audio).some(function(m) { return m.uploading; })
+    || (selectedFrames.first && selectedFrames.first.uploading) || (selectedFrames.last && selectedFrames.last.uploading);
   if (pendingUpload) { showError('Tunggu upload media selesai'); return; }
 
   var body = {
     model: selectedModelTier, // 'MINI' | 'FAST' | 'PRO' | etc — tier label only, NOT unique across families
     family: selectedFamily.key, // e.g. 'seedance', 'kling', 'nanobanana' — needed since tier labels repeat across families
     prompt: prompt,
-    image_urls: media.image.map(function(m) { return m.url; }).filter(Boolean),
-    video_urls: media.video.map(function(m) { return m.url; }).filter(Boolean),
-    audio_urls: media.audio.map(function(m) { return m.url; }).filter(Boolean),
-    first_frame_url: (frames.first && frames.first.url) || '',
-    last_frame_url: (frames.last && frames.last.url) || '',
+    image_urls: selectedMedia.image.map(function(m) { return m.url; }).filter(Boolean),
+    video_urls: selectedMedia.video.map(function(m) { return m.url; }).filter(Boolean),
+    audio_urls: selectedMedia.audio.map(function(m) { return m.url; }).filter(Boolean),
+    first_frame_url: (selectedFrames.first && selectedFrames.first.url) || '',
+    last_frame_url: (selectedFrames.last && selectedFrames.last.url) || '',
     duration: selectedDuration,
     resolution: selectedResolution,
     aspect_ratio: selectedRatio,

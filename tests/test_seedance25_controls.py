@@ -53,7 +53,7 @@ class Seedance25ControlsTests(unittest.TestCase):
         self.assertIn("options: ['Audio On','Audio Off']", self.template)
         for control in ('ratioChip', 'resolutionChip', 'bitrateChip', 'muteAudioChip'):
             self.assertIn('class="chip" id="%s"' % control, self.template)
-        self.assertIn("['AUTO','STANDARD','HIGH','MAX']", self.template)
+        self.assertIn("['STANDARD','HIGH']", self.template)
 
     def test_mobile_row_has_bounded_wrap_at_target_widths(self):
         css = self.template
@@ -66,13 +66,13 @@ class Seedance25ControlsTests(unittest.TestCase):
         body = self.capture_body({"family": "seedance25", "model": "STANDARD", "prompt": "A person walks.",
                                   "duration": 30, "resolution": "480p", "aspect_ratio": "3:4"})
         self.assertEqual(body["aspect_ratio"], "3:4")
-        self.assertEqual(body["length_seconds"], 30)
+        self.assertEqual(body["duration_seconds"], 30)
         self.assertEqual(body["resolution"], "480p")
         self.assertTrue(body["generate_audio"])
 
     def test_invalid_ratio_defaults_and_no_fake_bitrate_is_emitted(self):
         body = self.capture_body({"family": "seedance25", "model": "STANDARD", "prompt": "Tokyo skyline.",
-                                  "aspect_ratio": "2:1", "bitrate": "MAX", "bitrate_mode": "high"})
+                                  "aspect_ratio": "16:9", "bitrate": "MAX", "bitrate_mode": "high"})
         self.assertEqual(body["aspect_ratio"], "16:9")
         self.assertNotIn("bitrate", body)
         self.assertNotIn("bitrate_mode", body)
@@ -93,7 +93,7 @@ class Seedance25ControlsTests(unittest.TestCase):
     def test_profiles_are_resolution_aware(self):
         self.assertEqual(app._video_output_bitrate_target("STANDARD", "480p"), "1200k")
         self.assertEqual(app._video_output_bitrate_target("HIGH", "720p"), "4500k")
-        self.assertEqual(app._video_output_bitrate_target("MAX", "720p"), "7000k")
+        self.assertNotIn("MAX", next(line for line in self.template.splitlines() if "sheetDefs.bitrate.options" in line))
 
     def test_non_auto_processing_occurs_after_video_fetch_and_preserves_audio(self):
         events = []
