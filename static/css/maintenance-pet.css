@@ -1,42 +1,197 @@
 .maintenance-sleep-pet {
+  --pet-width: clamp(214px, 60vw, 342px);
   position: relative;
-  width: clamp(118px, 27vw, 168px);
+  width: var(--pet-width);
   aspect-ratio: 320 / 427;
-  margin: -2px auto 16px;
-  pointer-events: none;
+  display: block;
+  flex: 0 0 auto;
+  margin: clamp(12px, 3vh, 28px) auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 30% 30% 18% 18%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   contain: layout paint style;
-  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .48));
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .5));
+}
+
+.maintenance-sleep-pet:focus-visible {
+  outline: 1px solid rgba(255, 83, 110, .72);
+  outline-offset: 5px;
 }
 
 .maintenance-sleep-pet__sprite {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: block;
   background: url('/static/pet/chibi-makima/maintenance-sleep-strip.png') 0 0 / 400% 100% no-repeat;
+  transform-origin: 48% 68%;
   animation: maintenancePetSleep 2.8s steps(1, end) infinite;
+  will-change: background-position;
 }
 
 .maintenance-sleep-pet__dream {
   position: absolute;
-  top: 5%;
-  right: -13%;
-  width: 42%;
-  height: 42%;
-  color: #ff8b9c;
-  font-family: "Space Grotesk", Inter, sans-serif;
-  font-weight: 800;
-  text-shadow: 0 0 12px rgba(255, 31, 68, .62);
+  z-index: 5;
+  top: 9%;
+  left: 41%;
+  width: 38%;
+  height: 35%;
+  pointer-events: none;
+  transition: opacity .12s ease;
 }
 
-.maintenance-sleep-pet__dream span {
+.maintenance-sleep-pet__dream i {
   position: absolute;
-  bottom: 0;
   left: 0;
+  bottom: 0;
+  color: #ff6d84;
+  font: 800 clamp(13px, 4vw, 22px)/1 "Space Grotesk", Inter, sans-serif;
+  font-style: normal;
+  text-shadow: 0 0 8px rgba(255, 36, 73, .95), 0 0 20px rgba(202, 0, 36, .58);
   opacity: 0;
-  animation: maintenancePetDream 3.6s ease-out infinite;
+  animation: maintenancePetDream 2.1s ease-out infinite;
 }
 
-.maintenance-sleep-pet__dream span:nth-child(2) { animation-delay: 1.2s; }
-.maintenance-sleep-pet__dream span:nth-child(3) { animation-delay: 2.4s; }
+.maintenance-sleep-pet__dream i:nth-child(2) { animation-delay: .7s; }
+.maintenance-sleep-pet__dream i:nth-child(3) { animation-delay: 1.4s; }
+
+.maintenance-sleep-pet__eye {
+  position: absolute;
+  z-index: 4;
+  width: clamp(12px, 4.3vw, 22px);
+  height: clamp(4px, 1.5vw, 8px);
+  border-top: 2px solid #3d080f;
+  border-radius: 50%;
+  background: radial-gradient(circle at 55% 15%, #ffbd5b 0 17%, #c11b2e 19% 44%, #210207 47% 100%);
+  box-shadow: 0 -1px 0 rgba(20, 0, 3, .8), 0 0 7px rgba(255, 31, 61, .5);
+  opacity: 0;
+  transform: scaleY(.08) rotate(-7deg);
+  transform-origin: 50% 0;
+  pointer-events: none;
+  transition: opacity .12s ease, transform .16s ease;
+}
+
+.maintenance-sleep-pet__eye--left { left: 30.5%; top: 39%; }
+.maintenance-sleep-pet__eye--right { left: 44%; top: 36%; transform: scaleY(.08) rotate(-11deg); }
+
+.maintenance-sleep-pet__bubble {
+  position: absolute;
+  z-index: 8;
+  top: 15%;
+  left: 64%;
+  max-width: min(170px, 48vw);
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 79, 106, .34);
+  border-radius: 12px 12px 12px 3px;
+  background: rgba(15, 3, 6, .92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .55), 0 0 18px rgba(177, 0, 32, .16);
+  color: rgba(255, 244, 245, .94);
+  font: 800 clamp(8px, 2.2vw, 11px)/1.25 Inter, sans-serif;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate3d(-6px, 6px, 0) scale(.94);
+  transform-origin: 0 100%;
+  pointer-events: none;
+  transition: opacity .16s ease, transform .18s ease;
+}
+
+.maintenance-sleep-pet__bubble::after {
+  content: "";
+  position: absolute;
+  left: -5px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-left: 1px solid rgba(255, 79, 106, .34);
+  background: rgba(15, 3, 6, .92);
+  transform: skewX(-30deg);
+}
+
+.maintenance-sleep-pet__bonk {
+  --bonk-x: 36px;
+  --bonk-y: -10px;
+  position: absolute;
+  z-index: 9;
+  left: 49%;
+  top: 54%;
+  width: clamp(25px, 7vw, 36px);
+  height: clamp(11px, 3vw, 16px);
+  border: 1px solid rgba(46, 4, 10, .55);
+  border-radius: 999px 5px 5px 999px;
+  background: linear-gradient(180deg, #fff, #d9d7d5);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .3);
+  opacity: 0;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.maintenance-sleep-pet__bonk i {
+  position: absolute;
+  right: -36%;
+  top: 50%;
+  width: 57%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(87, 28, 28, .35);
+  border-radius: 48% 52% 48% 55%;
+  background: #ffd1bd;
+  transform: translateY(-50%);
+}
+
+.maintenance-sleep-pet[data-state]:not([data-state="sleep"]) .maintenance-sleep-pet__sprite {
+  animation-play-state: paused;
+  background-position: 0 0;
+}
+
+.maintenance-sleep-pet[data-state]:not([data-state="sleep"]) .maintenance-sleep-pet__dream {
+  opacity: 0;
+}
+
+.maintenance-sleep-pet[data-state]:not([data-state="sleep"]) .maintenance-sleep-pet__dream i {
+  animation-play-state: paused;
+}
+
+.maintenance-sleep-pet[data-state]:not([data-state="sleep"]) .maintenance-sleep-pet__bubble {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.maintenance-sleep-pet[data-state="disturbed"] .maintenance-sleep-pet__sprite {
+  animation: maintenancePetDisturbed .28s ease both;
+}
+
+.maintenance-sleep-pet[data-state="peek"] .maintenance-sleep-pet__eye--left {
+  opacity: .96;
+  transform: scaleY(.55) rotate(-7deg);
+}
+
+.maintenance-sleep-pet[data-state="annoyed"] .maintenance-sleep-pet__eye,
+.maintenance-sleep-pet[data-state="bonk"] .maintenance-sleep-pet__eye {
+  opacity: 1;
+  transform: scaleY(.72) rotate(-7deg);
+}
+
+.maintenance-sleep-pet[data-state="annoyed"] .maintenance-sleep-pet__eye--right,
+.maintenance-sleep-pet[data-state="bonk"] .maintenance-sleep-pet__eye--right {
+  transform: scaleY(.72) rotate(-11deg);
+}
+
+.maintenance-sleep-pet[data-state="annoyed"] .maintenance-sleep-pet__sprite {
+  transform: translate3d(0, -2px, 0) rotate(-.5deg);
+  filter: saturate(1.06);
+}
+
+.maintenance-sleep-pet[data-state="bonk"] .maintenance-sleep-pet__sprite {
+  animation: maintenancePetAnnoyed .34s ease both;
+}
+
+.maintenance-sleep-pet[data-state="bonk"] .maintenance-sleep-pet__bonk {
+  animation: maintenancePetBonk .36s cubic-bezier(.2, .85, .3, 1) both;
+}
 
 .maintenance-sleep-pet.is-paused *,
 .maintenance-sleep-pet.is-paused *::before,
@@ -50,18 +205,40 @@
 }
 
 @keyframes maintenancePetDream {
-  0% { opacity: 0; transform: translate3d(0, 3px, 0) scale(.72); }
-  18% { opacity: .92; }
-  72% { opacity: .62; }
-  100% { opacity: 0; transform: translate3d(22px, -34px, 0) scale(1.18); }
+  0% { opacity: 0; transform: translate3d(0, 4px, 0) scale(.68); }
+  18% { opacity: .95; }
+  68% { opacity: .64; }
+  100% { opacity: 0; transform: translate3d(25px, -38px, 0) scale(1.22); }
 }
 
-@media (max-height: 820px) {
-  .maintenance-wave { height: 92px; margin-bottom: 10px; }
-  .maintenance-sleep-pet { width: 105px; margin-bottom: 10px; }
+@keyframes maintenancePetDisturbed {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+  38% { transform: translate3d(-3px, 1px, 0) rotate(-1deg); }
+  72% { transform: translate3d(2px, -1px, 0) rotate(.7deg); }
+}
+
+@keyframes maintenancePetAnnoyed {
+  0%, 100% { transform: translate3d(0, -2px, 0); }
+  40% { transform: translate3d(-3px, -4px, 0) rotate(-1deg); }
+  70% { transform: translate3d(2px, -2px, 0) rotate(.6deg); }
+}
+
+@keyframes maintenancePetBonk {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-24deg) scaleX(.3); }
+  28% { opacity: 1; }
+  58% { opacity: 1; transform: translate3d(var(--bonk-x), var(--bonk-y), 0) rotate(7deg) scaleX(1); }
+  100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-9deg) scaleX(.52); }
+}
+
+@media (min-width: 880px) {
+  .maintenance-sleep-pet { --pet-width: clamp(290px, 25vw, 372px); }
+}
+
+@media (max-height: 760px) and (max-width: 879px) {
+  .maintenance-sleep-pet { --pet-width: clamp(172px, 47vw, 218px); margin-top: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .maintenance-sleep-pet__sprite { animation: none; }
-  .maintenance-sleep-pet__dream span { display: none; }
+  .maintenance-sleep-pet__dream i { display: none; }
 }
