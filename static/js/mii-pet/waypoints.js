@@ -68,6 +68,13 @@ export class WaypointManager {
     }, null);
   }
 
+  lowestSafe() {
+    const points = this.safeWaypoints.length ? this.safeWaypoints : this.refresh();
+    const lowestY = Math.max(...points.map((point) => point.y));
+    const groundLane = points.filter((point) => Math.abs(point.y - lowestY) <= 2);
+    return groundLane[Math.floor(Math.random() * groundLane.length)];
+  }
+
   randomSafe({ awayFrom = this.current, minDistance = 80 } = {}) {
     const points = this.refresh();
     const sameLane = points.filter((point) => Math.abs(point.y - awayFrom.y) <= 42);

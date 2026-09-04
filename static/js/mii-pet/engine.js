@@ -52,7 +52,7 @@ export class MiiPetEngine {
     await this.preloadSprite();
     this.bind();
     this.waypoints.refresh();
-    const initial = this.waypoints.randomSafe({ minDistance: 0 });
+    const initial = this.waypoints.lowestSafe();
     this.waypoints.apply(initial);
     this.syncActivity(true);
   }
