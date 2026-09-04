@@ -7,7 +7,7 @@
 
   const REACTIONS = [
     { state: 'disturbed', message: '...' },
-    { state: 'peek', message: 'HM?' },
+    { state: 'disturbed', message: 'MMH.' },
     { state: 'annoyed', message: "I'M SLEEPING." },
     { state: 'bonk', message: 'STOP.' },
   ];
