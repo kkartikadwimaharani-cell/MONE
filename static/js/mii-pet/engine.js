@@ -28,6 +28,7 @@ export class MiiPetEngine {
     this.onceResolver = null;
     this.active = false;
     this.lastInteraction = 0;
+    this.transitioning = false;
     this.root = this.createRoot();
     this.sprite = this.root.querySelector('.mii-pet__sprite');
     this.waypoints = new WaypointManager(this.root, config);
@@ -37,6 +38,7 @@ export class MiiPetEngine {
     this.onDocumentPointer = (event) => this.handlePointer(event);
     this.onVisibilityChange = () => this.syncActivity();
     this.onRouteSignal = () => window.setTimeout(() => this.syncActivity(), 0);
+    this.onNavigationClick = (event) => this.handleNavigationClick(event);
   }
 
   createRoot() {
@@ -74,6 +76,7 @@ export class MiiPetEngine {
   bind() {
     document.addEventListener('pointerdown', this.onDocumentPointer, { passive: true });
     document.addEventListener('click', this.onRouteSignal, { passive: true });
+    document.addEventListener('click', this.onNavigationClick);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     window.addEventListener('resize', this.onViewportChange, { passive: true });
     window.addEventListener('scroll', this.onViewportChange, { passive: true });
@@ -217,5 +220,41 @@ export class MiiPetEngine {
     this.root.classList.add('mii-pet--touched');
     window.setTimeout(() => this.root.classList.remove('mii-pet--touched'), 420);
     this.behavior.nudge();
+  }
+
+  handleNavigationClick(event) {
+    if (!this.active || this.transitioning || event.defaultPrevented || event.button !== 0) return;
+    if (this.root.classList.contains('mii-pet--asset-error')) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest?.('a[href]');
+    if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+    const target = new URL(link.href, window.location.href);
+    if (target.origin !== window.location.origin || target.pathname !== '/ai-video') return;
+    event.preventDefault();
+    this.exitTo(target.href);
+  }
+
+  async exitTo(url) {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.behavior.stop();
+    const rect = this.root.getBoundingClientRect();
+    const leaveRight = rect.left + rect.width / 2 >= window.innerWidth / 2;
+    const destinationX = leaveRight ? window.innerWidth + rect.width + 20 : -rect.width - 20;
+    const distance = leaveRight ? destinationX - rect.left : rect.left - destinationX;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = reducedMotion ? .05 : Math.min(1.1, Math.max(.45, distance / 520));
+
+    this.setState(leaveRight ? 'walkingRight' : 'walkingLeft');
+    this.startFrameLoop();
+    this.root.style.setProperty('--pet-move-duration', `${duration.toFixed(2)}s`);
+    this.root.style.setProperty('--pet-x', `${destinationX}px`);
+    try {
+      sessionStorage.setItem('mii-pet-page-transition', JSON.stringify({
+        from: 'home', side: leaveRight ? 'right' : 'left', at: Date.now()
+      }));
+    } catch (_) {}
+    await wait(duration * 1000);
+    window.location.assign(url);
   }
 }

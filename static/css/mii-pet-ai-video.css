@@ -11,11 +11,15 @@
   pointer-events: none;
   contain: layout paint style;
   filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .42));
-  transition: opacity .22s ease, transform .22s ease;
+  transition: opacity .55s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
 }
 
 .mii-work-pet[hidden] { display: none; }
 .mii-work-pet.is-paused { opacity: .72; }
+.mii-work-pet--entering {
+  opacity: 0;
+  transform: translate3d(var(--mii-pet-entry-x, -140%), 0, 0);
+}
 
 .mii-work-pet__sprite {
   width: 100%;
