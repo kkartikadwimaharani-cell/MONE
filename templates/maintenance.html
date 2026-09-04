@@ -15,51 +15,60 @@
 </head>
 <body>
   <main class="maintenance-scene" id="maintenanceScene" aria-label="MII NETWORK system maintenance">
+    <div class="maintenance-portrait" aria-hidden="true"></div>
     <div class="maintenance-ambient" aria-hidden="true"></div>
     <div class="maintenance-grid" aria-hidden="true"></div>
     <div class="maintenance-vignette" aria-hidden="true"></div>
 
-    <header class="maintenance-brand">
-      <span class="maintenance-brand__mark" aria-hidden="true">M</span>
-      <span class="maintenance-brand__copy">
-        <strong>MII NETWORK</strong>
-        <small>AI CREATIVE PLATFORM</small>
-      </span>
-    </header>
+    <article class="maintenance-card">
+      <header class="maintenance-brand">
+        <span class="maintenance-brand__mark" aria-hidden="true">M</span>
+        <span class="maintenance-brand__copy">
+          <strong>MII NETWORK</strong>
+          <small>AI CREATIVE PLATFORM</small>
+        </span>
+        <span class="maintenance-brand__signal" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </header>
 
-    <p class="maintenance-note maintenance-note--left" aria-hidden="true">GOOD THINGS<br>ARE WORTH<br>THE WAIT.</p>
-    <p class="maintenance-note maintenance-note--right" aria-hidden="true">EVERYTHING<br>IS STILL<br>UNDER CONTROL.</p>
-
-    <section class="maintenance-stage">
-      <div class="maintenance-hero">
-        <h1 class="maintenance-heading">
-          <span class="maintenance-heading__system">SYSTEM</span>
-          <span class="maintenance-heading__maintenance">MAINTENANCE</span>
-        </h1>
-        <p class="maintenance-wait">PLEASE WAIT A LITTLE LONGER.</p>
+      <div class="maintenance-notes" aria-hidden="true">
+        <p class="maintenance-note">GOOD THINGS<br>ARE WORTH THE WAIT.</p>
+        <p class="maintenance-note">EVERYTHING IS STILL<br>UNDER CONTROL.</p>
       </div>
 
-      <button class="maintenance-sleep-pet" id="maintenancePet" type="button" data-state="sleep" aria-label="Sleeping Chibi Makima. Tap to disturb her.">
-        <span class="maintenance-sleep-pet__sprite"></span>
-        <span class="maintenance-sleep-pet__eye maintenance-sleep-pet__eye--left" aria-hidden="true"></span>
-        <span class="maintenance-sleep-pet__eye maintenance-sleep-pet__eye--right" aria-hidden="true"></span>
-        <span class="maintenance-sleep-pet__bonk" aria-hidden="true"><i></i></span>
-        <span class="maintenance-sleep-pet__dream" aria-hidden="true"><i>z</i><i>Z</i><i>Z</i></span>
-        <span class="maintenance-sleep-pet__bubble" id="maintenancePetBubble" role="status" aria-live="polite"></span>
-      </button>
+      <section class="maintenance-stage">
+        <div class="maintenance-panel maintenance-hero">
+          <span class="maintenance-panel__code" aria-hidden="true">MII // SYSTEM 04</span>
+          <h1 class="maintenance-heading">
+            <span class="maintenance-heading__system">SYSTEM</span>
+            <span class="maintenance-heading__maintenance">MAINTENANCE</span>
+          </h1>
+          <p class="maintenance-wait">PLEASE WAIT A LITTLE LONGER.<span aria-hidden="true"></span></p>
+        </div>
 
-      <div class="maintenance-status" aria-label="Status: maintenance">
-        <span>STATUS</span>
-        <strong>MAINTENANCE</strong>
-      </div>
+        <div class="maintenance-panel maintenance-pet-panel">
+          <span class="maintenance-panel__code" aria-hidden="true">REST MODE // ACTIVE</span>
+          <button class="maintenance-sleep-pet" id="maintenancePet" type="button" data-state="sleep" aria-label="Sleeping Chibi Makima. Tap to disturb her.">
+            <span class="maintenance-sleep-pet__sprite"></span>
+            <span class="maintenance-sleep-pet__bonk" aria-hidden="true"><i></i></span>
+            <span class="maintenance-sleep-pet__dream" aria-hidden="true"><i>z</i><i>Z</i><i>Z</i></span>
+            <span class="maintenance-sleep-pet__bubble" id="maintenancePetBubble" role="status" aria-live="polite"></span>
+          </button>
+        </div>
 
-      <a class="maintenance-contact" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">CONTACT SUPPORT</a>
-    </section>
+        <div class="maintenance-panel maintenance-status" aria-label="Status: maintenance">
+          <span>STATUS</span>
+          <strong>MAINTENANCE</strong>
+          <small aria-hidden="true">SYSTEM LOCKED · STANDBY</small>
+        </div>
 
-    <footer class="maintenance-footer" aria-hidden="true">
-      <span>MII NETWORK</span>
-      <span>THANK YOU FOR YOUR PATIENCE.</span>
-    </footer>
+        <a class="maintenance-contact" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">CONTACT SUPPORT</a>
+      </section>
+
+      <footer class="maintenance-footer" aria-hidden="true">
+        <span>SECURE CHANNEL</span>
+        <span>THANK YOU FOR YOUR PATIENCE.</span>
+      </footer>
+    </article>
   </main>
   <script src="{{ asset_url('js/mii-pet/maintenance-pet.js') }}" defer></script>
 </body>
