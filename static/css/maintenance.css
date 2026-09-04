@@ -417,53 +417,26 @@ body {
   70% { transform: translate3d(2px, -1px, 0); }
 }
 
-@media (min-width: 720px) {
-  .maintenance-scene { padding-block: 30px; }
-  .maintenance-brand { padding: 12px 14px; }
-  .maintenance-brand__mark { width: 44px; height: 44px; border-radius: 13px; font-size: 23px; }
-  .maintenance-brand__copy strong { font-size: 16px; }
-  .maintenance-brand__copy small { font-size: 7px; }
-  .maintenance-brand__signal { gap: 4px; }
-  .maintenance-brand__signal i { width: 4px; }
-  .maintenance-pet-panel { min-height: 286px; }
-}
-
-@media (min-width: 880px) and (max-height: 850px) {
-  .maintenance-scene { place-items: start center; padding-block: 16px; }
-  .maintenance-card { padding: 16px 20px; }
-  .maintenance-notes { display: none; }
-  .maintenance-hero { padding-block: 27px 20px; }
-  .maintenance-heading__system { font-size: 76px; }
-  .maintenance-heading__maintenance { font-size: 54px; }
-  .maintenance-wait { margin-top: 18px; }
-  .maintenance-pet-panel { min-height: 236px; }
-  .maintenance-status { padding-block: 14px 12px; }
-  .maintenance-status strong { font-size: 47px; }
-  .maintenance-footer { margin-top: 8px; }
-}
-
-@media (max-width: 420px) {
-  .maintenance-card { padding: 12px; border-radius: 24px; }
-  .maintenance-notes { grid-template-columns: 1fr; }
-  .maintenance-note { min-height: 34px; padding: 7px 9px; }
-  .maintenance-note br { display: none; }
-  .maintenance-note:last-child { justify-content: flex-start; text-align: left; }
-  .maintenance-hero { padding-inline: 5px; }
-  .maintenance-heading__system { font-size: clamp(47px, 16vw, 67px); }
-  .maintenance-heading__maintenance { font-size: clamp(28px, 9.7vw, 41px); }
-  .maintenance-footer { justify-content: center; text-align: center; }
-  .maintenance-footer span:first-child { display: none; }
-}
-
-@media (max-height: 760px) and (max-width: 719px) {
-  .maintenance-scene { align-items: start; }
-  .maintenance-card { margin-block: 0; }
-  .maintenance-notes { display: none; }
-  .maintenance-hero { padding-block: 25px 18px; }
-  .maintenance-pet-panel { min-height: 205px; }
-  .maintenance-status { padding-block: 15px 13px; }
-  .maintenance-footer { margin-top: 9px; }
-}
+/* Compact card leaves the portrait visible around the UI. */
+.maintenance-scene { padding: max(28px, env(safe-area-inset-top)) max(26px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(26px, env(safe-area-inset-left)); }
+.maintenance-card { width: min(430px, 100%); min-width: 0; padding: 14px; border-radius: 24px; border-color: #ff315b; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; box-shadow: 0 0 12px #ff174455, 0 0 38px #fa003a44, inset 0 0 20px #f5003022; }
+.maintenance-brand { padding: 9px 10px; gap: 9px; }
+.maintenance-brand__mark { width: 30px; height: 30px; font-size: 18px; }
+.maintenance-brand__copy strong { font-size: clamp(10px, 3vw, 14px); letter-spacing: .12em; color: #fff; text-shadow: 0 0 9px #ff315b; }
+.maintenance-hero { padding: 20px 6px 17px; }
+.maintenance-heading { line-height: .95; }
+.maintenance-heading__system { font-size: clamp(38px, 12vw, 64px); color: #fff; text-shadow: 0 0 10px #ffffff55; }
+.maintenance-heading__maintenance { font-size: clamp(22px, 7.1vw, 39px); }
+.maintenance-wait { margin-top: 15px; font-size: 7px; letter-spacing: .16em; }
+.maintenance-pet-panel { min-height: 0; padding: 0; }
+.maintenance-status { padding: 13px 6px; }
+.maintenance-status strong { font-size: clamp(22px, 7.1vw, 36px); letter-spacing: .025em; }
+.maintenance-heading__maintenance, .maintenance-status strong { color: #ffb2bf; text-shadow: 0 0 2px #fff, 0 0 7px #ff1744, 0 0 16px #ff003c, 0 0 30px #ff003c; animation: maintenanceNeon 3.4s ease-in-out infinite; }
+.maintenance-panel { border-color: #ff335a99; }
+.maintenance-contact { padding: 12px 10px; font-size: 9px; }
+.maintenance-scene.is-paused *, .maintenance-scene.is-paused *::before, .maintenance-scene.is-paused *::after { animation-play-state: paused !important; }
+@keyframes maintenanceNeon { 0%, 100% { opacity: .92; } 50% { opacity: 1; } }
+@media (min-width: 880px) and (max-height: 850px) { .maintenance-scene { padding-block: 24px; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

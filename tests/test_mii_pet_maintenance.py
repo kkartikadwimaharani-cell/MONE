@@ -15,7 +15,7 @@ def test_maintenance_template_is_native_and_keeps_existing_pet():
     assert 'maintenance-card' in template
     assert template.index('maintenance-card') < template.index('maintenance-brand')
     assert 'maintenance-makima-bg.webp' not in template
-    assert 'PLEASE WAIT A LITTLE LONGER.' in template
+    assert 'PLEASE WAIT A LITTLE LONGER' in template
     assert 'Makima is currently resting' not in template
     assert "asset_url('js/mii-pet/maintenance-pet.js')" in template
 

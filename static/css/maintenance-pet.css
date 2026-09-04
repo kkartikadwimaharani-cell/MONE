@@ -1,5 +1,5 @@
 .maintenance-sleep-pet {
-  --pet-width: clamp(220px, 62vw, 330px);
+  --pet-width: clamp(138px, 22svh, 170px);
   position: relative;
   z-index: 2;
   width: var(--pet-width);
@@ -15,7 +15,7 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  contain: layout paint style;
+  contain: layout style;
   filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .56)) drop-shadow(0 0 15px rgba(213, 0, 39, .16));
 }
 
@@ -64,7 +64,7 @@
   position: absolute;
   z-index: 8;
   top: 15%;
-  left: 64%;
+  left: 48%;
   max-width: min(170px, 48vw);
   padding: 7px 10px;
   border: 1px solid rgba(255, 79, 106, .34);
@@ -94,35 +94,7 @@
   transform: skewX(-30deg);
 }
 
-.maintenance-sleep-pet__bonk {
-  --bonk-x: 36px;
-  --bonk-y: -10px;
-  position: absolute;
-  z-index: 9;
-  left: 49%;
-  top: 54%;
-  width: clamp(25px, 7vw, 36px);
-  height: clamp(11px, 3vw, 16px);
-  border: 1px solid rgba(46, 4, 10, .55);
-  border-radius: 999px 5px 5px 999px;
-  background: linear-gradient(180deg, #fff, #d9d7d5);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, .3);
-  opacity: 0;
-  transform-origin: 0 50%;
-  pointer-events: none;
-}
 
-.maintenance-sleep-pet__bonk i {
-  position: absolute;
-  right: -36%;
-  top: 50%;
-  width: 57%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(87, 28, 28, .35);
-  border-radius: 48% 52% 48% 55%;
-  background: #ffd1bd;
-  transform: translateY(-50%);
-}
 
 .maintenance-sleep-pet[data-state]:not([data-state="sleep"]) .maintenance-sleep-pet__sprite {
   animation-play-state: paused;
@@ -155,10 +127,7 @@
   animation: maintenancePetAnnoyed .34s ease both;
 }
 
-.maintenance-sleep-pet[data-state="bonk"] .maintenance-sleep-pet__bonk {
-  animation: maintenancePetBonk .36s cubic-bezier(.2, .85, .3, 1) both;
-}
-
+.maintenance-sleep-pet[data-state="bonk"] 
 .maintenance-sleep-pet.is-paused *,
 .maintenance-sleep-pet.is-paused *::before,
 .maintenance-sleep-pet.is-paused *::after { animation-play-state: paused !important; }
@@ -189,24 +158,6 @@
   70% { transform: translate3d(2px, -2px, 0) rotate(.6deg); }
 }
 
-@keyframes maintenancePetBonk {
-  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-24deg) scaleX(.3); }
-  28% { opacity: 1; }
-  58% { opacity: 1; transform: translate3d(var(--bonk-x), var(--bonk-y), 0) rotate(7deg) scaleX(1); }
-  100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-9deg) scaleX(.52); }
-}
-
-@media (min-width: 880px) {
-  .maintenance-sleep-pet { --pet-width: clamp(268px, 23vw, 320px); }
-}
-
-@media (min-width: 880px) and (max-height: 850px) {
-  .maintenance-sleep-pet { --pet-width: clamp(218px, 29vh, 258px); }
-}
-
-@media (max-height: 760px) and (max-width: 879px) {
-  .maintenance-sleep-pet { --pet-width: clamp(174px, 49vw, 215px); margin-top: 4px; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .maintenance-sleep-pet__sprite { animation: none; }
