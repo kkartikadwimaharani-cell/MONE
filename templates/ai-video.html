@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/static/css/mii-pet-ai-video.css" />
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -4831,6 +4832,12 @@ function lockGenerateForm(locked) { window.__generating = false; }
 // taskId -> { meta, startTs, interval, requestInFlight, consecutiveNetworkFailures, tick }
 var activeGens = {};
 
+function notifyMiiPet(status, detail) {
+  window.dispatchEvent(new CustomEvent('mii-pet:generation', {
+    detail: Object.assign({ status: status }, detail || {})
+  }));
+}
+
 function refreshQueueBadge() {
   var n = Object.keys(activeGens).filter(function(id) { return !activeGens[id].completed && !activeGens[id].failed; }).length;
   var progressTxt = document.getElementById('collapsedProgressTxt');
@@ -5030,6 +5037,7 @@ function startGenerate() {
     setTimeout(function() { updateGenerateButtonState(); }, 900);
   }
   document.getElementById('errorBox').classList.remove('show');
+  notifyMiiPet('submitting', { taskId: 'submitting' });
 
   fetchWithTimeout('/api/aivideo/generate', {
     method: 'POST',
@@ -5041,6 +5049,7 @@ function startGenerate() {
     if (res.status >= 400) {
       var publicError = res.data && res.data.error;
       showError((publicError && (publicError.message || publicError)) || ('Generation failed (' + res.status + ')'));
+      notifyMiiPet('failed', { taskId: 'submitting' });
       return;
     }
     var taskId = res.data.id;
@@ -5048,6 +5057,7 @@ function startGenerate() {
     var list = document.getElementById('genQueueList');
     list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId, meta));
     activeGens[taskId] = { meta: meta, startTs: Date.now() };
+    notifyMiiPet('pending', { taskId: taskId, progress: 0 });
     saveActiveTaskEntry(taskId, meta, activeGens[taskId].startTs);
     refreshQueueBadge();
     pollQueueTask(taskId);
@@ -5057,6 +5067,7 @@ function startGenerate() {
   })
   .catch(function(err) {
     showError(classifyFetchError(err, 'Generate gagal'));
+    notifyMiiPet('failed', { taskId: 'submitting' });
   });
 }
 
@@ -5133,6 +5144,7 @@ function pollQueueTask(taskId, opts) {
     updateWorkflowSteps(taskId, 100);
   }
   function markFailed(msg) {
+    notifyMiiPet('failed', { taskId: taskId });
     var e = els();
     if (state.clockInterval) clearInterval(state.clockInterval);
     state.failed = true;
@@ -5168,6 +5180,13 @@ function pollQueueTask(taskId, opts) {
         }
         var status = data.status;
         var progress = data.progress || 0;
+        var petStatus = status === 'queued' ? 'pending' : status;
+        var petProgressBucket = Math.floor(progress / 25);
+        if (state.petStatus !== petStatus || state.petProgressBucket !== petProgressBucket) {
+          state.petStatus = petStatus;
+          state.petProgressBucket = petProgressBucket;
+          notifyMiiPet(petStatus, { taskId: taskId, progress: progress });
+        }
         if (e.bar) e.bar.style.width = progress + '%';
         if (e.stage) e.stage.textContent = stageForProgress(meta, progress, status);
         updateWorkflowSteps(taskId, progress, status);
@@ -6459,5 +6478,6 @@ window.addEventListener('resize', updateModelDockPosition);
   window.addEventListener('load', initPill);
 })();
 </script>
+<script type="module" src="/static/js/mii-pet/ai-video-bootstrap.js"></script>
 </body>
 </html>
