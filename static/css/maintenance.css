@@ -257,6 +257,15 @@ body {
   .maintenance-brand__copy small { font-size: 8px; }
 }
 
+@media (min-width: 880px) and (max-height: 850px) {
+  .maintenance-stage { margin-top: 24px; margin-bottom: 22px; }
+  .maintenance-heading__system { font-size: 96px; }
+  .maintenance-heading__maintenance { font-size: 82px; }
+  .maintenance-wait { margin-top: 24px; }
+  .maintenance-status strong { font-size: 52px; }
+  .maintenance-contact { margin-top: 14px; }
+}
+
 @media (max-height: 760px) and (max-width: 879px) {
   .maintenance-scene { padding-top: max(14px, env(safe-area-inset-top)); }
   .maintenance-stage { margin-top: 22px; margin-bottom: 16px; }

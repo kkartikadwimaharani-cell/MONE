@@ -234,6 +234,10 @@
   .maintenance-sleep-pet { --pet-width: clamp(290px, 25vw, 372px); }
 }
 
+@media (min-width: 880px) and (max-height: 850px) {
+  .maintenance-sleep-pet { --pet-width: clamp(230px, 31vh, 270px); margin-top: 10px; }
+}
+
 @media (max-height: 760px) and (max-width: 879px) {
   .maintenance-sleep-pet { --pet-width: clamp(172px, 47vw, 218px); margin-top: 8px; }
 }
