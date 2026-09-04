@@ -1,0 +1,113 @@
+.mii-pet {
+  --pet-size: clamp(104px, 10vw, 150px);
+  --pet-ratio: 1.083333;
+  --pet-x: 18px;
+  --pet-y: calc(100dvh - (var(--pet-size) * var(--pet-ratio)) - 18px);
+  --pet-move-duration: 1s;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--pet-size);
+  height: calc(var(--pet-size) * var(--pet-ratio));
+  transform: translate3d(var(--pet-x), var(--pet-y), 0);
+  transition: transform var(--pet-move-duration) linear, opacity .22s ease;
+  pointer-events: none;
+  z-index: 42;
+  contain: layout paint style;
+  will-change: transform;
+  opacity: 1;
+}
+
+.mii-pet--hidden,
+.mii-pet--asset-error {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.mii-pet__sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .38));
+  transform-origin: 50% 88%;
+}
+
+.mii-pet__shadow {
+  position: absolute;
+  left: 29%;
+  right: 29%;
+  bottom: 1%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .28);
+  filter: blur(5px);
+  transform: scaleX(.9);
+}
+
+.mii-pet__hint {
+  position: absolute;
+  right: 5%;
+  top: 5%;
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 80, 105, .34);
+  border-radius: 999px;
+  background: rgba(12, 4, 7, .8);
+  color: rgba(255, 255, 255, .86);
+  font: 700 10px/1 Inter, sans-serif;
+  letter-spacing: .04em;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.mii-pet--touched .mii-pet__hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mii-pet--touched .mii-pet__sprite {
+  animation: miiPetTouch .42s ease;
+}
+
+.mii-pet--fake-tap::after {
+  content: '';
+  position: absolute;
+  right: 5%;
+  top: 48%;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 43, 76, .75);
+  border-radius: 50%;
+  animation: miiPetFakeTap .8s ease-out infinite;
+}
+
+@keyframes miiPetTouch {
+  0%, 100% { transform: scale(1); }
+  42% { transform: scale(.94, 1.04) rotate(-1deg); }
+}
+
+@keyframes miiPetFakeTap {
+  0% { opacity: 0; transform: scale(.35); }
+  35% { opacity: .9; }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+
+@media (max-width: 640px) {
+  .mii-pet {
+    --pet-size: clamp(96px, 27vw, 116px);
+    z-index: 38;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mii-pet {
+    transition-duration: .01ms;
+  }
+  .mii-pet--touched .mii-pet__sprite,
+  .mii-pet--fake-tap::after {
+    animation: none;
+  }
+}
