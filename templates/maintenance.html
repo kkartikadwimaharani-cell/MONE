@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{{ asset_url('css/maintenance.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/maintenance-pet.css') }}">
 </head>
 <body>
   <main class="maintenance-page" aria-label="MII NETWORK system update">
@@ -43,10 +44,15 @@
       <p class="maintenance-title">MII NETWORK</p>
       <h1 class="maintenance-heading">SYSTEM UPDATE</h1>
       <p class="maintenance-subtitle">Website sedang diperbarui.<br>Silakan kembali beberapa saat lagi.</p>
+      <div class="maintenance-sleep-pet" aria-hidden="true">
+        <div class="maintenance-sleep-pet__sprite"></div>
+        <div class="maintenance-sleep-pet__dream"><span>Z</span><span>Z</span><span>Z</span></div>
+      </div>
       <div class="maintenance-status-pill"><span>STATUS</span><strong>MAINTENANCE</strong></div>
       <div class="maintenance-progress" aria-hidden="true"><span></span></div>
       <a class="maintenance-whatsapp-btn" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">CONTACT WHATSAPP</a>
     </section>
   </main>
+  <script src="{{ asset_url('js/mii-pet/maintenance-pet.js') }}" defer></script>
 </body>
 </html>

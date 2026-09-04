@@ -1,0 +1,67 @@
+.maintenance-sleep-pet {
+  position: relative;
+  width: clamp(118px, 27vw, 168px);
+  aspect-ratio: 320 / 427;
+  margin: -2px auto 16px;
+  pointer-events: none;
+  contain: layout paint style;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .48));
+}
+
+.maintenance-sleep-pet__sprite {
+  width: 100%;
+  height: 100%;
+  background: url('/static/pet/chibi-makima/maintenance-sleep-strip.png') 0 0 / 400% 100% no-repeat;
+  animation: maintenancePetSleep 2.8s steps(1, end) infinite;
+}
+
+.maintenance-sleep-pet__dream {
+  position: absolute;
+  top: 5%;
+  right: -13%;
+  width: 42%;
+  height: 42%;
+  color: #ff8b9c;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(255, 31, 68, .62);
+}
+
+.maintenance-sleep-pet__dream span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  animation: maintenancePetDream 3.6s ease-out infinite;
+}
+
+.maintenance-sleep-pet__dream span:nth-child(2) { animation-delay: 1.2s; }
+.maintenance-sleep-pet__dream span:nth-child(3) { animation-delay: 2.4s; }
+
+.maintenance-sleep-pet.is-paused *,
+.maintenance-sleep-pet.is-paused *::before,
+.maintenance-sleep-pet.is-paused *::after { animation-play-state: paused !important; }
+
+@keyframes maintenancePetSleep {
+  0%, 24.99% { background-position: 0 0; }
+  25%, 49.99% { background-position: 33.333% 0; }
+  50%, 74.99% { background-position: 66.666% 0; }
+  75%, 100% { background-position: 100% 0; }
+}
+
+@keyframes maintenancePetDream {
+  0% { opacity: 0; transform: translate3d(0, 3px, 0) scale(.72); }
+  18% { opacity: .92; }
+  72% { opacity: .62; }
+  100% { opacity: 0; transform: translate3d(22px, -34px, 0) scale(1.18); }
+}
+
+@media (max-height: 820px) {
+  .maintenance-wave { height: 92px; margin-bottom: 10px; }
+  .maintenance-sleep-pet { width: 105px; margin-bottom: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maintenance-sleep-pet__sprite { animation: none; }
+  .maintenance-sleep-pet__dream span { display: none; }
+}
