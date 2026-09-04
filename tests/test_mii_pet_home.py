@@ -19,6 +19,13 @@ def test_pet_modules_are_lightweight_and_scoped():
     assert 'visibilitychange' in javascript
     assert 'MutationObserver' not in javascript
     assert 'pointerdown' in javascript
-    assert 'preventDefault' not in javascript
+    assert javascript.count('preventDefault') == 1
+    assert "target.pathname !== '/ai-video'" in javascript
     assert 'importantSelectors' in javascript
 
+
+def test_ai_video_navigation_uses_a_scoped_exit_transition():
+    engine = (ROOT / 'static/js/mii-pet/engine.js').read_text()
+
+    assert "sessionStorage.setItem('mii-pet-page-transition'" in engine
+    assert 'window.location.assign(url)' in engine
