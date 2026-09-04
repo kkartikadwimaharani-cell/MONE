@@ -35,6 +35,7 @@ def test_maintenance_visuals_are_css_driven_and_scoped():
     assert 'maintenanceStatusPulse' in base_css
     assert 'maintenanceAmbient' in base_css
     assert 'maintenanceScreenBonk 68ms' in base_css
+    assert '(min-width: 880px) and (max-height: 850px)' in base_css
     assert 'maintenancePetDream 2.1s' in pet_css
     assert "url('/static/pet/chibi-makima/maintenance-sleep-strip.png')" in pet_css
     assert 'canvas' not in (base_css + pet_css).lower()
