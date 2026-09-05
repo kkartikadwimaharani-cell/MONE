@@ -11,6 +11,12 @@
   --line: rgba(255, 45, 77, .30);
 }
 
+@property --edge-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
 html, body { min-height: 100%; margin: 0; }
 
 body {
@@ -103,6 +109,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(110deg, transparent 24%, rgba(255, 77, 105, .07) 43%, transparent 62%);
@@ -110,59 +117,78 @@ body {
   animation: maintenanceCardSweep 8s ease-in-out infinite;
 }
 
-.maintenance-brand {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 62, 93, .20);
-  border-radius: 16px;
-  background: rgba(8, 2, 4, .56);
-  box-shadow: inset 0 0 18px rgba(148, 0, 27, .08);
+/* Premium touch: a hairline of light chases the card's border forever,
+   the same @property --edge-angle + conic-gradient trick used on the fox
+   hero. Kept inset:0 (not negative) so overflow:hidden on the card never
+   clips it. */
+.maintenance-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1.4px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from var(--edge-angle),
+    transparent 0deg, transparent 268deg,
+    rgba(255, 45, 78, .55) 300deg,
+    #fff 328deg,
+    rgba(255, 82, 110, .95) 336deg,
+    transparent 358deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: maintenanceEdgeChase 5.5s linear infinite;
+  opacity: .9;
 }
 
-.maintenance-brand__mark {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  color: #fff;
-  background: linear-gradient(145deg, #ff4967, #d8062d);
-  box-shadow: 0 0 24px rgba(255, 25, 61, .38), inset 0 1px 0 rgba(255, 255, 255, .25);
-  font: 900 20px/1 Inter, sans-serif;
-  animation: maintenanceMarkPulse 3.4s ease-in-out infinite;
+/* Embers drifting up past the card — same "ember dots" motif as the home
+   page fox hero, reused here so the maintenance screen feels like part of
+   the same world instead of a bare utility page. */
+.maintenance-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
 }
 
-.maintenance-brand__copy { display: grid; gap: 3px; }
-.maintenance-brand__copy strong { font-size: 13px; letter-spacing: .16em; }
-.maintenance-brand__copy small { color: var(--muted); font-size: 6px; font-weight: 800; letter-spacing: .27em; }
-
-.maintenance-brand__signal {
-  height: 27px;
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 3px;
+.maintenance-embers i {
+  position: absolute;
+  bottom: -6%;
+  left: var(--ex, 50%);
+  width: var(--es, 3px);
+  height: var(--es, 3px);
+  border-radius: 50%;
+  background: #ff8a9a;
+  box-shadow: 0 0 6px 1px rgba(255, 45, 78, .9), 0 0 14px 3px rgba(255, 20, 57, .5);
+  opacity: 0;
+  animation: maintenanceEmberRise var(--edur, 7s) ease-in var(--edel, 0s) infinite;
 }
 
-.maintenance-brand__signal i {
-  width: 3px;
-  height: 34%;
-  border-radius: 999px;
-  background: var(--crimson-bright);
-  box-shadow: 0 0 8px rgba(255, 32, 69, .8);
-  animation: maintenanceSignal 1.15s ease-in-out infinite alternate;
-}
+.maintenance-embers i:nth-child(1) { --ex: 8%;  --es: 2px; --edur: 6.5s;  --edel: 0s;   --edrift: 6px; }
+.maintenance-embers i:nth-child(2) { --ex: 22%; --es: 3px; --edur: 8s;    --edel: 1.1s; --edrift: -8px; }
+.maintenance-embers i:nth-child(3) { --ex: 38%; --es: 2px; --edur: 7.2s;  --edel: 2.4s; --edrift: 4px; }
+.maintenance-embers i:nth-child(4) { --ex: 55%; --es: 4px; --edur: 9s;    --edel: .6s;  --edrift: -6px; }
+.maintenance-embers i:nth-child(5) { --ex: 70%; --es: 2px; --edur: 6.8s;  --edel: 3.2s; --edrift: 10px; }
+.maintenance-embers i:nth-child(6) { --ex: 84%; --es: 3px; --edur: 8.4s;  --edel: 1.8s; --edrift: -5px; }
+.maintenance-embers i:nth-child(7) { --ex: 94%; --es: 2px; --edur: 7.6s;  --edel: 4s;   --edrift: 7px; }
 
-.maintenance-brand__signal i:nth-child(2) { animation-delay: -.45s; }
-.maintenance-brand__signal i:nth-child(3) { animation-delay: -.8s; }
-.maintenance-brand__signal i:nth-child(4) { animation-delay: -.2s; }
-.maintenance-brand__signal i:nth-child(5) { animation-delay: -.62s; }
+/* Faint HUD scanlines drifting down the card — matches the App
+   Secrets / Dropbox pages' cyber styling. */
+.maintenance-scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: .12;
+  background: repeating-linear-gradient(0deg, rgba(255, 90, 115, .55) 0px, rgba(255, 90, 115, .55) 1px, transparent 1px, transparent 4px);
+  background-size: 100% 4px;
+  mix-blend-mode: screen;
+  animation: maintenanceScanDrift 9s linear infinite;
+}
 
 .maintenance-notes {
   position: relative;
@@ -243,23 +269,26 @@ body {
   margin: 0;
   display: grid;
   justify-items: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 500;
+  font-family: 'Cinzel', Georgia, "Times New Roman", serif;
+  font-weight: 600;
   line-height: .82;
-  letter-spacing: -.05em;
+  letter-spacing: -.02em;
   text-transform: uppercase;
 }
 
 .maintenance-heading__system {
   color: var(--ivory);
-  font-size: clamp(54px, 17vw, 106px);
+  font-size: clamp(40px, 12.5vw, 78px);
+  font-weight: 600;
   text-shadow: 0 14px 35px rgba(0, 0, 0, .76);
   animation: maintenanceSystemBlink 6s steps(1, end) infinite;
 }
 
 .maintenance-heading__maintenance {
   color: #ff3657;
-  font-size: clamp(32px, 10.1vw, 71px);
+  font-size: clamp(24px, 7.4vw, 48px);
+  font-weight: 700;
+  letter-spacing: 0;
   text-shadow: 0 0 9px rgba(255, 26, 61, .82), 0 0 30px rgba(215, 0, 39, .48), 0 12px 42px rgba(0, 0, 0, .9);
   animation: maintenanceTitlePulse 3.3s ease-in-out infinite;
 }
@@ -306,10 +335,10 @@ body {
 
 .maintenance-status strong {
   color: var(--crimson-bright);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(31px, 9vw, 64px);
-  font-weight: 600;
-  letter-spacing: .04em;
+  font-family: 'Cinzel', Georgia, "Times New Roman", serif;
+  font-size: clamp(22px, 6.4vw, 44px);
+  font-weight: 700;
+  letter-spacing: .02em;
   line-height: 1;
   text-shadow: 0 0 9px rgba(255, 27, 63, .72), 0 0 28px rgba(185, 0, 34, .38);
   animation: maintenanceStatusPulse 3.4s ease-in-out infinite;
@@ -342,6 +371,30 @@ body {
 .maintenance-contact:hover,
 .maintenance-contact:focus-visible { transform: translateY(-1px); filter: brightness(1.12); outline: none; }
 
+.maintenance-community {
+  display: block;
+  padding: 13px 18px;
+  border: 1px solid rgba(255, 75, 104, .42);
+  border-radius: 16px;
+  background: rgba(255, 45, 78, .08);
+  backdrop-filter: blur(6px);
+  color: #ffd9e0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .20em;
+  text-decoration: none;
+  text-align: center;
+  transition: transform .18s ease, filter .18s ease, background-color .18s ease;
+}
+
+.maintenance-community:hover,
+.maintenance-community:focus-visible {
+  transform: translateY(-1px);
+  background: rgba(255, 45, 78, .16);
+  filter: brightness(1.1);
+  outline: none;
+}
+
 .maintenance-footer {
   position: relative;
   z-index: 2;
@@ -367,6 +420,10 @@ body {
   50% { opacity: 1; transform: scale(1.045) translate3d(0, -1%, 0); }
 }
 
+@keyframes maintenanceEdgeChase {
+  to { --edge-angle: 360deg; }
+}
+
 @keyframes maintenanceCardSweep {
   0%, 52% { transform: translateX(-110%); }
   72%, 100% { transform: translateX(110%); }
@@ -377,14 +434,16 @@ body {
   78%, 100% { transform: skewX(-12deg) translateX(700%); }
 }
 
-@keyframes maintenanceMarkPulse {
-  0%, 100% { box-shadow: 0 0 16px rgba(255, 25, 61, .27), inset 0 1px 0 rgba(255, 255, 255, .25); }
-  50% { box-shadow: 0 0 29px rgba(255, 25, 61, .54), inset 0 1px 0 rgba(255, 255, 255, .25); }
+@keyframes maintenanceEmberRise {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(.6); }
+  12% { opacity: .95; }
+  85% { opacity: .5; }
+  100% { opacity: 0; transform: translate3d(var(--edrift, 10px), -118%, 0) scale(1.15); }
 }
 
-@keyframes maintenanceSignal {
-  from { height: 28%; opacity: .55; }
-  to { height: 92%; opacity: 1; }
+@keyframes maintenanceScanDrift {
+  0% { background-position-y: 0; }
+  100% { background-position-y: 40px; }
 }
 
 @keyframes maintenanceNoteBlink {
@@ -419,23 +478,59 @@ body {
 
 /* Compact card leaves the portrait visible around the UI. */
 .maintenance-scene { padding: max(28px, env(safe-area-inset-top)) max(26px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(26px, env(safe-area-inset-left)); }
-.maintenance-card { width: min(430px, 100%); min-width: 0; padding: 14px; border-radius: 24px; border-color: #ff315b; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; box-shadow: 0 0 12px #ff174455, 0 0 38px #fa003a44, inset 0 0 20px #f5003022; }
-.maintenance-brand { padding: 9px 10px; gap: 9px; }
-.maintenance-brand__mark { width: 30px; height: 30px; font-size: 18px; }
-.maintenance-brand__copy strong { font-size: clamp(10px, 3vw, 14px); letter-spacing: .12em; color: #fff; text-shadow: 0 0 9px #ff315b; }
+.maintenance-card { width: min(430px, 100%); min-width: 0; padding: 14px; border-radius: 24px; border-color: #ff315b; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; animation: maintenanceAuraBreathe 5s ease-in-out infinite; }
+@keyframes maintenanceAuraBreathe {
+  0%, 100% { box-shadow: 0 0 12px #ff174455, 0 0 38px #fa003a44, inset 0 0 20px #f5003022; }
+  50% { box-shadow: 0 0 20px #ff174477, 0 0 62px #fa003a66, 0 0 100px #ad002233, inset 0 0 26px #f5003035; }
+}
 .maintenance-hero { padding: 20px 6px 17px; }
 .maintenance-heading { line-height: .95; }
-.maintenance-heading__system { font-size: clamp(38px, 12vw, 64px); color: #fff; text-shadow: 0 0 10px #ffffff55; }
-.maintenance-heading__maintenance { font-size: clamp(22px, 7.1vw, 39px); }
+.maintenance-heading__system { font-size: clamp(30px, 9.5vw, 50px); color: #fff; text-shadow: 0 0 10px #ffffff55; }
+.maintenance-heading__maintenance { font-size: clamp(17px, 5.6vw, 30px); }
 .maintenance-wait { margin-top: 15px; font-size: 7px; letter-spacing: .16em; }
 .maintenance-pet-panel { min-height: 0; padding: 0; }
 .maintenance-status { padding: 13px 6px; }
-.maintenance-status strong { font-size: clamp(22px, 7.1vw, 36px); letter-spacing: .025em; }
-.maintenance-heading__maintenance, .maintenance-status strong { color: #ffb2bf; text-shadow: 0 0 2px #fff, 0 0 7px #ff1744, 0 0 16px #ff003c, 0 0 30px #ff003c; animation: maintenanceNeon 3.4s ease-in-out infinite; }
+.maintenance-status strong { font-size: clamp(17px, 5.6vw, 28px); letter-spacing: .025em; }
+.maintenance-heading__maintenance, .maintenance-status strong {
+  color: #fff0f2;
+  -webkit-text-stroke: .4px rgba(255, 190, 200, .35);
+  animation: maintenanceNeon 4.6s linear infinite;
+}
 .maintenance-panel { border-color: #ff335a99; }
 .maintenance-contact { padding: 12px 10px; font-size: 9px; }
 .maintenance-scene.is-paused *, .maintenance-scene.is-paused *::before, .maintenance-scene.is-paused *::after { animation-play-state: paused !important; }
-@keyframes maintenanceNeon { 0%, 100% { opacity: .92; } 50% { opacity: 1; } }
+
+/* Real neon-tube flicker: mostly a bright, saturated red-white burn with
+   two quick stutters per cycle (like a sign catching current), instead of
+   the old near-static opacity fade. */
+@keyframes maintenanceNeon {
+  0%, 2%, 8%, 71%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 4px #fff,
+      0 0 12px #ff2d55,
+      0 0 26px #ff0038,
+      0 0 48px #ff0038,
+      0 0 78px #d5002c,
+      0 0 120px #ad0022;
+  }
+  3%, 4% { opacity: .42; text-shadow: 0 0 2px #fff, 0 0 6px #ff2d55; }
+  5%, 7% {
+    opacity: .88;
+    text-shadow: 0 0 3px #fff, 0 0 9px #ff2d55, 0 0 20px #ff0038, 0 0 36px #ff0038;
+  }
+  72%, 73% { opacity: .58; text-shadow: 0 0 2px #fff, 0 0 8px #ff2d55, 0 0 18px #ff0038; }
+  50% {
+    opacity: 1;
+    text-shadow:
+      0 0 5px #fff,
+      0 0 15px #ff5776,
+      0 0 32px #ff0038,
+      0 0 58px #ff0038,
+      0 0 92px #d5002c,
+      0 0 140px #ad0022;
+  }
+}
 @media (min-width: 880px) and (max-height: 850px) { .maintenance-scene { padding-block: 24px; } }
 
 @media (prefers-reduced-motion: reduce) {
