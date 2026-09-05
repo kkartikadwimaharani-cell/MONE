@@ -4,8 +4,9 @@ const root = document.createElement('div');
 root.className = 'mii-work-pet';
 root.setAttribute('aria-hidden', 'true');
 root.innerHTML = '<div class="mii-work-pet__status"></div><div class="mii-work-pet__sprite"></div>';
-const canvas = document.getElementById('pageAiVideo') || document.querySelector('.canvas');
-(canvas || document.body).appendChild(root);
+const canvas = document.querySelector('#pageAiVideo > .panel-wrap');
+if (!canvas) throw new Error('AI Video pet requires the generation panel');
+canvas.appendChild(root);
 
 try {
   const transition = JSON.parse(sessionStorage.getItem('mii-pet-page-transition') || 'null');
@@ -23,3 +24,4 @@ try {
 const controller = new AiVideoPetController(root);
 controller.start();
 window.addEventListener('pagehide', () => controller.destroy(), { once: true });
+
