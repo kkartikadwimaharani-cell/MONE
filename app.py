@@ -22,10 +22,6 @@ import analytics
 import aivideo_archive
 import dropbox_oauth
 import secrets_store
-import budgetpixel_provider
-import mii_quality_filter
-import ipaddress
-import socket
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -213,9 +209,12 @@ APP_SECRET_DEFS = [
     {'key': 'GROQ_API_KEY', 'env_names': ['GROQ_API_KEY'],
      'label': 'Groq API Key', 'category': 'AI Providers', 'kind': 'api_key',
      'help': 'Fallback chatbot'},
+    {'key': 'SEGMIND_API_KEY', 'env_names': ['SEGMIND_API_KEY'],
+     'label': 'Segmind API Key', 'category': 'AI Providers', 'kind': 'api_key',
+     'help': 'Generate AI Video'},
     {'key': 'BUDGETPIXEL_API_KEY', 'env_names': ['BUDGETPIXEL_API_KEY'],
      'label': 'BudgetPixel API Key', 'category': 'AI Providers', 'kind': 'api_key',
-     'help': 'AI IMAGE & VIDEO GENERATION'},
+     'help': 'Seedance 2.5 & Wan (bpx_live_xxx dari budgetpixel.com/developers)'},
     {'key': 'TELEGRAM_BOT_TOKEN', 'env_names': ['TELEGRAM_BOT_TOKEN'],
      'label': 'Telegram Bot Token', 'category': 'Telegram Bot', 'kind': 'api_key',
      'help': 'Token dari @BotFather'},
@@ -2292,6 +2291,21 @@ if not _segmind_api_key():
     app.logger.warning('[startup] SEGMIND_API_KEY tidak diset — semua generate akan gagal sampai diisi lewat Railway env atau /ai-video/app-secrets.')
 SEGMIND_BASE = 'https://api.segmind.com/v1'
 
+# ── BudgetPixel (Seedance 2.5, Wan 3.0/3.0 Prime/2.7) ───────────────────
+# Satu key, endpoint per-model, submit + poll async job (POST /v1/videos/{model}
+# -> {id} lalu GET /v1/videos/{id} sampai status succeeded/failed/timeout).
+# Model slug DI-HARDCODE di sini karena sudah dikonfirmasi persis dari
+# docs.budgetpixel.com (bukan tebakan) — beda dengan katalog yang berubah-ubah.
+import budgetpixel_client
+
+
+def _budgetpixel_api_key():
+    return get_secret('BUDGETPIXEL_API_KEY')
+
+
+if not _budgetpixel_api_key():
+    app.logger.warning('[startup] BUDGETPIXEL_API_KEY tidak diset — Seedance 2.5 & Wan (jalur BudgetPixel) akan gagal sampai diisi lewat Railway env atau /ai-video/app-secrets.')
+
 # Public tier shown to the user -> real Segmind model id (never exposed to the client)
 # 'seedance-2.0-mini' confirmed live and working: user's own Segmind
 # dashboard request history shows successful (200) calls against this exact
@@ -2537,33 +2551,6 @@ _AIVIDEO_REQUEST_LOG_LOCK = threading.Lock()
 _AIVIDEO_REQUEST_LOG = []
 _AIVIDEO_REQUEST_LOG_MAX = 50
 
-_AIVIDEO_SECRET_KEY_RE = re.compile(
-    r'(authorization|bearer|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|oauth|cookie|session|secret)',
-    re.IGNORECASE,
-)
-
-
-def _aivideo_safe_debug_value(value, depth=0):
-    """Return browser-safe diagnostic data without credentials or provider IDs."""
-    if depth > 8:
-        return '[TRUNCATED]'
-    if isinstance(value, dict):
-        return {
-            str(key): ('[REDACTED]' if _AIVIDEO_SECRET_KEY_RE.search(str(key))
-                       else _aivideo_safe_debug_value(item, depth + 1))
-            for key, item in value.items()
-            if str(key).lower() not in ('provider_job_id', 'job_id')
-        }
-    if isinstance(value, (list, tuple)):
-        return [_aivideo_safe_debug_value(item, depth + 1) for item in value]
-    if isinstance(value, str):
-        value = re.sub(r'(?i)\b(bearer\s+)[^\s,;]+', r'\1[REDACTED]', value)
-        value = re.sub(
-            r'(?i)\b(api[_ -]?key|access[_ -]?token|refresh[_ -]?token|oauth|cookie|session|secret)'
-            r'(["\'\s:=]+)[^,}\s]+', r'\1\2[REDACTED]', value)
-        return value[:4000]
-    return value
-
 
 def _aivideo_log_request(provider, endpoint, status_code=None, duration_ms=None,
                           retry_count=0, request_body=None, response_body=None,
@@ -2586,10 +2573,10 @@ def _aivideo_log_request(provider, endpoint, status_code=None, duration_ms=None,
         'status_code': status_code,
         'duration_ms': duration_ms,
         'retry_count': retry_count,
-        'request_body': _trim(_aivideo_safe_debug_value(request_body)),
-        'response_body': _trim(_aivideo_safe_debug_value(response_body)),
+        'request_body': _trim(request_body),
+        'response_body': _trim(response_body),
         'error_source': error_source,
-        'error_detail': _trim(_aivideo_safe_debug_value(error_detail), 1000),
+        'error_detail': _trim(error_detail, 1000),
         'ok': (status_code is not None and status_code < 400 and not error_source),
     }
     with _AIVIDEO_REQUEST_LOG_LOCK:
@@ -2614,7 +2601,7 @@ def _aivideo_debug_append_upload(entry):
     # a bounded rolling history instead so all recent uploads stay visible.
     with _AIVIDEO_DEBUG_LOCK:
         lst = _AIVIDEO_DEBUG.setdefault('last_uploads', [])
-        lst.append(_aivideo_safe_debug_value(entry))
+        lst.append(entry)
         del lst[:-_AIVIDEO_DEBUG_MAX_UPLOADS]
 
 
@@ -2622,7 +2609,7 @@ def _aivideo_debug_set(section, **kw):
     with _AIVIDEO_DEBUG_LOCK:
         if section not in _AIVIDEO_DEBUG or not isinstance(_AIVIDEO_DEBUG.get(section), dict):
             _AIVIDEO_DEBUG[section] = {}
-        _AIVIDEO_DEBUG[section].update(_aivideo_safe_debug_value(kw))
+        _AIVIDEO_DEBUG[section].update(kw)
         _AIVIDEO_DEBUG[section]['at'] = _utc_timestamp()
 
 
@@ -2634,11 +2621,7 @@ def _aivideo_debug_snapshot():
 def _aivideo_last_error(source, message):
     app.logger.error('[ai-video] %s error: %s', source, message)
     with _AIVIDEO_DEBUG_LOCK:
-        _AIVIDEO_DEBUG['last_error'] = {
-            'source': _aivideo_safe_debug_value(str(source)),
-            'message': _aivideo_safe_debug_value(str(message))[:2000],
-            'at': _utc_timestamp(),
-        }
+        _AIVIDEO_DEBUG['last_error'] = {'source': source, 'message': str(message)[:2000], 'at': _utc_timestamp()}
 
 
 def _aivideo_authed():
@@ -3078,81 +3061,7 @@ def _dropbox_status_check():
         return ok, detail
     except Exception as e:
         _aivideo_debug_set('dropbox', mode=mode, ok=False, detail=str(e)[:300])
-        app.logger.warning('[storage][health] connection check failed: %s', e)
         return False, str(e)
-
-
-def _browser_debug_status():
-    """Build the provider-neutral diagnostic safe to send to a browser."""
-    checked_at = _utc_timestamp()
-    storage_state = _dropbox_manager.status()['state']
-    if storage_state == 'not_connected':
-        storage = {'status': 'NOT CONFIGURED', 'mode': 'DISCONNECTED', 'archive': 'UNAVAILABLE',
-                   'detail': 'Storage is not configured.'}
-    else:
-        storage_ok, _internal_detail = _dropbox_status_check()
-        storage = ({'status': 'READY', 'mode': 'CONNECTED', 'archive': 'READY',
-                    'detail': 'Storage is ready.'} if storage_ok else
-                   {'status': 'ERROR', 'mode': 'ATTENTION REQUIRED', 'archive': 'UNAVAILABLE',
-                    'detail': 'Storage connection requires attention.'})
-    storage.update({'auto_refresh': '5 SECONDS', 'checked_at': checked_at})
-
-    configured = bool(get_secret('BUDGETPIXEL_API_KEY'))
-    generation = {
-        'configured': configured,
-        'status': 'READY' if configured else 'NOT CONFIGURED',
-        'api_configuration': 'CONFIGURED' if configured else 'NOT CONFIGURED',
-        'video_backend': 'READY' if configured else 'STANDBY',
-        'image_backend': 'READY' if configured else 'STANDBY',
-        'task_engine': 'READY',
-        'polling': 'READY',
-        'last_request': 'RECORDED' if _AIVIDEO_DEBUG.get('last_request') else 'NONE',
-        'detail': 'AI generation is ready.' if configured else 'AI generation is not configured.',
-        'checked_at': checked_at,
-    }
-    try:
-        recent = aivideo_archive.list_archive(archived=None)
-    except Exception:
-        recent = []
-    pipeline = {
-        'archive': storage['archive'], 'image_preview': 'READY', 'video_preview': 'READY',
-        'history': 'READY', 'last_save': 'AVAILABLE' if recent else 'NONE',
-    }
-    try:
-        tasks = aivideo_archive.list_recent_tasks(50)
-    except Exception:
-        tasks = []
-    records = [_aivideo_safe_debug_value(dict(task['diagnostic']))
-               for task in tasks if isinstance(task.get('diagnostic'), dict)]
-    total = len(records)
-    errors = sum(record.get('status') == 'FAILED' for record in records)
-    successes = sum(record.get('status') == 'COMPLETED' for record in records)
-    completed_durations = [record.get('elapsed_ms') for record in records
-                           if record.get('status') in ('COMPLETED', 'FAILED') and isinstance(record.get('elapsed_ms'), (int, float))]
-    avg_duration = round(sum(completed_durations) / len(completed_durations)) if completed_durations else None
-    debug = _aivideo_debug_snapshot()
-    motion_detail = debug.get('motion_control') or {}
-    motion = {'status': ('FAILED' if motion_detail.get('error') else
-                         ('VALIDATED' if motion_detail else 'READY')),
-              'detail': motion_detail}
-    last_record = records[0] if records else None
-    result_detail = ({'generation_status': last_record.get('status'),
-                      'archive_status': last_record.get('archive_status'),
-                      'preview_status': last_record.get('preview_status'),
-                      'history_status': last_record.get('history_status', 'PERSISTED'),
-                      'last_save': last_record.get('completed_at'),
-                      'timestamp': last_record.get('completed_at') or last_record.get('created_at')}
-                     if last_record else {})
-    return {'storage': storage, 'generation': generation, 'pipeline': pipeline,
-            'motion': motion,
-            'request_log': {'total': total, 'success': successes, 'errors': errors,
-                            'avg_duration': avg_duration, 'last_request': records[0].get('created_at') if records else 'NONE',
-                            'entries': records[:20]},
-            'last_upload': debug.get('last_upload'), 'recent_uploads': debug.get('last_uploads', []),
-            'last_generate_request': debug.get('last_request'),
-            'last_error': debug.get('last_error'), 'result_detail': result_detail,
-            'transport_log': _aivideo_request_log_snapshot(),
-            'checked_at': checked_at}
 
 
 def _segmind_extract_error(resp):
@@ -3410,8 +3319,6 @@ def validateVideo(dropbox_url):
             'dropbox_url_original': dropbox_url,
             'dropbox_url_processed': dropbox_url_processed,
             'resized': resized,
-            'format': 'MP4',
-            'size': os.path.getsize(final_path),
             'elapsed_ms': round((time.time() - started) * 1000),
         }
         _aivideo_debug_set(
@@ -3422,9 +3329,8 @@ def validateVideo(dropbox_url):
             processed_width=final_w, processed_height=final_h,
             processed_duration=duration_clamped, processed_aspect_ratio=aspect_ratio,
             dropbox_url_original=dropbox_url, dropbox_url_processed=dropbox_url_processed,
-            resized=resized, processed_state='RESIZED' if resized else 'UNCHANGED',
-            validation_result='VALID', format='MP4', size=os.path.getsize(final_path),
-            elapsed_ms=result['elapsed_ms'], error=None,
+            resized=resized, elapsed_ms=result['elapsed_ms'], provider='segmind (kling-o3)',
+            error=None,
         )
         return result
     except RuntimeError as e:
@@ -3439,70 +3345,6 @@ def validateVideo(dropbox_url):
             if p and os.path.exists(p):
                 try:
                     os.remove(p)
-                except OSError:
-                    pass
-
-
-# Mii-owned output profiles. These values are intentionally not part of any
-# provider schema: they are applied only after a generated video has been
-# securely fetched, and can be tuned here without changing provider payloads.
-VIDEO_OUTPUT_BITRATE_PROFILES = {
-    '480p': {'STANDARD': '1200k', 'HIGH': '2200k'},
-    '720p': {'STANDARD': '2500k', 'HIGH': '4500k'},
-    '768p': {'STANDARD': '3000k', 'HIGH': '5200k'},
-    '1080p': {'STANDARD': '4500k', 'HIGH': '8000k'},
-    '2k': {'STANDARD': '8000k', 'HIGH': '14000k'},
-    '4k': {'STANDARD': '16000k', 'HIGH': '28000k'},
-}
-
-
-def _normalize_video_output_bitrate(value):
-    value = str(value or 'HIGH').upper()
-    return value if value in ('STANDARD', 'HIGH') else 'HIGH'
-
-
-def _video_output_bitrate_target(profile, resolution):
-    """Return the resolution-aware Mii-owned final-video target."""
-    profile = _normalize_video_output_bitrate(profile)
-    return VIDEO_OUTPUT_BITRATE_PROFILES.get(str(resolution).lower(),
-                                             VIDEO_OUTPUT_BITRATE_PROFILES['720p'])[profile]
-
-
-def _apply_video_output_bitrate(video_bytes, profile, resolution):
-    """Apply a Mii output profile only when the source exceeds its target."""
-    target = _video_output_bitrate_target(profile, resolution)
-    if target is None:
-        return video_bytes
-    path_in = path_out = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as src:
-            src.write(video_bytes)
-            path_in = src.name
-        path_out = path_in + '.output.mp4'
-        rate = int(target[:-1])
-        probe = subprocess.run(
-            ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
-             '-show_entries', 'stream=bit_rate', '-of', 'default=nw=1:nk=1', path_in],
-            check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-        try:
-            source_rate = int((probe.stdout or b'0').decode().strip() or 0)
-        except (ValueError, AttributeError):
-            source_rate = 0
-        # A lower/equal bitrate cannot be improved by re-encoding. Preserve
-        # provider bytes verbatim and avoid needless generational loss.
-        if source_rate and source_rate <= rate * 1000:
-            return video_bytes
-        cmd = ['ffmpeg', '-y', '-i', path_in, '-map', '0', '-c', 'copy',
-               '-c:v', 'libx264', '-b:v', target, '-maxrate', target,
-               '-bufsize', f'{rate * 2}k', '-movflags', '+faststart', path_out]
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
-        with open(path_out, 'rb') as rendered:
-            return rendered.read()
-    finally:
-        for path in (path_in, path_out):
-            if path:
-                try:
-                    os.remove(path)
                 except OSError:
                     pass
 
@@ -3541,73 +3383,7 @@ def _persist_task(task_id):
         app.logger.warning('[ai-video][persist] gagal simpan task %s: %s', task_id, e)
 
 
-def _diagnostic_update(task_id, status=None, **values):
-    """Update the safe, persistent diagnostic record embedded in a real task."""
-    with AIVIDEO_TASKS_LOCK:
-        task = AIVIDEO_TASKS.get(task_id)
-        if not task:
-            return
-        diagnostic = task.setdefault('diagnostic', {})
-        if status:
-            diagnostic['status'] = status.upper()
-        diagnostic.update(values)
-        created = diagnostic.get('created_ts') or task.get('created') or time.time()
-        diagnostic['elapsed_ms'] = round((time.time() - created) * 1000)
-        if status in ('completed', 'failed'):
-            diagnostic['completed_at'] = _utc_timestamp()
-    _persist_task(task_id)
-
-
-def _diagnostic_record(task_id, family, variant, output_type, user_prompt, body, incoming_payload=None):
-    """Attach the exact sanitized provider payload and matching upload traces."""
-    reference_fields = {
-        'image': ('reference_images', 'image_urls', 'image_input', 'image', 'first_frame_url', 'start_image_url', 'frontal_image_url'),
-        'video': ('reference_videos', 'video_urls', 'video', 'video_url'),
-        'audio': ('reference_audios', 'audio_urls', 'audio', 'reference_audio_urls'),
-    }
-    refs, seen = [], set()
-    uploads = _aivideo_debug_snapshot().get('last_uploads', [])
-    upload_by_url = {u.get('url'): u for u in uploads if u.get('url')}
-    for kind, fields in reference_fields.items():
-        urls = []
-        for field in fields:
-            value = body.get(field)
-            urls.extend(value if isinstance(value, list) else ([value] if value else []))
-        for url in urls:
-            if url in seen:
-                continue
-            seen.add(url)
-            upload = upload_by_url.get(url, {})
-            refs.append({'index': 1 + sum(r['type'] == kind.upper() for r in refs),
-                         'type': kind.upper(), 'filename': upload.get('filename') or 'REFERENCE',
-                         'upload_status': 'READY', 'final_url': url,
-                         'created_at': upload.get('at') or _utc_timestamp()})
-    allowed = ('prompt', 'aspect_ratio', 'resolution', 'quality', 'duration', 'length_seconds',
-               'generate_audio', 'num_images', 'output_format', 'size', 'output_resolution')
-    summary = {key: body[key] for key in allowed if key in body}
-    summary.update({'reference_image_count': sum(r['type'] == 'IMAGE' for r in refs),
-                    'reference_video_count': sum(r['type'] == 'VIDEO' for r in refs),
-                    'reference_audio_count': sum(r['type'] == 'AUDIO' for r in refs),
-                    'reference_urls': [r['final_url'] for r in refs]})
-    now = time.time()
-    diagnostic = {'request_id': 'MII-' + task_id[:12].upper(), 'task_id': task_id,
-                  'type': output_type.upper(), 'model': family, 'variant': variant,
-                  'created_at': datetime.fromtimestamp(now, timezone.utc).isoformat(), 'created_ts': now,
-                  'status': 'QUEUED', 'user_prompt': user_prompt,
-                  'prompt_sent': body.get('prompt') or body.get('text_prompt') or '',
-                  'incoming_payload': _aivideo_safe_debug_value(incoming_payload or {}),
-                  'final_payload': _aivideo_safe_debug_value(body),
-                  'payload_summary': summary, 'references': refs,
-                  'result_save_status': 'PENDING', 'archive_status': 'PENDING',
-                  'preview_status': 'PENDING', 'elapsed_ms': 0}
-    with AIVIDEO_TASKS_LOCK:
-        if task_id in AIVIDEO_TASKS:
-            AIVIDEO_TASKS[task_id]['diagnostic'] = diagnostic
-    _persist_task(task_id)
-
-
-def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
-                      mute_audio=False, output_bitrate='HIGH', resolution='720p'):
+def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None, mute_audio=False):
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -3616,12 +3392,6 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         # yang menentukan nasib task (status/hasil/error).
         if 'status' in kw or 'output' in kw or 'error' in kw:
             _persist_task(task_id)
-        if kw.get('status') == 'processing':
-            _diagnostic_update(task_id, 'processing')
-        elif kw.get('status') == 'completed':
-            _diagnostic_update(task_id, 'completed', result_save_status='SAVED', archive_status='READY', preview_status='READY')
-        elif kw.get('status') == 'failed':
-            _diagnostic_update(task_id, 'failed', result_save_status='FAILED', archive_status='FAILED', preview_status='FAILED', error_detail=str(kw.get('error') or '')[:300])
 
     log_prefix = f'[ai-video][segmind][{task_id}]'
     logged_body = dict(body)
@@ -3642,8 +3412,13 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
             headers={'x-api-key': _segmind_api_key(), 'Content-Type': 'application/json'},
             json=body, timeout=600,
         )
-        # Defensive compatibility for the one endpoint with a verified native
-        # bitrate_mode. Universal Mii output_bitrate never enters this body.
+        # We optimistically send bitrate_mode on every Seedance tier even
+        # though it's only confirmed in Segmind's docs for the PRO endpoint.
+        # If a tier doesn't actually support it, Segmind is expected to
+        # reject the request with a 400 — retry once, stripped of that one
+        # field, instead of failing the whole generation over an optional
+        # quality knob. (This also doubles as a live test of whether Fast/
+        # Mini accept it: check the logs for this warning to find out.)
         if resp.status_code == 400 and 'bitrate_mode' in body:
             app.logger.warning('%s endpoint=%s got 400 with bitrate_mode set (body snippet: %s) — retrying once without it',
                                 log_prefix, endpoint, resp.text[:300])
@@ -3773,9 +3548,6 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
                 # audio still attached rather than losing the output.
                 app.logger.warning('%s mute_audio requested but ffmpeg strip failed, keeping original audio: %s', log_prefix, mute_err)
 
-        if output_type == 'video':
-            result_bytes = _apply_video_output_bitrate(result_bytes, output_bitrate, resolution)
-
         # Save locally first (always works, and lets the result play back
         # immediately without waiting on a second network hop to Dropbox).
         upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
@@ -3808,10 +3580,7 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
 
         output_key = 'image_url' if is_image else ('audio_url' if is_audio else 'video_url')
         # size_bytes lets the frontend show the saved file size in History
-        _set(status='completed', progress=100, output={
-            output_key: final_url, 'size_bytes': len(result_bytes),
-            'bitrate': output_bitrate if output_type == 'video' else None,
-        })
+        _set(status='completed', progress=100, output={output_key: final_url, 'size_bytes': len(result_bytes)})
     except requests_lib.exceptions.Timeout:
         msg = 'Segmind request timed out (>600s)'
         _aivideo_last_error('segmind', msg)
@@ -3840,226 +3609,80 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         _set(status='failed', error=str(e), progress=100)
 
 
-def _fetch_generated_result(url, output_type):
-    """Bounded provider-result fetch; validate every redirect before archive."""
-    current = str(url or '')
-    maximum = 25 * 1024 * 1024 if output_type == 'image' else 200 * 1024 * 1024
-    for _ in range(4):
-        parsed = urlparse(current)
-        if parsed.scheme != 'https' or not parsed.hostname:
-            raise RuntimeError('unsafe result URL')
-        for address in socket.getaddrinfo(parsed.hostname, 443, type=socket.SOCK_STREAM):
-            if not ipaddress.ip_address(address[4][0]).is_global:
-                raise RuntimeError('unsafe result host')
-        response = requests_lib.get(current, timeout=(10, 120), stream=True, allow_redirects=False)
-        if response.status_code in (301, 302, 303, 307, 308):
-            current = urljoin(current, response.headers.get('Location', ''))
-            continue
-        if response.status_code >= 400:
-            raise RuntimeError('result download failed')
-        content_type = response.headers.get('Content-Type', '').split(';', 1)[0].lower()
-        expected = 'image/' if output_type == 'image' else 'video/'
-        if content_type and not content_type.startswith(expected) and content_type != 'application/octet-stream':
-            raise RuntimeError('unexpected result content type')
-        chunks, total = [], 0
-        for chunk in response.iter_content(65536):
-            total += len(chunk)
-            if total > maximum:
-                raise RuntimeError('result exceeds size limit')
-            chunks.append(chunk)
-        if not total:
-            raise RuntimeError('empty result')
-        return b''.join(chunks)
-    raise RuntimeError('too many result redirects')
-
-
-SEEDANCE20_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9')
-
-
-def _is_public_reference_url(value):
-    """Accept only provider-fetchable HTTPS references, never local/private URLs."""
-    try:
-        parsed = urlparse(str(value or '').strip())
-        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:
-            return False
-        hostname = parsed.hostname.lower().rstrip('.')
-        if hostname == 'localhost' or hostname.endswith('.localhost') or hostname.endswith('.local'):
-            return False
-        try:
-            return ipaddress.ip_address(hostname).is_global
-        except ValueError:
-            return True
-    except (TypeError, ValueError):
-        return False
-
-
-def _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
-                               audio_urls, first_frame_url, last_frame_url, mute_audio=False):
-    """Validate Mii inputs and emit only the documented Seedance 2.0 schema."""
-    references = image_urls + video_urls + audio_urls + [u for u in (first_frame_url, last_frame_url) if u]
-    if any(not _is_public_reference_url(url) for url in references):
-        raise ValueError('Reference harus memakai URL publik HTTPS yang valid.')
-    if len(image_urls) > 9 or len(video_urls) > 1 or len(audio_urls) > 1:
-        raise ValueError('Jumlah reference melebihi batas model.')
-    has_frames = bool(first_frame_url or last_frame_url)
-    if last_frame_url and not first_frame_url:
-        raise ValueError('Last frame membutuhkan first frame.')
-    if has_frames and (image_urls or video_urls):
-        raise ValueError('Elements dan Frames tidak dapat digunakan bersamaan.')
-    if video_urls and len(image_urls) > 6:
-        raise ValueError('Video edit mendukung maksimal 6 reference image.')
-    if audio_urls and not (image_urls or video_urls or first_frame_url):
-        raise ValueError('Audio membutuhkan image atau video pendamping.')
-
-    try:
-        length = int(payload.get('duration', 4))
-    except (TypeError, ValueError):
-        length = 4
-    allowed_resolutions = ('480p', '720p', '1080p', '4K') if variant == 'PRO' else ('480p', '720p')
-    resolution = payload.get('resolution')
-    body = {
-        'prompt': prompt,
-        'duration_seconds': max(4, min(15, length)),
-        'resolution': resolution if resolution in allowed_resolutions else '720p',
-        'aspect_ratio': payload.get('aspect_ratio') if payload.get('aspect_ratio') in SEEDANCE20_RATIOS else '16:9',
-        'generate_audio': not mute_audio,
-    }
-    if image_urls:
-        body['reference_images'] = image_urls
-    if video_urls:
-        body['reference_videos'] = video_urls
-    if audio_urls:
-        body['reference_audios'] = audio_urls
-    if first_frame_url:
-        body['image'] = first_frame_url
-    if last_frame_url:
-        body['end_image'] = last_frame_url
-    return body
-
-
-def _run_budgetpixel_task(task_id, family, variant, body, output_type, output_bitrate='HIGH', resolution='720p'):
-    """Run the async provider job inside the existing Mii task lifecycle."""
-    def _set(**values):
+def _run_budgetpixel_task(task_id, model_slug, input_body, output_type='video'):
+    """Counterpart to _run_segmind_task, but for BudgetPixel's async job
+    lifecycle (submit -> poll -> download). Same AIVIDEO_TASKS tracking,
+    same local-save + Dropbox re-upload at the end, so results from either
+    provider look identical to the frontend and to History."""
+    def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
-                AIVIDEO_TASKS[task_id].update(values)
-        if {'status', 'output', 'error'} & set(values):
+                AIVIDEO_TASKS[task_id].update(kw)
+        if 'status' in kw or 'output' in kw or 'error' in kw:
             _persist_task(task_id)
 
-    started = time.time()
-    generated = False
+    log_prefix = f'[ai-video][budgetpixel][{task_id}]'
+    api_key = _budgetpixel_api_key()
+    logged_body = dict(input_body)
+    if len(logged_body.get('prompt', '')) > 500:
+        logged_body['prompt'] = logged_body['prompt'][:500] + '…(truncated in log only)'
+    app.logger.info('%s model=%s payload=%s', log_prefix, model_slug, json.dumps(logged_body))
+    _aivideo_debug_set('last_request', endpoint=f'budgetpixel:{model_slug}', body=input_body, task_id=task_id)
+
+    call_started = time.time()
     try:
         _set(status='processing', progress=10)
-        _diagnostic_update(task_id, 'submitted')
-        api_key = get_secret("BUDGETPIXEL_API_KEY")
-        submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
-        submitted = submit(family, variant, body, api_key)
-        with AIVIDEO_TASKS_LOCK:
-            if task_id in AIVIDEO_TASKS:
-                AIVIDEO_TASKS[task_id]['provider_job_id'] = submitted['job_id']
-        _persist_task(task_id)
-        _diagnostic_update(task_id, 'processing')
-        result = budgetpixel_provider.poll(submitted['job_id'], api_key, kind=output_type)
-        if result['status'] != 'completed' or not result.get('url'):
-            raise budgetpixel_provider.ProviderError('GENERATION_FAILED', 'Generation failed. Please try again.', repr(result.get('raw')))
-        generated = True
-        _set(status='processing', progress=90)
-        _diagnostic_update(task_id, 'generated', result_save_status='SAVING', archive_status='ARCHIVING')
-        sources = result.get('images') if output_type == 'image' and result.get('images') else [{'url': result['url']}]
-        archived, total_bytes = [], 0
-        archive_available = True
-        for index, source in enumerate(sources):
-            media = _fetch_generated_result(source['url'], output_type)
-            if output_type == 'video':
-                media = _apply_video_output_bitrate(media, output_bitrate, resolution)
-            total_bytes += len(media)
-            # Preserve provider bytes verbatim and name them for their actual
-            # magic type.  A JPEG/WebP must never be disguised as a PNG.
-            if output_type == 'image':
-                if media.startswith(b'\xff\xd8\xff'):
-                    ext = 'jpg'
-                elif media.startswith(b'RIFF') and media[8:12] == b'WEBP':
-                    ext = 'webp'
-                elif media.startswith(b'GIF8'):
-                    ext = 'gif'
-                elif media.startswith(b'\x89PNG\r\n\x1a\n'):
-                    ext = 'png'
-                else:
-                    # Some object stores strip Content-Type and a few test/
-                    # legacy adapters return opaque bytes.  Fall back only to
-                    # the format that was actually requested, never blindly
-                    # rename every image PNG.
-                    requested_format = str(body.get('output_format') or 'png').lower()
-                    ext = 'jpg' if requested_format in ('jpg', 'jpeg') else requested_format
-            else:
-                ext = 'mp4'
-            name = '%s%s.%s' % (task_id, ('-%d' % (index + 1)) if len(sources) > 1 else '', ext)
-            try:
-                saved_url = _dropbox_upload_and_link(media, name, folder='results')
-            except Exception as archive_error:
-                archive_available = False
-                upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
-                os.makedirs(upload_dir, exist_ok=True)
-                with open(os.path.join(upload_dir, name), 'wb') as local_file:
-                    local_file.write(media)
-                saved_url = '/static/aivideo_uploads/' + name
-                app.logger.warning('[ai-generation][archive] task=%s save failed; using local preview: %s',
-                                   task_id, archive_error)
-            mime_by_ext = {'png': 'image/png', 'jpg': 'image/jpeg', 'webp': 'image/webp',
-                           'gif': 'image/gif', 'mp4': 'video/mp4'}
-            archived.append({'url': saved_url, 'extension': ext,
-                             'mime': mime_by_ext.get(ext, 'application/octet-stream')})
-        output_key = 'image_url' if output_type == 'image' else 'video_url'
-        output = {output_key: archived[0]['url'], 'type': output_type, 'url': archived[0]['url'],
-                  'original_url': None, 'size_bytes': total_bytes,
-                  'archive_available': archive_available,
-                  'bitrate': output_bitrate if output_type == 'video' else None}
-        if not archive_available:
-            output['message'] = 'Result generated. Cloud save is temporarily unavailable.'
-        if output_type == 'image':
-            output['images'] = archived
-            output['extension'] = archived[0]['extension']
-            output['mime'] = archived[0]['mime']
-        if archive_available:
-            _diagnostic_update(task_id, 'archiving', result_save_status='SAVED', archive_status='READY', preview_status='READY')
-            _set(status='completed', progress=100, output=output)
-            _diagnostic_update(task_id, 'completed', result_save_status='SAVED', archive_status='READY', preview_status='READY')
-        else:
-            # Preserve the locally-previewable result while reporting storage
-            # failure separately from provider generation failure.
-            _set(status='failed', progress=100, output=output,
-                 error='Result was generated but could not be saved. Please try again.',
-                 error_code='RESULT_SAVE_FAILED')
-            _diagnostic_update(task_id, 'failed', result_save_status='FAILED', archive_status='FAILED', preview_status='READY')
-            _aivideo_last_error('result_archive', 'Result generated but cloud archive save failed.')
-        _aivideo_log_request('budgetpixel', 'generation', status_code=200 if archive_available else 502,
-                             duration_ms=round((time.time() - started) * 1000), request_body=body,
-                             response_body={'status': 'completed', 'archive': archive_available},
-                             error_source=None if archive_available else 'result_archive',
-                             error_detail=None if archive_available else 'Cloud archive save failed.', task_id=task_id)
-        app.logger.info('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=completed elapsed=%dms',
-                        task_id, family, variant, round((time.time() - started) * 1000))
-    except budgetpixel_provider.ProviderError as exc:
-        app.logger.error('[ai-generation][internal] provider=budgetpixel task=%s model=%s/%s phase=failed error=%s elapsed=%dms',
-                         task_id, family, variant, str(exc), round((time.time() - started) * 1000))
-        _set(status='failed', error=exc.public_message, error_code=exc.code, progress=100)
-        _diagnostic_update(task_id, 'failed', result_save_status='NOT STARTED', archive_status='NOT STARTED', preview_status='FAILED', error_detail=exc.public_message)
-        _aivideo_last_error('generation', exc.public_message)
-        _aivideo_log_request('budgetpixel', 'generation', duration_ms=round((time.time() - started) * 1000),
-                             request_body=body, error_source='generation', error_detail=exc.public_message,
-                             task_id=task_id)
-    except Exception:
-        app.logger.exception('[ai-generation][internal] provider task failed task=%s model=%s/%s', task_id, family, variant)
-        if generated:
-            _set(status='failed', error='Result was generated but could not be saved. Please try again.', error_code='RESULT_SAVE_FAILED', progress=100)
-        else:
-            _set(status='failed', error='Generation failed. Please try again.', error_code='GENERATION_FAILED', progress=100)
-        _diagnostic_update(task_id, 'failed', result_save_status='FAILED' if generated else 'NOT STARTED', archive_status='FAILED' if generated else 'NOT STARTED', preview_status='FAILED')
-        safe_message = ('Result generated but could not be saved.' if generated else 'Generation failed.')
-        _aivideo_last_error('result_archive' if generated else 'generation', safe_message)
-        _aivideo_log_request('budgetpixel', 'generation', duration_ms=round((time.time() - started) * 1000),
-                             request_body=body, error_source='result_archive' if generated else 'generation',
-                             error_detail=safe_message, task_id=task_id)
+        job_id = budgetpixel_client.submit_video_job(api_key, model_slug, input_body)
+        _set(progress=25)
+
+        def _progress(status):
+            pct = {'pending': 25, 'starting': 30, 'processing': 55, 'completing': 85}.get(status, 40)
+            _set(progress=pct)
+
+        video_url = budgetpixel_client.poll_video_until_done(api_key, job_id, on_progress=_progress)
+        _set(progress=90)
+        result_bytes = budgetpixel_client.download_output(video_url)
+    except Exception as e:
+        msg = str(e)
+        app.logger.warning('%s gagal: %s', log_prefix, msg)
+        _aivideo_last_error('budgetpixel', msg)
+        _aivideo_log_request(
+            provider='budgetpixel', endpoint=model_slug, status_code=0,
+            duration_ms=round((time.time() - call_started) * 1000), retry_count=0,
+            request_body=logged_body, error_source='budgetpixel', error_detail=msg, task_id=task_id,
+        )
+        _set(status='failed', error=msg, progress=100)
+        return
+
+    duration_ms = round((time.time() - call_started) * 1000)
+    _aivideo_log_request(
+        provider='budgetpixel', endpoint=model_slug, status_code=200,
+        duration_ms=duration_ms, retry_count=0, request_body=logged_body,
+        response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
+    )
+
+    upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    ext = 'png' if output_type == 'image' else ('mp3' if output_type == 'audio' else 'mp4')
+    fname = f'{task_id}.{ext}'
+    with open(os.path.join(upload_dir, fname), 'wb') as f:
+        f.write(result_bytes)
+    app.logger.info('%s completed, wrote %d bytes to %s', log_prefix, len(result_bytes), fname)
+    local_url = f'/static/aivideo_uploads/{fname}'
+
+    # Sama seperti jalur Segmind: disk Railway tidak persistent, jadi push
+    # ke Dropbox untuk penyimpanan permanen; fallback ke local kalau
+    # Dropbox lagi bermasalah supaya generation yang sudah selesai tidak
+    # hilang begitu saja.
+    final_url = local_url
+    try:
+        final_url = _dropbox_upload_and_link(result_bytes, fname, folder='results')
+    except Exception as dbx_err:
+        app.logger.warning('%s Dropbox upload failed, falling back to local static URL: %s', log_prefix, dbx_err)
+        _aivideo_last_error('dropbox', f'Upload hasil generate ke Dropbox gagal (pakai local storage sementara): {dbx_err}')
+
+    output_key = 'image_url' if output_type == 'image' else ('audio_url' if output_type == 'audio' else 'video_url')
+    _set(status='completed', progress=100, output={output_key: final_url, 'size_bytes': len(result_bytes)})
 
 
 @app.route('/ai-video')
@@ -4080,8 +3703,7 @@ def ai_video_view():
             pass
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
-    return render_template('ai-video.html',
-                           image_capabilities=budgetpixel_provider.public_image_capabilities())
+    return render_template('ai-video.html')
 
 
 @app.route('/ai-video/lock-visit', methods=['POST'])
@@ -4216,50 +3838,13 @@ def aivideo_enhance():
         return jsonify({'error': 'Enhance gagal: ' + str(e)[:140]}), 502
 
 
-@app.route('/api/aivideo/image-capabilities')
-def aivideo_image_capabilities():
-    if not _aivideo_authed():
-        return jsonify({'error': 'unauthorized'}), 401
-    return jsonify({'ok': True, 'capabilities': budgetpixel_provider.public_image_capabilities()})
-
-
-@app.route('/api/aivideo/credits')
-def aivideo_credits():
-    if not _aivideo_authed():
-        return jsonify({'error': 'unauthorized'}), 401
-    try:
-        data = budgetpixel_provider.get_credits(get_secret('BUDGETPIXEL_API_KEY'))
-        return jsonify({key: data.get(key) for key in ('total_available', 'monthly_remaining',
-                        'monthly_used', 'monthly_limit', 'extra_credits')})
-    except budgetpixel_provider.ProviderError as exc:
-        return jsonify({'error': {'code': exc.code, 'message': exc.public_message}}), 502
-
-
-@app.route('/api/aivideo/cost', methods=['POST'])
-def aivideo_cost():
-    if not _aivideo_authed():
-        return jsonify({'error': 'unauthorized'}), 401
-    incoming = request.get_json(silent=True) or {}
-    family = str(incoming.get('family', '')).lower()
-    variant = str(incoming.get('model') or 'STANDARD').upper()
-    try:
-        endpoint = budgetpixel_provider.resolve_image_model(family, variant)
-        refs = [u for u in (incoming.get('reference_images') or incoming.get('image_urls') or []) if u]
-        final_payload = budgetpixel_provider.build_image_payload(
-            family, variant, incoming, str(incoming.get('prompt') or ''), refs)
-        final_payload['model'] = endpoint.rsplit('/', 1)[-1]
-        result = budgetpixel_provider.estimate_cost(
-            final_payload, get_secret('BUDGETPIXEL_API_KEY'))
-        return jsonify(result)
-    except budgetpixel_provider.ProviderError as exc:
-        status = 422 if exc.code in ('INVALID_INPUT', 'MODEL_UNAVAILABLE') else 502
-        return jsonify({'error': {'code': exc.code, 'message': exc.public_message}}), status
-
-
 @app.route('/api/aivideo/generate', methods=['POST'])
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    if not _segmind_api_key():
+        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
+        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
     app.logger.info('[ai-video][generate] incoming request body=%s', json.dumps(payload)[:3000])
     _aivideo_debug_set('last_request', incoming_payload=payload)
@@ -4268,101 +3853,85 @@ def aivideo_generate():
     family = str(payload.get('family', 'seedance')).lower()
     mute_audio = bool(payload.get('mute_audio', False))
 
-    original_prompt = str(payload.get('prompt', '')).strip()
-    prompt = original_prompt
-    if not original_prompt and family != 'klingswap':
+    prompt = str(payload.get('prompt', '')).strip()
+    if not prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
-    image_urls = [u for u in (payload.get('reference_images') or payload.get('image_urls') or []) if u]
-    video_urls = [u for u in (payload.get('video_urls') or []) if u]
-    audio_urls = [u for u in (payload.get('audio_urls') or []) if u]
+    image_urls = [u for u in (payload.get('image_urls') or []) if u][:9]
+    video_urls = [u for u in (payload.get('video_urls') or []) if u][:3]
+    audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:3]
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
     last_frame_url = str(payload.get('last_frame_url') or '').strip()
     aspect_ratio_in = payload.get('aspect_ratio')
 
-    budget_video_families = {'seedance', 'seedance25', 'wan30'}
-    budget_image_families = {'flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimage'}
-    use_budget_video = family in budget_video_families and not (family == 'seedance' and model_key == 'FAST')
-    if use_budget_video or family in budget_image_families:
-        output_type = 'image' if family in budget_image_families else 'video'
-        # References remain blocked for contracts that have not been verified.
-        # Seedance 2.0 is handled below using its documented singular media fields.
-        image_caps = (budgetpixel_provider.image_capabilities(family, model_key or 'STANDARD')
-                      if output_type == 'image' else {})
-        image_reference_cap = 1 if image_caps.get('singular_image') else image_caps.get('reference_images', 0)
-        gpt_references = bool(output_type == 'image' and image_reference_cap and image_urls
-                              and not (video_urls or audio_urls or first_frame_url or last_frame_url))
-        budget_video_references = output_type == 'video' and bool(
-            budgetpixel_provider.video_capabilities(family, model_key or 'STANDARD'))
-        if (image_urls or video_urls or audio_urls or first_frame_url or last_frame_url) and not (gpt_references or budget_video_references):
-            return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': 'These reference settings are not available yet.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-        variant = model_key or 'STANDARD'
+    # provider switch: 'segmind' (existing, synchronous) vs 'budgetpixel'
+    # (async submit/poll/download via budgetpixel_client.py). Families below
+    # that route through BudgetPixel set provider='budgetpixel' + a fixed
+    # model slug instead of a Segmind `endpoint` — the dispatch after
+    # task_id creation picks the right background runner based on this flag.
+    provider = 'segmind'
+    endpoint = None
+
+    if family in ('seedance25', 'wan'):
+        if not _budgetpixel_api_key():
+            _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
+            return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
+        provider = 'budgetpixel'
+
         try:
-            endpoint = (budgetpixel_provider.resolve_image_model(family, variant) if output_type == 'image'
-                        else budgetpixel_provider.resolve_video_model(family, variant))
-        except budgetpixel_provider.ProviderError:
-            return jsonify({'ok': False, 'error': {'code': 'MODEL_UNAVAILABLE', 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-        if output_type == 'video':
-            try:
-                prompt = mii_quality_filter.build_final_prompt(
-                    original_prompt,
-                    family=family,
-                    duration=payload.get('duration'),
-                    references={
-                        'images': image_urls, 'videos': video_urls, 'audio': audio_urls,
-                        'first_frame': first_frame_url, 'last_frame': last_frame_url,
-                    },
-                )
-            except Exception:
-                app.logger.exception('[ai-video][quality-filter] failed; using original prompt')
-                prompt = original_prompt
-        body = {'prompt': prompt}
-        if output_type == 'image':
-            try:
-                body = budgetpixel_provider.build_image_payload(
-                    family, variant, payload, original_prompt, image_urls)
-            except budgetpixel_provider.ProviderError as exc:
-                return jsonify({'ok': False, 'error': {'code': exc.code, 'message': exc.public_message,
-                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-        elif family == 'seedance':
-            try:
-                body = _build_seedance20_payload(payload, prompt, variant, image_urls, video_urls,
-                                                  audio_urls, first_frame_url, last_frame_url, mute_audio)
-            except ValueError as exc:
-                return jsonify({'ok': False, 'error': {'code': 'INVALID_INPUT', 'message': str(exc),
-                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
-        elif output_type == 'video':
-            try:
-                body = budgetpixel_provider.build_video_payload(
-                    family, variant, payload, prompt, image_urls, video_urls, audio_urls,
-                    first_frame_url, last_frame_url, not mute_audio)
-            except budgetpixel_provider.ProviderError as exc:
-                return jsonify({'ok': False, 'error': {'code': exc.code, 'message': exc.public_message,
-                                'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 422
+            length_seconds = int(payload.get('duration', 5))
+        except (TypeError, ValueError):
+            length_seconds = 5
+        resolution = str(payload.get('resolution') or '720p').lower()
+        if resolution not in ('480p', '720p', '1080p'):
+            resolution = '720p'
 
-        output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
-                          if output_type == 'video' else None)
-        task_id = uuid.uuid4().hex
-        with AIVIDEO_TASKS_LOCK:
-            _prune_aivideo_tasks()
-            AIVIDEO_TASKS[task_id] = {'status': 'pending', 'progress': 5, 'output': None, 'error': None,
-                                      'model': variant, 'family': family, 'output_type': output_type,
-                                      'output_bitrate': output_bitrate,
-                                      'request_metadata': {'original_prompt': original_prompt,
-                                                           'final_prompt': prompt, **body}, 'created': time.time()}
-        _diagnostic_record(task_id, family, variant, output_type, original_prompt, body, payload)
-        _aivideo_debug_set('last_request', endpoint=endpoint, body=body, task_id=task_id)
-        _persist_task(task_id)
-        threading.Thread(target=_run_budgetpixel_task,
-                         args=(task_id, family, variant, body, output_type, output_bitrate,
-                               body.get('resolution', '720p')), daemon=True).start()
-        return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': 20}})
+        has_frames = bool(first_frame_url)
+        has_reference = bool(image_urls or video_urls or audio_urls) and not has_frames
 
-    if not _segmind_api_key():
-        _aivideo_last_error('config', 'generation provider is not configured')
-        return jsonify({'ok': False, 'error': {'code': 'MODEL_UNAVAILABLE', 'message': 'Selected model is unavailable.', 'request_id': 'MII-' + uuid.uuid4().hex[:12].upper()}}), 503
+        body = {'prompt': prompt, 'resolution': resolution}
+        duration = length_seconds
 
-    if family == 'seedance':
+        if family == 'seedance25':
+            endpoint = 'budgetpixel:seedance-2.5'
+            model_slug = 'seedance-2.5'
+            body['length_seconds'] = max(4, min(30, length_seconds))
+            body['aspect_ratio'] = aspect_ratio_in or '16:9'
+            if has_frames:
+                body['image'] = first_frame_url
+                if last_frame_url:
+                    body['end_image'] = last_frame_url
+            elif has_reference:
+                if image_urls:
+                    body['reference_images'] = image_urls[:15]
+                if video_urls:
+                    body['reference_videos'] = video_urls[:5]
+                if audio_urls:
+                    body['reference_audios'] = audio_urls[:5]
+        else:  # wan — tier picked via model_key (WAN30 / WAN30PRIME / WAN27)
+            wan_slug_map = {
+                'WAN30': 'wan-3.0-video',
+                'WAN30PRIME': 'wan-3.0-video-prime',
+                'WAN27': 'wan-2.7-video',
+                'STANDARD': 'wan-3.0-video',  # fallback for the current single-tier UI card
+            }
+            model_slug = wan_slug_map.get(model_key, 'wan-3.0-video')
+            endpoint = f'budgetpixel:{model_slug}'
+            body['length_seconds'] = max(2, min(30, length_seconds))
+            body['aspect_ratio'] = aspect_ratio_in or 'adaptive'
+            if has_frames:
+                body['image'] = first_frame_url
+                if last_frame_url:
+                    body['end_image'] = last_frame_url
+            elif has_reference:
+                if image_urls:
+                    body['reference_images'] = image_urls[:10]
+                if video_urls:
+                    body['reference_videos'] = video_urls[:5]
+                if audio_urls:
+                    body['reference_audios'] = audio_urls[:5]
+
+    elif family == 'seedance':
         if model_key not in SEGMIND_MODEL_MAP:
             return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
         endpoint = SEGMIND_MODEL_MAP[model_key]
@@ -4407,12 +3976,18 @@ def aivideo_generate():
             'return_last_frame': False,
             'skip_moderation': False,
         }
-        # bitrate_mode is a provider-native field verified only for PRO.
-        # FAST stays on its existing Segmind route but receives no invented
-        # provider option; all tiers still use Mii's final output profile.
-        if model_key == 'PRO':
-            body['bitrate_mode'] = _normalize_video_output_bitrate(
-                payload.get('output_bitrate')).lower()
+        # bitrate_mode: confirmed in Segmind's official seedance-2.0 (PRO)
+        # docs — 'standard' (default) or 'high' (~5-6x bitrate, no price
+        # difference). Not documented for seedance-2.0-fast or -mini, but the
+        # user wants max quality (least compression) across every tier, so
+        # we optimistically send bitrate_mode='high' on all three — if a
+        # tier actually rejects it, _run_segmind_task retries once
+        # automatically without the field, so generation never fails just
+        # because of this optional quality knob.
+        bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
+        if bitrate_mode not in ('standard', 'high'):
+            bitrate_mode = 'high'
+        body['bitrate_mode'] = bitrate_mode
         if first_frame_url:
             body['first_frame_url'] = first_frame_url
         if last_frame_url:
@@ -4710,11 +4285,11 @@ def aivideo_generate():
         duration = 0  # not applicable to image generation
 
     else:
-        return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini. '
-                                  f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Kling 3.0 (STANDARD/PRO), '
-                                  f'Motion Control (STD/PRO), Veo 3.1 (LITE/FAST/PRO), Nano Banana Pro (FAST/STANDARD/ULTRA), '
-                                  f'GPT Image 2 (LOW/STANDARD/HIGH), Seedream 5.0 Pro, Flux (SCHNELL/DEV/PRO), '
-                                  f'Imagen 4, Qwen Image, dan Seed Audio 1.0.'}), 501
+        return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API di server ini. '
+                                  f'Saat ini yang aktif: Seedance 2.0 (MINI/FAST/PRO), Seedance 2.5 (BudgetPixel), Wan (BudgetPixel), '
+                                  f'Kling 3.0 (STANDARD/PRO), Motion Control (STD/PRO), Veo 3.1 (LITE/FAST/PRO), '
+                                  f'Nano Banana Pro (FAST/STANDARD/ULTRA), GPT Image 2 (LOW/STANDARD/HIGH), '
+                                  f'Seedream 5.0 Pro, Flux (SCHNELL/DEV/PRO), Imagen 4, Qwen Image, dan Seed Audio 1.0.'}), 501
 
     if family == 'seedaudio':
         output_type = 'audio'
@@ -4730,17 +4305,17 @@ def aivideo_generate():
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
         }
-    _diagnostic_record(task_id, family, model_key, output_type, prompt, body)
     _persist_task(task_id)
-    app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread',
-                     task_id, family, model_key, endpoint)
-    output_bitrate = (_normalize_video_output_bitrate(payload.get('output_bitrate'))
-                      if output_type == 'video' else None)
-    if output_type == 'video':
-        AIVIDEO_TASKS[task_id]['output_bitrate'] = output_bitrate
-    threading.Thread(target=_run_segmind_task,
-                     args=(task_id, endpoint, body, output_type, family, mute_audio,
-                           output_bitrate, body.get('resolution', '720p')), daemon=True).start()
+    app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread (provider=%s)',
+                     task_id, family, model_key, endpoint, provider)
+    if provider == 'budgetpixel':
+        threading.Thread(
+            target=_run_budgetpixel_task,
+            args=(task_id, model_slug, body, output_type),
+            daemon=True,
+        ).start()
+    else:
+        threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family, mute_audio), daemon=True).start()
 
     estimated_time = (duration * 12) if duration else (30 if output_type == 'audio' else 20)
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
@@ -4806,53 +4381,30 @@ def aivideo_task_result(task_id):
     return jsonify({'status': 'completed', 'output': t.get('output')})
 
 
-_UPLOAD_FORMATS = {
-    'image': {
-        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-        '.png': 'image/png', '.webp': 'image/webp',
-    },
-    'video': {'.mp4': 'video/mp4', '.mov': 'video/quicktime'},
-    'audio': {'.wav': 'audio/wav', '.mp3': 'audio/mpeg'},
-}
-_IMAGE_FORMAT_ERROR = 'Format gambar tidak didukung. Gunakan JPG, JPEG, PNG, atau WEBP.'
-
-
-def _detect_upload_format(file_bytes):
-    """Return the supported format identified from file structure/magic bytes.
-
-    The browser-supplied Content-Type and filename are hints only. Keeping this
-    detector independent from both prevents an empty/mobile MIME or a harmless
-    JPEG alias from rejecting a real image, while non-image bytes cannot pass by
-    merely carrying an image extension.
-    """
-    head = file_bytes[:32]
-    if (len(file_bytes) >= 4 and head[:3] == b'\xff\xd8\xff'
-            and file_bytes[-2:] == b'\xff\xd9'):
-        return 'image', 'image/jpeg', '.jpg'
-    if (len(file_bytes) >= 24 and head[:8] == b'\x89PNG\r\n\x1a\n'
-            and head[12:16] == b'IHDR'):
-        return 'image', 'image/png', '.png'
-    if (len(file_bytes) >= 20 and head[:4] == b'RIFF' and head[8:12] == b'WEBP'
-            and head[12:16] in (b'VP8 ', b'VP8L', b'VP8X')):
-        return 'image', 'image/webp', '.webp'
-    if len(file_bytes) >= 12 and file_bytes[4:8] == b'ftyp':
-        # MP4 and QuickTime share the ISO BMFF envelope. The compatible/major
-        # brand selects the safe normalized container name used for storage.
-        brand = file_bytes[8:12]
-        if brand == b'qt  ':
-            return 'video', 'video/quicktime', '.mov'
-        return 'video', 'video/mp4', '.mp4'
-    if len(file_bytes) >= 12 and head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE':
-        return 'audio', 'audio/wav', '.wav'
-    if head[:3] == b'ID3' or (len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0):
-        return 'audio', 'audio/mpeg', '.mp3'
-    return None
-
-
 def _sniff_upload_matches_ext(file_bytes, ext):
-    """Back-compatible helper: validate content against an allowed extension."""
-    detected = _detect_upload_format(file_bytes)
-    return bool(detected and _UPLOAD_FORMATS.get(detected[0], {}).get(ext) == detected[1])
+    """Verify the file's actual magic bytes match the claimed extension,
+    instead of trusting the client-supplied filename alone. Deliberately
+    stdlib-only (no python-magic/libmagic dependency) so it doesn't require
+    touching the Dockerfile's system packages."""
+    head = file_bytes[:16]
+    if ext in ('.jpg', '.jpeg'):
+        return head[:3] == b'\xff\xd8\xff'
+    if ext == '.png':
+        return head[:8] == b'\x89PNG\r\n\x1a\n'
+    if ext == '.webp':
+        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
+    if ext in ('.mp4', '.mov'):
+        # ISO base media file format: box size (4 bytes) + 'ftyp' at offset 4.
+        # Covers mp4/mov/m4v/qt — the only container types we accept here.
+        return file_bytes[4:8] == b'ftyp'
+    if ext == '.wav':
+        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE'
+    if ext == '.mp3':
+        if head[:3] == b'ID3':
+            return True
+        # Frameless MP3 (no ID3 tag): starts with an MPEG audio frame sync.
+        return len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0
+    return False
 
 
 @app.route('/api/aivideo/upload', methods=['POST'])
@@ -4874,53 +4426,27 @@ def aivideo_upload():
     if not f or not f.filename:
         return jsonify({'error': 'File tidak ditemukan'}), 400
     ext = os.path.splitext(f.filename)[1].lower()
-    requested_kind = str(request.form.get('media_type') or '').strip().lower()
-    allowed = {ext: mime for formats in _UPLOAD_FORMATS.values() for ext, mime in formats.items()}
+    allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
     if ext not in allowed:
         app.logger.warning('[ai-video][upload] rejected file %s: unsupported ext %s', f.filename, ext)
-        if requested_kind == 'image' or (f.mimetype or '').lower().startswith('image/'):
-            return jsonify({'error': _IMAGE_FORMAT_ERROR}), 400
         return jsonify({'error': f'Tipe file tidak didukung ({ext})'}), 400
     file_bytes = f.read()
     app.logger.info('[ai-video][upload] received file=%s size=%d ext=%s', f.filename, len(file_bytes), ext)
     if len(file_bytes) > 50 * 1024 * 1024:
         return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
-    detected = _detect_upload_format(file_bytes)
-    expected_kind = next(kind for kind, formats in _UPLOAD_FORMATS.items() if ext in formats)
-    if (not detected or detected[0] != expected_kind
-            or (requested_kind and requested_kind != expected_kind)):
-        app.logger.warning('[ai-video][upload] rejected file %s: unsupported or invalid %s content', f.filename, expected_kind)
-        return jsonify({'error': _IMAGE_FORMAT_ERROR if expected_kind == 'image' or requested_kind == 'image'
-                        else 'Isi file tidak sesuai dengan format yang didukung'}), 400
-    media_kind, detected_mime, normalized_ext = detected
-    # JPEG's .jpg/.jpeg aliases are equivalent. For any other supported
-    # filename/content mismatch, keep the original bytes but normalize the
-    # storage filename to what was actually detected rather than lying to the
-    # downstream provider about its content type.
-    upload_filename = f.filename
-    if allowed[ext] != detected_mime:
-        upload_filename = os.path.splitext(f.filename)[0] + normalized_ext
-        app.logger.info('[ai-video][upload] normalized filename %s -> %s (%s)',
-                        f.filename, upload_filename, detected_mime)
+    if not _sniff_upload_matches_ext(file_bytes, ext):
+        app.logger.warning('[ai-video][upload] rejected file %s: content does not match extension %s', f.filename, ext)
+        return jsonify({'error': f'Isi file tidak sesuai dengan ekstensinya ({ext})'}), 400
     try:
-        url = _dropbox_upload_and_link(file_bytes, upload_filename)
+        url = _dropbox_upload_and_link(file_bytes, f.filename)
         app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
-        media_type = media_kind.upper()
-        upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
-                        'mime_type': detected_mime, 'storage_filename': upload_filename,
-                        'status': 'READY', 'final_url': url, 'url': url, 'ok': True,
-                        'error': None, 'at': _utc_timestamp()}
-        _aivideo_debug_set('last_upload', **upload_debug)
-        _aivideo_debug_append_upload(upload_debug)
+        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=url, ok=True, error=None)
+        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': url, 'ok': True, 'error': None, 'at': _utc_timestamp()})
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
-        media_type = media_kind.upper()
-        upload_debug = {'filename': f.filename, 'media_type': media_type, 'size': len(file_bytes),
-                        'status': 'FAILED', 'final_url': None, 'url': None, 'ok': False,
-                        'error': _aivideo_safe_debug_value(str(e)), 'at': _utc_timestamp()}
-        _aivideo_debug_set('last_upload', **upload_debug)
-        _aivideo_debug_append_upload(upload_debug)
+        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=None, ok=False, error=str(e))
+        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
 
@@ -5051,18 +4577,14 @@ def aivideo_archive_save():
     try:
         if rec.get('videoUrl'):
             rec['videoUrl'] = _ensure_dropbox_url(rec['videoUrl'])
-        if rec.get('imageUrls'):
-            rec['imageUrls'] = [_ensure_dropbox_url(url) for url in rec['imageUrls'] if url]
         if rec.get('imageUrl'):
             rec['imageUrl'] = _ensure_dropbox_url(rec['imageUrl'])
-        elif rec.get('imageUrls'):
-            rec['imageUrl'] = rec['imageUrls'][0]
         if rec.get('audioUrl'):
             rec['audioUrl'] = _ensure_dropbox_url(rec['audioUrl'])
         aivideo_archive.upsert_archive(rec)
         app.logger.info('[ai-video][archive] saved id=%s video=%s image=%s archived=%s',
                          rec_id, bool(rec.get('videoUrl')), bool(rec.get('imageUrl')), bool(rec.get('archived', True)))
-        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', ''), 'audioUrl': rec.get('audioUrl', ''), 'imageUrls': rec.get('imageUrls', [])})
+        return jsonify({'ok': True, 'videoUrl': rec.get('videoUrl', ''), 'imageUrl': rec.get('imageUrl', ''), 'audioUrl': rec.get('audioUrl', '')})
     except Exception as e:
         app.logger.error('[ai-video][archive] save failed id=%s: %s', rec_id, e, exc_info=True)
         _aivideo_last_error('archive', str(e))
@@ -5086,13 +4608,8 @@ def aivideo_archive_delete(archive_id):
             rec = None
         aivideo_archive.delete_archive(archive_id)
         if rec and not keep_file:
-            cleanup_urls = [(key, rec.get(key) or '') for key in ('video_url', 'image_url', 'audio_url')]
-            try:
-                cleanup_urls += [('image_urls', u) for u in json.loads(rec.get('image_urls') or '[]') if u != rec.get('image_url')]
-            except (TypeError, ValueError):
-                pass
-            for key, u in cleanup_urls:
-                u = u if isinstance(rec, dict) else ''
+            for key in ('video_url', 'image_url', 'audio_url'):
+                u = (rec.get(key) or '') if isinstance(rec, dict) else ''
                 if u:
                     ok, detail = _dropbox_delete_result_url(u)
                     app.logger.info('[ai-video][archive] delete id=%s %s dropbox cleanup: %s (%s)',
@@ -5146,14 +4663,39 @@ def ai_video_debug_clear():
 def ai_video_debug_page():
     if not _aivideo_authed():
         return render_template('ai-video-lock.html')
-    return render_template('ai-video-debug.html', **_browser_debug_status())
+    dropbox_ok, dropbox_detail = _dropbox_status_check()
+    segmind_ok = bool(_segmind_api_key())
+    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
+    snap = _aivideo_debug_snapshot()
+    log = _aivideo_request_log_snapshot()
+    return render_template(
+        'ai-video-debug.html',
+        dropbox=snap.get('dropbox'),
+        segmind=snap.get('segmind'),
+        last_upload=snap.get('last_upload'),
+        last_uploads=list(reversed(snap.get('last_uploads') or [])),
+        last_request=snap.get('last_request'),
+        last_segmind_response=snap.get('last_segmind_response'),
+        last_error=snap.get('last_error'),
+        motion_control=snap.get('motion_control'),
+        request_log=log['entries'],
+        request_log_total=log['total'],
+        request_log_errors=log['errors'],
+        request_log_avg_ms=log['avg_duration_ms'],
+        dropbox_mode=_dropbox_manager.status()['state'],
+    )
 
 
 @app.route('/api/aivideo/debug-data')
 def ai_video_debug_data():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    return jsonify(_browser_debug_status())
+    dropbox_ok, dropbox_detail = _dropbox_status_check()
+    segmind_ok = bool(_segmind_api_key())
+    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
+    snap = _aivideo_debug_snapshot()
+    snap['request_log'] = _aivideo_request_log_snapshot()
+    return jsonify(snap)
 
 
 @app.route('/ai-video/app-secrets')
