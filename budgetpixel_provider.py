@@ -78,7 +78,7 @@ def build_video_payload(family, variant, incoming, prompt, reference_images=None
     resolution = incoming.get("resolution") or caps["resolutions"][0]
     if resolution not in caps["resolutions"]:
         raise ProviderError("INVALID_INPUT", "Resolution is not supported by this model.")
-    body = {"prompt": prompt, "duration_seconds": duration, "resolution": resolution}
+    body = {"prompt": prompt, "length_seconds": duration, "resolution": resolution}
     ratios = caps.get("aspect_ratios", ())
     if ratios:
         ratio = incoming.get("aspect_ratio") or ratios[0]
