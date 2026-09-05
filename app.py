@@ -2296,7 +2296,7 @@ SEGMIND_BASE = 'https://api.segmind.com/v1'
 # -> {id} lalu GET /v1/videos/{id} sampai status succeeded/failed/timeout).
 # Model slug DI-HARDCODE di sini karena sudah dikonfirmasi persis dari
 # docs.budgetpixel.com (bukan tebakan) — beda dengan katalog yang berubah-ubah.
-import budgetpixel_client
+import budgetpixel_provider
 
 
 def _budgetpixel_api_key():
@@ -3609,11 +3609,12 @@ def _run_segmind_task(task_id, endpoint, body, output_type='video', family=None,
         _set(status='failed', error=str(e), progress=100)
 
 
-def _run_budgetpixel_task(task_id, model_slug, input_body, output_type='video'):
+def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_type='video'):
     """Counterpart to _run_segmind_task, but for BudgetPixel's async job
-    lifecycle (submit -> poll -> download). Same AIVIDEO_TASKS tracking,
-    same local-save + Dropbox re-upload at the end, so results from either
-    provider look identical to the frontend and to History."""
+    lifecycle via budgetpixel_provider.py (submit_video -> poll -> download).
+    Same AIVIDEO_TASKS tracking, same local-save + Dropbox re-upload at the
+    end, so results from either provider look identical to the frontend and
+    to History."""
     def _set(**kw):
         with AIVIDEO_TASKS_LOCK:
             if task_id in AIVIDEO_TASKS:
@@ -3626,28 +3627,50 @@ def _run_budgetpixel_task(task_id, model_slug, input_body, output_type='video'):
     logged_body = dict(input_body)
     if len(logged_body.get('prompt', '')) > 500:
         logged_body['prompt'] = logged_body['prompt'][:500] + '…(truncated in log only)'
-    app.logger.info('%s model=%s payload=%s', log_prefix, model_slug, json.dumps(logged_body))
-    _aivideo_debug_set('last_request', endpoint=f'budgetpixel:{model_slug}', body=input_body, task_id=task_id)
+    app.logger.info('%s family=%s variant=%s payload=%s', log_prefix, bp_family, bp_variant, json.dumps(logged_body))
+    _aivideo_debug_set('last_request', endpoint=f'budgetpixel:{bp_family}:{bp_variant}', body=input_body, task_id=task_id)
 
     call_started = time.time()
     try:
         _set(status='processing', progress=10)
-        job_id = budgetpixel_client.submit_video_job(api_key, model_slug, input_body)
+        submitted = budgetpixel_provider.submit_video(bp_family, bp_variant, input_body, api_key)
+        job_id = submitted['job_id']
         _set(progress=25)
 
-        def _progress(status):
-            pct = {'pending': 25, 'starting': 30, 'processing': 55, 'completing': 85}.get(status, 40)
-            _set(progress=pct)
-
-        video_url = budgetpixel_client.poll_video_until_done(api_key, job_id, on_progress=_progress)
+        # budgetpixel_provider.poll() blocks internally until a terminal
+        # status (completed/failed) or its own timeout, sleeping between
+        # GETs — there's no per-tick progress callback, so just nudge the
+        # bar forward once so the UI doesn't look stuck at 25% the whole
+        # time a long (up to 30s clip / several minutes render) job runs.
+        _set(progress=55)
+        result = budgetpixel_provider.poll(job_id, api_key, kind='video')
+        if result['status'] != 'completed' or not result.get('url'):
+            raise budgetpixel_provider.ProviderError(
+                'GENERATION_FAILED', 'Generation failed. Please try again.',
+                f'terminal status={result.get("status")} raw={json.dumps(result.get("raw"))[:300]}',
+            )
         _set(progress=90)
-        result_bytes = budgetpixel_client.download_output(video_url)
+        dl = requests_lib.get(result['url'], timeout=180)
+        if dl.status_code >= 400:
+            raise RuntimeError(f'Gagal download hasil BudgetPixel ({dl.status_code})')
+        result_bytes = dl.content
+    except budgetpixel_provider.ProviderError as e:
+        msg = e.public_message
+        app.logger.warning('%s gagal [%s]: %s', log_prefix, e.code, str(e))
+        _aivideo_last_error('budgetpixel', str(e))
+        _aivideo_log_request(
+            provider='budgetpixel', endpoint=f'{bp_family}:{bp_variant}', status_code=0,
+            duration_ms=round((time.time() - call_started) * 1000), retry_count=0,
+            request_body=logged_body, error_source='budgetpixel', error_detail=str(e), task_id=task_id,
+        )
+        _set(status='failed', error=msg, progress=100)
+        return
     except Exception as e:
         msg = str(e)
         app.logger.warning('%s gagal: %s', log_prefix, msg)
         _aivideo_last_error('budgetpixel', msg)
         _aivideo_log_request(
-            provider='budgetpixel', endpoint=model_slug, status_code=0,
+            provider='budgetpixel', endpoint=f'{bp_family}:{bp_variant}', status_code=0,
             duration_ms=round((time.time() - call_started) * 1000), retry_count=0,
             request_body=logged_body, error_source='budgetpixel', error_detail=msg, task_id=task_id,
         )
@@ -3656,7 +3679,7 @@ def _run_budgetpixel_task(task_id, model_slug, input_body, output_type='video'):
 
     duration_ms = round((time.time() - call_started) * 1000)
     _aivideo_log_request(
-        provider='budgetpixel', endpoint=model_slug, status_code=200,
+        provider='budgetpixel', endpoint=f'{bp_family}:{bp_variant}', status_code=200,
         duration_ms=duration_ms, retry_count=0, request_body=logged_body,
         response_body=f'<binary {len(result_bytes)} bytes — {output_type}>', task_id=task_id,
     )
@@ -3842,9 +3865,6 @@ def aivideo_enhance():
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    if not _segmind_api_key():
-        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
-        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
     payload = request.get_json(silent=True) or {}
     app.logger.info('[ai-video][generate] incoming request body=%s', json.dumps(payload)[:3000])
     _aivideo_debug_set('last_request', incoming_payload=payload)
@@ -3852,6 +3872,14 @@ def aivideo_generate():
     model_key = str(payload.get('model', 'MINI')).upper()
     family = str(payload.get('family', 'seedance')).lower()
     mute_audio = bool(payload.get('mute_audio', False))
+
+    # Segmind key is only required for families still routed through
+    # Segmind — seedance25/wan30 go through BudgetPixel instead (checked
+    # separately below), so a BudgetPixel-only setup (no Segmind key at
+    # all) must not get blocked here before family is even known.
+    if family not in ('seedance25', 'wan30') and not _segmind_api_key():
+        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
+        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
 
     prompt = str(payload.get('prompt', '')).strip()
     if not prompt and family != 'klingswap':
@@ -3865,71 +3893,43 @@ def aivideo_generate():
     aspect_ratio_in = payload.get('aspect_ratio')
 
     # provider switch: 'segmind' (existing, synchronous) vs 'budgetpixel'
-    # (async submit/poll/download via budgetpixel_client.py). Families below
-    # that route through BudgetPixel set provider='budgetpixel' + a fixed
-    # model slug instead of a Segmind `endpoint` — the dispatch after
-    # task_id creation picks the right background runner based on this flag.
+    # (async submit/poll/download via budgetpixel_provider.py). Families
+    # below that route through BudgetPixel set provider='budgetpixel' +
+    # bp_family/bp_variant instead of a Segmind `endpoint` — the dispatch
+    # after task_id creation picks the right background runner based on
+    # this flag.
     provider = 'segmind'
     endpoint = None
 
-    if family in ('seedance25', 'wan'):
+    if family in ('seedance25', 'wan30'):
         if not _budgetpixel_api_key():
             _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
             return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
         provider = 'budgetpixel'
 
-        try:
-            length_seconds = int(payload.get('duration', 5))
-        except (TypeError, ValueError):
-            length_seconds = 5
-        resolution = str(payload.get('resolution') or '720p').lower()
-        if resolution not in ('480p', '720p', '1080p'):
-            resolution = '720p'
-
-        has_frames = bool(first_frame_url)
-        has_reference = bool(image_urls or video_urls or audio_urls) and not has_frames
-
-        body = {'prompt': prompt, 'resolution': resolution}
-        duration = length_seconds
-
         if family == 'seedance25':
-            endpoint = 'budgetpixel:seedance-2.5'
-            model_slug = 'seedance-2.5'
-            body['length_seconds'] = max(4, min(30, length_seconds))
-            body['aspect_ratio'] = aspect_ratio_in or '16:9'
-            if has_frames:
-                body['image'] = first_frame_url
-                if last_frame_url:
-                    body['end_image'] = last_frame_url
-            elif has_reference:
-                if image_urls:
-                    body['reference_images'] = image_urls[:15]
-                if video_urls:
-                    body['reference_videos'] = video_urls[:5]
-                if audio_urls:
-                    body['reference_audios'] = audio_urls[:5]
-        else:  # wan — tier picked via model_key (WAN30 / WAN30PRIME / WAN27)
-            wan_slug_map = {
-                'WAN30': 'wan-3.0-video',
-                'WAN30PRIME': 'wan-3.0-video-prime',
-                'WAN27': 'wan-2.7-video',
-                'STANDARD': 'wan-3.0-video',  # fallback for the current single-tier UI card
-            }
-            model_slug = wan_slug_map.get(model_key, 'wan-3.0-video')
-            endpoint = f'budgetpixel:{model_slug}'
-            body['length_seconds'] = max(2, min(30, length_seconds))
-            body['aspect_ratio'] = aspect_ratio_in or 'adaptive'
-            if has_frames:
-                body['image'] = first_frame_url
-                if last_frame_url:
-                    body['end_image'] = last_frame_url
-            elif has_reference:
-                if image_urls:
-                    body['reference_images'] = image_urls[:10]
-                if video_urls:
-                    body['reference_videos'] = video_urls[:5]
-                if audio_urls:
-                    body['reference_audios'] = audio_urls[:5]
+            bp_family, bp_variant = 'seedance25', 'STANDARD'
+        else:  # wan30 — frontend sends quality id 'wan-3.0-standard' / 'wan-3.0-prime'
+            bp_variant = 'PRIME' if 'PRIME' in model_key else 'STANDARD'
+            bp_family = 'wan30'
+
+        # build_video_payload validates everything itself (duration/resolution
+        # range, frames-vs-elements exclusivity, reference limits) against
+        # budgetpixel_provider's own verified capability registry, and raises
+        # ProviderError with a message safe to show the user on anything
+        # invalid — so we don't duplicate that validation here.
+        try:
+            body = budgetpixel_provider.build_video_payload(
+                bp_family, bp_variant, payload, prompt,
+                reference_images=image_urls, reference_videos=video_urls, reference_audios=audio_urls,
+                first_frame=first_frame_url, last_frame=last_frame_url,
+                generate_audio=not mute_audio,
+            )
+        except budgetpixel_provider.ProviderError as e:
+            _aivideo_last_error('budgetpixel', str(e))
+            return jsonify({'error': e.public_message}), 400
+        endpoint = f'budgetpixel:{bp_family}:{bp_variant}'
+        duration = body.get('length_seconds', body.get('duration_seconds', 5))
 
     elif family == 'seedance':
         if model_key not in SEGMIND_MODEL_MAP:
@@ -4311,7 +4311,7 @@ def aivideo_generate():
     if provider == 'budgetpixel':
         threading.Thread(
             target=_run_budgetpixel_task,
-            args=(task_id, model_slug, body, output_type),
+            args=(task_id, bp_family, bp_variant, body, output_type),
             daemon=True,
         ).start()
     else:
