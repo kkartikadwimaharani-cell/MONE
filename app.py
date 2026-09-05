@@ -2325,6 +2325,77 @@ SEGMIND_RESOLUTIONS = {
 SEGMIND_DURATIONS = (4, 5, 6, 8, 10, 12, 15)
 SEGMIND_RATIOS = ('16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive')
 
+
+def _build_seedance20_payload(payload, prompt, variant, images, videos, audios, first, last):
+    """Pure, testable Seedance 2.0 (Segmind) request builder.
+
+    Field names and every constraint here are verified against Segmind's own
+    Seedance 2.0 docs (segmind.com/models/seedance-2.0/api) and its error
+    guide — NOT the BudgetPixel contract used by seedance25/wan30, which
+    uses different field names entirely. Raises ValueError on any input
+    combination Segmind's own API would itself reject, so the caller can
+    turn that into a clean 400 instead of forwarding a request ByteDance
+    will bounce anyway.
+    """
+    variant = str(variant or 'MINI').upper()
+    images = [u for u in (images or []) if u][:9]
+    videos = [u for u in (videos or []) if u][:3]
+    audios = [u for u in (audios or []) if u][:3]
+    first = str(first or '').strip()
+    last = str(last or '').strip()
+
+    # Confirmed in Segmind's Seedance 2.0 error guide: first/last-frame mode
+    # and reference_images mode are mutually exclusive — never both.
+    if first and images:
+        raise ValueError('first_frame_url tidak bisa dipakai bareng reference_images — pilih salah satu mode (Frames atau Elements)')
+    if last and not first:
+        raise ValueError('last_frame_url butuh first_frame_url')
+    # Confirmed: reference audio alone isn't enough context — needs an
+    # image or video alongside it.
+    if audios and not images and not videos and not first:
+        raise ValueError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup untuk Seedance)')
+
+    allowed_res = SEGMIND_RESOLUTIONS.get(variant, SEGMIND_RESOLUTIONS['MINI'])
+    resolution = payload.get('resolution') or payload.get('quality') or '720p'
+    if resolution not in allowed_res:
+        resolution = '720p' if '720p' in allowed_res else allowed_res[0]
+
+    try:
+        duration = int(payload.get('duration', 5))
+    except (TypeError, ValueError):
+        duration = 5
+    if duration not in SEGMIND_DURATIONS:
+        duration = min(SEGMIND_DURATIONS, key=lambda d: abs(d - duration))
+
+    aspect_ratio = payload.get('aspect_ratio')
+    if aspect_ratio not in SEGMIND_RATIOS:
+        aspect_ratio = '16:9'
+
+    body = {
+        'prompt': prompt,
+        'duration': duration,
+        'resolution': resolution,
+        'aspect_ratio': aspect_ratio,
+        'generate_audio': bool(payload.get('generate_audio', True)),
+        'return_last_frame': False,
+        'skip_moderation': False,
+    }
+    bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
+    if bitrate_mode not in ('standard', 'high'):
+        bitrate_mode = 'high'
+    body['bitrate_mode'] = bitrate_mode
+    if first:
+        body['first_frame_url'] = first
+    if last:
+        body['last_frame_url'] = last
+    if images:
+        body['reference_images'] = images
+    if videos:
+        body['reference_videos'] = videos
+    if audios:
+        body['reference_audios'] = audios
+    return body
+
 # Kling 3.0 — real endpoints per Segmind's published API docs
 # (segmind.com/models/kling-3-standard-image2video, kling-3-pro-image2video).
 # Confirmed BOTH tiers also have a separate text-to-video endpoint
@@ -3936,68 +4007,22 @@ def aivideo_generate():
             return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
         endpoint = SEGMIND_MODEL_MAP[model_key]
 
-        # Seedance 2.0 / 2.0 Fast / Mini all support plain text-to-video —
-        # per Segmind's own docs and sample code, prompt is the only
-        # required input; image/video/first_frame references are optional.
-        # The one real constraint (confirmed in Segmind's Seedance error
-        # guide): reference_audios cannot be the *only* reference — it needs
-        # at least one image or video alongside it for context.
-        if audio_urls and not image_urls and not video_urls and not first_frame_url:
-            return jsonify({'error': 'Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup untuk Seedance)'}), 400
-
-        # Resolution: snap to whatever this tier actually supports (never 4K
-        # outside PRO).
-        allowed_res = SEGMIND_RESOLUTIONS[model_key]
-        resolution = payload.get('resolution') or payload.get('quality') or '720p'
-        if resolution not in allowed_res:
-            resolution = '720p' if '720p' in allowed_res else allowed_res[0]
-
         try:
-            duration = int(payload.get('duration', 5))
-        except (TypeError, ValueError):
-            duration = 5
-        if duration not in SEGMIND_DURATIONS:
-            duration = min(SEGMIND_DURATIONS, key=lambda d: abs(d - duration))
+            body = _build_seedance20_payload(payload, prompt, model_key, image_urls, video_urls,
+                                              audio_urls, first_frame_url, last_frame_url)
+        except ValueError as e:
+            _aivideo_last_error('validation', str(e))
+            return jsonify({'error': str(e)}), 400
 
-        aspect_ratio = aspect_ratio_in if aspect_ratio_in in SEGMIND_RATIOS else '16:9'
-
-        body = {
-            'prompt': prompt,
-            'duration': duration,
-            'resolution': resolution,
-            'aspect_ratio': aspect_ratio,
-            # When mute_audio is on, tell Segmind not to generate audio at
-            # all rather than generating it and stripping it afterward —
-            # generating audio still runs it through Segmind's own
-            # sensitive-content moderation, which can reject the ENTIRE
-            # generation (OutputAudioSensitiveContentDetected) even though
-            # the user never wanted the audio in the first place.
-            'generate_audio': False if mute_audio else bool(payload.get('generate_audio', True)),
-            'return_last_frame': False,
-            'skip_moderation': False,
-        }
-        # bitrate_mode: confirmed in Segmind's official seedance-2.0 (PRO)
-        # docs — 'standard' (default) or 'high' (~5-6x bitrate, no price
-        # difference). Not documented for seedance-2.0-fast or -mini, but the
-        # user wants max quality (least compression) across every tier, so
-        # we optimistically send bitrate_mode='high' on all three — if a
-        # tier actually rejects it, _run_segmind_task retries once
-        # automatically without the field, so generation never fails just
-        # because of this optional quality knob.
-        bitrate_mode = str(payload.get('bitrate_mode', 'high')).lower()
-        if bitrate_mode not in ('standard', 'high'):
-            bitrate_mode = 'high'
-        body['bitrate_mode'] = bitrate_mode
-        if first_frame_url:
-            body['first_frame_url'] = first_frame_url
-        if last_frame_url:
-            body['last_frame_url'] = last_frame_url
-        if image_urls:
-            body['reference_images'] = image_urls
-        if video_urls:
-            body['reference_videos'] = video_urls
-        if audio_urls:
-            body['reference_audios'] = audio_urls
+        # When mute_audio is on, tell Segmind not to generate audio at all
+        # rather than generating it and stripping it afterward — generating
+        # audio still runs it through Segmind's own sensitive-content
+        # moderation, which can reject the ENTIRE generation
+        # (OutputAudioSensitiveContentDetected) even though the user never
+        # wanted the audio in the first place.
+        if mute_audio:
+            body['generate_audio'] = False
+        duration = body['duration']
 
     elif family == 'kling':
         # Accept either the dedicated Frames-mode first_frame_url, or fall
@@ -4381,30 +4406,58 @@ def aivideo_task_result(task_id):
     return jsonify({'status': 'completed', 'output': t.get('output')})
 
 
-def _sniff_upload_matches_ext(file_bytes, ext):
-    """Verify the file's actual magic bytes match the claimed extension,
-    instead of trusting the client-supplied filename alone. Deliberately
-    stdlib-only (no python-magic/libmagic dependency) so it doesn't require
-    touching the Dockerfile's system packages."""
+_IMAGE_FORMAT_ERROR = 'Format file tidak didukung atau tidak sesuai dengan tipe media yang dipilih.'
+
+# Category + accepted-extension registry keyed by the real, sniffed file
+# kind (never by the client-claimed extension or browser-supplied MIME type,
+# both of which are trivially spoofable and — on mobile especially — often
+# just wrong/missing). GIF is deliberately absent: it has no detector below,
+# so any GIF content is rejected the same as genuinely corrupt input.
+_UPLOAD_KIND_CATEGORY = {
+    'jpg': 'image', 'png': 'image', 'webp': 'image',
+    'mp4mov': 'video',
+    'wav': 'audio', 'mp3': 'audio',
+}
+_UPLOAD_KIND_VALID_EXTS = {
+    'jpg': ('.jpg', '.jpeg'),
+    'png': ('.png',),
+    'webp': ('.webp',),
+    'mp4mov': ('.mp4', '.mov'),
+    'wav': ('.wav',),
+    'mp3': ('.mp3',),
+}
+_UPLOAD_KIND_DEFAULT_EXT = {
+    'jpg': '.jpg', 'png': '.png', 'webp': '.webp',
+    'mp4mov': '.mp4', 'wav': '.wav', 'mp3': '.mp3',
+}
+
+
+def _detect_upload_kind(file_bytes):
+    """Identify a file's real type purely from its magic bytes, independent
+    of whatever extension or MIME type the client sent. Returns one of the
+    keys in _UPLOAD_KIND_CATEGORY, or None if the content matches no
+    supported format. Deliberately stdlib-only (no python-magic/libmagic
+    dependency) so it doesn't require touching the Dockerfile's system
+    packages."""
     head = file_bytes[:16]
-    if ext in ('.jpg', '.jpeg'):
-        return head[:3] == b'\xff\xd8\xff'
-    if ext == '.png':
-        return head[:8] == b'\x89PNG\r\n\x1a\n'
-    if ext == '.webp':
-        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP'
-    if ext in ('.mp4', '.mov'):
+    if head[:3] == b'\xff\xd8\xff':
+        return 'jpg'
+    if head[:8] == b'\x89PNG\r\n\x1a\n':
+        return 'png'
+    if head[:4] == b'RIFF' and file_bytes[8:12] == b'WEBP':
+        return 'webp'
+    if file_bytes[4:8] == b'ftyp':
         # ISO base media file format: box size (4 bytes) + 'ftyp' at offset 4.
         # Covers mp4/mov/m4v/qt — the only container types we accept here.
-        return file_bytes[4:8] == b'ftyp'
-    if ext == '.wav':
-        return head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE'
-    if ext == '.mp3':
-        if head[:3] == b'ID3':
-            return True
-        # Frameless MP3 (no ID3 tag): starts with an MPEG audio frame sync.
-        return len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0
-    return False
+        return 'mp4mov'
+    if head[:4] == b'RIFF' and file_bytes[8:12] == b'WAVE':
+        return 'wav'
+    if head[:3] == b'ID3':
+        return 'mp3'
+    # Frameless MP3 (no ID3 tag): starts with an MPEG audio frame sync.
+    if len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0:
+        return 'mp3'
+    return None
 
 
 @app.route('/api/aivideo/upload', methods=['POST'])
@@ -4425,28 +4478,42 @@ def aivideo_upload():
     f = request.files.get('file')
     if not f or not f.filename:
         return jsonify({'error': 'File tidak ditemukan'}), 400
-    ext = os.path.splitext(f.filename)[1].lower()
-    allowed = {'.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.wav', '.mp3'}
-    if ext not in allowed:
-        app.logger.warning('[ai-video][upload] rejected file %s: unsupported ext %s', f.filename, ext)
-        return jsonify({'error': f'Tipe file tidak didukung ({ext})'}), 400
+    # Which upload slot this came from (image/video/audio) — the reference
+    # card the user tapped is the source of truth for what's expected here,
+    # not the file's own claimed extension (mobile browsers frequently send
+    # no MIME type, or a generic application/octet-stream one).
+    declared_media_type = str(request.form.get('media_type') or 'image').strip().lower()
+    if declared_media_type not in ('image', 'video', 'audio'):
+        declared_media_type = 'image'
     file_bytes = f.read()
-    app.logger.info('[ai-video][upload] received file=%s size=%d ext=%s', f.filename, len(file_bytes), ext)
+    app.logger.info('[ai-video][upload] received file=%s size=%d declared_type=%s', f.filename, len(file_bytes), declared_media_type)
     if len(file_bytes) > 50 * 1024 * 1024:
         return jsonify({'error': 'File terlalu besar (maks 50MB)'}), 400
-    if not _sniff_upload_matches_ext(file_bytes, ext):
-        app.logger.warning('[ai-video][upload] rejected file %s: content does not match extension %s', f.filename, ext)
-        return jsonify({'error': f'Isi file tidak sesuai dengan ekstensinya ({ext})'}), 400
+    kind = _detect_upload_kind(file_bytes)
+    if not kind or _UPLOAD_KIND_CATEGORY[kind] != declared_media_type:
+        app.logger.warning('[ai-video][upload] rejected file %s: detected_kind=%s declared_type=%s',
+                            f.filename, kind, declared_media_type)
+        return jsonify({'error': _IMAGE_FORMAT_ERROR}), 400
+    # The claimed extension is trusted only for cosmetics (the stored
+    # filename) — if it doesn't actually match the detected content (e.g. a
+    # JPEG saved with a .png name), silently correct it to a valid extension
+    # for that kind instead of rejecting a file whose content is perfectly
+    # fine.
+    orig_ext = os.path.splitext(f.filename)[1].lower()
+    storage_filename = f.filename
+    if orig_ext not in _UPLOAD_KIND_VALID_EXTS[kind]:
+        base = os.path.splitext(f.filename)[0]
+        storage_filename = base + _UPLOAD_KIND_DEFAULT_EXT[kind]
     try:
-        url = _dropbox_upload_and_link(file_bytes, f.filename)
-        app.logger.info('[ai-video][upload] success file=%s -> url=%s', f.filename, url)
-        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=url, ok=True, error=None)
-        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': url, 'ok': True, 'error': None, 'at': _utc_timestamp()})
+        url = _dropbox_upload_and_link(file_bytes, storage_filename)
+        app.logger.info('[ai-video][upload] success file=%s -> url=%s', storage_filename, url)
+        _aivideo_debug_set('last_upload', filename=storage_filename, size=len(file_bytes), url=url, ok=True, error=None)
+        _aivideo_debug_append_upload({'filename': storage_filename, 'size': len(file_bytes), 'url': url, 'ok': True, 'error': None, 'at': _utc_timestamp()})
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
-        app.logger.error('[ai-video][upload] FAILED file=%s error=%s', f.filename, e)
-        _aivideo_debug_set('last_upload', filename=f.filename, size=len(file_bytes), url=None, ok=False, error=str(e))
-        _aivideo_debug_append_upload({'filename': f.filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
+        app.logger.error('[ai-video][upload] FAILED file=%s error=%s', storage_filename, e)
+        _aivideo_debug_set('last_upload', filename=storage_filename, size=len(file_bytes), url=None, ok=False, error=str(e))
+        _aivideo_debug_append_upload({'filename': storage_filename, 'size': len(file_bytes), 'url': None, 'ok': False, 'error': str(e), 'at': _utc_timestamp()})
         _aivideo_last_error('dropbox_upload', str(e))
         return jsonify({'error': f'Upload ke Dropbox gagal: {e}'}), 500
 
