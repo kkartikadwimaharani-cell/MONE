@@ -9,7 +9,7 @@
   <title>MII NETWORK — System Maintenance</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700&family=Cinzel:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{{ asset_url('css/maintenance.css') }}">
   <link rel="stylesheet" href="{{ asset_url('css/maintenance-pet.css') }}">
 </head>
@@ -21,13 +21,8 @@
     <div class="maintenance-vignette" aria-hidden="true"></div>
 
     <article class="maintenance-card">
-      <header class="maintenance-brand">
-        <span class="maintenance-brand__mark" aria-hidden="true">M</span>
-        <span class="maintenance-brand__copy">
-          <strong>MII NETWORK</strong>
-        </span>
-        <span class="maintenance-brand__signal" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
-      </header>
+      <div class="maintenance-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="maintenance-scanlines" aria-hidden="true"></div>
 
       <section class="maintenance-stage">
         <div class="maintenance-panel maintenance-hero">
@@ -52,6 +47,7 @@
         </div>
 
         <a class="maintenance-contact" href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer">CONTACT SUPPORT</a>
+        <a class="maintenance-community" href="{{ status.community_link or 'https://chat.whatsapp.com/DtpSUf90QIOCmxjACXAySl?s=cl&p=a&ilr=0' }}" target="_blank" rel="noopener noreferrer">{{ (status.community_btn_label or 'GABUNG') ~ ' ' ~ (status.community_name or 'COMMUNITY') }}</a>
       </section>
 
     </article>
