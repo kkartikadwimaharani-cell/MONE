@@ -40,7 +40,9 @@ class UniversalVideoFramesTests(unittest.TestCase):
             'move', first_frame='https://cdn/first.png', last_frame='https://cdn/last.png')
         self.assertEqual(body['image'], 'https://cdn/first.png')
         self.assertEqual(body['end_image'], 'https://cdn/last.png')
-        self.assertEqual(body['duration_seconds'], 30)
+        # BudgetPixel's real API uses length_seconds (confirmed in their own
+        # published curl example at budgetpixel.com/api), not duration_seconds.
+        self.assertEqual(body['length_seconds'], 30)
         self.assertEqual(body['resolution'], '1080p')
         self.assertEqual(body['aspect_ratio'], '9:16')
         self.assertTrue(body['generate_audio'])
