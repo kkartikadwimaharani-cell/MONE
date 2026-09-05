@@ -4,7 +4,7 @@ const root = document.createElement('div');
 root.className = 'mii-work-pet';
 root.setAttribute('aria-hidden', 'true');
 root.innerHTML = '<div class="mii-work-pet__status"></div><div class="mii-work-pet__sprite"></div>';
-const canvas = document.getElementById('pageAiVideo') || document.querySelector('.canvas');
+const canvas = document.getElementById('canvas') || document.querySelector('.canvas') || document.getElementById('pageAiVideo');
 (canvas || document.body).appendChild(root);
 
 try {
