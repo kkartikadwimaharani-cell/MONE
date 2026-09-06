@@ -3797,7 +3797,7 @@ def ai_video_view():
             pass
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
-    return render_template('ai-video.html')
+    return render_template('ai-video.html', image_capabilities=budgetpixel_provider.public_image_capabilities())
 
 
 @app.route('/ai-video/lock-visit', methods=['POST'])
