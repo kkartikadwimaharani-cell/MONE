@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from urllib.parse import urlsplit, urlencode
 
 from flask import Blueprint, request, session, jsonify, render_template, redirect, g
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 SCOPE = 'mii:generate'
 VERSIONS = ('2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05')
@@ -31,6 +32,7 @@ def register_mcp(app, backend, data_dir):
     if urlsplit(origin).scheme != 'https' or urlsplit(origin).path:
         raise ValueError('MII_PUBLIC_URL must be an HTTPS origin without a path')
     resource = origin + '/mcp'
+    client_signer = URLSafeTimedSerializer(app.secret_key, salt='miiaivideo-mcp-client-v1')
     app.config.setdefault('MII_MCP_DB', os.environ.get('MII_MCP_DB') or os.path.join(data_dir, 'mcp_access.sqlite3'))
 
     @contextmanager
@@ -150,6 +152,27 @@ def register_mcp(app, backend, data_dir):
             pass
         return False
 
+    def signed_client(client_id):
+        """Resolve a DCR client even when Railway restarted between registration
+        and authorization. The signed ID contains only public client metadata."""
+        try:
+            data=client_signer.loads(client_id,max_age=30*86400)
+        except (BadSignature,SignatureExpired):
+            return None
+        if not isinstance(data,dict) or not isinstance(data.get('redirects'),list):
+            return None
+        if not all(safe_redirect(uri) for uri in data['redirects']):
+            return None
+        return {'id':client_id,'name':str(data.get('name') or 'MCP agent')[:100],
+                'redirects':json.dumps(data['redirects'])}
+
+    def find_client(client_id, connection=None):
+        if connection is not None:
+            row=connection.execute('SELECT * FROM clients WHERE id=?',(client_id,)).fetchone()
+            if row:
+                return row
+        return signed_client(client_id)
+
     @bp.route('/oauth/register', methods=['POST'])
     def register():
         if request.content_length and request.content_length > 16384:
@@ -163,8 +186,8 @@ def register_mcp(app, backend, data_dir):
         if data.get('token_endpoint_auth_method','none')!='none':
             return error('invalid_client_metadata')
         name=str(data.get('client_name') or 'MCP agent')[:100]
-        ident=secrets.token_urlsafe(24)
         now=time.time()
+        ident=client_signer.dumps({'name':name,'redirects':uris})
         with db() as c:
             if c.execute('SELECT COUNT(*) FROM clients WHERE created>?',(now-3600,)).fetchone()[0]>=100:
                 return error('temporarily_unavailable',429)
@@ -176,7 +199,7 @@ def register_mcp(app, backend, data_dir):
     def authorize():
         params=request.args
         with db() as c:
-            client=c.execute('SELECT * FROM clients WHERE id=?',(params.get('client_id',''),)).fetchone()
+            client=find_client(params.get('client_id',''),c)
         uri=params.get('redirect_uri','')
         if not client or not safe_redirect(uri) or not registered_redirect(uri,json.loads(client['redirects'])):
             return error('invalid_client_or_redirect_uri')
@@ -221,7 +244,9 @@ def register_mcp(app, backend, data_dir):
                 if not code or code['expires']<now or code['client']!=client or code['redirect']!=form.get('redirect_uri') or code['resource']!=resource or not re.fullmatch(r'[A-Za-z0-9._~-]{43,128}',verifier) or not hmac.compare_digest(code['challenge'],challenge):
                     return error('invalid_grant')
                 c.execute('DELETE FROM codes WHERE hash=?',(code['hash'],))
-                info=c.execute('SELECT name FROM clients WHERE id=?',(client,)).fetchone()
+                info=find_client(client,c)
+                if not info:
+                    return error('invalid_client')
                 grant=secrets.token_urlsafe(18)
                 c.execute('INSERT INTO grants VALUES (?,?,?,?,0)',(grant,info['name'],'oauth',now))
             elif form.get('grant_type')=='refresh_token':

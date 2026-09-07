@@ -131,10 +131,13 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         patch.object(self.module,'_budgetpixel_api_key',return_value='').start()
         self.assertTrue(self.call(key,'generate_video',{'prompt':'x'})['isError'])
 
-    def oauth_code(self):
+    def oauth_code(self, simulate_restart=False):
         r=self.client.post('/oauth/register',json={'client_name':'Test agent','redirect_uris':['https://agent.example/callback'],'token_endpoint_auth_method':'none'})
         self.assertEqual(r.status_code,201,r.data)
         client=r.get_json()['client_id']
+        if simulate_restart:
+            # Railway's local filesystem may be replaced between DCR and consent.
+            os.remove(self.app.config['MII_MCP_DB'])
         verifier='a'*64
         challenge=base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
         params={'client_id':client,'redirect_uri':'https://agent.example/callback','response_type':'code','code_challenge':challenge,'code_challenge_method':'S256','resource':'https://makima.cloud/mcp','scope':'mii:generate','state':'original-state'}
@@ -146,6 +149,11 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         query=parse_qs(urlsplit(r.location).query)
         self.assertEqual(query['state'],['original-state'])
         return {'grant_type':'authorization_code','client_id':client,'redirect_uri':params['redirect_uri'],'code':query['code'][0],'code_verifier':verifier,'resource':params['resource']}
+
+    def test_oauth_client_survives_ephemeral_database_restart(self):
+        form=self.oauth_code(simulate_restart=True)
+        response=self.client.post('/oauth/token',data=form)
+        self.assertEqual(response.status_code,200,response.data)
 
     def test_oauth_full_flow_pkce_replay_refresh_rotation_and_revocation(self):
         form=self.oauth_code()
