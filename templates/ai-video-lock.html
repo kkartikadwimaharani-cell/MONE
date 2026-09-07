@@ -338,7 +338,7 @@ function doUnlock() {
     updateAttemptStats(data);
     if (data.ok) {
       err.classList.remove('show');
-      window.location.href = '/ai-video';
+      window.location.href = {{ next_page|default('/ai-video')|tojson }};
       return;
     }
     if (data.locked) {
@@ -464,3 +464,4 @@ function updateAttemptStats(data) {
 
 </body>
 </html>
+

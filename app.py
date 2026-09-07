@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request, session, redirect
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request, session, redirect, g
 import yt_dlp
 import os
 import uuid
@@ -2765,7 +2765,7 @@ def _aivideo_bearer_authed():
 
 
 def _aivideo_authed():
-    return bool(session.get('mii_aivideo_auth')) or _aivideo_bearer_authed()
+    return bool(session.get('mii_aivideo_auth')) or bool(getattr(g, 'mii_mcp_internal', False)) or _aivideo_bearer_authed()
 
 
 # ---------------------------------------------------------------------------
@@ -4831,43 +4831,52 @@ def ai_video_debug_clear():
     return redirect('/ai-video/debug')
 
 
+def _aivideo_diagnostics():
+    # One serialized contract for both initial HTML and subsequent refreshes.
+    snap = _aivideo_debug_snapshot()
+    log = _aivideo_request_log_snapshot()
+    state = _dropbox_manager.status()
+    storage = snap.get('dropbox') or {}
+    configured = bool(_segmind_api_key() or _budgetpixel_api_key())
+    entries = []
+    for index, entry in enumerate(log['entries']):
+        row = dict(entry)
+        row.update(request_id=entry.get('task_id') or str(index + 1),
+                   type=entry.get('provider'), model=entry.get('endpoint'),
+                   status='SUCCESS' if entry.get('ok') else 'ERROR',
+                   created_at=entry.get('at'), elapsed_ms=entry.get('duration_ms'),
+                   final_payload=entry.get('request_body'))
+        entries.append(row)
+    return dict(snap, storage={
+        'status': 'READY' if storage.get('ok') else ('ERROR' if storage.get('ok') is False else 'NOT CHECKED'),
+        'mode': state.get('state'), 'detail': storage.get('detail') or 'Belum ada pemeriksaan koneksi',
+        'checked_at': storage.get('at'),
+    }, generation={
+        'status': 'READY' if configured else 'NOT CONFIGURED',
+        'api_configuration': 'CONFIGURED' if configured else 'MISSING',
+        'video_backend': 'MIIAIVIDEO', 'image_backend': 'MIIAIVIDEO',
+        'task_engine': 'BACKGROUND', 'polling': 'ON REQUEST',
+        'last_request': (snap.get('last_request') or {}).get('at'),
+        'detail': 'Konfigurasi tersedia; koneksi provider belum diuji' if configured else 'Isi API key di App Secrets',
+    }, pipeline={'archive': 'LOCAL + REMOTE', 'history': 'ENABLED'},
+        motion={'status': 'NOT CHECKED', 'detail': snap.get('motion_control') or {}},
+        request_log=dict(log, entries=entries, success=log['total']-log['errors'], avg_duration=log['avg_duration_ms']),
+        recent_uploads=snap.get('last_uploads') or [],
+        last_generate_request=snap.get('last_request'), result_detail={})
+
+
 @app.route('/ai-video/debug')
 def ai_video_debug_page():
     if not _aivideo_authed():
-        return render_template('ai-video-lock.html')
-    dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(_segmind_api_key())
-    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
-    snap = _aivideo_debug_snapshot()
-    log = _aivideo_request_log_snapshot()
-    return render_template(
-        'ai-video-debug.html',
-        dropbox=snap.get('dropbox'),
-        segmind=snap.get('segmind'),
-        last_upload=snap.get('last_upload'),
-        last_uploads=list(reversed(snap.get('last_uploads') or [])),
-        last_request=snap.get('last_request'),
-        last_segmind_response=snap.get('last_segmind_response'),
-        last_error=snap.get('last_error'),
-        motion_control=snap.get('motion_control'),
-        request_log=log['entries'],
-        request_log_total=log['total'],
-        request_log_errors=log['errors'],
-        request_log_avg_ms=log['avg_duration_ms'],
-        dropbox_mode=_dropbox_manager.status()['state'],
-    )
+        return render_template('ai-video-lock.html', next_page='/ai-video/debug')
+    return render_template('ai-video-debug.html', **_aivideo_diagnostics())
 
 
 @app.route('/api/aivideo/debug-data')
 def ai_video_debug_data():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    dropbox_ok, dropbox_detail = _dropbox_status_check()
-    segmind_ok = bool(_segmind_api_key())
-    _aivideo_debug_set('segmind', ok=segmind_ok, detail='SEGMIND_API_KEY configured' if segmind_ok else 'SEGMIND_API_KEY missing')
-    snap = _aivideo_debug_snapshot()
-    snap['request_log'] = _aivideo_request_log_snapshot()
-    return jsonify(snap)
+    return jsonify(_aivideo_diagnostics())
 
 
 @app.route('/ai-video/app-secrets')
@@ -6954,6 +6963,10 @@ def test_env():
         'node_version': None
     })
 
+
+
+from mii_mcp import register_mcp
+register_mcp(app, globals(), DATA_DIR)
 
 
 if __name__ == '__main__':

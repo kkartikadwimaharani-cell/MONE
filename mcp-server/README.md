@@ -1,78 +1,85 @@
-# MiiAiVideo MCP Server
+# MIIAIVIDEO MCP
 
-Wraps makima.cloud's AI Video API (`/api/aivideo/*`) as MCP tools:
-`list_models`, `generate_video`, `generate_image`, `check_status`,
-`wait_for_result`. Every tool is just an authenticated HTTP call to the
-Flask backend you already run — this service holds only the shared API key, no
-generation logic, and no state of its own.
+The primary connector now runs inside the existing MONE web service.
+No second Railway service is required for this integration.
 
-## 1. Set the shared key on makima.cloud (do this first)
+- Owner dashboard: `https://makima.cloud/ai-video/mcp`
+- Remote MCP URL: `https://makima.cloud/mcp`
+- Transport: stateless Streamable HTTP with JSON responses.
+- Authentication: OAuth authorization code + PKCE S256, or a per-agent Bearer key.
 
-1. Open `https://makima.cloud/ai-video/app-secrets` (log in with the
-   normal /ai-video password like always).
-2. Find **"MCP Server API Key"** under *Admin Passwords*.
-3. Generate a long random string and save it there — anything works, e.g.
-   open any password generator app and use a 40+ character result. Copy
-   it somewhere safe; you'll paste the exact same value into Railway in
-   step 3 below.
+## Connect
 
-This key is completely separate from your normal /ai-video login
-password. Nothing else uses it.
+Open the owner dashboard and sign in with the AI Video password. Copy the MCP
+URL into a client supporting Streamable HTTP and OAuth. Dynamic client
+registration is supported; choose OAuth/DCR if the client offers a choice.
+Approve the requesting agent on makima.cloud. Availability of custom MCP
+connectors depends on the client, account, and workspace settings.
 
-## 2. Deploy this folder as a NEW Railway service
+For Codex CLI:
 
-Your `MONE` GitHub repo already has this `mcp-server/` folder in it. In
-Railway:
+```sh
+codex mcp add miiaivideo --url https://makima.cloud/mcp
+codex mcp login miiaivideo
+```
 
-1. Open your existing project (the one with the `web` service — makima.cloud).
-2. Tap **"+ New"** → **"GitHub Repo"** → pick the same `MONE` repo again.
-   (Yes, the same repo — Railway lets you run two services from one repo,
-   each pointed at a different folder.)
-3. Once it's created, open that new service → **Settings**:
-   - **Root Directory**: set to `mcp-server`
-   - **Start Command**: leave as-is (it'll pick up the `Procfile` in this
-     folder automatically — `python server.py`)
-4. Open **Variables** on this new service and add:
-   - `MII_MCP_API_KEY` = the exact same value you saved in step 1
-   - `MII_BASE_URL` = `https://makima.cloud` (only needed if your domain
-     is ever different from this)
-5. Deploy. Once it's live, Railway gives this service its own public URL
-   — something like `https://mii-mcp-production.up.railway.app`. Copy
-   that URL.
+For clients with an API-key/header field, create a named key on the dashboard
+and send `Authorization: Bearer <key>`. Keys are shown once, valid for one year,
+and stored only as hashes. Never append credentials to the URL. Revoke keys
+and OAuth grants from the dashboard. Revocation invalidates access immediately.
+A browser session alone cannot call MCP, and MCP credentials cannot manage
+App Secrets or other administrative settings.
 
-## 3. Connect it in Claude
+## Tools
 
-The server speaks Streamable HTTP at `<that Railway URL>/mcp`. Add it as
-a custom connector wherever Claude lets you add a remote MCP server URL
-(Claude.ai → Settings → Connectors → Add custom connector, or the
-equivalent in Claude Code/Desktop) — paste the `/mcp` URL there.
+- `miiaivideo_list_models`: supported backend models, variants and controls.
+- `miiaivideo_generate_video`: video generation, including supported references/frames.
+- `miiaivideo_generate_image`: image generation and supported image references.
+- `miiaivideo_generate_audio`: audio generation and supported references.
+- `miiaivideo_motion_control`: source-video editing through existing validation.
+- `miiaivideo_check_status`: task status and output URL.
 
-The MCP endpoint requires `Authorization: Bearer <MII_MCP_API_KEY>` on
-every request. Use a client that supports custom authorization headers; a
-URL-only connector will receive HTTP 401. OAuth is not implemented.
-Do not put the key in the URL.
+Generation calls spend provider credits. Validation rejects unsupported
+controls before submission. Calls use the existing application's generation
+functions, queues, and history. Provider availability and upstream errors are
+reported as tool errors; local tests do not prove that a provider account has
+credit or that every upstream service is online. Motion validation may take
+longer than a client's default tool timeout for large videos.
 
-## What each tool does
+## Deployment and persistence
 
-- **list_models** — every family/variant MiiAiVideo has configured right
-  now, with resolution/duration/aspect-ratio limits for each. Call this
-  first if you're not sure what values are valid.
-- **generate_video** — text-to-video only for now (no reference
-  images/video/audio, no first/last frame yet — those can be added later
-  if useful).
-- **generate_image** — text-to-image.
-- **check_status** — poll a task_id once.
-- **wait_for_result** — polls automatically every 5s up to a timeout
-  (capped at 280s) and returns once the job finishes, so Claude doesn't
-  have to call check_status in a loop by hand.
+Deploy the current `main` branch using the web service's existing root
+`Procfile` (`python start.py`). Root dependencies are unchanged. The dashboard
+and `/mcp` route belong to `app.py` + `mii_mcp.py`.
 
-## Known gap
+Keep `FLASK_SECRET_KEY` stable for browser sessions. Keep the existing AI Video
+password and provider keys configured. `MII_PUBLIC_URL` defaults to
+`https://makima.cloud`; use an HTTPS origin without a path for a different host.
+OAuth records and key hashes use `data/mcp_access.sqlite3` by default. Mount
+that directory on durable storage or set `MII_MCP_DB` to a database path on a
+Railway volume. Without persistent storage, redeploying can require reconnecting
+agents. Backups of this database contain hashes, not raw keys or tokens.
 
-BudgetPixel's own image models (the `flux2` family you'll see listed in
-`list_models`'s image section) aren't actually wired up in the
-`/api/aivideo/generate` backend yet — that endpoint only recognizes
-`flux2` for capability *display*, not generation. `generate_image`'s
-default (`family="nanobanana"`) avoids this and works today; picking
-`family="flux2"` from the list_models output will currently fail. Worth
-fixing on the main app in a future session if you want that model
-working end-to-end.
+The old standalone `server.py` in this directory remains a legacy deployment
+option using `MII_MCP_API_KEY`. It is not the new same-domain connector and does
+not provide the dashboard or OAuth flow. Existing legacy services are not
+modified or shut down automatically.
+
+## Validation
+
+Install the root requirements and this directory's requirements for tests:
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+The integration suite verifies all six tools and each advertised model variant
+with provider workers mocked, dashboard/diagnostics rendering, key revocation,
+OAuth PKCE/code replay/refresh rotation, metadata discovery, and interoperability
+with the official MCP Python client. Real ChatGPT/Claude account connections
+and paid provider generations still require live integration checks.
+
+Protocol references:
+- https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
+- https://developers.openai.com/plugins/build/auth
+- https://learn.chatgpt.com/docs/extend/mcp?surface=cli
