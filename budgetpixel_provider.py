@@ -249,6 +249,17 @@ def public_image_capabilities():
             for (family, variant), caps in IMAGE_CAPABILITIES.items()}
 
 
+def public_video_capabilities():
+    """JSON-safe capability registry for BudgetPixel-routed video models
+    (seedance25, wan30) — same shape as public_image_capabilities(). Does
+    NOT include the 'seedance' family (Seedance 2.0), which is routed
+    through Segmind, not BudgetPixel — see SEGMIND_MODEL_MAP/SEGMIND_RESOLUTIONS
+    in app.py for that family's own capability data."""
+    return {family + ":" + variant: {key: list(value) if isinstance(value, tuple) else value
+                                     for key, value in caps.items()}
+            for (family, variant), caps in VIDEO_CAPABILITIES.items()}
+
+
 def get_credits(api_key, session=requests, timeout=30):
     response = session.get(BASE_URL + "/account/credits", headers=_headers(api_key), timeout=timeout)
     if response.status_code >= 400:

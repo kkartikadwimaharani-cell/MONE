@@ -200,6 +200,9 @@ APP_SECRET_DEFS = [
     {'key': 'MII_AIVIDEO_PASSWORD', 'env_names': ['MII_AIVIDEO_PASSWORD'],
      'label': 'AI Video Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
      'help': 'Login /ai-video'},
+    {'key': 'MII_MCP_API_KEY', 'env_names': ['MII_MCP_API_KEY'],
+     'label': 'MCP Server API Key', 'category': 'Admin Passwords', 'kind': 'api_key',
+     'help': 'Dipakai server MCP MiiAiVideo buat manggil API ini tanpa perlu login browser. Generate string acak panjang, bukan password biasa.'},
     {'key': 'BOT_ADMIN_PASSWORD', 'env_names': ['BOT_ADMIN_PASSWORD', 'ADMIN_PASSWORD'],
      'label': 'Telegram Bot Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
      'help': 'Login admin bot Telegram'},
@@ -2260,6 +2263,51 @@ if not _mii_aivideo_password():
 _AIVIDEO_UNLOCK_ATTEMPTS = {}  # ip -> [fail_count, locked_until]
 _AIVIDEO_UNLOCK_LOCK = threading.Lock()
 
+# Second, IP-independent lockout layer. _aivideo_client_ip() trusts the
+# CF-Connecting-IP header, which is only trustworthy if Cloudflare is
+# GUARANTEED to be the only way in. If this app's raw Railway domain
+# (*.up.railway.app) is still publicly reachable — true by default unless
+# explicitly disabled in Railway's settings — an attacker can bypass
+# Cloudflare entirely and forge a fresh CF-Connecting-IP value on every
+# request, making the per-IP lockout above trivially bypassable (unlimited
+# password guesses, one "new IP" per guess). This global counter can't be
+# evaded that way: it counts every failed attempt server-wide regardless of
+# claimed IP, so a distributed/spoofed brute force still trips it. The
+# proper full fix is deployment-level (disable the public Railway domain,
+# or verify a Cloudflare-only shared-secret header) — this is defense in
+# depth on top of that, not a replacement for it.
+_AIVIDEO_GLOBAL_FAILS = []  # list of failure timestamps, pruned to the rolling window below
+_AIVIDEO_GLOBAL_LOCK_UNTIL = 0
+AIVIDEO_GLOBAL_LOCKOUT_THRESHOLD = 20
+AIVIDEO_GLOBAL_LOCKOUT_WINDOW_SECONDS = 5 * 60
+AIVIDEO_GLOBAL_LOCKOUT_SECONDS = 15 * 60
+
+
+def _aivideo_register_global_fail():
+    """Call once per failed password attempt, regardless of apparent IP.
+    Returns seconds remaining if this trips (or already tripped) the
+    global lockout, else 0."""
+    global _AIVIDEO_GLOBAL_LOCK_UNTIL
+    now = time.time()
+    with _AIVIDEO_UNLOCK_LOCK:
+        if _AIVIDEO_GLOBAL_LOCK_UNTIL > now:
+            return int(_AIVIDEO_GLOBAL_LOCK_UNTIL - now)
+        _AIVIDEO_GLOBAL_FAILS.append(now)
+        cutoff = now - AIVIDEO_GLOBAL_LOCKOUT_WINDOW_SECONDS
+        while _AIVIDEO_GLOBAL_FAILS and _AIVIDEO_GLOBAL_FAILS[0] < cutoff:
+            _AIVIDEO_GLOBAL_FAILS.pop(0)
+        if len(_AIVIDEO_GLOBAL_FAILS) >= AIVIDEO_GLOBAL_LOCKOUT_THRESHOLD:
+            _AIVIDEO_GLOBAL_LOCK_UNTIL = now + AIVIDEO_GLOBAL_LOCKOUT_SECONDS
+            _AIVIDEO_GLOBAL_FAILS.clear()
+            return AIVIDEO_GLOBAL_LOCKOUT_SECONDS
+        return 0
+
+
+def _aivideo_global_lock_remaining():
+    now = time.time()
+    with _AIVIDEO_UNLOCK_LOCK:
+        return max(int(_AIVIDEO_GLOBAL_LOCK_UNTIL - now), 0)
+
 
 def _aivideo_client_ip():
     # CF-Connecting-IP first: this app sits behind Cloudflare, and that
@@ -2695,8 +2743,29 @@ def _aivideo_last_error(source, message):
         _AIVIDEO_DEBUG['last_error'] = {'source': source, 'message': str(message)[:2000], 'at': _utc_timestamp()}
 
 
+def _mii_mcp_api_key():
+    return get_secret('MII_MCP_API_KEY')
+
+
+def _aivideo_bearer_authed():
+    """True only for a valid MCP Bearer-token caller — never for a browser
+    session. Kept separate from _aivideo_authed()'s session check so the
+    CSRF guard below can tell the two apart: a Bearer caller can't be the
+    victim of a cross-site CSRF attack (a malicious page in someone's
+    browser can't forge an Authorization header the way it can rely on
+    cookies being sent automatically), so it's exempt from the CSRF check
+    that exists specifically to protect the cookie-based session path."""
+    mcp_key = _mii_mcp_api_key()
+    if not mcp_key:
+        return False
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return False
+    return hmac.compare_digest(auth_header[7:].encode('utf-8'), mcp_key.encode('utf-8'))
+
+
 def _aivideo_authed():
-    return bool(session.get('mii_aivideo_auth'))
+    return bool(session.get('mii_aivideo_auth')) or _aivideo_bearer_authed()
 
 
 # ---------------------------------------------------------------------------
@@ -2731,6 +2800,8 @@ def _aivideo_csrf_guard():
         return None
     if request.endpoint in _AIVIDEO_CSRF_EXEMPT_ENDPOINTS:
         return None
+    if _aivideo_bearer_authed():
+        return None  # MCP server-to-server call — not cookie-based, not CSRF-able
     if not _aivideo_authed():
         return None  # the route itself will return 401; nothing to protect yet
     expected = session.get('mii_csrf')
@@ -3830,6 +3901,10 @@ def ai_video_unlock():
 
     ip = _aivideo_client_ip()
     now = time.time()
+    global_remaining = _aivideo_global_lock_remaining()
+    if global_remaining:
+        return jsonify({'ok': False, 'locked': True, 'retry_after': global_remaining,
+                         'error': 'Terlalu banyak percobaan salah dari berbagai sumber. Login dikunci sementara untuk semua orang.'}), 423
     with _AIVIDEO_UNLOCK_LOCK:
         fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
     if locked_until > now:
@@ -3859,17 +3934,21 @@ def ai_video_unlock():
     with _AIVIDEO_UNLOCK_LOCK:
         fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
         fails += 1
-        if fails >= AIVIDEO_LOCKOUT_THRESHOLD:
+        ip_just_locked = fails >= AIVIDEO_LOCKOUT_THRESHOLD
+        if ip_just_locked:
             locked_until = now + AIVIDEO_LOCKOUT_SECONDS
             _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (0, locked_until)
-            try:
-                total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
-            except Exception:
-                total_attempts, total_failed = 0, 0
-            return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
-                             'error': 'Password salah 3 kali. IP ini dikunci sementara.',
-                             'total_attempts': total_attempts, 'total_failed': total_failed}), 423
-        _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (fails, 0)
+        else:
+            _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (fails, 0)
+    _aivideo_register_global_fail()
+    if ip_just_locked:
+        try:
+            total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
+        except Exception:
+            total_attempts, total_failed = 0, 0
+        return jsonify({'ok': False, 'locked': True, 'retry_after': AIVIDEO_LOCKOUT_SECONDS,
+                         'error': 'Password salah 3 kali. IP ini dikunci sementara.',
+                         'total_attempts': total_attempts, 'total_failed': total_failed}), 423
     try:
         total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
     except Exception:
@@ -4344,6 +4423,32 @@ def aivideo_generate():
 
     estimated_time = (duration * 12) if duration else (30 if output_type == 'audio' else 20)
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})
+
+
+@app.route('/api/aivideo/capabilities')
+def api_aivideo_capabilities():
+    """Model/family/variant capability registry — image (BudgetPixel),
+    video (BudgetPixel: seedance25/wan30), and Seedance 2.0 (Segmind), all
+    in one JSON-safe response. Built for the MiiAiVideo MCP server's
+    list_models tool, but harmless to call from anywhere authenticated
+    (same data the browser UI already gets baked into ai-video.html)."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    seedance20 = {
+        'seedance:' + variant: {
+            'resolutions': list(SEGMIND_RESOLUTIONS[variant]),
+            'durations': list(SEGMIND_DURATIONS),
+            'aspect_ratios': list(SEGMIND_RATIOS),
+        }
+        for variant in SEGMIND_MODEL_MAP
+    }
+    return jsonify({
+        'ok': True,
+        'data': {
+            'image': budgetpixel_provider.public_image_capabilities(),
+            'video': dict(budgetpixel_provider.public_video_capabilities(), **seedance20),
+        },
+    })
 
 
 def _aivideo_task_payload(task_id):

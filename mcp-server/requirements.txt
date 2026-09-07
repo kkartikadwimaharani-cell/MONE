@@ -1,0 +1,4 @@
+# FastMCP v1 API used by server.py.
+mcp>=1.28,<2
+requests>=2.31
+uvicorn>=0.30
