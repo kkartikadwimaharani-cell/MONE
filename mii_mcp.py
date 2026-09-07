@@ -248,10 +248,14 @@ def register_mcp(app, backend, data_dir):
     images={'type':'array','items':string,'maxItems':9}
     videos={'type':'array','items':string,'maxItems':3}
     common={'prompt':{'type':'string','minLength':1},'family':string,'variant':string,'resolution':string,'aspect_ratio':string,'negative_prompt':string,'image_urls':images}
+    image_controls=dict(common, size=string, quality=string, output_format=string,
+                        megapixel=string, num_images={'type':'integer','minimum':1,'maximum':4},
+                        seed={'type':'integer'}, sequential_image_generation=string,
+                        max_images={'type':'integer','minimum':1,'maximum':14})
     tools=[
         tool('list_models','List MIIAIVIDEO models, exact variants, allowed controls and configuration status. Call before generation.'),
         tool('generate_video','Start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
-        tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',common,['prompt'],True),
+        tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
         tool('generate_audio','Start Seed Audio generation using account credits only when requested.',{'prompt':{'type':'string','minLength':1},'audio_format':string,'sample_rate':{'type':'integer'},'audio_urls':videos,'image_urls':images},['prompt'],True),
         tool('motion_control','Edit motion/character in a source video using account credits. Source video is validated before submission.',{'prompt':string,'variant':string,'video_urls':{'type':'array','items':string,'maxItems':1},'image_urls':{'type':'array','items':string,'maxItems':5},'mute_audio':{'type':'boolean'}},['video_urls'],True),
         tool('check_status','Read task status and output URL. Do not repeatedly poll unless requested.',{'task_id':{'type':'string','minLength':1}},['task_id']),
@@ -265,6 +269,20 @@ def register_mcp(app, backend, data_dir):
         for key,caps in bp_caps.items():
             if not key.startswith('seedance:'):
                 result['video'][key]=dict(caps,configured=bool(backend['_budgetpixel_api_key']()))
+        bp_image_caps=backend['budgetpixel_provider'].public_image_capabilities()
+        for key,caps in bp_image_caps.items():
+            family,variant=key.split(':',1)
+            public_family='gptimagebp' if family=='gptimage' else family
+            item=dict(caps,configured=bool(backend['_budgetpixel_api_key']()),provider='MIIAIVIDEO')
+            fields=['image_urls'] if (item.get('reference_images') or item.get('singular_image')) else []
+            for public,cap in (('aspect_ratio','aspect_ratios'),('resolution','resolutions'),
+                               ('size','sizes'),('quality','qualities'),('output_format','formats'),
+                               ('megapixel','megapixels'),('num_images','image_count'),
+                               ('seed','seed'),('negative_prompt','negative_prompt'),
+                               ('sequential_image_generation','sequential_modes'),('max_images','max_images')):
+                if item.get(cap): fields.append(public)
+            item['fields']=fields
+            result['image'][public_family+':'+variant]=item
         def add(kind,family,variants,ratios=(),resolutions=(),durations=(),fields=()):
             for variant in variants:
                 result[kind][family+':'+variant]={'aspect_ratios':list(ratios),'resolutions':list(resolutions),'durations':list(durations),'fields':list(fields),'configured':bool(backend['_segmind_api_key']())}

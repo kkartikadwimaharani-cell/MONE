@@ -46,6 +46,13 @@ reported as tool errors; local tests do not prove that a provider account has
 credit or that every upstream service is online. Motion validation may take
 longer than a client's default tool timeout for large videos.
 
+The model catalog currently exposes both configured MIIAIVIDEO provider paths.
+BudgetPixel image families are `flux2` (KLEIN/PRO/DEV), `qwenbp`, `seedream5`
+(LITE/PRO), `klingimage` (V3/OMNI), and `gptimagebp` (LOW/STANDARD/HIGH).
+The `bp` suffix separates a BudgetPixel-backed family from a same-named
+Segmind-backed family and prevents requests from silently reaching the wrong
+provider.
+
 ## Deployment and persistence
 
 Deploy the current `main` branch using the web service's existing root

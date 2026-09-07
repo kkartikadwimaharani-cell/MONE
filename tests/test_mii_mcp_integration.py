@@ -5,7 +5,7 @@ import os
 import tempfile
 import unittest
 from urllib.parse import urlencode, urlsplit, parse_qs
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 class MiiMcpIntegrationTests(unittest.TestCase):
@@ -98,6 +98,27 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                     self.assertFalse(status['isError'],status)
                     count+=1
         self.assertEqual(worker.call_count,count)
+        self.assertGreaterEqual(count,37)
+
+    def test_budgetpixel_image_runner_uses_image_lifecycle(self):
+        task_id='image-runner-test'
+        with self.module.AIVIDEO_TASKS_LOCK:
+            self.module.AIVIDEO_TASKS[task_id]={'status':'pending','progress':5,'output':None,'error':None}
+        submit=patch.object(self.module.budgetpixel_provider,'submit_image',return_value={'job_id':'img-job'}).start()
+        submit_video=patch.object(self.module.budgetpixel_provider,'submit_video').start()
+        poll=patch.object(self.module.budgetpixel_provider,'poll',return_value={'status':'completed','url':'https://example.com/result.png'}).start()
+        response=Mock(status_code=200,content=b'fake-image-bytes')
+        patch.object(self.module.requests_lib,'get',return_value=response).start()
+        patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        patch.object(self.module,'_dropbox_upload_and_link',return_value='https://example.com/permanent.png').start()
+        self.module._run_budgetpixel_task(task_id,'flux2','KLEIN',{'prompt':'x'},'image')
+        submit.assert_called_once()
+        submit_video.assert_not_called()
+        poll.assert_called_once_with('img-job','test-only',kind='image')
+        with self.module.AIVIDEO_TASKS_LOCK:
+            task=dict(self.module.AIVIDEO_TASKS[task_id])
+        self.assertEqual(task['status'],'completed')
+        self.assertEqual(task['output']['image_url'],'https://example.com/permanent.png')
 
     def test_bad_controls_unknown_tool_missing_task_and_provider_failure(self):
         key=self.key()['key']

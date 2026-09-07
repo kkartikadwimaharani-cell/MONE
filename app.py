@@ -3775,7 +3775,8 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
     call_started = time.time()
     try:
         _set(status='processing', progress=10)
-        submitted = budgetpixel_provider.submit_video(bp_family, bp_variant, input_body, api_key)
+        submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
+        submitted = submit(bp_family, bp_variant, input_body, api_key)
         job_id = submitted['job_id']
         _set(progress=25)
 
@@ -3785,7 +3786,7 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
         # bar forward once so the UI doesn't look stuck at 25% the whole
         # time a long (up to 30s clip / several minutes render) job runs.
         _set(progress=55)
-        result = budgetpixel_provider.poll(job_id, api_key, kind='video')
+        result = budgetpixel_provider.poll(job_id, api_key, kind=output_type)
         if result['status'] != 'completed' or not result.get('url'):
             raise budgetpixel_provider.ProviderError(
                 'GENERATION_FAILED', 'Generation failed. Please try again.',
@@ -4027,7 +4028,8 @@ def aivideo_generate():
     # Segmind — seedance25/wan30 go through BudgetPixel instead (checked
     # separately below), so a BudgetPixel-only setup (no Segmind key at
     # all) must not get blocked here before family is even known.
-    if family not in ('seedance25', 'wan30') and not _segmind_api_key():
+    budgetpixel_image_families = ('flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimagebp')
+    if family not in ('seedance25', 'wan30', *budgetpixel_image_families) and not _segmind_api_key():
         _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
 
@@ -4051,7 +4053,24 @@ def aivideo_generate():
     provider = 'segmind'
     endpoint = None
 
-    if family in ('seedance25', 'wan30'):
+    if family in budgetpixel_image_families:
+        if not _budgetpixel_api_key():
+            _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
+            return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
+        provider = 'budgetpixel'
+        bp_family = 'gptimage' if family == 'gptimagebp' else family
+        bp_variant = model_key
+        try:
+            body = budgetpixel_provider.build_image_payload(
+                bp_family, bp_variant, payload, prompt, reference_images=image_urls,
+            )
+        except budgetpixel_provider.ProviderError as e:
+            _aivideo_last_error('budgetpixel', str(e))
+            return jsonify({'error': e.public_message}), 400
+        endpoint = f'budgetpixel:{bp_family}:{bp_variant}'
+        duration = 0
+
+    elif family in ('seedance25', 'wan30'):
         if not _budgetpixel_api_key():
             _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
             return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
@@ -4397,7 +4416,7 @@ def aivideo_generate():
 
     if family == 'seedaudio':
         output_type = 'audio'
-    elif family in ('nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'):
+    elif family in budgetpixel_image_families or family in ('nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'):
         output_type = 'image'
     else:
         output_type = 'video'
