@@ -75,7 +75,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
     def test_all_tools_and_every_advertised_variant_without_spending(self):
         key=self.key()['key']
         defs=self.rpc(key,'tools/list').get_json()['result']['tools']
-        self.assertEqual(len(defs),6)
+        self.assertEqual(len(defs),7)
         models=json.loads(self.call(key,'list_models')['content'][0]['text'])['models']
         patch.object(self.module,'_segmind_api_key',return_value='test-only').start()
         patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
@@ -131,6 +131,28 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         patch.object(self.module,'_budgetpixel_api_key',return_value='').start()
         self.assertTrue(self.call(key,'generate_video',{'prompt':'x'})['isError'])
 
+    def test_clear_debug_auto_clear_link_audit_and_preview_resource(self):
+        key=self.key()['key']
+        self.module._aivideo_debug_set('last_error',source='old',message='old')
+        self.assertFalse(self.call(key,'clear_debug')['isError'])
+        self.assertIsNone(self.module._aivideo_debug_snapshot()['last_error'])
+
+        patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        patch.object(self.module.threading,'Thread').start()
+        result=self.call(key,'generate_video',{
+            'prompt':'Test links','family':'seedance25','variant':'STANDARD',
+            'image_urls':['https://dl.dropboxusercontent.com/s/test/reference.png'],
+        })
+        self.assertFalse(result['isError'],result)
+        audit=self.module._aivideo_debug_snapshot()['last_provider_links']
+        self.assertEqual(audit['count'],1)
+        self.assertTrue(audit['links'][0]['direct_dropbox'])
+
+        listed=self.rpc(key,'resources/list').get_json()['result']['resources']
+        self.assertEqual(listed[0]['mimeType'],'text/html;profile=mcp-app')
+        read=self.rpc(key,'resources/read',{'uri':'ui://miiaivideo/video-preview.html'}).get_json()
+        self.assertIn('<video',read['result']['contents'][0]['text'])
+
     def oauth_code(self, simulate_restart=False):
         r=self.client.post('/oauth/register',json={'client_name':'Test agent','redirect_uris':['https://agent.example/callback'],'token_endpoint_auth_method':'none'})
         self.assertEqual(r.status_code,201,r.data)
@@ -184,7 +206,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                         info=await client.initialize()
                         self.assertEqual(info.serverInfo.name,'MIIAIVIDEO')
                         definitions=await client.list_tools()
-                        self.assertEqual(len(definitions.tools),6)
+                        self.assertEqual(len(definitions.tools),7)
                         result=await client.call_tool('miiaivideo_list_models',{})
                         self.assertFalse(result.isError)
                         self.assertIn('models',json.loads(result.content[0].text))

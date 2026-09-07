@@ -279,7 +279,8 @@ def register_mcp(app, backend, data_dir):
                         max_images={'type':'integer','minimum':1,'maximum':14})
     tools=[
         tool('list_models','List MIIAIVIDEO models, exact variants, allowed controls and configuration status. Call before generation.'),
-        tool('generate_video','Start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
+        tool('clear_debug','Clear AI Video diagnostics only. Does not delete tasks, history, credentials, or media.',write=True),
+        tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
         tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
         tool('generate_audio','Start Seed Audio generation using account credits only when requested.',{'prompt':{'type':'string','minLength':1},'audio_format':string,'sample_rate':{'type':'integer'},'audio_urls':videos,'image_urls':images},['prompt'],True),
         tool('motion_control','Edit motion/character in a source video using account credits. Source video is validated before submission.',{'prompt':string,'variant':string,'video_urls':{'type':'array','items':string,'maxItems':1},'image_urls':{'type':'array','items':string,'maxItems':5},'mute_audio':{'type':'boolean'}},['video_urls'],True),
@@ -287,6 +288,13 @@ def register_mcp(app, backend, data_dir):
     ]
     for item in tools:
         item['name']='miiaivideo_'+item['name']
+        if item['name']=='miiaivideo_check_status':
+            item['_meta']={
+                'ui':{'resourceUri':'ui://miiaivideo/video-preview.html'},
+                'openai/outputTemplate':'ui://miiaivideo/video-preview.html',
+                'openai/toolInvocation/invoking':'Memeriksa hasil MIIAIVIDEO…',
+                'openai/toolInvocation/invoked':'Hasil MIIAIVIDEO siap',
+            }
 
     def catalog():
         result={'video':{},'image':{},'audio':{},'motion':{}}
@@ -333,12 +341,16 @@ def register_mcp(app, backend, data_dir):
         name=name.removeprefix('miiaivideo_')
         if name=='list_models':
             return {'brand':'MIIAIVIDEO','models':catalog()}
+        elif name=='clear_debug':
+            return backend['_aivideo_clear_debug']()
         elif name=='check_status':
             endpoint='aivideo_task_status';payload=None;kwargs={'task_id':args['task_id']}
         else:
             endpoint='aivideo_generate';kwargs={};payload=dict(args)
             defaults={'generate_video':('video','seedance25'),'generate_image':('image','nanobanana'),'generate_audio':('audio','seedaudio'),'motion_control':('motion','klingswap')}
             kind,default_family=defaults[name]
+            if name in ('generate_video','motion_control'):
+                backend['_aivideo_clear_debug']()
             family=payload.setdefault('family',default_family).lower()
             variant=payload.pop('variant',{'seedance':'MINI','seedream':'PRO','flux':'SCHNELL','veo':'FAST','klingswap':'STD'}.get(family,'STANDARD')).upper()
             caps=catalog()[kind].get(family+':'+variant)
@@ -426,8 +438,16 @@ def register_mcp(app, backend, data_dir):
             result={}
         elif method=='tools/list':
             result={'tools':tools}
-        elif method in ('resources/list','prompts/list','resources/templates/list'):
-            result={ {'resources/list':'resources','prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}
+        elif method=='resources/list':
+            result={'resources':[{'uri':'ui://miiaivideo/video-preview.html','name':'MIIAIVIDEO video preview','mimeType':'text/html;profile=mcp-app'}]}
+        elif method=='resources/read':
+            if params.get('uri')!='ui://miiaivideo/video-preview.html':
+                return rpc_error(-32602,'Unknown resource')
+            html='''<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#08090d;color:#fff;font:14px system-ui}main{padding:12px}video{display:none;width:100%;max-height:70vh;border-radius:14px;background:#000}a{color:#ff405f}#state{padding:18px;border:1px solid #35202a;border-radius:14px}</style></head><body><main><div id="state">Video sedang diproses.</div><video id="player" controls playsinline preload="metadata"></video><p><a id="open" target="_blank" rel="noopener"></a></p></main><script>function render(r){r=(r&&r.structuredContent)||r||{};var o=r.output||{},u=o.video_url;if(!u){document.getElementById('state').textContent=r.error||('Status: '+(r.status||'processing'));return}var v=document.getElementById('player'),a=document.getElementById('open');v.src=u;v.style.display='block';document.getElementById('state').style.display='none';a.href=u;a.textContent='Buka / download video'}render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});</script></body></html>'''
+            meta={'ui':{'prefersBorder':True,'csp':{'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Pemutar hasil video MIIAIVIDEO','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
+            result={'contents':[{'uri':params['uri'],'mimeType':'text/html;profile=mcp-app','text':html,'_meta':meta}]}
+        elif method in ('prompts/list','resources/templates/list'):
+            result={ {'prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}
         elif method=='tools/call':
             definition=next((t for t in tools if t['name']==params.get('name')),None)
             args=params.get('arguments') or {}
@@ -451,7 +471,8 @@ def register_mcp(app, backend, data_dir):
             except Exception:
                 app.logger.exception('MCP tool failed: %s',definition['name'])
                 data={'error':'Generation backend failed. Check AI Video diagnostics.'}
-            result={'content':[{'type':'text','text':json.dumps(data,ensure_ascii=False)}],'isError':bool(data.get('error'))}
+            result={'content':[{'type':'text','text':json.dumps(data,ensure_ascii=False)}],
+                    'structuredContent':data,'isError':bool(data.get('error'))}
         else:
             return rpc_error(-32601,'Method not found')
         return jsonify(jsonrpc='2.0',id=msg['id'],result=result)

@@ -2737,6 +2737,60 @@ def _aivideo_debug_snapshot():
         return json.loads(json.dumps(_AIVIDEO_DEBUG, default=str))
 
 
+def _aivideo_clear_debug():
+    """Clear only diagnostics, never tasks, history, credentials, or media."""
+    with _AIVIDEO_DEBUG_LOCK:
+        _AIVIDEO_DEBUG['last_upload'] = None
+        _AIVIDEO_DEBUG['last_uploads'] = []
+        _AIVIDEO_DEBUG['last_request'] = None
+        _AIVIDEO_DEBUG['last_provider_links'] = None
+        _AIVIDEO_DEBUG['last_segmind_response'] = None
+        _AIVIDEO_DEBUG['last_error'] = None
+        _AIVIDEO_DEBUG['motion_control'] = None
+    with _AIVIDEO_REQUEST_LOG_LOCK:
+        _AIVIDEO_REQUEST_LOG.clear()
+    return {'ok': True, 'message': 'Debug AI Video sudah dibersihkan.'}
+
+
+_PROVIDER_MEDIA_FIELDS = {
+    'image', 'end_image', 'reference_images', 'reference_videos',
+    'reference_audios', 'start_image_url', 'end_image_url', 'video_url',
+    'frontal_image_url', 'image_urls', 'audio_urls',
+}
+
+
+def _aivideo_validate_provider_links(body, provider, task_id):
+    """Reject malformed media URLs and expose the exact outbound link audit."""
+    audit = []
+    for field in _PROVIDER_MEDIA_FIELDS:
+        raw = body.get(field)
+        values = raw if isinstance(raw, list) else ([raw] if raw else [])
+        for index, value in enumerate(values):
+            if not isinstance(value, str):
+                raise ValueError(f'{field}[{index}] bukan URL teks')
+            try:
+                parsed = urlparse(value)
+                valid = (parsed.scheme == 'https' and bool(parsed.hostname)
+                         and not parsed.username and not parsed.password
+                         and not parsed.fragment)
+            except ValueError:
+                valid = False
+                parsed = None
+            if not valid:
+                raise ValueError(f'Link media provider tidak valid: {field}[{index}] harus HTTPS')
+            host = (parsed.hostname or '').lower()
+            audit.append({
+                'field': field, 'index': index, 'url': value,
+                'host': host, 'valid_https': True,
+                'dropbox': host.endswith('.dropbox.com') or host == 'dropbox.com'
+                           or host.endswith('.dropboxusercontent.com'),
+                'direct_dropbox': host.endswith('.dropboxusercontent.com'),
+            })
+    _aivideo_debug_set('last_provider_links', provider=provider, task_id=task_id,
+                       count=len(audit), links=audit)
+    return audit
+
+
 def _aivideo_last_error(source, message):
     app.logger.error('[ai-video] %s error: %s', source, message)
     with _AIVIDEO_DEBUG_LOCK:
@@ -4422,6 +4476,11 @@ def aivideo_generate():
         output_type = 'video'
 
     task_id = uuid.uuid4().hex
+    try:
+        _aivideo_validate_provider_links(body, provider, task_id)
+    except ValueError as e:
+        _aivideo_last_error('provider_link_validation', str(e))
+        return jsonify({'error': str(e)}), 400
     with AIVIDEO_TASKS_LOCK:
         _prune_aivideo_tasks()
         AIVIDEO_TASKS[task_id] = {
@@ -4837,16 +4896,7 @@ def ai_video_debug_clear():
     if not _aivideo_authed():
         return render_template('ai-video-lock.html')
 
-    with _AIVIDEO_DEBUG_LOCK:
-        _AIVIDEO_DEBUG['last_upload'] = None
-        _AIVIDEO_DEBUG['last_uploads'] = []
-        _AIVIDEO_DEBUG['last_request'] = None
-        _AIVIDEO_DEBUG['last_segmind_response'] = None
-        _AIVIDEO_DEBUG['last_error'] = None
-        _AIVIDEO_DEBUG['motion_control'] = None
-    with _AIVIDEO_REQUEST_LOG_LOCK:
-        _AIVIDEO_REQUEST_LOG.clear()
-
+    _aivideo_clear_debug()
     return redirect('/ai-video/debug')
 
 
