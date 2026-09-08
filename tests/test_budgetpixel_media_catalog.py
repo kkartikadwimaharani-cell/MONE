@@ -1,6 +1,7 @@
 import unittest
 
 import budgetpixel_media_catalog as catalog
+import budgetpixel_registry as registry
 from budgetpixel_provider import ProviderError
 
 
@@ -40,6 +41,20 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
                 catalog.build_image_payload(slug, {}, "cinematic portrait"),
                 {"prompt": "cinematic portrait"},
             )
+
+    def test_midjourney_stays_visible_when_live_directory_is_partial(self):
+        partial = {"models": [{"slug": "some-other-model", "handler": True}],
+                   "sync_error": None}
+        names = {row["name"] for row in catalog.public_ui_bundle(partial)["image_families"]}
+        self.assertIn("MIDJOURNEY", names)
+
+    def test_reviewed_midjourney_handlers_survive_partial_remote_merge(self):
+        remote = [{"slug": "some-other-model", "name": "Other",
+                   "category": "image", "remote": {}}]
+        rows = registry._merge(remote, configured=True)
+        slugs = {row["slug"] for row in rows if row.get("handler")}
+        self.assertIn("midjourney-v7", slugs)
+        self.assertIn("midjourney-niji-7", slugs)
 
     def test_edit_model_requires_image(self):
         with self.assertRaises(ProviderError):

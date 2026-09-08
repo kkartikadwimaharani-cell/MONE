@@ -144,11 +144,10 @@ def _merge(remote, configured):
                        parameters={}, source="catalog", catalog=True)
         row["configured"] = configured
         merged.append(row)
-    # A safe fallback remains usable during an outage, but is never claimed
-    # VERIFIED merely because it exists locally.
+    # Reviewed local handlers remain usable when the remote directory is
+    # partial or categorises an endpoint differently. They are fixed local
+    # contracts, not arbitrary endpoints discovered from the remote response.
     for row in local.values():
-        if remote and row.get("source") in ("mii-video-catalog", "mii-media-catalog"):
-            continue
         row["configured"] = configured
         merged.append(row)
     return sorted(merged, key=lambda r: (r["category"], r["name"].lower(), r["slug"]))

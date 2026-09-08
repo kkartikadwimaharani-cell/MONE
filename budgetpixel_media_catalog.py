@@ -206,10 +206,10 @@ def public_ui_bundle(registry=None):
                 "kling-v3-omni", "gpt-image-2", "nano-banana-pro", "flux-dev"}
     images = [row for row in IMAGE_ROWS if row["slug"] not in existing]
     audios = list(AUDIO_ROWS)
-    if registry and not registry.get("sync_error"):
-        live = {row["slug"] for row in registry.get("models", []) if row.get("handler")}
-        images = [row for row in images if row["slug"] in live]
-        audios = [row for row in audios if row["slug"] in live]
+    # These rows are the reviewed executable catalogue, not speculative cards.
+    # Keep them visible even when /v1/models is partial or uses a different
+    # category spelling. The generation route still validates every slug and
+    # uses only the fixed local endpoint/payload handlers below.
 
     def grouped(rows, kind):
         result = {}
