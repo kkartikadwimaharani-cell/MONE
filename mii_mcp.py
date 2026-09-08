@@ -300,8 +300,7 @@ def register_mcp(app, backend, data_dir):
         result={'video':{},'image':{},'audio':{},'motion':{}}
         bp_caps=backend['budgetpixel_provider'].public_video_capabilities()
         for key,caps in bp_caps.items():
-            if not key.startswith('seedance:'):
-                result['video'][key]=dict(caps,configured=bool(backend['_budgetpixel_api_key']()))
+            result['video'][key]=dict(caps,configured=bool(backend['_budgetpixel_api_key']()))
         bp_image_caps=backend['budgetpixel_provider'].public_image_capabilities()
         for key,caps in bp_image_caps.items():
             family,variant=key.split(':',1)
@@ -319,8 +318,10 @@ def register_mcp(app, backend, data_dir):
         def add(kind,family,variants,ratios=(),resolutions=(),durations=(),fields=()):
             for variant in variants:
                 result[kind][family+':'+variant]={'aspect_ratios':list(ratios),'resolutions':list(resolutions),'durations':list(durations),'fields':list(fields),'configured':bool(backend['_segmind_api_key']())}
-        for v in backend['SEGMIND_MODEL_MAP']:
-            add('video','seedance',[v],backend['SEGMIND_RATIOS'],backend['SEGMIND_RESOLUTIONS'][v],backend['SEGMIND_DURATIONS'],('image_urls','video_urls','audio_urls','first_frame_url','last_frame_url','mute_audio'))
+        # All Seedance 2.0 tiers (MINI/FAST/PRO) come from bp_caps above —
+        # confirmed fully routed through BudgetPixel per
+        # docs.budgetpixel.com/concepts/models (see app.py's 'seedance'
+        # branch). Nothing in this family needs Segmind anymore.
         add('video','kling',backend['KLING_MODEL_MAP'],backend['KLING_RATIOS'],durations=range(3,16),fields=('image_urls','first_frame_url','last_frame_url','negative_prompt','mute_audio'))
         add('video','veo',backend['VEO_ENDPOINT_BY_TIER'],backend['VEO_RATIOS'],backend['VEO_RESOLUTIONS'],backend['VEO_DURATIONS'],('image_urls','first_frame_url','last_frame_url','negative_prompt','mute_audio'))
         add('image','nanobanana',backend['NANOBANANA_RESOLUTION_BY_TIER'],backend['NANOBANANA_RATIOS'],('1K','2K','4K'),fields=('image_urls',))
