@@ -872,6 +872,7 @@ def _telegram_api_url(method):
 
 
 def _telegram_send_message(chat_id, text, reply_markup=None, parse_mode=None):
+    global _BOT_LAST_DELIVERY_ERROR
     url = _telegram_api_url('sendMessage')
     if not url:
         app.logger.warning('Telegram bot token is not configured.'); return None
@@ -881,8 +882,28 @@ def _telegram_send_message(chat_id, text, reply_markup=None, parse_mode=None):
     if reply_markup is not None: payload['reply_markup'] = reply_markup
     try:
         response = requests_lib.post(url, json=payload, timeout=10)
+        # Telegram's sendMessage can fail with a 200-shaped HTTP response
+        # whose body has ok:false (bad parse_mode, chat blocked the bot,
+        # message too long, etc.) as well as with a non-2xx status. Neither
+        # used to be checked here — the caller (and /telegram/webhook, which
+        # only watches for a Python exception) would see this as a silent
+        # success, so /telegram/health kept reporting last_error: null and
+        # delivery: webhook even while every reply was actually failing to
+        # send. Surface both cases so real delivery failures show up.
+        ok = False
+        try:
+            ok = response.ok and bool(response.json().get('ok'))
+        except Exception:
+            ok = response.ok
+        if not ok:
+            detail = response.text[:300]
+            app.logger.warning('Telegram sendMessage to chat %s failed: HTTP %s %s', chat_id, response.status_code, detail)
+            _BOT_LAST_DELIVERY_ERROR = f'sendMessage HTTP {response.status_code}: {detail}'[:300]
         return response
-    except Exception as exc: app.logger.warning('Telegram sendMessage failed: %s', exc); return None
+    except Exception as exc:
+        app.logger.warning('Telegram sendMessage failed: %s', exc)
+        _BOT_LAST_DELIVERY_ERROR = f'sendMessage exception: {exc}'[:300]
+        return None
 
 
 def _telegram_edit_message(chat_id, message_id, text, reply_markup=None):
@@ -2270,10 +2291,18 @@ def telegram_webhook():
     if not expected or not hmac.compare_digest(supplied, expected):
         return jsonify({'ok': False, 'error': 'unauthorized'}), 401
     update = request.get_json(silent=True) or {}
+    # Reset before processing so a failure from *this* update starts clean.
+    # Previously this was force-set back to None right after
+    # process_telegram_update() returned, even on success — which silently
+    # erased any delivery error _telegram_send_message() had just recorded
+    # (e.g. Telegram's sendMessage rejecting the reply). That made
+    # /telegram/health report last_error: null even while every reply was
+    # actually failing to send. Now a failure set during processing is left
+    # in place instead of being overwritten by the "it didn't raise" path.
+    _BOT_LAST_DELIVERY_ERROR = None
     try:
         process_telegram_update(update)
         _BOT_LAST_DELIVERY_OK = _utc_timestamp()
-        _BOT_LAST_DELIVERY_ERROR = None
     except Exception as exc:
         _BOT_LAST_DELIVERY_ERROR = str(exc)[:300]
         app.logger.exception('[telegram] webhook update failed')
@@ -2431,6 +2460,7 @@ SEGMIND_BASE = 'https://api.segmind.com/v1'
 # Model slug DI-HARDCODE di sini karena sudah dikonfirmasi persis dari
 # docs.budgetpixel.com (bukan tebakan) — beda dengan katalog yang berubah-ubah.
 import budgetpixel_provider
+import mii_quality_filter
 
 
 def _budgetpixel_api_key():
@@ -2842,6 +2872,11 @@ _PROVIDER_MEDIA_FIELDS = {
     'image', 'end_image', 'reference_images', 'reference_videos',
     'reference_audios', 'start_image_url', 'end_image_url', 'video_url',
     'frontal_image_url', 'image_urls', 'audio_urls',
+    # 'video'/'audio': Seedance 2.0's singular video-edit / reference-audio
+    # fields on BudgetPixel (see the 'seedance' branch in aivideo_generate) —
+    # without these here, those two outbound URLs would skip the HTTPS/host
+    # audit every other provider-bound media link gets.
+    'video', 'audio',
 }
 
 
@@ -4165,11 +4200,14 @@ def aivideo_generate():
     mute_audio = bool(payload.get('mute_audio', False))
 
     # Segmind key is only required for families still routed through
-    # Segmind — seedance25/wan30 go through BudgetPixel instead (checked
-    # separately below), so a BudgetPixel-only setup (no Segmind key at
-    # all) must not get blocked here before family is even known.
+    # Segmind. seedance25/wan30 always go through BudgetPixel; 'seedance'
+    # (2.0) — all three tiers (MINI/FAST/PRO) — also fully moved to
+    # BudgetPixel now that docs.budgetpixel.com/concepts/models confirmed
+    # seedance-2.0-fast as a real endpoint alongside -mini and the base
+    # seedance-2.0 slug.
     budgetpixel_image_families = ('flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimagebp')
-    if family not in ('seedance25', 'wan30', *budgetpixel_image_families) and not _segmind_api_key():
+    _segmind_exempt_families = ('seedance25', 'wan30', 'seedance', *budgetpixel_image_families)
+    if family not in _segmind_exempt_families and not _segmind_api_key():
         _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
 
@@ -4192,6 +4230,7 @@ def aivideo_generate():
     # this flag.
     provider = 'segmind'
     endpoint = None
+    request_metadata = None
 
     if family in budgetpixel_image_families:
         if not _budgetpixel_api_key():
@@ -4222,6 +4261,22 @@ def aivideo_generate():
             bp_variant = 'PRIME' if 'PRIME' in model_key else 'STANDARD'
             bp_family = 'wan30'
 
+        # Run the deterministic MII quality filter (mii_quality_filter.py) to
+        # add compact, context-aware production guidance to the raw prompt
+        # before it goes to the provider. This module existed in the repo
+        # but was never actually wired into the generate path — filtering
+        # never ran. If it errors on some edge-case input, fail open: keep
+        # the user's original prompt rather than blocking generation.
+        original_prompt = prompt
+        try:
+            prompt = mii_quality_filter.build_final_prompt(
+                original_prompt, family=family, duration=payload.get('duration'),
+                references=image_urls + video_urls + audio_urls,
+            )
+        except Exception as e:
+            app.logger.warning('[ai-video] mii_quality_filter failed, using original prompt: %s', e)
+            prompt = original_prompt
+
         # build_video_payload validates everything itself (duration/resolution
         # range, frames-vs-elements exclusivity, reference limits) against
         # budgetpixel_provider's own verified capability registry, and raises
@@ -4239,28 +4294,70 @@ def aivideo_generate():
             return jsonify({'error': e.public_message}), 400
         endpoint = f'budgetpixel:{bp_family}:{bp_variant}'
         duration = body.get('length_seconds', body.get('duration_seconds', 5))
+        request_metadata = {'original_prompt': original_prompt, 'final_prompt': prompt}
 
     elif family == 'seedance':
-        if model_key not in SEGMIND_MODEL_MAP:
-            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API Segmind di server ini.'}), 501
-        endpoint = SEGMIND_MODEL_MAP[model_key]
+        # All three tiers confirmed on BudgetPixel per
+        # docs.budgetpixel.com/concepts/models: seedance-2.0-mini,
+        # seedance-2.0-fast, seedance-2.0 (PRO). This family no longer
+        # touches Segmind at all.
+        if model_key not in ('MINI', 'FAST', 'PRO'):
+            return jsonify({'error': f'Model "{family}/{model_key}" belum terhubung ke API di server ini.'}), 501
+        if not _budgetpixel_api_key():
+            _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
+            return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
+        provider = 'budgetpixel'
+        bp_family, bp_variant = 'seedance', model_key
+
+        original_prompt = prompt
+        try:
+            prompt = mii_quality_filter.build_final_prompt(
+                original_prompt, family=family, duration=payload.get('duration'),
+                references=image_urls + video_urls + audio_urls,
+            )
+        except Exception as e:
+            app.logger.warning('[ai-video] mii_quality_filter failed, using original prompt: %s', e)
+            prompt = original_prompt
+
+        # BudgetPixel's seedance-2.0 endpoints use SINGULAR `video`/`audio`
+        # fields for video-to-video editing and reference-audio — confirmed
+        # at docs.budgetpixel.com/concepts/models. This is a different shape
+        # than seedance25/wan30, which take LIST-based reference_videos/
+        # reference_audios. The old Segmind wrapper (_build_seedance20_payload)
+        # used the list shape too, which was specific to Segmind's own API,
+        # not BudgetPixel's — so it isn't reused here. Enforce the doc's own
+        # exclusivity rules locally: frames can't combine with reference
+        # images or a video edit; reference_images alongside a video edit is
+        # capped at 6 (vs 9 standalone); reference audio needs an
+        # image/reference_images/video companion (can't be the only input).
+        video_edit_url = video_urls[0] if video_urls else ''
+        audio_ref_url = audio_urls[0] if audio_urls else ''
+        has_frames = bool(first_frame_url or last_frame_url)
+        if has_frames and (image_urls or video_edit_url):
+            return jsonify({'error': 'Frame mode (first/last frame) tidak bisa dipakai bareng reference image atau video edit di Seedance 2.0 — pilih salah satu.'}), 400
+        ref_image_limit = 6 if video_edit_url else 9
+        if len(image_urls) > ref_image_limit:
+            return jsonify({'error': f'Seedance 2.0 maksimal {ref_image_limit} reference image untuk mode ini.'}), 400
+        if audio_ref_url and not (image_urls or video_edit_url or first_frame_url):
+            return jsonify({'error': 'Reference audio Seedance 2.0 butuh minimal 1 gambar atau video pendamping — audio saja tidak cukup.'}), 400
 
         try:
-            body = _build_seedance20_payload(payload, prompt, model_key, image_urls, video_urls,
-                                              audio_urls, first_frame_url, last_frame_url)
-        except ValueError as e:
-            _aivideo_last_error('validation', str(e))
-            return jsonify({'error': str(e)}), 400
-
-        # When mute_audio is on, tell Segmind not to generate audio at all
-        # rather than generating it and stripping it afterward — generating
-        # audio still runs it through Segmind's own sensitive-content
-        # moderation, which can reject the ENTIRE generation
-        # (OutputAudioSensitiveContentDetected) even though the user never
-        # wanted the audio in the first place.
-        if mute_audio:
-            body['generate_audio'] = False
-        duration = body['duration']
+            body = budgetpixel_provider.build_video_payload(
+                bp_family, bp_variant, payload, prompt,
+                reference_images=image_urls,
+                first_frame=first_frame_url, last_frame=last_frame_url,
+                generate_audio=not mute_audio,
+            )
+        except budgetpixel_provider.ProviderError as e:
+            _aivideo_last_error('budgetpixel', str(e))
+            return jsonify({'error': e.public_message}), 400
+        if video_edit_url:
+            body['video'] = video_edit_url
+        if audio_ref_url:
+            body['audio'] = audio_ref_url
+        endpoint = f'budgetpixel:{bp_family}:{bp_variant}'
+        duration = body.get('length_seconds', body.get('duration_seconds', 5))
+        request_metadata = {'original_prompt': original_prompt, 'final_prompt': prompt}
 
     elif family == 'kling':
         # Accept either the dedicated Frames-mode first_frame_url, or fall
@@ -4572,6 +4669,7 @@ def aivideo_generate():
         AIVIDEO_TASKS[task_id] = {
             'status': 'pending', 'progress': 5, 'output': None, 'error': None,
             'model': model_key, 'family': family, 'created': time.time(),
+            'request_metadata': request_metadata,
         }
     _persist_task(task_id)
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread (provider=%s)',
@@ -4591,26 +4689,19 @@ def aivideo_generate():
 
 @app.route('/api/aivideo/capabilities')
 def api_aivideo_capabilities():
-    """Model/family/variant capability registry — image (BudgetPixel),
-    video (BudgetPixel: seedance25/wan30), and Seedance 2.0 (Segmind), all
-    in one JSON-safe response. Built for the MiiAiVideo MCP server's
-    list_models tool, but harmless to call from anywhere authenticated
-    (same data the browser UI already gets baked into ai-video.html)."""
+    """Model/family/variant capability registry — image and video, both
+    fully routed through BudgetPixel now (including all three Seedance 2.0
+    tiers — MINI/FAST/PRO — confirmed at docs.budgetpixel.com/concepts/models).
+    Built for the MiiAiVideo MCP server's list_models tool, but harmless to
+    call from anywhere authenticated (same data the browser UI already gets
+    baked into ai-video.html)."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    seedance20 = {
-        'seedance:' + variant: {
-            'resolutions': list(SEGMIND_RESOLUTIONS[variant]),
-            'durations': list(SEGMIND_DURATIONS),
-            'aspect_ratios': list(SEGMIND_RATIOS),
-        }
-        for variant in SEGMIND_MODEL_MAP
-    }
     return jsonify({
         'ok': True,
         'data': {
             'image': budgetpixel_provider.public_image_capabilities(),
-            'video': dict(budgetpixel_provider.public_video_capabilities(), **seedance20),
+            'video': budgetpixel_provider.public_video_capabilities(),
         },
     })
 
