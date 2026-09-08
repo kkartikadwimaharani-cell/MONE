@@ -2460,6 +2460,7 @@ SEGMIND_BASE = 'https://api.segmind.com/v1'
 # Model slug DI-HARDCODE di sini karena sudah dikonfirmasi persis dari
 # docs.budgetpixel.com (bukan tebakan) — beda dengan katalog yang berubah-ubah.
 import budgetpixel_provider
+import budgetpixel_registry
 import mii_quality_filter
 
 
@@ -4044,7 +4045,9 @@ def ai_video_view():
             pass
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
-    return render_template('ai-video.html', image_capabilities=budgetpixel_provider.public_image_capabilities())
+    registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
+    return render_template('ai-video.html', image_capabilities=budgetpixel_provider.public_image_capabilities(),
+                           budgetpixel_registry=registry)
 
 
 @app.route('/ai-video/lock-visit', methods=['POST'])
@@ -4697,11 +4700,13 @@ def api_aivideo_capabilities():
     baked into ai-video.html)."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
     return jsonify({
         'ok': True,
         'data': {
             'image': budgetpixel_provider.public_image_capabilities(),
             'video': budgetpixel_provider.public_video_capabilities(),
+            'catalog': registry,
         },
     })
 
@@ -5084,6 +5089,10 @@ def _aivideo_diagnostics():
     state = _dropbox_manager.status()
     storage = snap.get('dropbox') or {}
     configured = bool(_segmind_api_key() or _budgetpixel_api_key())
+    catalog = budgetpixel_registry.get_registry(_budgetpixel_api_key())
+    catalog_counts = {}
+    for model in catalog['models']:
+        catalog_counts[model['category']] = catalog_counts.get(model['category'], 0) + 1
     entries = []
     for index, entry in enumerate(log['entries']):
         row = dict(entry)
@@ -5108,7 +5117,9 @@ def _aivideo_diagnostics():
         motion={'status': 'NOT CHECKED', 'detail': snap.get('motion_control') or {}},
         request_log=dict(log, entries=entries, success=log['total']-log['errors'], avg_duration=log['avg_duration_ms']),
         recent_uploads=snap.get('last_uploads') or [],
-        last_generate_request=snap.get('last_request'), result_detail={})
+        last_generate_request=snap.get('last_request'), result_detail={},
+        model_catalog={'synced_at': catalog['synced_at'], 'sync_error': catalog['sync_error'],
+                       'counts': catalog_counts, 'models': catalog['models']})
 
 
 @app.route('/ai-video/debug')

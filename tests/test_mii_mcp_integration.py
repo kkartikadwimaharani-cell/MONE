@@ -93,7 +93,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
     def test_all_tools_and_every_advertised_variant_without_spending(self):
         key=self.key()['key']
         defs=self.rpc(key,'tools/list').get_json()['result']['tools']
-        self.assertEqual(len(defs),7)
+        self.assertEqual(len(defs),13)
         models=json.loads(self.call(key,'list_models')['content'][0]['text'])['models']
         patch.object(self.module,'_segmind_api_key',return_value='test-only').start()
         patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
@@ -224,7 +224,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                         info=await client.initialize()
                         self.assertEqual(info.serverInfo.name,'MIIAIVIDEO')
                         definitions=await client.list_tools()
-                        self.assertEqual(len(definitions.tools),7)
+                        self.assertEqual(len(definitions.tools),13)
                         result=await client.call_tool('miiaivideo_list_models',{})
                         self.assertFalse(result.isError)
                         self.assertIn('models',json.loads(result.content[0].text))

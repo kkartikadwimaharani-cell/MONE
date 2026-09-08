@@ -283,6 +283,12 @@ def register_mcp(app, backend, data_dir):
         tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
         tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
         tool('generate_audio','Start Seed Audio generation using account credits only when requested.',{'prompt':{'type':'string','minLength':1},'audio_format':string,'sample_rate':{'type':'integer'},'audio_urls':videos,'image_urls':images},['prompt'],True),
+        tool('generate_music','Generate music only with a model listed as available for music.',dict(common,lyrics=string,duration={'type':'integer','minimum':1}),['prompt'],True),
+        tool('text_to_speech','Synthesize speech only with a listed voice model.',dict(common,voice=string,language=string,audio_format=string,sample_rate={'type':'integer'}),['prompt'],True),
+        tool('generate_sfx','Generate a sound effect only with a listed SFX model.',dict(common,duration={'type':'integer','minimum':1}),['prompt'],True),
+        tool('video_to_music','Generate music from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
+        tool('video_to_sfx','Generate sound effects from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
+        tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',{'slug':{'type':'string','minLength':1}},['slug']),
         tool('motion_control','Edit motion/character in a source video using account credits. Source video is validated before submission.',{'prompt':string,'variant':string,'video_urls':{'type':'array','items':string,'maxItems':1},'image_urls':{'type':'array','items':string,'maxItems':5},'mute_audio':{'type':'boolean'}},['video_urls'],True),
         tool('check_status','Read task status and output URL. Do not repeatedly poll unless requested.',{'task_id':{'type':'string','minLength':1}},['task_id']),
     ]
@@ -341,7 +347,19 @@ def register_mcp(app, backend, data_dir):
     def call_backend(name,args):
         name=name.removeprefix('miiaivideo_')
         if name=='list_models':
-            return {'brand':'MIIAIVIDEO','models':catalog()}
+            response={'brand':'MIIAIVIDEO','models':catalog()}
+            if 'budgetpixel_registry' in backend:
+                live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
+                grouped={kind:[] for kind in ('video','image','music','voice','sfx','audio','unknown')}
+                for model in live['models']:
+                    grouped.setdefault(model['category'], []).append(model)
+                response['official_catalog']=grouped
+                response['catalog_sync']={k:live[k] for k in ('synced_at','sync_error','cache_ttl_seconds')}
+            return response
+        elif name=='get_model_capabilities':
+            live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
+            model=backend['budgetpixel_registry'].model_by_slug(args['slug'],live)
+            return {'brand':'MIIAIVIDEO','model':model} if model else {'error':'Unknown model slug.'}
         elif name=='clear_debug':
             return backend['_aivideo_clear_debug']()
         elif name=='check_status':
@@ -349,6 +367,8 @@ def register_mcp(app, backend, data_dir):
         else:
             endpoint='aivideo_generate';kwargs={};payload=dict(args)
             defaults={'generate_video':('video','seedance25'),'generate_image':('image','nanobanana'),'generate_audio':('audio','seedaudio'),'motion_control':('motion','klingswap')}
+            if name in ('generate_music','text_to_speech','generate_sfx','video_to_music','video_to_sfx'):
+                return {'error':'No reviewed local handler is available for this catalogue category. Call miiaivideo_list_models first.'}
             kind,default_family=defaults[name]
             if name in ('generate_video','motion_control'):
                 backend['_aivideo_clear_debug']()
