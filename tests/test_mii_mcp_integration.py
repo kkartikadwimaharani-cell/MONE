@@ -52,6 +52,24 @@ class MiiMcpIntegrationTests(unittest.TestCase):
             self.assertIsInstance(data[key],dict)
         self.assertIsInstance(data['request_log']['entries'],list)
 
+    def test_telegram_webhook_auth_health_and_maintenance_bypass(self):
+        update={'update_id':123,'message':{'chat':{'id':99},'from':{'id':99},'text':'/start'}}
+        self.assertEqual(self.client.post('/telegram/webhook',json=update).status_code,401)
+        original_get_secret=self.module.get_secret
+        def test_secret(key,*fallbacks):
+            return 'test-telegram-token' if key=='TELEGRAM_BOT_TOKEN' else original_get_secret(key,*fallbacks)
+        with patch.object(self.module,'get_secret',side_effect=test_secret), \
+             patch.object(self.module,'process_telegram_update') as process:
+            secret=self.module._telegram_webhook_secret()
+            response=self.client.post('/telegram/webhook',json=update,headers={
+                'X-Telegram-Bot-Api-Secret-Token':secret,
+            })
+            health=self.client.get('/telegram/health')
+        self.assertEqual(response.status_code,200,response.data)
+        process.assert_called_once_with(update)
+        self.assertEqual(health.status_code,200)
+        self.assertIn('delivery',health.get_json())
+
     def test_dashboard_key_and_revoke(self):
         self.assertEqual(self.client.get('/ai-video/mcp').status_code,200)
         issued=self.key()

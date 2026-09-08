@@ -269,6 +269,9 @@ _BOT_LAST_PANEL_MESSAGES = {}
 _BOT_PROCESSED_UPDATE_IDS = set()
 _BOT_POLLING_STARTED = False
 _BOT_LAST_UPDATE_ID = None
+_BOT_DELIVERY_MODE = 'stopped'
+_BOT_LAST_DELIVERY_OK = None
+_BOT_LAST_DELIVERY_ERROR = None
 TELEGRAM_CHANNEL_LINK = 'https://t.me/+L0mZsWxq30cxZmM1'
 
 
@@ -1967,22 +1970,79 @@ def process_telegram_update(update):
     show_user_home(chat_id, user)
 
 def _telegram_polling_loop():
-    global _BOT_LAST_UPDATE_ID
+    global _BOT_LAST_UPDATE_ID, _BOT_DELIVERY_MODE, _BOT_LAST_DELIVERY_OK, _BOT_LAST_DELIVERY_ERROR
+    _BOT_DELIVERY_MODE = 'polling_fallback'
     while True:
         url = _telegram_api_url('getUpdates')
         if not url: time.sleep(30); continue
         params = {'timeout': 25}
         if _BOT_LAST_UPDATE_ID is not None: params['offset'] = _BOT_LAST_UPDATE_ID + 1
         try:
-            resp = requests_lib.get(url, params=params, timeout=35); data = resp.json() if resp.ok else {}
+            resp = requests_lib.get(url, params=params, timeout=35)
+            if not resp.ok:
+                raise RuntimeError(f'HTTP {resp.status_code}: {resp.text[:200]}')
+            data = resp.json()
+            _BOT_LAST_DELIVERY_OK = _utc_timestamp()
+            _BOT_LAST_DELIVERY_ERROR = None
             for update in data.get('result', []): _BOT_LAST_UPDATE_ID = update.get('update_id', _BOT_LAST_UPDATE_ID); process_telegram_update(update)
-        except Exception as exc: app.logger.warning('Telegram polling failed: %s', exc); time.sleep(5)
+        except Exception as exc:
+            _BOT_LAST_DELIVERY_ERROR = str(exc)[:300]
+            app.logger.warning('Telegram polling failed: %s', exc)
+            time.sleep(5)
+
+
+def _telegram_webhook_secret():
+    token = get_secret('TELEGRAM_BOT_TOKEN').strip()
+    if not token:
+        return ''
+    return hashlib.sha256((token + '|' + str(app.secret_key)).encode()).hexdigest()
+
+
+def _telegram_delivery_bootstrap():
+    """Prefer Telegram webhooks on Railway; keep polling as a fallback."""
+    global _BOT_DELIVERY_MODE, _BOT_LAST_DELIVERY_OK, _BOT_LAST_DELIVERY_ERROR
+    token = get_secret('TELEGRAM_BOT_TOKEN').strip()
+    if not token:
+        _BOT_DELIVERY_MODE = 'not_configured'
+        return
+    origin = os.environ.get('MII_PUBLIC_URL', 'https://makima.cloud').rstrip('/')
+    try:
+        response = requests_lib.post(
+            _telegram_api_url('setWebhook'),
+            json={
+                'url': origin + '/telegram/webhook',
+                'secret_token': _telegram_webhook_secret(),
+                'allowed_updates': ['message', 'callback_query'],
+                'drop_pending_updates': False,
+            },
+            timeout=15,
+        )
+        payload = response.json() if response.ok else {}
+        if not response.ok or not payload.get('ok'):
+            raise RuntimeError(f'HTTP {response.status_code}: {response.text[:250]}')
+        _BOT_DELIVERY_MODE = 'webhook'
+        _BOT_LAST_DELIVERY_OK = _utc_timestamp()
+        _BOT_LAST_DELIVERY_ERROR = None
+        app.logger.info('[telegram] webhook active: %s/telegram/webhook', origin)
+        return
+    except Exception as exc:
+        _BOT_LAST_DELIVERY_ERROR = str(exc)[:300]
+        app.logger.warning('[telegram] webhook setup failed, using polling fallback: %s', exc)
+    # getUpdates cannot run while a webhook is active. Best effort removal
+    # avoids a stale/half-configured webhook blocking the fallback loop.
+    try:
+        requests_lib.post(_telegram_api_url('deleteWebhook'),
+                          json={'drop_pending_updates': False}, timeout=10)
+    except Exception as exc:
+        app.logger.warning('[telegram] deleteWebhook before fallback failed: %s', exc)
+    _telegram_polling_loop()
 
 
 def start_telegram_bot():
     global _BOT_POLLING_STARTED
     if _BOT_POLLING_STARTED or not get_secret('TELEGRAM_BOT_TOKEN'): return
-    _BOT_POLLING_STARTED = True; threading.Thread(target=_telegram_polling_loop, name='telegram-bot-polling', daemon=True).start()
+    _BOT_POLLING_STARTED = True
+    threading.Thread(target=_telegram_delivery_bootstrap, name='telegram-bot-delivery', daemon=True).start()
 
 _ensure_status_file()
 start_telegram_bot()
@@ -2164,6 +2224,8 @@ def set_security_headers(response):
     content_type = response.headers.get('Content-Type', '')
     if 'text/html' in content_type:
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        response.headers['CDN-Cache-Control'] = 'no-store'
+        response.headers['Cloudflare-CDN-Cache-Control'] = 'no-store'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
@@ -2202,9 +2264,33 @@ def maintenance_guard():
 
 @app.route('/telegram/webhook', methods=['POST'])
 def telegram_webhook():
+    global _BOT_LAST_DELIVERY_OK, _BOT_LAST_DELIVERY_ERROR
+    expected = _telegram_webhook_secret()
+    supplied = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+    if not expected or not hmac.compare_digest(supplied, expected):
+        return jsonify({'ok': False, 'error': 'unauthorized'}), 401
     update = request.get_json(silent=True) or {}
-    process_telegram_update(update)
+    try:
+        process_telegram_update(update)
+        _BOT_LAST_DELIVERY_OK = _utc_timestamp()
+        _BOT_LAST_DELIVERY_ERROR = None
+    except Exception as exc:
+        _BOT_LAST_DELIVERY_ERROR = str(exc)[:300]
+        app.logger.exception('[telegram] webhook update failed')
+        return jsonify({'ok': False}), 500
     return jsonify({'ok': True})
+
+
+@app.route('/telegram/health')
+def telegram_health():
+    return jsonify({
+        'ok': bool(get_secret('TELEGRAM_BOT_TOKEN')) and _BOT_DELIVERY_MODE in ('webhook', 'polling_fallback'),
+        'configured': bool(get_secret('TELEGRAM_BOT_TOKEN')),
+        'delivery': _BOT_DELIVERY_MODE,
+        'last_ok': _BOT_LAST_DELIVERY_OK,
+        'last_error': _BOT_LAST_DELIVERY_ERROR,
+        'maintenance': bool(get_site_status().get('maintenance')),
+    })
 
 
 @app.route('/api/site-status')
