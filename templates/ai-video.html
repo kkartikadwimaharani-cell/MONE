@@ -2302,33 +2302,10 @@ var modelFamilies = {
       ]
     },
     {
-      key:'minimaxh3',brand:'MINIMAX',name:'MINIMAX H3',featured:true,desc:'Text, image, start/end frame and reference video generation.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceImages:5,maxReferenceVideos:1,durationMode:'range',supportsDuration:true,durationMin:4,durationMax:15,durationStep:1,resolutions:[],supportsAudioGeneration:false},qualities:[{id:'minimax-h3',label:'H3'}]
-    },
-    {
       key:'veo',brand:'GOOGLE',name:'VEO 3.1',featured:true,desc:'1080p generation with audio output.',
       caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:false,maxReferenceImages:3,supportsDuration:true,durationMode:'unknown',resolutions:['1080p'],supportsAudioGeneration:true},
       qualities:[{id:'veo-3.1',label:'STANDARD'},{id:'veo-3.1-fast',label:'FAST',caps:{supportsElements:false,maxReferenceImages:0}}]
     },
-    {
-      key:'pixverse',brand:'PIXVERSE',name:'PIXVERSE',featured:true,desc:'C1 and V6 reference-capable generation.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceImages:3,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['360p','720p','1080p']},
-      qualities:[{id:'pixverse-c1',label:'C1'},{id:'pixverse-v6',label:'V6',caps:{supportsAudioGeneration:true}}]
-    },
-    {
-      key:'hailuo23',brand:'MINIMAX',name:'HAILUO 2.3',featured:true,desc:'Discrete 6s or 10s generation; 1080p is 6s only.',
-      caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[6,10],resolutions:['768p','1080p'],durationByResolution:{'1080p':[6]}},
-      qualities:[{id:'hailuo-2.3',label:'STANDARD'},{id:'hailuo-2.3-fast',label:'FAST',caps:{supportsT2V:false,supportsI2V:true}}]
-    },
-    {key:'wan27',brand:'WAN',name:'WAN 2.7',featured:true,desc:'Narrative generation, frame guidance, video editing and audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:true,supportsEndFrame:true,maxReferenceVideos:1,supportsVideoEdit:true,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'wan26',brand:'WAN',name:'WAN 2.6',featured:true,desc:'Multi-shot cinematic and I2V Flash variants.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[5,10,15],resolutions:['720p','1080p'],supportsAudioGeneration:true},qualities:[{id:'wan-2.6',label:'STANDARD'},{id:'wan-2.6-i2v-flash',label:'I2V FLASH',caps:{supportsT2V:false,supportsI2V:true}}]},
-    {key:'wan25',brand:'WAN',name:'WAN 2.5',featured:true,desc:'Standard and task-specific Fast modes.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[{id:'wan-2.5',label:'STANDARD'},{id:'wan-2.5-i2v-fast',label:'I2V FAST',caps:{supportsT2V:false,supportsI2V:true,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}},{id:'wan-2.5-t2v-fast',label:'T2V FAST',caps:{supportsT2V:true,supportsI2V:false,supportsFirstFrame:false,supportsEndFrame:false,durationMode:'discrete',durationOptions:[5,10],resolutions:['720p','1080p']}}]},
-    {key:'happyhorse',brand:'HAPPYHORSE',name:'HAPPYHORSE',featured:true,desc:'Reference-to-video with two family versions.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:true,supportsFirstFrame:false,supportsEndFrame:false,durationMode:'range',supportsDuration:true,durationMin:3,durationMax:15,durationStep:1,resolutions:['720p','1080p']},qualities:[{id:'happyhorse-1.1',label:'1.1',caps:{maxReferenceImages:9,supportsVideoEdit:false}},{id:'happyhorse-1.0',label:'1.0',caps:{maxReferenceImages:3}}]},
-    {key:'grokvideo',brand:'GROK',name:'GROK IMAGINE VIDEO',featured:true,desc:'Flexible text or image-to-video generation.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'range',supportsDuration:true,durationMin:1,durationMax:15,durationStep:1,resolutions:['480p','720p']},qualities:[]},
-    {key:'viduq3',brand:'VIDU',name:'VIDU Q3 PRO',featured:true,desc:'Image-to-video with optional generated audio.',caps:{supportsT2V:false,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:false,durationMode:'discrete',supportsDuration:true,durationOptions:[4,8],resolutions:['540p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'ltx2fast',brand:'LTX',name:'LTX-2 FAST',featured:true,desc:'High-quality widescreen video with optional audio.',caps:{supportsT2V:true,supportsI2V:false,supportsElements:false,supportsFirstFrame:false,supportsEndFrame:false,supportsDuration:true,durationMode:'unknown',resolutions:['1080p','2K','4K'],aspectRatios:['16:9'],supportsAudioGeneration:true},qualities:[]},
-    {key:'seedance15',brand:'SEEDANCE',name:'SEEDANCE 1.5 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:true,supportsDuration:true,durationMode:'unknown',resolutions:['480p','720p','1080p'],supportsAudioGeneration:true},qualities:[]},
-    {key:'kling26',brand:'KLING',name:'KLING 2.6 PRO',featured:true,desc:'Text/image generation with start/end frames and optional audio.',caps:{supportsT2V:true,supportsI2V:true,supportsElements:false,supportsFirstFrame:true,supportsEndFrame:true,supportsDuration:true,durationMode:'unknown',supportsAudioGeneration:true},qualities:[]},
     {
       key: 'klingswap', brand: 'MOTION', name: 'MOTION CONTROL', featured: true,
       desc: 'Edit an existing video with text — swap a character/face in, restyle scenes, change backgrounds.',
