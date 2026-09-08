@@ -2461,6 +2461,7 @@ SEGMIND_BASE = 'https://api.segmind.com/v1'
 # docs.budgetpixel.com (bukan tebakan) — beda dengan katalog yang berubah-ubah.
 import budgetpixel_provider
 import budgetpixel_registry
+import budgetpixel_video_catalog
 import mii_quality_filter
 
 
@@ -3951,8 +3952,13 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
     call_started = time.time()
     try:
         _set(status='processing', progress=10)
-        submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
-        submitted = submit(bp_family, bp_variant, input_body, api_key)
+        if bp_family == '__catalog__':
+            registry = budgetpixel_registry.get_registry(api_key)
+            submitted = budgetpixel_provider.submit_model(
+                bp_variant, 'video', input_body, api_key, registry)
+        else:
+            submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
+            submitted = submit(bp_family, bp_variant, input_body, api_key)
         job_id = submitted['job_id']
         _set(progress=25)
 
@@ -4046,8 +4052,15 @@ def ai_video_view():
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
-    return render_template('ai-video.html', image_capabilities=budgetpixel_provider.public_image_capabilities(),
-                           budgetpixel_registry=registry)
+    return render_template(
+        'ai-video.html',
+        image_capabilities=budgetpixel_provider.public_image_capabilities(),
+        budgetpixel_registry=registry,
+        budgetpixel_video_families=budgetpixel_video_catalog.public_ui_families(
+            exclude=('seedance-2.0-mini', 'seedance-2.0-fast', 'seedance-2.0',
+                     'seedance-2.5', 'wan-3.0-video', 'wan-3.0-video-prime'),
+            registry=registry),
+    )
 
 
 @app.route('/ai-video/lock-visit', methods=['POST'])
@@ -4210,7 +4223,7 @@ def aivideo_generate():
     # seedance-2.0 slug.
     budgetpixel_image_families = ('flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimagebp')
     _segmind_exempt_families = ('seedance25', 'wan30', 'seedance', *budgetpixel_image_families)
-    if family not in _segmind_exempt_families and not _segmind_api_key():
+    if family not in _segmind_exempt_families and not family.startswith('bpx-') and not _segmind_api_key():
         _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
 
@@ -4218,9 +4231,9 @@ def aivideo_generate():
     if not prompt and family != 'klingswap':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
-    image_urls = [u for u in (payload.get('image_urls') or []) if u][:9]
-    video_urls = [u for u in (payload.get('video_urls') or []) if u][:3]
-    audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:3]
+    image_urls = [u for u in (payload.get('image_urls') or []) if u][:15]
+    video_urls = [u for u in (payload.get('video_urls') or []) if u][:5]
+    audio_urls = [u for u in (payload.get('audio_urls') or []) if u][:5]
     first_frame_url = str(payload.get('first_frame_url') or '').strip()
     last_frame_url = str(payload.get('last_frame_url') or '').strip()
     aspect_ratio_in = payload.get('aspect_ratio')
@@ -4235,7 +4248,33 @@ def aivideo_generate():
     endpoint = None
     request_metadata = None
 
-    if family in budgetpixel_image_families:
+    if family.startswith('bpx-'):
+        if not _budgetpixel_api_key():
+            _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
+            return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
+        provider = 'budgetpixel'
+        slug = str(payload.get('model_slug') or family[4:]).lower()
+        if slug != family[4:]:
+            return jsonify({'error': 'Model dan family tidak cocok.'}), 400
+        registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
+        registered = budgetpixel_registry.model_by_slug(slug, registry)
+        if not registered or registered.get('category') != 'video' or not registered.get('handler'):
+            return jsonify({'error': 'Model video tidak tersedia di katalog BudgetPixel.'}), 404
+        try:
+            body = budgetpixel_video_catalog.build_payload(
+                slug, payload, prompt,
+                reference_images=image_urls, reference_videos=video_urls,
+                reference_audios=audio_urls, first_frame=first_frame_url,
+                last_frame=last_frame_url, generate_audio=not mute_audio,
+            )
+        except budgetpixel_provider.ProviderError as e:
+            _aivideo_last_error('budgetpixel', str(e))
+            return jsonify({'error': e.public_message}), 400
+        bp_family, bp_variant = '__catalog__', slug
+        endpoint = 'budgetpixel:video:' + slug
+        duration = body.get('length_seconds', 5)
+
+    elif family in budgetpixel_image_families:
         if not _budgetpixel_api_key():
             _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
             return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
