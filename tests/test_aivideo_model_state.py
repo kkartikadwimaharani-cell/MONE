@@ -24,10 +24,13 @@ class AiVideoModelStateTests(unittest.TestCase):
                     return self.source[start:index]
         self.fail(f"unterminated function: {name}")
 
-    def test_markup_has_no_competing_seedance20_default(self):
-        self.assertIn('id="modelSelectTxt">Loading model…</span>', self.source)
+    def test_models_are_inline_without_catalogue_controls(self):
+        self.assertIn('id="inlineModelList"', self.source)
         self.assertIn('id="collapsedModelTxt">Loading model…</span>', self.source)
-        self.assertIn('id="modelSelectTier"></span>', self.source)
+        self.assertNotIn('id="modelSearch"', self.source)
+        self.assertNotIn('id="modelStatusFilter"', self.source)
+        self.assertNotIn('id="modelDockOverlay"', self.source)
+        self.assertIn('overflow-x:auto', self.source)
 
     def test_clean_boot_uses_primary_video_family_through_central_sync(self):
         self.assertRegex(self.source, r"video:\s*\[\s*\{\s*key: 'seedance25'")
@@ -82,7 +85,8 @@ class AiVideoModelStateTests(unittest.TestCase):
 
     def test_picker_selection_uses_the_authoritative_family(self):
         self.assertIn("family.key === selectedFamily.key ? ' selected'", self.source)
-        self.assertIn("document.getElementById('modelSelectTxt').textContent = family.name", self.source)
+        self.assertIn("card.setAttribute('aria-pressed', family.key === selectedFamily.key", self.source)
+        self.assertIn("card.onclick = function() { pickFamily(family, 0); }", self.source)
 
 
 if __name__ == "__main__":

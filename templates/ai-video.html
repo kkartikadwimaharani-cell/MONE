@@ -1249,7 +1249,7 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .model-dock.show{display:block;animation:modelDockIn .46s var(--ease-pop) both}
 @keyframes modelDockIn{0%{opacity:0;transform:translateY(22px) scale(.94)}74%{opacity:1;transform:translateY(-5px) scale(1.01)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .model-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 12px}.model-dock-title{font-family:var(--disp);font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--accent-hover);text-transform:uppercase}.model-dock-close{width:30px;height:30px;border-radius:12px;background:rgba(255,255,255,.055);display:grid;place-items:center;color:#fff}
-.model-catalog-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin:0 0 10px;min-width:0}.model-search{min-width:0;width:100%;height:42px;border:1px solid var(--border);border-radius:12px;background:#111;color:#fff;padding:0 12px;font:700 14px var(--body)}.model-filter{height:42px;max-width:132px;border:1px solid var(--border);border-radius:12px;background:#191919;color:#fff;padding:0 9px;font:700 11px var(--mono)}
+.inline-models{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px 2px 8px;margin-bottom:4px}.inline-models::-webkit-scrollbar{display:none}.inline-model-card{flex:0 0 auto;min-width:126px;max-width:190px;scroll-snap-align:start;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(180deg,#202020,#151515);color:#fff;padding:10px 12px;text-align:left;transition:border-color .18s ease,transform .16s ease,background .18s ease}.inline-model-card:active{transform:scale(.97)}.inline-model-card.selected{border-color:rgba(255,32,64,.72);background:linear-gradient(180deg,rgba(91,18,29,.9),#211316);box-shadow:0 0 0 1px rgba(255,32,64,.18) inset}.inline-model-name{display:block;font:800 12px/1.2 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inline-model-brand{display:block;margin-top:4px;font:700 9px/1 var(--mono);letter-spacing:.09em;color:var(--text-faint)}
 .model-dock-grid{display:flex;flex-direction:column;gap:8px}.model-dock-col{min-width:0;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dock-label{grid-column:1/-1;font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);padding:0 4px 2px}.dock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,32,64,.12);border:1px solid rgba(255,32,64,.25);color:#ff6d80;font-size:.58rem;font-weight:900;letter-spacing:.08em}
 .dock-feature-card,.dock-list-row{position:relative;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#202020,#151515);box-shadow:0 1px 0 rgba(255,255,255,.045) inset;cursor:pointer;overflow:hidden;transition:transform .16s var(--ease-pop),border-color .18s ease,background .18s ease,box-shadow .22s ease}
 .duration-card.unavailable{opacity:.72}.duration-card.unavailable .duration-slider-wrap{pointer-events:none;filter:saturate(0)}.chip.locked{cursor:not-allowed;opacity:.8;pointer-events:none}
@@ -1729,17 +1729,8 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 
       <div class="panel-body" id="panelBody">
 
+      <div class="inline-models" id="inlineModelList" aria-label="Model choices"></div>
       <div class="panel-top-row">
-        <button class="model-select" id="modelSelectBtn" onclick="openModelDock()">
-          <span class="model-select-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/></svg>
-          </span>
-          <span class="model-select-txt" id="modelSelectTxt">Loading model…</span>
-          <span class="model-select-tier" id="modelSelectTier"></span>
-          <span class="model-select-spacer"></span>
-          <span class="model-select-car"></span>
-        </button>
-        <span class="panel-top-divider"></span>
         <div class="elements-tabs" id="elementsTabs">
           <button class="el-tab active" data-tab="elements" onclick="switchElTab('elements',this)">Elements</button>
           <button class="el-tab" data-tab="frames" onclick="switchElTab('frames',this)">Frames</button>
@@ -1984,20 +1975,6 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 </div>
 
 <!-- DREAMKREAT-STYLE MODEL DOCK (opens above the builder panel, not a full sheet) -->
-<div class="model-dock-overlay" id="modelDockOverlay" onclick="closeModelDock()"></div>
-<div class="model-dock" id="modelDock">
-  <div class="model-dock-head">
-    <div class="model-dock-title" id="modelDockTitle">Video Models</div>
-    <button class="model-dock-close" onclick="closeModelDock()" aria-label="Close model picker">×</button>
-  </div>
-  <div class="model-catalog-tools">
-    <input class="model-search" id="modelSearch" type="search" placeholder="Search MIIAIVIDEO models" aria-label="Search models" oninput="renderModelDock()">
-    <select class="model-filter" id="modelStatusFilter" aria-label="Filter model status" onchange="renderModelDock()"><option value="AVAILABLE">AVAILABLE</option><option value="VERIFIED">VERIFIED</option><option value="ALL">ALL</option></select>
-  </div>
-  <div class="model-dock-grid">
-    <div class="model-dock-col" id="modelDockAll"></div>
-  </div>
-</div>
 
 <!-- GENERATION FAILED MODAL (page-level, blurred backdrop, above everything) -->
 <div class="fail-overlay" id="failOverlay">
@@ -2026,6 +2003,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
     <div class="wheel-picker-track" id="wheelTrack"></div>
   </div>
 </div>
+
 
 <!-- UPLOAD SHEET (media grid) -->
 <div class="sheet-overlay" id="uploadSheetOverlay" onclick="closeUploadSheet()"></div>
@@ -2415,9 +2393,6 @@ var selectedNegativePrompt = '';
 var selectedSequentialMode = 'disabled';
 var selectedMaxImages = 1;
 var IMAGE_CAPABILITIES = {{ image_capabilities|tojson }};
-// Server-synchronized discovery metadata contains no provider key. Generation
-// remains gated by the reviewed local handler registry.
-var MII_MODEL_CATALOG = {{ budgetpixel_registry|tojson }};
 var selectedDuration = 5;
 var selectedMotion = 'Dynamic';
 // Motion Control (Kling Swap) — set once a reference video has been
@@ -3106,7 +3081,8 @@ function applySelectedFamily(family, qualityIdx, options) {
     if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate === 'STANDARD' ? 'STANDARD' : 'HIGH';
     if (activeMode === 'image') restoreTierState(options.saved);
   }
-  document.getElementById('modelSelectTxt').textContent = family.name;
+  var modelLabel = document.getElementById('modelSelectTxt');
+  if (modelLabel) modelLabel.textContent = family.name;
   updateCollapsedBar(family.name);
   applyQualityBadge();
   renderQualityChip();
@@ -3122,6 +3098,7 @@ function applySelectedFamily(family, qualityIdx, options) {
   if (bitrateLabel) bitrateLabel.textContent = selectedBitrate;
   updateCreditEstimate();
   updateGenerateButtonState();
+  renderModelDock();
   closeSheet();
   closeModelDock();
   persistCanonicalModelState();
@@ -3592,32 +3569,27 @@ function closeModelDock() {
 }
 
 function openModelDock() {
-  closeSheet();
-  updateModelDockPosition();
-  document.getElementById('modelDockTitle').textContent = activeMode === 'image' ? 'Image Models' : (activeMode === 'audio' ? 'Audio Models' : 'Video Models');
+  // Kept as a compatibility hook for callers outside this template. Models
+  // now remain visible inline; there is intentionally no catalogue modal.
   renderModelDock();
-  setModelSelectOpen(true);
-  document.getElementById('modelDockOverlay').classList.add('show');
-  document.getElementById('modelDock').classList.add('show');
 }
 function renderModelDock() {
   var families = modelFamilies[activeMode] || modelFamilies.video;
-  var query = String((document.getElementById('modelSearch') || {}).value || '').trim().toLowerCase();
-  var status = String((document.getElementById('modelStatusFilter') || {}).value || 'AVAILABLE');
-  var all = document.getElementById('modelDockAll');
-  all.innerHTML = '<div class="dock-label">All Models</div>';
-
-  families.forEach(function(family, idx) {
-    if (query && (family.name + ' ' + family.brand + ' ' + family.key).toLowerCase().indexOf(query) < 0) return;
-    if (status === 'VERIFIED') return; // no paid generation is used to claim verification
-    if (status === 'AVAILABLE' && !isFamilyBackendConnected(family)) return;
-    var row = document.createElement('div');
-    row.className = 'dock-list-row' + (family.key === selectedFamily.key ? ' selected' : '');
-    var versionsTxt = family.qualities.length > 1 ? family.qualities.length + 'x' : '';
-    row.innerHTML = '<span class="dock-icon">' + family.brand.charAt(0) + '</span><span class="dock-list-main"><span class="dock-name">' + family.name + (family.badge ? '<span class="dock-badge">' + family.badge + '</span>' : '') + '</span>' + (versionsTxt ? '<span class="dock-list-sub">' + versionsTxt + '</span>' : '') + '</span>';
-    row.onclick = function() { pickFamily(family, 0); };
-    all.appendChild(row);
+  var all = document.getElementById('inlineModelList');
+  if (!all) return;
+  all.innerHTML = '';
+  families.forEach(function(family) {
+    if (!isFamilyBackendConnected(family)) return;
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'inline-model-card' + (family.key === selectedFamily.key ? ' selected' : '');
+    card.setAttribute('aria-pressed', family.key === selectedFamily.key ? 'true' : 'false');
+    card.innerHTML = '<span class="inline-model-name">' + family.name + '</span><span class="inline-model-brand">MIIAIVIDEO</span>';
+    card.onclick = function() { pickFamily(family, 0); };
+    all.appendChild(card);
   });
+  var selected = all.querySelector('.selected');
+  if (selected) selected.scrollIntoView({block:'nearest', inline:'nearest'});
 }
 
 // ══════════ UPLOAD SHEET + MEDIA ══════════
@@ -6396,6 +6368,7 @@ function closeImagePreview() {
 var bootModelState = resolveCanonicalModelState(activeMode);
 applySelectedFamily(bootModelState.family, bootModelState.qualityIdx,
   { initialize: true, saved: bootModelState.saved });
+renderModelDock();
 // Refresh from the authenticated metadata endpoint. The server-rendered value
 // above is generated from that exact same Python registry and is the offline
 // fallback, not a second manually maintained contract.
