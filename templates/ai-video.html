@@ -2362,6 +2362,8 @@ var modelFamilies = {
 // families. There is intentionally no catalogue modal or status filter.
 var budgetPixelVideoFamilies = {{ budgetpixel_video_families|default([], true)|tojson }};
 var budgetPixelKlingQualities = {{ budgetpixel_kling_qualities|default([], true)|tojson }};
+var budgetPixelImageFamilies = {{ budgetpixel_image_families|default([], true)|tojson }};
+var budgetPixelAudioFamilies = {{ budgetpixel_audio_families|default([], true)|tojson }};
 var existingKlingFamily = modelFamilies.video.find(function(family) { return family.key === 'kling'; });
 if (existingKlingFamily) {
   budgetPixelKlingQualities.forEach(function(quality) {
@@ -2371,11 +2373,15 @@ if (existingKlingFamily) {
   });
 }
 modelFamilies.video = modelFamilies.video.concat(budgetPixelVideoFamilies);
+modelFamilies.image = modelFamilies.image.concat(budgetPixelImageFamilies);
+modelFamilies.audio = modelFamilies.audio.concat(budgetPixelAudioFamilies);
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
 var CONNECTED_FAMILIES = ['seedance','seedance25','wan30','flux2','qwenbp','seedream5','klingimage','kling','veo','klingswap','nanobanana','gptimage','seedream','flux','imagen','qwen'];
 budgetPixelVideoFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
+budgetPixelImageFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
+budgetPixelAudioFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
 var UI_ONLY_MODEL_IDS = ['kling-3.0-turbo','kling-3.0-4k','kling-3.0-omni'];
 function isFamilyBackendConnected(family) {
   if (!family || CONNECTED_FAMILIES.indexOf(family.key) === -1) return false;
@@ -3366,10 +3372,19 @@ function applyModelCapabilities() {
   var muteAudioSupported = !!caps.audioGeneration || (selectedFamily && selectedFamily.key === 'klingswap');
   // Chips khusus mode Audio (Seed Audio): Output format + Sample rate
   var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
+  var isAudioModel = activeMode === 'audio';
   var afChip = document.getElementById('audioFormatChip');
-  if (afChip) afChip.style.display = isSeedAudio ? '' : 'none';
+  if (afChip) afChip.style.display = isAudioModel ? '' : 'none';
   var srChip = document.getElementById('sampleRateChip');
   if (srChip) srChip.style.display = isSeedAudio ? '' : 'none';
+  if (isAudioModel && rawCaps.audioFormats && sheetDefs && sheetDefs.audioformat) {
+    sheetDefs.audioformat.options = rawCaps.audioFormats.map(function(v){ return String(v).toUpperCase(); });
+    if (sheetDefs.audioformat.options.indexOf(selectedAudioFormat) < 0) selectedAudioFormat = sheetDefs.audioformat.options[0];
+    var audioFormatLabel = document.getElementById('audioFormatLabel');
+    if (audioFormatLabel) audioFormatLabel.textContent = selectedAudioFormat;
+  } else if (isSeedAudio && sheetDefs && sheetDefs.audioformat) {
+    sheetDefs.audioformat.options = ['WAV','MP3','OGG_OPUS'];
+  }
   var muteAudioChip = document.getElementById('muteAudioChip');
   if (muteAudioChip) muteAudioChip.style.display = muteAudioSupported ? '' : 'none';
   var muteAudioCaret = document.getElementById('muteAudioCaret');
@@ -4965,10 +4980,19 @@ function startGenerate() {
     duration: selectedDuration,
     resolution: selectedResolution,
     aspect_ratio: selectedRatio,
+    output_type: activeMode,
   };
   var selectedQuality = selectedFamily && selectedFamily.qualities
     ? selectedFamily.qualities[selectedQualityIdx] : null;
   if (selectedQuality && selectedQuality.route === 'budgetpixel') body.catalog_model = true;
+  if (selectedQuality && selectedQuality.caps && selectedQuality.caps.requiresImage
+      && selectedMedia.image.length === 0) {
+    showError('Model edit gambar ini membutuhkan 1 gambar sumber'); return;
+  }
+  if (selectedQuality && selectedQuality.caps && selectedQuality.caps.requiresVideo
+      && selectedMedia.video.length === 0) {
+    showError('Model audio ini membutuhkan 1 video sumber'); return;
+  }
   if (activeMode === 'image') {
     var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
     delete body.duration; delete body.video_urls; delete body.audio_urls;
@@ -4992,8 +5016,10 @@ function startGenerate() {
   if (activeMode === 'video') {
     body.output_bitrate = selectedBitrate;
   }
-  if (selectedFamily.key === 'seedaudio') {
+  if (activeMode === 'audio') {
     body.audio_format = selectedAudioFormat.toLowerCase();
+  }
+  if (selectedFamily.key === 'seedaudio') {
     body.sample_rate = parseInt(selectedSampleRate.replace(/\./g, '').replace(/\D+$/g, ''), 10) || 44100;
   }
   if ((isSeedanceFamily(selectedFamily.key) || selectedFamily.key === 'klingswap' || selectedFamily.key === 'veo') && muteAudioEnabled) {

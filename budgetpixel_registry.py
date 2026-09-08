@@ -39,11 +39,29 @@ def _fallback_models():
                 "available": True, "handler": True, "modes": _modes(category, caps),
                 "parameters": _json_safe(caps), "source": "fallback",
             })
+    # Several UI tiers intentionally share one provider slug (GPT-Image-2).
+    # Keep one authoritative catalogue row and expose its tiers as metadata
+    # instead of returning duplicate models from list_models.
+    unique_rows = []
+    by_slug = {}
+    for row in rows:
+        current = by_slug.get(row["slug"])
+        if current:
+            current.setdefault("variants", [current["variant"]]).append(row["variant"])
+            continue
+        by_slug[row["slug"]] = row
+        unique_rows.append(row)
+    rows = unique_rows
     # Additive catalogue handlers. Existing provider rows above win on slug,
     # so their proven routing and payload builders are never replaced.
     from budgetpixel_video_catalog import registry_rows
-    existing = {row["slug"] for row in rows}
-    rows.extend(row for row in registry_rows() if row["slug"] not in existing)
+    from budgetpixel_media_catalog import registry_rows as media_registry_rows
+    existing = {(row["slug"], row["category"]) for row in rows}
+    rows.extend(row for row in registry_rows()
+                if (row["slug"], row["category"]) not in existing)
+    existing = {(row["slug"], row["category"]) for row in rows}
+    rows.extend(row for row in media_registry_rows()
+                if (row["slug"], row["category"]) not in existing)
     return rows
 
 
@@ -89,7 +107,9 @@ def _remote_rows(data):
         if not isinstance(slug, str) or not slug.strip():
             continue
         category = str(item.get("category") or item.get("type") or item.get("kind") or "unknown").lower()
-        category = {"images":"image", "videos":"video", "audio":"audio", "audios":"audio", "speech":"voice", "tts":"voice", "sound-effect":"sfx"}.get(category, category)
+        category = {"images":"image", "videos":"video", "audio":"audio", "audios":"audio",
+                    "music":"audio", "speech":"audio", "voice":"audio", "tts":"audio",
+                    "sound-effect":"audio", "sound_effect":"audio", "sfx":"audio"}.get(category, category)
         result.append({"slug": slug.strip(), "name": str(item.get("name") or slug),
                        "category": category, "remote": _public_remote(item)})
     return result
@@ -102,10 +122,10 @@ def _public_remote(item):
 
 
 def _merge(remote, configured):
-    local = {row["slug"]: row for row in _fallback_models()}
+    local = {(row["slug"], row["category"]): row for row in _fallback_models()}
     merged = []
     for found in remote:
-        reviewed = local.pop(found["slug"], None)
+        reviewed = local.pop((found["slug"], found["category"]), None)
         if reviewed:
             reviewed.update(name=found["name"], source="catalog", catalog=True)
             reviewed["remote"] = found.get("remote", {})
@@ -127,7 +147,7 @@ def _merge(remote, configured):
     # A safe fallback remains usable during an outage, but is never claimed
     # VERIFIED merely because it exists locally.
     for row in local.values():
-        if remote and row.get("source") == "mii-video-catalog":
+        if remote and row.get("source") in ("mii-video-catalog", "mii-media-catalog"):
             continue
         row["configured"] = configured
         merged.append(row)
@@ -166,8 +186,8 @@ def reset_cache():
         _cache.update(expires=0.0, models=None, synced_at=None, error=None)
 
 
-def model_by_slug(slug, registry):
+def model_by_slug(slug, registry, category=None):
     for model in registry.get("models", []):
-        if model["slug"] == slug:
+        if model["slug"] == slug and (category is None or model.get("category") == category):
             return model
     return None

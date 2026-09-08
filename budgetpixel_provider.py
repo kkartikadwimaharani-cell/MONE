@@ -346,7 +346,7 @@ def submit_image(family, variant, payload, api_key, session=requests, timeout=30
 def submit_model(slug, kind, payload, api_key, registry, session=requests, timeout=30):
     """Submit by catalogue slug, constrained to a reviewed local handler."""
     from budgetpixel_registry import model_by_slug
-    model = model_by_slug(slug, registry)
+    model = model_by_slug(slug, registry, kind)
     if not model or not model.get("handler") or not model.get("available"):
         raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.")
     if kind not in ("image", "video", "audio") or model.get("category") != kind:

@@ -2462,6 +2462,7 @@ SEGMIND_BASE = 'https://api.segmind.com/v1'
 import budgetpixel_provider
 import budgetpixel_registry
 import budgetpixel_video_catalog
+import budgetpixel_media_catalog
 import mii_quality_filter
 
 
@@ -3955,7 +3956,7 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
         if bp_family == '__catalog__':
             registry = budgetpixel_registry.get_registry(api_key)
             submitted = budgetpixel_provider.submit_model(
-                bp_variant, 'video', input_body, api_key, registry)
+                bp_variant, output_type, input_body, api_key, registry)
         else:
             submit = budgetpixel_provider.submit_image if output_type == 'image' else budgetpixel_provider.submit_video
             submitted = submit(bp_family, bp_variant, input_body, api_key)
@@ -4011,7 +4012,11 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
 
     upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
     os.makedirs(upload_dir, exist_ok=True)
-    ext = 'png' if output_type == 'image' else ('mp3' if output_type == 'audio' else 'mp4')
+    if output_type == 'audio':
+        requested_format = str(input_body.get('format') or input_body.get('audio_format') or 'mp3').lower()
+        ext = requested_format if requested_format in ('mp3', 'wav', 'ogg', 'm4a') else 'mp3'
+    else:
+        ext = 'png' if output_type == 'image' else 'mp4'
     fname = f'{task_id}.{ext}'
     with open(os.path.join(upload_dir, fname), 'wb') as f:
         f.write(result_bytes)
@@ -4053,12 +4058,15 @@ def ai_video_view():
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
     video_ui = budgetpixel_video_catalog.public_ui_bundle(registry)
+    media_ui = budgetpixel_media_catalog.public_ui_bundle(registry)
     return render_template(
         'ai-video.html',
         image_capabilities=budgetpixel_provider.public_image_capabilities(),
         budgetpixel_registry=registry,
         budgetpixel_video_families=video_ui['families'],
         budgetpixel_kling_qualities=video_ui['kling_qualities'],
+        budgetpixel_image_families=media_ui['image_families'],
+        budgetpixel_audio_families=media_ui['audio_families'],
     )
 
 
@@ -4248,6 +4256,10 @@ def aivideo_generate():
     endpoint = None
     request_metadata = None
 
+    catalog_output_type = str(payload.get('output_type') or 'video').lower()
+    if catalog_output_type not in ('image', 'video', 'audio'):
+        catalog_output_type = 'video'
+
     if family.startswith('bpx-') or catalog_model:
         if not _budgetpixel_api_key():
             _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
@@ -4255,22 +4267,30 @@ def aivideo_generate():
         provider = 'budgetpixel'
         slug = str(payload.get('model_slug') or (family[4:] if family.startswith('bpx-') else '')).lower()
         registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
-        registered = budgetpixel_registry.model_by_slug(slug, registry)
-        if not registered or registered.get('category') != 'video' or not registered.get('handler'):
-            return jsonify({'error': 'Model video tidak tersedia di katalog BudgetPixel.'}), 404
+        registered = budgetpixel_registry.model_by_slug(slug, registry, catalog_output_type)
+        if not registered or registered.get('category') != catalog_output_type or not registered.get('handler'):
+            return jsonify({'error': 'Model tidak tersedia untuk jenis output yang dipilih.'}), 404
         try:
-            body = budgetpixel_video_catalog.build_payload(
-                slug, payload, prompt,
-                reference_images=image_urls, reference_videos=video_urls,
-                reference_audios=audio_urls, first_frame=first_frame_url,
-                last_frame=last_frame_url, generate_audio=not mute_audio,
-            )
+            if catalog_output_type == 'image':
+                body = budgetpixel_media_catalog.build_image_payload(
+                    slug, payload, prompt, reference_images=image_urls)
+            elif catalog_output_type == 'audio':
+                body = budgetpixel_media_catalog.build_audio_payload(
+                    slug, payload, prompt, reference_images=image_urls,
+                    reference_videos=video_urls)
+            else:
+                body = budgetpixel_video_catalog.build_payload(
+                    slug, payload, prompt,
+                    reference_images=image_urls, reference_videos=video_urls,
+                    reference_audios=audio_urls, first_frame=first_frame_url,
+                    last_frame=last_frame_url, generate_audio=not mute_audio,
+                )
         except budgetpixel_provider.ProviderError as e:
             _aivideo_last_error('budgetpixel', str(e))
             return jsonify({'error': e.public_message}), 400
         bp_family, bp_variant = '__catalog__', slug
-        endpoint = 'budgetpixel:video:' + slug
-        duration = body.get('length_seconds', 5)
+        endpoint = 'budgetpixel:' + catalog_output_type + ':' + slug
+        duration = body.get('length_seconds', body.get('duration', 0))
 
     elif family in budgetpixel_image_families:
         if not _budgetpixel_api_key():
@@ -4691,7 +4711,9 @@ def aivideo_generate():
                                   f'Nano Banana Pro (FAST/STANDARD/ULTRA), GPT Image 2 (LOW/STANDARD/HIGH), '
                                   f'Seedream 5.0 Pro, Flux (SCHNELL/DEV/PRO), Imagen 4, Qwen Image, dan Seed Audio 1.0.'}), 501
 
-    if family == 'seedaudio':
+    if catalog_model or family.startswith('bpx-'):
+        output_type = catalog_output_type
+    elif family == 'seedaudio':
         output_type = 'audio'
     elif family in budgetpixel_image_families or family in ('nanobanana', 'gptimage', 'seedream', 'flux', 'imagen', 'qwen'):
         output_type = 'image'

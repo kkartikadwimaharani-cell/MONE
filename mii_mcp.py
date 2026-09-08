@@ -290,7 +290,8 @@ def register_mcp(app, backend, data_dir):
         tool('generate_sfx','Generate a sound effect only with a listed SFX model.',dict(common,duration={'type':'integer','minimum':1}),['prompt'],True),
         tool('video_to_music','Generate music from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
         tool('video_to_sfx','Generate sound effects from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
-        tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',{'slug':{'type':'string','minLength':1}},['slug']),
+        tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',
+             {'slug':{'type':'string','minLength':1},'category':{'type':'string','enum':['image','video','audio']}},['slug']),
         tool('motion_control','Edit motion/character in a source video using account credits. Source video is validated before submission.',{'prompt':string,'variant':string,'video_urls':{'type':'array','items':string,'maxItems':1},'image_urls':{'type':'array','items':string,'maxItems':5},'mute_audio':{'type':'boolean'}},['video_urls'],True),
         tool('check_status','Read task status and output URL. Do not repeatedly poll unless requested.',{'task_id':{'type':'string','minLength':1}},['task_id']),
     ]
@@ -328,6 +329,27 @@ def register_mcp(app, backend, data_dir):
                     'durations':list(item.get('durations',())),
                     'fields':list(dict.fromkeys(fields)),
                     'configured':bool(backend['_budgetpixel_api_key']()),
+                }
+        if 'budgetpixel_media_catalog' in backend:
+            for slug,item in backend['budgetpixel_media_catalog'].IMAGE_CATALOG.items():
+                fields=['image_urls'] if item.get('reference_images') or item.get('singular_image') else []
+                result['image']['bpx-'+slug+':STANDARD']={
+                    'slug':slug,'provider':'BudgetPixel',
+                    'modes':['text-to-image'] + (['image-editing'] if fields else []),
+                    'fields':fields,'configured':bool(backend['_budgetpixel_api_key']()),
+                    'requires_image':bool(item.get('requires_image')),
+                }
+            for slug,item in backend['budgetpixel_media_catalog'].AUDIO_CATALOG.items():
+                fields=['audio_format','lyrics','instrumental','vocal_gender']
+                if item.get('durations'): fields.append('duration')
+                if item.get('reference_images'): fields.append('image_urls')
+                if item.get('reference_videos'): fields.append('video_urls')
+                result['audio']['bpx-'+slug+':STANDARD']={
+                    'slug':slug,'provider':'BudgetPixel','modes':[item.get('subtype','audio')],
+                    'durations':list(item.get('durations',())),
+                    'audio_formats':list(item.get('formats',())),
+                    'fields':fields,'configured':bool(backend['_budgetpixel_api_key']()),
+                    'requires_video':bool(item.get('reference_videos') and item.get('label')=='VIDEO'),
                 }
         bp_image_caps=backend['budgetpixel_provider'].public_image_capabilities()
         for key,caps in bp_image_caps.items():
@@ -380,7 +402,7 @@ def register_mcp(app, backend, data_dir):
             return response
         elif name=='get_model_capabilities':
             live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
-            model=backend['budgetpixel_registry'].model_by_slug(args['slug'],live)
+            model=backend['budgetpixel_registry'].model_by_slug(args['slug'],live,args.get('category'))
             return {'brand':'MIIAIVIDEO','model':model} if model else {'error':'Unknown model slug.'}
         elif name=='clear_debug':
             return backend['_aivideo_clear_debug']()
@@ -388,20 +410,36 @@ def register_mcp(app, backend, data_dir):
             endpoint='aivideo_task_status';payload=None;kwargs={'task_id':args['task_id']}
         else:
             endpoint='aivideo_generate';kwargs={};payload=dict(args)
-            defaults={'generate_video':('video','seedance25'),'generate_image':('image','nanobanana'),'generate_audio':('audio','seedaudio'),'motion_control':('motion','klingswap')}
-            if name in ('generate_music','text_to_speech','generate_sfx','video_to_music','video_to_sfx'):
+            defaults={'generate_video':('video','seedance25'),'generate_image':('image','nanobanana'),
+                      'generate_audio':('audio','seedaudio'),'generate_music':('audio','bpx-music-3.0'),
+                      'generate_sfx':('audio','bpx-sonilo-sfx'),
+                      'video_to_music':('audio','bpx-sonilo-video-music'),
+                      'video_to_sfx':('audio','bpx-sonilo-video-sfx'),
+                      'motion_control':('motion','klingswap')}
+            if name=='text_to_speech':
                 return {'error':'No reviewed local handler is available for this catalogue category. Call miiaivideo_list_models first.'}
+            if name=='video_to_music' and not payload.get('prompt'):
+                payload['prompt']='Create music that follows the pacing and mood of the source video.'
+            if name=='video_to_sfx' and not payload.get('prompt'):
+                payload['prompt']='Create synchronized sound effects for the visible actions in the source video.'
             kind,default_family=defaults[name]
             if name in ('generate_video','motion_control'):
                 backend['_aivideo_clear_debug']()
-            requested_slug=str(payload.get('model_slug') or '').lower()
-            if name=='generate_video' and requested_slug:
+            default_catalog_slug={'generate_music':'music-3.0','generate_sfx':'sonilo-sfx',
+                                  'video_to_music':'sonilo-video-music',
+                                  'video_to_sfx':'sonilo-video-sfx'}.get(name,'')
+            requested_slug=str(payload.get('model_slug') or default_catalog_slug).lower()
+            catalog_selected=False
+            if requested_slug and name in ('generate_video','generate_image','generate_audio',
+                                           'generate_music','generate_sfx','video_to_music','video_to_sfx'):
+                expected_kind='video' if name=='generate_video' else ('image' if name=='generate_image' else 'audio')
                 live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
-                selected=backend['budgetpixel_registry'].model_by_slug(requested_slug,live)
-                if not selected or selected.get('category')!='video' or not selected.get('handler'):
-                    return {'error':'Unknown or unavailable BudgetPixel video model slug.'}
+                selected=backend['budgetpixel_registry'].model_by_slug(requested_slug,live,expected_kind)
+                if not selected or selected.get('category')!=expected_kind or not selected.get('handler'):
+                    return {'error':'Unknown or unavailable BudgetPixel model slug for this output type.'}
                 payload['family']='bpx-'+requested_slug
                 payload['model_slug']=requested_slug
+                catalog_selected=True
             family=payload.setdefault('family',default_family).lower()
             variant=payload.pop('variant',{'seedance':'MINI','seedream':'PRO','flux':'SCHNELL','veo':'FAST','klingswap':'STD'}.get(family,'STANDARD')).upper()
             caps=catalog()[kind].get(family+':'+variant)
@@ -445,6 +483,9 @@ def register_mcp(app, backend, data_dir):
                     return {'error':'Use audio references or an image, not both.'}
             if family=='klingswap' and not payload.get('video_urls'):
                 return {'error':'Motion control requires a source video.'}
+            if catalog_selected:
+                payload['catalog_model']=True
+                payload['output_type']=kind
             payload.update(family=family,model=variant,bitrate_mode='high')
         with app.test_request_context('/api/aivideo/mcp-internal',method='POST' if payload else 'GET',json=payload):
             g.mii_mcp_internal=True
