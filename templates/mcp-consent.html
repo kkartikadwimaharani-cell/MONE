@@ -1,2 +1,25 @@
 {% extends 'mcp-base.html' %}{% block content %}
-<header><img src="/mcp/icon" alt="MIIAIVIDEO"><div><div class="tag">IZIN AKSES</div><h1>Hubungkan agent?</h1></div></header><section><h2>{{ client_name }}</h2><p>Agent ini meminta izin memakai MIIAIVIDEO atas namamu.</p><ul><li>Melihat daftar model.</li><li>Membuat video, gambar, audio, dan motion control menggunakan kredit akunmu.</li><li>Membaca status dan hasil generasi.</li></ul><p>Agent tidak mendapat akses ke password, pengaturan admin, atau API key provider.</p><p>Kembali ke: <strong>{{ redirect_host }}</strong></p><small>Nama agent diberikan oleh aplikasi peminta. Pastikan domain tujuan sesuai aplikasi yang sedang kamu hubungkan.</small><form method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><div class="row" style="margin-top:24px"><button name="decision" value="approve">Izinkan akses</button><button class="secondary" name="decision" value="deny">Tolak</button></div></form></section><p>Kamu bisa mencabut akses di halaman MIIAIVIDEO MCP kapan saja.</p>{% endblock %}
+<div class="topline"><span>MIIAIVIDEO // AUTH GATEWAY</span><strong>ENCRYPTED</strong></div>
+<header>
+  <div class="avatar-shell"><img src="/mcp/icon" alt="Makima — MIIAIVIDEO"></div>
+  <div><div class="tag">SECURE AGENT ACCESS</div><h1>HUBUNGKAN AGENT?</h1></div>
+</header>
+<div class="signal"><div class="signal-head"><span>OAUTH HANDSHAKE</span><span>AWAITING DECISION</span></div><div class="track"><div class="bar"></div></div></div>
+<section>
+  <div class="panel-head"><h2>{{ client_name }}</h2><span class="index">01 / AUTHORIZE</span></div>
+  <p>Agent ini meminta izin memakai <strong>MIIAIVIDEO</strong> atas namamu.</p>
+  <ul class="permission-list">
+    <li>Melihat daftar model aktif dan kemampuan tiap model.</li>
+    <li>Membuat video, gambar, musik, audio, dan motion control memakai kredit akunmu.</li>
+    <li>Membaca status tugas dan membuka hasil generasi.</li>
+  </ul>
+  <div class="safe"><b>✓</b><span>Agent tidak mendapat akses ke password, pengaturan admin, atau API key provider.</span></div>
+  <div class="route"><span>RETURN DOMAIN</span><strong>{{ redirect_host }}</strong></div>
+  <p class="muted">Nama agent diberikan oleh aplikasi peminta. Pastikan domain tujuan sesuai aplikasi yang sedang kamu hubungkan.</p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row"><button name="decision" value="approve">IZINKAN AKSES</button><button class="secondary" name="decision" value="deny">TOLAK</button></div>
+  </form>
+</section>
+<p class="footer-note">AKSES DAPAT DICABUT KAPAN SAJA DARI HALAMAN MIIAIVIDEO MCP.</p>
+{% endblock %}

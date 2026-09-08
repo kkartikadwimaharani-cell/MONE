@@ -280,7 +280,9 @@ def register_mcp(app, backend, data_dir):
                         seed={'type':'integer'}, sequential_image_generation=string,
                         max_images={'type':'integer','minimum':1,'maximum':14})
     tools=[
-        tool('list_models','List MIIAIVIDEO models, exact variants, allowed controls and configuration status. Call before generation.'),
+        tool('list_models','List supported MIIAIVIDEO model IDs quickly. Optionally filter by category or search text; use get_model_capabilities for one model\'s detailed controls.',
+             {'category':{'type':'string','enum':['video','image','audio','motion']},
+              'query':{'type':'string','minLength':1}}),
         tool('clear_debug','Clear AI Video diagnostics only. Does not delete tasks, history, credentials, or media.',write=True),
         tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
         tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
@@ -391,15 +393,34 @@ def register_mcp(app, backend, data_dir):
     def call_backend(name,args):
         name=name.removeprefix('miiaivideo_')
         if name=='list_models':
-            response={'brand':'MIIAIVIDEO','models':catalog()}
-            if 'budgetpixel_registry' in backend:
-                live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
-                grouped={kind:[] for kind in ('video','image','music','voice','sfx','audio','unknown')}
-                for model in live['models']:
-                    grouped.setdefault(model['category'], []).append(model)
-                response['official_catalog']=grouped
-                response['catalog_sync']={k:live[k] for k in ('synced_at','sync_error','cache_ttl_seconds')}
-            return response
+            # Keep discovery fast and comfortably below connector response limits.
+            # The previous response duplicated every full capability record and
+            # synchronously contacted the provider catalogue, which could time out
+            # as an MCP -32603 internal error. Exact controls remain available from
+            # get_model_capabilities and generation still validates against catalog().
+            complete=catalog()
+            category=str(args.get('category') or '').lower()
+            query=str(args.get('query') or '').strip().lower()
+            selected={}
+            for kind,items in complete.items():
+                if category and kind!=category:
+                    continue
+                model_ids=sorted(key for key in items if not query or query in key.lower())
+                selected[kind]=model_ids
+            counts={kind:len(items) for kind,items in complete.items()}
+            returned=sum(len(items) for items in selected.values())
+            return {
+                'brand':'MIIAIVIDEO',
+                'models':selected,
+                'counts':counts,
+                'returned':returned,
+                'configured':{
+                    'budgetpixel':bool(backend['_budgetpixel_api_key']()),
+                    'segmind':bool(backend['_segmind_api_key']()),
+                },
+                'detail_tool':'miiaivideo_get_model_capabilities',
+                'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-.',
+            }
         elif name=='get_model_capabilities':
             live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
             model=backend['budgetpixel_registry'].model_by_slug(args['slug'],live,args.get('category'))
