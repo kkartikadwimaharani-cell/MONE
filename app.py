@@ -4052,14 +4052,13 @@ def ai_video_view():
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
+    video_ui = budgetpixel_video_catalog.public_ui_bundle(registry)
     return render_template(
         'ai-video.html',
         image_capabilities=budgetpixel_provider.public_image_capabilities(),
         budgetpixel_registry=registry,
-        budgetpixel_video_families=budgetpixel_video_catalog.public_ui_families(
-            exclude=('seedance-2.0-mini', 'seedance-2.0-fast', 'seedance-2.0',
-                     'seedance-2.5', 'wan-3.0-video', 'wan-3.0-video-prime'),
-            registry=registry),
+        budgetpixel_video_families=video_ui['families'],
+        budgetpixel_kling_qualities=video_ui['kling_qualities'],
     )
 
 
@@ -4223,7 +4222,8 @@ def aivideo_generate():
     # seedance-2.0 slug.
     budgetpixel_image_families = ('flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimagebp')
     _segmind_exempt_families = ('seedance25', 'wan30', 'seedance', *budgetpixel_image_families)
-    if family not in _segmind_exempt_families and not family.startswith('bpx-') and not _segmind_api_key():
+    catalog_model = bool(payload.get('catalog_model'))
+    if family not in _segmind_exempt_families and not family.startswith('bpx-') and not catalog_model and not _segmind_api_key():
         _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
         return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
 
@@ -4248,14 +4248,12 @@ def aivideo_generate():
     endpoint = None
     request_metadata = None
 
-    if family.startswith('bpx-'):
+    if family.startswith('bpx-') or catalog_model:
         if not _budgetpixel_api_key():
             _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
             return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
         provider = 'budgetpixel'
-        slug = str(payload.get('model_slug') or family[4:]).lower()
-        if slug != family[4:]:
-            return jsonify({'error': 'Model dan family tidak cocok.'}), 400
+        slug = str(payload.get('model_slug') or (family[4:] if family.startswith('bpx-') else '')).lower()
         registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
         registered = budgetpixel_registry.model_by_slug(slug, registry)
         if not registered or registered.get('category') != 'video' or not registered.get('handler'):
