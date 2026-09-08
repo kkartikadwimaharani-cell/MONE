@@ -21,8 +21,11 @@ class UniversalVideoFramesTests(unittest.TestCase):
     def test_all_frame_models_use_capabilities_not_family_names(self):
         self.assertIn('frames: !!rawCaps.supportsFirstFrame', self.html)
         self.assertIn('lastFrame: !!rawCaps.supportsEndFrame', self.html)
-        for family in ('seedance25', 'seedance', 'wan30', 'kling', 'minimaxh3',
-                       'pixverse', 'wan27', 'seedance15', 'kling26'):
+        # Only families with a real backend branch in app.py's aivideo_generate()
+        # belong in this UI catalog — minimaxh3/pixverse/wan27/seedance15/kling26/etc.
+        # were decorative-only (no backend), selectable but guaranteed to error,
+        # and have been removed from templates/ai-video.html accordingly.
+        for family in ('seedance25', 'seedance', 'wan30', 'kling'):
             line = next(line for line in self.html.splitlines() if "key:'%s'" % family in line or "key: '%s'" % family in line)
             if 'caps:' not in line:  # multi-line family: inspect the following declaration block
                 line += self.html[self.html.index(line):self.html.index(line) + 900]
