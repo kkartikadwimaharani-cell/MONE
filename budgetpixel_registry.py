@@ -39,6 +39,11 @@ def _fallback_models():
                 "available": True, "handler": True, "modes": _modes(category, caps),
                 "parameters": _json_safe(caps), "source": "fallback",
             })
+    # Additive catalogue handlers. Existing provider rows above win on slug,
+    # so their proven routing and payload builders are never replaced.
+    from budgetpixel_video_catalog import registry_rows
+    existing = {row["slug"] for row in rows}
+    rows.extend(row for row in registry_rows() if row["slug"] not in existing)
     return rows
 
 
@@ -79,7 +84,8 @@ def _remote_rows(data):
     for item in raw:
         if not isinstance(item, dict):
             continue
-        slug = item.get("slug") or item.get("model") or item.get("id")
+        # BudgetPixel's documented response uses `name` as the endpoint slug.
+        slug = item.get("slug") or item.get("model") or item.get("name") or item.get("id")
         if not isinstance(slug, str) or not slug.strip():
             continue
         category = str(item.get("category") or item.get("type") or item.get("kind") or "unknown").lower()
@@ -105,14 +111,24 @@ def _merge(remote, configured):
             reviewed["remote"] = found.get("remote", {})
             row = reviewed
         else:
-            row = dict(found, endpoint=None, status="UNSUPPORTED", available=False,
-                       handler=False, modes=found.get("remote", {}).get("modes", []),
+            # Live video slugs are safe through the generic adapter: the
+            # endpoint kind is fixed and unknown slugs are prompt-only.
+            is_video = found.get("category") == "video"
+            row = dict(found,
+                       endpoint=("/v1/videos/" + found["slug"]) if is_video else None,
+                       status="INTEGRATED" if is_video else "UNSUPPORTED",
+                       available=is_video, handler=is_video,
+                       family=("bpx-" + found["slug"]) if is_video else None,
+                       variant="STANDARD" if is_video else None,
+                       modes=found.get("remote", {}).get("modes", []),
                        parameters={}, source="catalog", catalog=True)
         row["configured"] = configured
         merged.append(row)
     # A safe fallback remains usable during an outage, but is never claimed
     # VERIFIED merely because it exists locally.
     for row in local.values():
+        if remote and row.get("source") == "mii-video-catalog":
+            continue
         row["configured"] = configured
         merged.append(row)
     return sorted(merged, key=lambda r: (r["category"], r["name"].lower(), r["slug"]))
