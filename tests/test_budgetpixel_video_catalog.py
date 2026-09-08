@@ -51,8 +51,14 @@ def test_documented_models_response_uses_name_as_slug():
     assert rows[0]["category"] == "video"
 
 
-def test_ui_catalog_has_unique_inline_family_keys():
-    families = catalog.public_ui_families()
-    assert len(families) == len(catalog.VIDEO_CATALOG)
+def test_ui_catalog_groups_variants_without_duplicate_family_cards():
+    bundle = catalog.public_ui_bundle()
+    families = bundle["families"]
     assert len({item["key"] for item in families}) == len(families)
     assert all(item["key"].startswith("bpx-") for item in families)
+    hailuo = next(item for item in families if item["key"] == "bpx-hailuo23")
+    assert {q["label"] for q in hailuo["qualities"]} == {"FAST", "STANDARD"}
+    assert {q["label"] for q in bundle["kling_qualities"]} == {"TURBO", "4K", "OMNI"}
+    represented = sum(len(item["qualities"]) for item in families)
+    represented += len(bundle["kling_qualities"]) + len(catalog._EXISTING_UI_SLUGS)
+    assert represented == len(catalog.VIDEO_CATALOG)
