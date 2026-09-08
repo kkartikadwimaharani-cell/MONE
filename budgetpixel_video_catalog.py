@@ -109,6 +109,44 @@ _ROWS = [
 VIDEO_CATALOG = {row["slug"]: row for row in _ROWS}
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,79}$")
 
+# UI grouping is intentionally by product line, not by endpoint. A model with
+# several tiers/modes gets one card and exposes those variants in the existing
+# quality chip row.
+_UI_GROUPS = {
+    "happyhorse-1.1": ("happyhorse", "HAPPYHORSE"),
+    "happyhorse-1.0": ("happyhorse", "HAPPYHORSE"),
+    "hailuo-2.3-fast": ("hailuo23", "MINIMAX HAILUO 2.3"),
+    "hailuo-2.3": ("hailuo23", "MINIMAX HAILUO 2.3"),
+    "wan-2.6": ("wan26", "WAN 2.6"),
+    "wan-2.6-i2v-flash": ("wan26", "WAN 2.6"),
+    "wan-2.5": ("wan25", "WAN 2.5"),
+    "wan-2.5-fast-i2v": ("wan25", "WAN 2.5"),
+    "wan-2.5-fast-t2v": ("wan25", "WAN 2.5"),
+    "wan-2.2-animate-move": ("wan22", "WAN 2.2"),
+    "wan-2.2-animate-replace": ("wan22", "WAN 2.2"),
+    "wan-2.2-i2v-a14b": ("wan22", "WAN 2.2"),
+    "wan-2.2-i2v-fast": ("wan22", "WAN 2.2"),
+    "wan-2.2-t2v-fast": ("wan22", "WAN 2.2"),
+    "veo-3": ("veo3", "VEO 3"),
+    "veo-3-fast": ("veo3", "VEO 3"),
+    "seedance-1.5-pro": ("seedance1", "SEEDANCE 1"),
+    "seedance-1-lite": ("seedance1", "SEEDANCE 1"),
+    "seedance-1-pro-1080p": ("seedance1", "SEEDANCE 1"),
+    "seedance-1-pro-480p": ("seedance1", "SEEDANCE 1"),
+}
+
+_EXISTING_UI_SLUGS = {
+    "seedance-2.0-mini", "seedance-2.0-fast", "seedance-2.0", "seedance-2.5",
+    "wan-3.0-video", "wan-3.0-video-prime", "veo-3.1", "veo-3.1-fast",
+    "kling-v3.0-standard", "kling-v3.0-pro",
+}
+
+_KLING_30_MERGE = {
+    "kling-3.0-turbo": "TURBO",
+    "kling-v3.0-4k": "4K",
+    "kling-v3-omni-video": "OMNI",
+}
+
 
 def capabilities(slug):
     return dict(VIDEO_CATALOG.get(str(slug).lower(), {}))
@@ -202,40 +240,72 @@ def registry_rows():
     return rows
 
 
-def public_ui_families(exclude=(), registry=None):
-    excluded = set(exclude)
-    families = []
+def _ui_caps(item):
+    durations = item["durations"]
+    contiguous = bool(durations) and tuple(range(min(durations), max(durations) + 1)) == tuple(durations)
+    caps = {
+        "supportsT2V": "t2v" in item["modes"],
+        "supportsI2V": "i2v" in item["modes"],
+        "supportsVideoEdit": "v2v" in item["modes"],
+        "supportsElements": any(item[k] for k in ("reference_images", "reference_videos", "reference_audios")),
+        "supportsFirstFrame": item["first_frame"], "supportsEndFrame": item["end_frame"],
+        "maxReferenceImages": item["reference_images"], "maxReferenceVideos": item["reference_videos"],
+        "maxReferenceAudios": item["reference_audios"], "resolutions": list(item["resolutions"]),
+        "aspectRatios": list(item["aspect_ratios"]), "supportsAudioGeneration": item["generate_audio"],
+        "supportsDuration": bool(durations), "durationMode": "range" if contiguous else "discrete",
+    }
+    if durations:
+        caps.update(durationMin=min(durations), durationMax=max(durations), durationStep=1,
+                    durations=list(durations), durationOptions=list(durations))
+    return caps
+
+
+def _variant_label(item, group_name):
+    if item["name"] == group_name:
+        return "STANDARD"
+    prefix = group_name + " "
+    return item["name"][len(prefix):] if item["name"].startswith(prefix) else item["name"]
+
+
+def public_ui_bundle(registry=None):
+    """Return product-line cards and additions for existing cards."""
     rows = list(_ROWS)
     if registry and not registry.get("sync_error"):
         live_slugs = [row["slug"] for row in registry.get("models", [])
                       if row.get("category") == "video" and row.get("handler")]
-        known = VIDEO_CATALOG
-        rows = [known.get(slug) or _spec(slug, slug.replace("-", " ").upper())
+        rows = [VIDEO_CATALOG.get(slug) or _spec(slug, slug.replace("-", " ").upper())
                 for slug in live_slugs]
+
+    groups = {}
+    kling_qualities = []
     for item in rows:
-        if item["slug"] in excluded:
+        slug = item["slug"]
+        if slug in _KLING_30_MERGE:
+            kling_qualities.append({"id": slug, "label": _KLING_30_MERGE[slug],
+                                    "route": "budgetpixel", "caps": _ui_caps(item)})
             continue
-        durations = item["durations"]
-        contiguous_duration = bool(durations) and tuple(range(min(durations), max(durations) + 1)) == tuple(durations)
-        caps = {
-            "supportsT2V": "t2v" in item["modes"],
-            "supportsI2V": "i2v" in item["modes"],
-            "supportsVideoEdit": "v2v" in item["modes"],
-            "supportsElements": any(item[k] for k in ("reference_images", "reference_videos", "reference_audios")),
-            "supportsFirstFrame": item["first_frame"], "supportsEndFrame": item["end_frame"],
-            "maxReferenceImages": item["reference_images"], "maxReferenceVideos": item["reference_videos"],
-            "maxReferenceAudios": item["reference_audios"], "resolutions": list(item["resolutions"]),
-            "aspectRatios": list(item["aspect_ratios"]), "supportsAudioGeneration": item["generate_audio"],
-            "supportsDuration": bool(durations), "durationMode": "range" if contiguous_duration else "discrete",
-        }
-        if durations:
-            caps.update(durationMin=min(durations), durationMax=max(durations), durationStep=1,
-                        durations=list(durations), durationOptions=list(durations))
-        families.append({"key": "bpx-" + item["slug"], "brand": "BUDGETPIXEL",
-                         "name": item["name"], "featured": True,
-                         "desc": item["description"] or "BudgetPixel video model.",
-                         "caps": caps, "qualities": [{"id": item["slug"], "label": "STANDARD"}]})
-    return families
+        if slug in _EXISTING_UI_SLUGS:
+            continue
+        key, name = _UI_GROUPS.get(slug, (slug, item["name"]))
+        group = groups.setdefault(key, {"key": "bpx-" + key, "brand": "MIIAIVIDEO",
+                                        "name": name, "featured": True,
+                                        "desc": item["description"] or "BudgetPixel video model.",
+                                        "caps": {}, "qualities": []})
+        group["qualities"].append({"id": slug, "label": _variant_label(item, name),
+                                   "route": "budgetpixel", "caps": _ui_caps(item)})
+
+    families = list(groups.values())
+    for family in families:
+        if len(family["qualities"]) == 1:
+            family["qualities"][0]["label"] = "STANDARD"
+    return {"families": families, "kling_qualities": kling_qualities}
+
+
+def public_ui_families(exclude=(), registry=None):
+    """Backward-compatible accessor used by tests and older callers."""
+    excluded = set(exclude)
+    return [family for family in public_ui_bundle(registry)["families"]
+            if all(q["id"] not in excluded for q in family["qualities"])]
 
 
 def _json_safe(value):
