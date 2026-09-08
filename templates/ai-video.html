@@ -2361,6 +2361,15 @@ var modelFamilies = {
 // BudgetPixel models stay in the same compact inline selector as the existing
 // families. There is intentionally no catalogue modal or status filter.
 var budgetPixelVideoFamilies = {{ budgetpixel_video_families|default([], true)|tojson }};
+var budgetPixelKlingQualities = {{ budgetpixel_kling_qualities|default([], true)|tojson }};
+var existingKlingFamily = modelFamilies.video.find(function(family) { return family.key === 'kling'; });
+if (existingKlingFamily) {
+  budgetPixelKlingQualities.forEach(function(quality) {
+    var index = existingKlingFamily.qualities.findIndex(function(current) { return current.label === quality.label; });
+    if (index >= 0) existingKlingFamily.qualities[index] = quality;
+    else existingKlingFamily.qualities.push(quality);
+  });
+}
 modelFamilies.video = modelFamilies.video.concat(budgetPixelVideoFamilies);
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
@@ -4957,6 +4966,9 @@ function startGenerate() {
     resolution: selectedResolution,
     aspect_ratio: selectedRatio,
   };
+  var selectedQuality = selectedFamily && selectedFamily.qualities
+    ? selectedFamily.qualities[selectedQualityIdx] : null;
+  if (selectedQuality && selectedQuality.route === 'budgetpixel') body.catalog_model = true;
   if (activeMode === 'image') {
     var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
     delete body.duration; delete body.video_urls; delete body.audio_urls;
