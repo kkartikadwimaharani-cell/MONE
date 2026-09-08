@@ -272,7 +272,9 @@ def register_mcp(app, backend, data_dir):
     string={'type':'string'}
     images={'type':'array','items':string,'maxItems':9}
     videos={'type':'array','items':string,'maxItems':3}
-    common={'prompt':{'type':'string','minLength':1},'family':string,'variant':string,'resolution':string,'aspect_ratio':string,'negative_prompt':string,'image_urls':images}
+    common={'prompt':{'type':'string','minLength':1},'family':string,'variant':string,
+            'model_slug':string,'resolution':string,'aspect_ratio':string,
+            'negative_prompt':string,'image_urls':images}
     image_controls=dict(common, size=string, quality=string, output_format=string,
                         megapixel=string, num_images={'type':'integer','minimum':1,'maximum':4},
                         seed={'type':'integer'}, sequential_image_generation=string,
@@ -307,6 +309,26 @@ def register_mcp(app, backend, data_dir):
         bp_caps=backend['budgetpixel_provider'].public_video_capabilities()
         for key,caps in bp_caps.items():
             result['video'][key]=dict(caps,configured=bool(backend['_budgetpixel_api_key']()))
+        if 'budgetpixel_video_catalog' in backend:
+            for slug,item in backend['budgetpixel_video_catalog'].VIDEO_CATALOG.items():
+                family='bpx-'+slug
+                fields=[]
+                if item.get('resolutions'): fields.append('resolution')
+                if item.get('aspect_ratios'): fields.append('aspect_ratio')
+                if item.get('durations'): fields.append('duration')
+                if item.get('first_frame'): fields.extend(('image_urls','first_frame_url'))
+                if item.get('end_frame'): fields.append('last_frame_url')
+                if item.get('reference_videos'): fields.append('video_urls')
+                if item.get('reference_audios'): fields.append('audio_urls')
+                if item.get('generate_audio'): fields.append('mute_audio')
+                result['video'][family+':STANDARD']={
+                    'slug':slug,'provider':'BudgetPixel','modes':list(item.get('modes',())),
+                    'aspect_ratios':list(item.get('aspect_ratios',())),
+                    'resolutions':list(item.get('resolutions',())),
+                    'durations':list(item.get('durations',())),
+                    'fields':list(dict.fromkeys(fields)),
+                    'configured':bool(backend['_budgetpixel_api_key']()),
+                }
         bp_image_caps=backend['budgetpixel_provider'].public_image_capabilities()
         for key,caps in bp_image_caps.items():
             family,variant=key.split(':',1)
@@ -372,6 +394,14 @@ def register_mcp(app, backend, data_dir):
             kind,default_family=defaults[name]
             if name in ('generate_video','motion_control'):
                 backend['_aivideo_clear_debug']()
+            requested_slug=str(payload.get('model_slug') or '').lower()
+            if name=='generate_video' and requested_slug:
+                live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
+                selected=backend['budgetpixel_registry'].model_by_slug(requested_slug,live)
+                if not selected or selected.get('category')!='video' or not selected.get('handler'):
+                    return {'error':'Unknown or unavailable BudgetPixel video model slug.'}
+                payload['family']='bpx-'+requested_slug
+                payload['model_slug']=requested_slug
             family=payload.setdefault('family',default_family).lower()
             variant=payload.pop('variant',{'seedance':'MINI','seedream':'PRO','flux':'SCHNELL','veo':'FAST','klingswap':'STD'}.get(family,'STANDARD')).upper()
             caps=catalog()[kind].get(family+':'+variant)
@@ -386,7 +416,7 @@ def register_mcp(app, backend, data_dir):
                         allowed=value in caps.get(key,[])
                     if not allowed:
                         return {'error':'Unsupported '+field+' for '+family+':'+variant}
-            controls=set(payload)-{'prompt','family','resolution','aspect_ratio','duration'}
+            controls=set(payload)-{'prompt','family','model_slug','resolution','aspect_ratio','duration'}
             if any(key not in caps.get('fields',[]) for key in controls):
                 return {'error':'This model does not accept one of the supplied controls.'}
             limits={'image_urls':9,'video_urls':3,'audio_urls':3}
