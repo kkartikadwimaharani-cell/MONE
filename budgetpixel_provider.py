@@ -14,6 +14,7 @@ BASE_URL = "https://api.budgetpixel.com/v1"
 
 VIDEO_MODELS = {
     ("seedance", "MINI"): "/videos/seedance-2.0-mini",
+    ("seedance", "FAST"): "/videos/seedance-2.0-fast",
     ("seedance", "PRO"): "/videos/seedance-2.0",
     ("seedance25", "STANDARD"): "/videos/seedance-2.5",
     ("wan30", "STANDARD"): "/videos/wan-3.0-video",
@@ -22,11 +23,19 @@ VIDEO_MODELS = {
 
 # Verified public request controls.  Keep this separate from endpoint routing so
 # UI/request validation can share the contract without introducing new fields.
+# reference_images is confirmed for the whole SeeDance 2.0 family (up to 9,
+# standalone) per docs.budgetpixel.com/concepts/models — reference_videos is
+# deliberately NOT set here: SeeDance 2.0's video-edit mode takes a single
+# `video` field, not a `reference_videos` list, and build_video_payload below
+# doesn't emit that field yet, so leaving reference_videos unset here keeps it
+# correctly unavailable rather than silently sending the wrong field shape.
 VIDEO_CAPABILITIES = {
     ("seedance", "MINI"): {"resolutions": ("480p", "720p"), "duration": (4, 15),
-        "start_frame": True, "end_frame": True, "generate_audio": True},
+        "start_frame": True, "end_frame": True, "reference_images": 9, "generate_audio": True},
+    ("seedance", "FAST"): {"resolutions": ("480p", "720p"), "duration": (4, 15),
+        "start_frame": True, "end_frame": True, "reference_images": 9, "generate_audio": True},
     ("seedance", "PRO"): {"resolutions": ("480p", "720p", "1080p", "4K"), "duration": (4, 15),
-        "start_frame": True, "end_frame": True, "generate_audio": True},
+        "start_frame": True, "end_frame": True, "reference_images": 9, "generate_audio": True},
     ("seedance25", "STANDARD"): {
         "aspect_ratios": ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"),
         "resolutions": ("480p", "720p", "1080p"),
@@ -251,10 +260,10 @@ def public_image_capabilities():
 
 def public_video_capabilities():
     """JSON-safe capability registry for BudgetPixel-routed video models
-    (seedance25, wan30) — same shape as public_image_capabilities(). Does
-    NOT include the 'seedance' family (Seedance 2.0), which is routed
-    through Segmind, not BudgetPixel — see SEGMIND_MODEL_MAP/SEGMIND_RESOLUTIONS
-    in app.py for that family's own capability data."""
+    (seedance25, wan30, and the seedance MINI/PRO tiers — see VIDEO_MODELS
+    above). Seedance FAST has no confirmed BudgetPixel endpoint yet and
+    stays on Segmind — see SEGMIND_MODEL_MAP/SEGMIND_RESOLUTIONS in app.py
+    for that tier's own capability data."""
     return {family + ":" + variant: {key: list(value) if isinstance(value, tuple) else value
                                      for key, value in caps.items()}
             for (family, variant), caps in VIDEO_CAPABILITIES.items()}
