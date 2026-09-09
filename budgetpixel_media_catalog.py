@@ -199,12 +199,7 @@ def _audio_caps(item):
 
 
 def public_ui_bundle(registry=None):
-    # Existing MII cards keep their established handlers; these slugs are
-    # therefore omitted instead of being duplicated as a second card.
-    existing = {"flux-2-klein", "flux-2-pro", "flux-2-dev", "qwen-image",
-                "seedream-5.0-lite", "seedream-5.0-pro", "kling-v3",
-                "kling-v3-omni", "gpt-image-2", "nano-banana-pro", "flux-dev"}
-    images = [row for row in IMAGE_ROWS if row["slug"] not in existing]
+    images = list(IMAGE_ROWS)
     audios = list(AUDIO_ROWS)
     # These rows are the reviewed executable catalogue, not speculative cards.
     # Keep them visible even when /v1/models is partial or uses a different
@@ -217,10 +212,10 @@ def public_ui_bundle(registry=None):
             key = re.sub(r"[^a-z0-9]+", "-", item["group"].lower()).strip("-")
             family = result.setdefault(key, {"key": "bpx-" + key, "brand": "MIIAIVIDEO",
                 "name": item["group"], "featured": True,
-                "desc": item["description"] or ("BudgetPixel image model." if kind == "image" else "BudgetPixel audio model."),
+                "desc": item["description"] or ("MII image model." if kind == "image" else "MII audio model."),
                 "caps": {}, "qualities": []})
             quality = {"id": item["slug"], "label": item["label"],
-                       "route": "budgetpixel", "outputKind": kind}
+                       "route": "catalog", "outputKind": kind}
             if kind == "image":
                 quality["caps"] = {"image": 1 if item["singular_image"] else item["reference_images"],
                     "video": 0, "audio": 0, "frames": False,

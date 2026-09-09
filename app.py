@@ -212,9 +212,6 @@ APP_SECRET_DEFS = [
     {'key': 'GROQ_API_KEY', 'env_names': ['GROQ_API_KEY'],
      'label': 'Groq API Key', 'category': 'AI Providers', 'kind': 'api_key',
      'help': 'Fallback chatbot'},
-    {'key': 'SEGMIND_API_KEY', 'env_names': ['SEGMIND_API_KEY'],
-     'label': 'Segmind API Key', 'category': 'AI Providers', 'kind': 'api_key',
-     'help': 'Generate AI Video'},
     {'key': 'BUDGETPIXEL_API_KEY', 'env_names': ['BUDGETPIXEL_API_KEY'],
      'label': 'BudgetPixel API Key', 'category': 'AI Providers', 'kind': 'api_key',
      'help': 'Seedance 2.5 & Wan (bpx_live_xxx dari budgetpixel.com/developers)'},
@@ -2463,6 +2460,7 @@ import budgetpixel_provider
 import budgetpixel_registry
 import budgetpixel_video_catalog
 import budgetpixel_media_catalog
+import budgetpixel_motion_catalog
 import mii_quality_filter
 
 
@@ -4059,6 +4057,7 @@ def ai_video_view():
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
     video_ui = budgetpixel_video_catalog.public_ui_bundle(registry)
     media_ui = budgetpixel_media_catalog.public_ui_bundle(registry)
+    motion_ui = budgetpixel_motion_catalog.public_ui_families()
     return render_template(
         'ai-video.html',
         image_capabilities=budgetpixel_provider.public_image_capabilities(),
@@ -4067,6 +4066,7 @@ def ai_video_view():
         budgetpixel_kling_qualities=video_ui['kling_qualities'],
         budgetpixel_image_families=media_ui['image_families'],
         budgetpixel_audio_families=media_ui['audio_families'],
+        budgetpixel_motion_families=motion_ui,
     )
 
 
@@ -4222,21 +4222,13 @@ def aivideo_generate():
     family = str(payload.get('family', 'seedance')).lower()
     mute_audio = bool(payload.get('mute_audio', False))
 
-    # Segmind key is only required for families still routed through
-    # Segmind. seedance25/wan30 always go through BudgetPixel; 'seedance'
-    # (2.0) — all three tiers (MINI/FAST/PRO) — also fully moved to
-    # BudgetPixel now that docs.budgetpixel.com/concepts/models confirmed
-    # seedance-2.0-fast as a real endpoint alongside -mini and the base
-    # seedance-2.0 slug.
-    budgetpixel_image_families = ('flux2', 'qwenbp', 'seedream5', 'klingimage', 'gptimagebp')
-    _segmind_exempt_families = ('seedance25', 'wan30', 'seedance', *budgetpixel_image_families)
     catalog_model = bool(payload.get('catalog_model'))
-    if family not in _segmind_exempt_families and not family.startswith('bpx-') and not catalog_model and not _segmind_api_key():
-        _aivideo_last_error('config', 'SEGMIND_API_KEY belum diset di server')
-        return jsonify({'error': 'SEGMIND_API_KEY belum diset di server'}), 500
+    budgetpixel_image_families = ()
+    if not family.startswith('bpx-') and not catalog_model:
+        return jsonify({'error': 'Model lama tidak lagi tersedia. Pilih model dari katalog terbaru.'}), 404
 
     prompt = str(payload.get('prompt', '')).strip()
-    if not prompt and family != 'klingswap':
+    if not prompt and family != 'klingswap' and str(payload.get('output_type')).lower() != 'motion':
         return jsonify({'error': 'Prompt wajib diisi'}), 400
 
     image_urls = [u for u in (payload.get('image_urls') or []) if u][:15]
@@ -4252,18 +4244,18 @@ def aivideo_generate():
     # bp_family/bp_variant instead of a Segmind `endpoint` — the dispatch
     # after task_id creation picks the right background runner based on
     # this flag.
-    provider = 'segmind'
+    provider = 'catalog'
     endpoint = None
     request_metadata = None
 
     catalog_output_type = str(payload.get('output_type') or 'video').lower()
-    if catalog_output_type not in ('image', 'video', 'audio'):
+    if catalog_output_type not in ('image', 'video', 'audio', 'motion'):
         catalog_output_type = 'video'
 
     if family.startswith('bpx-') or catalog_model:
         if not _budgetpixel_api_key():
-            _aivideo_last_error('config', 'BUDGETPIXEL_API_KEY belum diset di server')
-            return jsonify({'error': 'BUDGETPIXEL_API_KEY belum diset di server'}), 500
+            _aivideo_last_error('config', 'Layanan generasi belum dikonfigurasi')
+            return jsonify({'error': 'Layanan generasi belum dikonfigurasi.'}), 500
         provider = 'budgetpixel'
         slug = str(payload.get('model_slug') or (family[4:] if family.startswith('bpx-') else '')).lower()
         registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
@@ -4271,7 +4263,11 @@ def aivideo_generate():
         if not registered or registered.get('category') != catalog_output_type or not registered.get('handler'):
             return jsonify({'error': 'Model tidak tersedia untuk jenis output yang dipilih.'}), 404
         try:
-            if catalog_output_type == 'image':
+            if catalog_output_type == 'motion':
+                body = budgetpixel_motion_catalog.build_payload(
+                    slug, prompt, image_urls, video_urls, mute_audio,
+                    payload.get('character_orientation', 'video'), payload.get('trim_intro', True))
+            elif catalog_output_type == 'image':
                 body = budgetpixel_media_catalog.build_image_payload(
                     slug, payload, prompt, reference_images=image_urls)
             elif catalog_output_type == 'audio':
@@ -4736,14 +4732,11 @@ def aivideo_generate():
     _persist_task(task_id)
     app.logger.info('[ai-video][generate] task_id=%s family=%s model=%s endpoint=%s -> starting background thread (provider=%s)',
                      task_id, family, model_key, endpoint, provider)
-    if provider == 'budgetpixel':
-        threading.Thread(
-            target=_run_budgetpixel_task,
-            args=(task_id, bp_family, bp_variant, body, output_type),
-            daemon=True,
-        ).start()
-    else:
-        threading.Thread(target=_run_segmind_task, args=(task_id, endpoint, body, output_type, family, mute_audio), daemon=True).start()
+    threading.Thread(
+        target=_run_budgetpixel_task,
+        args=(task_id, bp_family, bp_variant, body, output_type),
+        daemon=True,
+    ).start()
 
     estimated_time = (duration * 12) if duration else (30 if output_type == 'audio' else 20)
     return jsonify({'id': task_id, 'status': 'pending', 'task_info': {'estimated_time': estimated_time}})

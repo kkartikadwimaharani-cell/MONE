@@ -58,7 +58,9 @@ def test_ui_catalog_groups_variants_without_duplicate_family_cards():
     assert all(item["key"].startswith("bpx-") for item in families)
     hailuo = next(item for item in families if item["key"] == "bpx-hailuo23")
     assert {q["label"] for q in hailuo["qualities"]} == {"FAST", "STANDARD"}
-    assert {q["label"] for q in bundle["kling_qualities"]} == {"TURBO", "4K", "OMNI"}
+    kling = next(item for item in families if item["key"] == "bpx-kling30")
+    assert {q["label"] for q in kling["qualities"]} == {"STANDARD", "PRO", "TURBO", "4K", "OMNI"}
     represented = sum(len(item["qualities"]) for item in families)
-    represented += len(bundle["kling_qualities"]) + len(catalog._EXISTING_UI_SLUGS)
     assert represented == len(catalog.VIDEO_CATALOG)
+    assert families[0]["key"] == "bpx-seedance25"
+    assert all(q["route"] == "catalog" for item in families for q in item["qualities"])

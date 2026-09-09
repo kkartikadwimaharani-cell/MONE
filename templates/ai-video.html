@@ -2358,31 +2358,27 @@ var modelFamilies = {
     }
   ]
 };
-// BudgetPixel models stay in the same compact inline selector as the existing
+// The reviewed catalogue is the sole source of model cards.
+modelFamilies = { video: [], image: [], audio: [] };
+// Models stay in the same compact inline selector.
 // families. There is intentionally no catalogue modal or status filter.
 var budgetPixelVideoFamilies = {{ budgetpixel_video_families|default([], true)|tojson }};
 var budgetPixelKlingQualities = {{ budgetpixel_kling_qualities|default([], true)|tojson }};
 var budgetPixelImageFamilies = {{ budgetpixel_image_families|default([], true)|tojson }};
 var budgetPixelAudioFamilies = {{ budgetpixel_audio_families|default([], true)|tojson }};
-var existingKlingFamily = modelFamilies.video.find(function(family) { return family.key === 'kling'; });
-if (existingKlingFamily) {
-  budgetPixelKlingQualities.forEach(function(quality) {
-    var index = existingKlingFamily.qualities.findIndex(function(current) { return current.label === quality.label; });
-    if (index >= 0) existingKlingFamily.qualities[index] = quality;
-    else existingKlingFamily.qualities.push(quality);
-  });
-}
-modelFamilies.video = modelFamilies.video.concat(budgetPixelVideoFamilies);
+var budgetPixelMotionFamilies = {{ budgetpixel_motion_families|default([], true)|tojson }};
+modelFamilies.video = modelFamilies.video.concat(budgetPixelVideoFamilies, budgetPixelMotionFamilies);
 modelFamilies.image = modelFamilies.image.concat(budgetPixelImageFamilies);
 modelFamilies.audio = modelFamilies.audio.concat(budgetPixelAudioFamilies);
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
-var CONNECTED_FAMILIES = ['seedance','seedance25','wan30','flux2','qwenbp','seedream5','klingimage','kling','veo','klingswap','nanobanana','gptimage','seedream','flux','imagen','qwen'];
+var CONNECTED_FAMILIES = [];
 budgetPixelVideoFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
 budgetPixelImageFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
 budgetPixelAudioFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
-var UI_ONLY_MODEL_IDS = ['kling-3.0-turbo','kling-3.0-4k','kling-3.0-omni'];
+budgetPixelMotionFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
+var UI_ONLY_MODEL_IDS = [];
 function isFamilyBackendConnected(family) {
   if (!family || CONNECTED_FAMILIES.indexOf(family.key) === -1) return false;
   return (family.qualities || []).some(function(q) { return UI_ONLY_MODEL_IDS.indexOf(q.id) === -1; });
@@ -2983,7 +2979,7 @@ function openImageAdvanced() {
   var list = document.getElementById('sheetList');
   list.innerHTML = '';
   if (caps.seed) list.innerHTML += '<label class="sheet-opt"><span>Seed</span><input id="advancedSeed" type="number" step="1" value="' + escapeHtml(String(selectedImageSeed)) + '"><span><button type="button" onclick="randomImageSeed()">Random</button><button type="button" onclick="clearImageSeed()">Clear</button></span></label>';
-  if (caps.negativePrompt) list.innerHTML += '<label class="sheet-opt"><span>Negative Prompt</span><textarea id="advancedNegativePrompt">' + escapeHtml(selectedNegativePrompt) + '</textarea>' + (caps.singularImage && media.image.length ? '<small>Provider ignores this when a source image is used.</small>' : '') + '</label>';
+  if (caps.negativePrompt) list.innerHTML += '<label class="sheet-opt"><span>Negative Prompt</span><textarea id="advancedNegativePrompt">' + escapeHtml(selectedNegativePrompt) + '</textarea>' + (caps.singularImage && media.image.length ? '<small>Opsi ini diabaikan saat gambar sumber digunakan.</small>' : '') + '</label>';
   if (caps.sequentialModes && caps.sequentialModes.length) list.innerHTML += '<label class="sheet-opt"><span>Sequential Generation</span><select id="advancedSequential"><option value="disabled">Disabled</option><option value="auto">Auto</option></select></label><label class="sheet-opt" id="advancedMaxWrap"><span>Max Images</span><input id="advancedMaxImages" type="number" min="1" max="14" value="' + selectedMaxImages + '"></label>';
   list.innerHTML += '<button class="sheet-opt selected" type="button" onclick="saveImageAdvanced()">Save settings</button>';
   var seq = document.getElementById('advancedSequential'); if (seq) { seq.value=selectedSequentialMode; seq.onchange=function(){ document.getElementById('advancedMaxWrap').style.display=this.value==='auto'?'':'none'; }; seq.onchange(); }
@@ -3340,7 +3336,7 @@ function applyModelCapabilities() {
     document.getElementById('durationLabel').textContent = 'Unavailable';
     document.getElementById('durationLabelSub').textContent = '';
     document.getElementById('durationStateBadge').textContent = 'UNKNOWN';
-    document.getElementById('durationMinLabel').textContent = 'Provider range';
+    document.getElementById('durationMinLabel').textContent = 'Model range';
     document.getElementById('durationMaxLabel').textContent = 'not published';
   }
   if (motionChip) motionChip.style.display = caps.motion     ? '' : 'none';
@@ -4201,7 +4197,7 @@ function analyzeMotionControlVideo(entry) {
       if (data.original.duration > 15) {
         showToast('Video lebih dari 15 detik — akan dipotong ke 15 detik pertama');
       } else {
-        showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan provider' : 'Video referensi terdeteksi otomatis');
+        showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan model' : 'Video referensi terdeteksi otomatis');
       }
     })
     .catch(function() {
@@ -4915,6 +4911,9 @@ function dismissGenQueueItem(taskId) {
 
 function startGenerate() {
   var prompt = promptInput.value.trim();
+  var activeQuality = selectedFamily && selectedFamily.qualities[selectedQualityIdx];
+  var activeCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx) || {};
+  var isMotionModel = !!(activeQuality && activeQuality.outputKind === 'motion');
   var usingFrames = activeInputTab === 'frames';
   var selectedMedia = usingFrames ? {image:[], video:[], audio:[]} : media;
   var selectedFrames = usingFrames ? frames : {first:null, last:null};
@@ -4926,7 +4925,7 @@ function startGenerate() {
   // Motion Control (klingswap): prompt opsional — konsisten dengan
   // updateGenerateButtonState() dan backend (aivideo_generate memakai
   // default prompt sendiri kalau kosong). Family lain tetap wajib prompt.
-  if (!prompt && !(selectedFamily && selectedFamily.key === 'klingswap')) {
+  if (!prompt && !isMotionModel) {
     showError('Prompt wajib diisi'); openPromptEditor(); return;
   }
   var hasFirstFrame = !!(selectedFrames.first && selectedFrames.first.url);
@@ -4939,6 +4938,12 @@ function startGenerate() {
   if (needsVideo && selectedMedia.video.length === 0) {
     showError('Motion Control butuh 1 video sumber untuk diedit');
     return;
+  }
+  if (activeCaps.requiresImage && selectedMedia.image.length !== 1) {
+    showError('Motion Control membutuhkan tepat 1 gambar karakter'); return;
+  }
+  if (activeCaps.requiresVideo && selectedMedia.video.length !== 1) {
+    showError('Motion Control membutuhkan tepat 1 video gerakan'); return;
   }
   if (selectedFamily && isSeedanceFamily(selectedFamily.key) && selectedMedia.audio.length > 0
       && selectedMedia.image.length === 0 && selectedMedia.video.length === 0 && !hasFirstFrame) {
@@ -4984,7 +4989,8 @@ function startGenerate() {
   };
   var selectedQuality = selectedFamily && selectedFamily.qualities
     ? selectedFamily.qualities[selectedQualityIdx] : null;
-  if (selectedQuality && selectedQuality.route === 'budgetpixel') body.catalog_model = true;
+  if (selectedQuality && selectedQuality.route === 'catalog') body.catalog_model = true;
+  if (selectedQuality && selectedQuality.outputKind) body.output_type = selectedQuality.outputKind;
   if (selectedQuality && selectedQuality.caps && selectedQuality.caps.requiresImage
       && selectedMedia.image.length === 0) {
     showError('Model edit gambar ini membutuhkan 1 gambar sumber'); return;

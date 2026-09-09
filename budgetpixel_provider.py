@@ -349,17 +349,21 @@ def submit_model(slug, kind, payload, api_key, registry, session=requests, timeo
     model = model_by_slug(slug, registry, kind)
     if not model or not model.get("handler") or not model.get("available"):
         raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.")
-    if kind not in ("image", "video", "audio") or model.get("category") != kind:
+    routes = {"image": "images", "video": "videos", "audio": "audios",
+              "motion": "motion-control"}
+    if kind not in routes or model.get("category") != kind:
         raise ProviderError("INVALID_INPUT", "Model output type does not match the request.")
-    expected = "/v1/%ss/%s" % (kind, slug)
+    expected = "/v1/%s/%s" % (routes[kind], slug)
     if model.get("endpoint") != expected:
         raise ProviderError("MODEL_UNAVAILABLE", "Selected model is unavailable.", "endpoint allowlist mismatch")
-    return _submit("/%ss/%s" % (kind, slug), payload, api_key, session, timeout)
+    return _submit("/%s/%s" % (routes[kind], slug), payload, api_key, session, timeout)
 
 
 def _get_status(kind, job_id, api_key, session=requests, timeout=30):
+    route = {"video": "videos", "image": "images", "audio": "audios",
+             "motion": "motion-control"}.get(kind, "videos")
     try:
-        response = session.get("%s/%ss/%s" % (BASE_URL, kind, job_id), headers=_headers(api_key), timeout=timeout)
+        response = session.get("%s/%s/%s" % (BASE_URL, route, job_id), headers=_headers(api_key), timeout=timeout)
     except requests.RequestException as exc:
         raise ProviderError("GENERATION_FAILED", "Generation failed. Please try again.", str(exc))
     if response.status_code >= 400:
@@ -377,6 +381,10 @@ def get_image_status(job_id, api_key, session=requests, timeout=30):
 
 def get_audio_status(job_id, api_key, session=requests, timeout=30):
     return _get_status("audio", job_id, api_key, session, timeout)
+
+
+def get_motion_status(job_id, api_key, session=requests, timeout=30):
+    return _get_status("motion", job_id, api_key, session, timeout)
 
 
 def normalize_result(data):
@@ -429,7 +437,8 @@ def normalize_error(response):
 def poll(job_id, api_key, kind="video", session=requests, timeout_seconds=600, interval=2, sleep=time.sleep):
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        getter = {"image": get_image_status, "audio": get_audio_status}.get(kind, get_video_status)
+        getter = {"image": get_image_status, "audio": get_audio_status,
+                  "motion": get_motion_status}.get(kind, get_video_status)
         result = getter(job_id, api_key, session=session)
         if result["status"] in ("completed", "failed"):
             return result

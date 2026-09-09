@@ -113,6 +113,28 @@ _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,79}$")
 # several tiers/modes gets one card and exposes those variants in the existing
 # quality chip row.
 _UI_GROUPS = {
+    "grok-imagine-video-1.5": ("grok-video", "GROK VIDEO"),
+    "wan-3.0-video-prime": ("wan30", "WAN 3.0"),
+    "wan-3.0-video": ("wan30", "WAN 3.0"),
+    "seedance-2.5": ("seedance25", "SEEDANCE 2.5"),
+    "minimax-h3": ("minimax-h3", "MINIMAX H3"),
+    "seedance-2.0-mini": ("seedance20", "SEEDANCE 2.0"),
+    "seedance-2.0-fast": ("seedance20", "SEEDANCE 2.0"),
+    "seedance-2.0": ("seedance20", "SEEDANCE 2.0"),
+    "kling-3.0-turbo": ("kling30", "KLING 3.0"),
+    "kling-v3-omni-video": ("kling30", "KLING 3.0"),
+    "kling-v3.0-4k": ("kling30", "KLING 3.0"),
+    "kling-v3.0-pro": ("kling30", "KLING 3.0"),
+    "kling-v3.0-standard": ("kling30", "KLING 3.0"),
+    "pixverse-c1": ("pixverse", "PIXVERSE"),
+    "pixverse-v6": ("pixverse", "PIXVERSE"),
+    "wan-2.7-video": ("wan27", "WAN 2.7"),
+    "vidu-q3-pro": ("vidu-q3", "VIDU Q3"),
+    "p-video": ("p-video", "P-VIDEO"),
+    "kling-v2.6-pro": ("kling26", "KLING 2.6"),
+    "ltx-2-fast": ("ltx2", "LTX-2"),
+    "veo-3.1": ("veo31", "VEO 3.1"),
+    "veo-3.1-fast": ("veo31", "VEO 3.1"),
     "happyhorse-1.1": ("happyhorse", "HAPPYHORSE"),
     "happyhorse-1.0": ("happyhorse", "HAPPYHORSE"),
     "hailuo-2.3-fast": ("hailuo23", "MINIMAX HAILUO 2.3"),
@@ -135,16 +157,12 @@ _UI_GROUPS = {
     "seedance-1-pro-480p": ("seedance1", "SEEDANCE 1"),
 }
 
-_EXISTING_UI_SLUGS = {
-    "seedance-2.0-mini", "seedance-2.0-fast", "seedance-2.0", "seedance-2.5",
-    "wan-3.0-video", "wan-3.0-video-prime", "veo-3.1", "veo-3.1-fast",
-    "kling-v3.0-standard", "kling-v3.0-pro",
-}
-
-_KLING_30_MERGE = {
-    "kling-3.0-turbo": "TURBO",
-    "kling-v3.0-4k": "4K",
-    "kling-v3-omni-video": "OMNI",
+_VARIANT_LABELS = {
+    "wan-3.0-video": "STANDARD", "wan-3.0-video-prime": "PRIME",
+    "seedance-2.0-mini": "MINI", "seedance-2.0-fast": "FAST", "seedance-2.0": "PRO",
+    "kling-v3.0-standard": "STANDARD", "kling-v3.0-pro": "PRO",
+    "kling-3.0-turbo": "TURBO", "kling-v3.0-4k": "4K", "kling-v3-omni-video": "OMNI",
+    "pixverse-v6": "V6", "pixverse-c1": "C1",
 }
 
 
@@ -261,6 +279,8 @@ def _ui_caps(item):
 
 
 def _variant_label(item, group_name):
+    if item["slug"] in _VARIANT_LABELS:
+        return _VARIANT_LABELS[item["slug"]]
     if item["name"] == group_name:
         return "STANDARD"
     prefix = group_name + " "
@@ -270,35 +290,25 @@ def _variant_label(item, group_name):
 def public_ui_bundle(registry=None):
     """Return product-line cards and additions for existing cards."""
     rows = list(_ROWS)
-    if registry and not registry.get("sync_error"):
-        live_slugs = [row["slug"] for row in registry.get("models", [])
-                      if row.get("category") == "video" and row.get("handler")]
-        rows = [VIDEO_CATALOG.get(slug) or _spec(slug, slug.replace("-", " ").upper())
-                for slug in live_slugs]
-
     groups = {}
-    kling_qualities = []
     for item in rows:
         slug = item["slug"]
-        if slug in _KLING_30_MERGE:
-            kling_qualities.append({"id": slug, "label": _KLING_30_MERGE[slug],
-                                    "route": "budgetpixel", "caps": _ui_caps(item)})
-            continue
-        if slug in _EXISTING_UI_SLUGS:
-            continue
         key, name = _UI_GROUPS.get(slug, (slug, item["name"]))
         group = groups.setdefault(key, {"key": "bpx-" + key, "brand": "MIIAIVIDEO",
                                         "name": name, "featured": True,
-                                        "desc": item["description"] or "BudgetPixel video model.",
+                                        "desc": item["description"] or "MII video model.",
                                         "caps": {}, "qualities": []})
         group["qualities"].append({"id": slug, "label": _variant_label(item, name),
-                                   "route": "budgetpixel", "caps": _ui_caps(item)})
+                                   "route": "catalog", "caps": _ui_caps(item)})
 
     families = list(groups.values())
+    priority = {"bpx-seedance25": 0, "bpx-seedance20": 1, "bpx-wan30": 2,
+                "bpx-kling30": 3, "bpx-veo31": 4}
+    families.sort(key=lambda family: priority.get(family["key"], 100))
     for family in families:
         if len(family["qualities"]) == 1:
             family["qualities"][0]["label"] = "STANDARD"
-    return {"families": families, "kling_qualities": kling_qualities}
+    return {"families": families, "kling_qualities": []}
 
 
 def public_ui_families(exclude=(), registry=None):

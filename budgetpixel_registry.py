@@ -56,11 +56,15 @@ def _fallback_models():
     # so their proven routing and payload builders are never replaced.
     from budgetpixel_video_catalog import registry_rows
     from budgetpixel_media_catalog import registry_rows as media_registry_rows
+    from budgetpixel_motion_catalog import registry_rows as motion_registry_rows
     existing = {(row["slug"], row["category"]) for row in rows}
     rows.extend(row for row in registry_rows()
                 if (row["slug"], row["category"]) not in existing)
     existing = {(row["slug"], row["category"]) for row in rows}
     rows.extend(row for row in media_registry_rows()
+                if (row["slug"], row["category"]) not in existing)
+    existing = {(row["slug"], row["category"]) for row in rows}
+    rows.extend(row for row in motion_registry_rows()
                 if (row["slug"], row["category"]) not in existing)
     return rows
 
@@ -110,6 +114,8 @@ def _remote_rows(data):
         category = {"images":"image", "videos":"video", "audio":"audio", "audios":"audio",
                     "music":"audio", "speech":"audio", "voice":"audio", "tts":"audio",
                     "sound-effect":"audio", "sound_effect":"audio", "sfx":"audio"}.get(category, category)
+        if category in ("motion-control", "motion_control"):
+            category = "motion"
         result.append({"slug": slug.strip(), "name": str(item.get("name") or slug),
                        "category": category, "remote": _public_remote(item)})
     return result
