@@ -1611,7 +1611,7 @@ if (DEMO_MODE) {
   var _demoNativeFetch = window.fetch.bind(window);
   window.fetch = function(input, init) {
     var url = typeof input === 'string' ? input : ((input && input.url) || '');
-    if (/^(?:\/api\/aivideo(?:\/|$)|\/ai-video\/logout(?:\?|$))/.test(url)) {
+    if (/^(?:\/api(?:\/|$)|\/ai-video\/logout(?:\?|$))/.test(url)) {
       return Promise.reject(new Error('DEMO_NETWORK_BLOCKED'));
     }
     return _demoNativeFetch(input, init);
@@ -6641,9 +6641,11 @@ renderModelDock();
 // Refresh from the authenticated metadata endpoint. The server-rendered value
 // above is generated from that exact same Python registry and is the offline
 // fallback, not a second manually maintained contract.
-fetch('/api/aivideo/image-capabilities').then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
-  if (data && data.capabilities) { IMAGE_CAPABILITIES = data.capabilities; if (activeMode === 'image') applyModelCapabilities(); }
-}).catch(function(){});
+if (!DEMO_MODE) {
+  fetch('/api/aivideo/image-capabilities').then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+    if (data && data.capabilities) { IMAGE_CAPABILITIES = data.capabilities; if (activeMode === 'image') applyModelCapabilities(); }
+  }).catch(function(){});
+}
 updateCardPreview('image');
 updateCardPreview('video');
 updateCardPreview('audio');

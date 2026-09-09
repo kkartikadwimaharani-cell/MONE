@@ -340,7 +340,8 @@ def register_mcp(app, backend, data_dir):
                 result['image']['bpx-'+slug+':STANDARD']={
                     'slug':slug, 'modes':['text-to-image'] + (['image-editing'] if accepts_references else []),
                     'aspect_ratios':list(contract.get('aspect_ratios',())),
-                    'resolutions':list(contract.get('resolutions',())),
+                    'resolutions':list(contract.get('resolutions',())) or
+                                  (['NATIVE'] if contract.get('native_resolution') else []),
                     'sizes':list(contract.get('sizes',())),
                     'megapixels':list(contract.get('megapixels',())),
                     'qualities':list(contract.get('qualities',())),

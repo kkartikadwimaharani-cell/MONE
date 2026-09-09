@@ -35,12 +35,35 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
         self.assertTrue(all(not q["caps"]["elements"]
                             for q in midjourney["qualities"]))
 
-    def test_midjourney_payload_is_prompt_only(self):
+    def test_midjourney_payload_keeps_image_workshop_controls(self):
         for slug in ("midjourney-v7", "midjourney-niji-7"):
-            self.assertEqual(
-                catalog.build_image_payload(slug, {}, "cinematic portrait"),
-                {"prompt": "cinematic portrait"},
+            body = catalog.build_image_payload(
+                slug, {"aspect_ratio": "16:9", "size": "2K"},
+                "cinematic portrait",
             )
+            self.assertEqual(body["aspect_ratio"], "16:9")
+            self.assertEqual(body["size"], "2K")
+
+    def test_every_image_model_has_aspect_and_resolution_controls(self):
+        for item in catalog.IMAGE_ROWS:
+            with self.subTest(slug=item["slug"]):
+                contract = catalog.image_contract(item["slug"])
+                self.assertTrue(contract.get("aspect_ratios"))
+                self.assertTrue(contract.get("resolutions") or contract.get("sizes") or
+                                contract.get("megapixels") or contract.get("native_resolution"))
+
+    def test_catalogue_only_image_controls_reach_backend_payload(self):
+        body = catalog.build_image_payload(
+            "qwen-image-3.0",
+            {"aspect_ratio": "16:9", "size": "2K", "num_images": 2,
+             "negative_prompt": "blur", "seed": 42},
+            "cinematic landscape",
+        )
+        self.assertEqual(body["aspect_ratio"], "16:9")
+        self.assertEqual(body["size"], "2K")
+        self.assertEqual(body["num_images"], 2)
+        self.assertEqual(body["negative_prompt"], "blur")
+        self.assertEqual(body["seed"], 42)
 
     def test_reviewed_image_controls_are_exposed_in_shared_ui(self):
         bundle = catalog.public_ui_bundle()

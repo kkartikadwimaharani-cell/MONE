@@ -131,17 +131,108 @@ _CORE_IMAGE_ROUTE = {
     "qwen-image": ("qwenbp", "STANDARD"),
 }
 
+# Shared image-workshop baseline.  BudgetPixel's image endpoints use the same
+# public names for these controls (aspect_ratio, size and num_images).  Exact
+# model overrides live below; the baseline keeps every catalogue card usable
+# instead of rendering controls that disappear when the user changes model.
+_COMMON_IMAGE_RATIOS = ("1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "21:9")
+_WIDE_IMAGE_RATIOS = _COMMON_IMAGE_RATIOS + ("5:4", "4:5")
+_IMAGE_CONTRACT_OVERRIDES = {
+    "nano-banana-2": {
+        "aspect_ratios": ("1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4",
+                          "9:16", "16:9", "21:9", "1:4", "4:1", "1:8", "8:1"),
+        "sizes": ("0.5K", "1K", "2K", "4K"), "default_size": "1K",
+        "image_count": (1, 4), "reference_images": 9,
+    },
+    "nano-banana-2-lite": {
+        "aspect_ratios": ("1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4",
+                          "9:16", "16:9", "21:9", "1:4", "4:1"),
+        "sizes": ("0.5K", "1K", "2K"), "default_size": "1K",
+        "image_count": (1, 4), "reference_images": 9,
+    },
+    "qwen-image-3.0": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "2K"), "default_size": "1K", "image_count": (1, 4),
+        "reference_images": 3, "seed": True, "negative_prompt": True,
+    },
+    "qwen-image-3.0-pro": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "2K"), "default_size": "1K", "image_count": (1, 4),
+        "reference_images": 3, "seed": True, "negative_prompt": True,
+    },
+    "qwen-image-2.0": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "1.5K", "2K"), "default_size": "1.5K",
+        "image_count": (1, 4), "reference_images": 3,
+        "seed": True, "negative_prompt": True,
+    },
+    "qwen-image-2.0-pro": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "1.5K", "2K"), "default_size": "1.5K",
+        "image_count": (1, 4), "reference_images": 3,
+        "seed": True, "negative_prompt": True,
+    },
+    "wan-2.7": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "2K"), "default_size": "2K", "image_count": (1, 4),
+        "reference_images": 9, "seed": True,
+    },
+    "wan-2.7-pro": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS + ("match_input_image",),
+        "sizes": ("1K", "2K"), "default_size": "2K", "image_count": (1, 4),
+        "reference_images": 9, "seed": True,
+    },
+    "seedream-4.5": {
+        "aspect_ratios": _COMMON_IMAGE_RATIOS, "sizes": ("2K", "4K"),
+        "default_size": "2K", "image_count": (1, 4), "reference_images": 9,
+        "sequential_modes": ("disabled", "auto"), "max_images": (1, 15),
+    },
+}
+
+
+def _catalog_image_contract(item):
+    """Return the normalized request contract for a catalogue-only model."""
+    override = _IMAGE_CONTRACT_OVERRIDES.get(item["slug"])
+    if override:
+        contract = dict(override)
+    else:
+        # The catalogue image workshop exposes these normalized request fields
+        # across its remaining image endpoints. Keep the conservative common
+        # 1K/2K range here; documented 4K/MP models are explicit overrides.
+        contract = {
+            "aspect_ratios": _WIDE_IMAGE_RATIOS,
+            "default_aspect_ratio": "1:1",
+            "sizes": ("1K", "2K"),
+            "default_size": "1K",
+            "image_count": (1, 4),
+        }
+    contract.setdefault("default_aspect_ratio", "1:1")
+    if item.get("reference_images"):
+        contract.setdefault("reference_images", item["reference_images"])
+    if item.get("singular_image"):
+        contract["singular_image"] = True
+    return contract
+
 
 def image_contract(slug):
-    """Return a copy of the reviewed control contract for one image slug."""
+    """Return a copy of the shared UI/backend/tool contract for one image slug."""
     route = _CORE_IMAGE_ROUTE.get(slug)
-    return dict(CORE_IMAGE_CAPABILITIES.get(route, {})) if route else {}
+    if route:
+        contract = dict(CORE_IMAGE_CAPABILITIES.get(route, {}))
+        # These endpoints publish aspect/count controls but no selectable
+        # output-size request field. Expose their honest native-output state
+        # in UI/tools without sending an unsupported resolution parameter.
+        if slug in ("flux-2-dev", "qwen-image"):
+            contract["native_resolution"] = True
+        return contract
+    item = IMAGE_CATALOG.get(str(slug).lower())
+    return _catalog_image_contract(item) if item else {}
 
 
 def _image_ui_caps(item):
     """Translate the request contract into the capability names used by UI."""
     contract = image_contract(item["slug"])
-    image_limit = 1 if item["singular_image"] else item["reference_images"]
+    image_limit = 1 if item["singular_image"] else int(contract.get("reference_images", item["reference_images"]))
     caps = {
         "image": image_limit,
         "video": 0,
@@ -154,10 +245,12 @@ def _image_ui_caps(item):
         "supportsAspectRatio": bool(contract.get("aspect_ratios")),
         "aspectRatios": list(contract.get("aspect_ratios", ())),
         "defaultAspectRatio": contract.get("default_aspect_ratio", "1:1"),
-        "supportsResolution": bool(contract.get("resolutions")),
-        "resolutions": list(contract.get("resolutions", ())),
+        "supportsResolution": bool(contract.get("resolutions") or contract.get("native_resolution")),
+        "resolutions": list(contract.get("resolutions", ())) or
+                       (["NATIVE"] if contract.get("native_resolution") else []),
         "defaultResolution": contract.get("default_resolution") or
-                             (contract.get("resolutions") or (None,))[0],
+                             ((contract.get("resolutions") or
+                               (("NATIVE",) if contract.get("native_resolution") else (None,)))[0]),
         "supportsSize": bool(contract.get("sizes")),
         "sizes": list(contract.get("sizes", ())),
         "defaultSize": contract.get("default_size"),
@@ -206,7 +299,8 @@ def build_image_payload(slug, incoming, prompt, reference_images=None):
     if not item or not _SLUG_RE.fullmatch(str(slug or "")):
         raise ProviderError("MODEL_UNAVAILABLE", "Selected image model is unavailable.")
     refs = [url for url in (reference_images or []) if url]
-    limit = 1 if item["singular_image"] else item["reference_images"]
+    contract = image_contract(item["slug"])
+    limit = 1 if item["singular_image"] else int(contract.get("reference_images", item["reference_images"]))
     if item["requires_image"] and not refs:
         raise ProviderError("INVALID_INPUT", "This image-edit model requires one source image.")
     if len(refs) > limit:
@@ -221,6 +315,46 @@ def build_image_payload(slug, incoming, prompt, reference_images=None):
             reference_images=refs,
         )
     body = {"prompt": prompt}
+    ratios = contract.get("aspect_ratios", ())
+    ratio = str(incoming.get("aspect_ratio") or contract.get("default_aspect_ratio") or ratios[0])
+    if ratio not in ratios:
+        raise ProviderError("INVALID_INPUT", "Aspect ratio is not supported by this model.")
+    if ratio == "match_input_image" and not refs:
+        raise ProviderError("INVALID_INPUT", "match_input_image requires a reference image.")
+    body["aspect_ratio"] = ratio
+    sizes = contract.get("sizes", ())
+    size = str(incoming.get("size") or contract.get("default_size") or sizes[0]).upper()
+    if size not in sizes:
+        raise ProviderError("INVALID_INPUT", "Size is not supported by this model.")
+    body["size"] = size
+    count_range = contract.get("image_count", (1, 1))
+    try:
+        count = int(incoming.get("num_images", 1))
+    except (TypeError, ValueError):
+        count = 0
+    if not count_range[0] <= count <= count_range[1]:
+        raise ProviderError("INVALID_INPUT", "Image count is outside model limits.")
+    body["num_images"] = count
+    if contract.get("seed") and incoming.get("seed") not in (None, ""):
+        try:
+            body["seed"] = int(incoming["seed"])
+        except (TypeError, ValueError):
+            raise ProviderError("INVALID_INPUT", "Seed must be an integer.")
+    if contract.get("negative_prompt") and incoming.get("negative_prompt") not in (None, ""):
+        body["negative_prompt"] = str(incoming["negative_prompt"])
+    if contract.get("sequential_modes"):
+        mode = str(incoming.get("sequential_image_generation") or "disabled").lower()
+        if mode not in contract["sequential_modes"]:
+            raise ProviderError("INVALID_INPUT", "Sequential generation mode is invalid.")
+        body["sequential_image_generation"] = mode
+        if mode == "auto":
+            try:
+                maximum = int(incoming.get("max_images", contract["max_images"][0]))
+            except (TypeError, ValueError):
+                maximum = 0
+            if not contract["max_images"][0] <= maximum <= contract["max_images"][1]:
+                raise ProviderError("INVALID_INPUT", "Max images is outside model limits.")
+            body["max_images"] = maximum
     if refs:
         body["image" if item["singular_image"] else "reference_images"] = refs[0] if item["singular_image"] else refs
     return body
