@@ -40,3 +40,35 @@ def test_variant_switch_resets_then_clamps_capability_state():
     assert "selectedDuration = rawCaps.defaultDuration" in DEMO
     assert "selectedResolution = rawCaps.defaultResolution || opts[0]" in DEMO
     assert "media.image.slice(0, activeLimit('maxReferenceImages', 'image'))" in DEMO
+
+
+def test_wide_layout_keeps_mobile_style_bottom_composer():
+    desktop_css = DEMO.split("@media (min-width:1100px){", 1)[1].split("@media (min-width:1440px){", 1)[0]
+    assert "#pageAiVideo.active{\n    display:flex;flex-direction:column" in desktop_css
+    assert "grid-template-columns" not in desktop_css
+    assert "grid-column:2" not in desktop_css
+    assert "#pageAiVideo>.panel-wrap" in desktop_css
+    assert "width:min(760px,100%)" in desktop_css
+
+
+def test_gpt_image_25_is_adjacent_ui_only_preparation():
+    assert "name: 'GPT IMAGE 2.5'" in DEMO
+    assert "gpt-image-2.5-flare" in DEMO
+    assert "gpt-image-2.5-sunburst" in DEMO
+    assert "gptImage2Index + 1" in DEMO
+    assert "var UI_ONLY_FAMILY_KEYS = ['gptimage25']" in DEMO
+    assert "if (!isBackendConnected()) { showToast('UI PREVIEW · UPLOAD BELUM DIAKTIFKAN'); return; }" in DEMO
+
+    backend_sources = "\n".join(
+        (ROOT / name).read_text()
+        for name in (
+            "app.py", "budgetpixel_media_catalog.py", "budgetpixel_provider.py",
+            "budgetpixel_registry.py", "mii_mcp.py",
+        )
+    )
+    assert "gpt-image-2.5-flare" not in backend_sources
+    assert "gpt-image-2.5-sunburst" not in backend_sources
+
+
+def test_image_detail_chip_names_the_real_capability():
+    assert "rawCaps.supportsMegapixel ? 'MEGAPIXEL' : (rawCaps.supportsSize ? 'SIZE' : 'RESOLUTION')" in DEMO
