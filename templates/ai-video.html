@@ -1603,6 +1603,53 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   .tier-seg-btn{padding:6px 9px;font-size:10px}
   .gen-btn{min-height:48px;padding:10px;font-size:14px;border-radius:16px}
 }
+
+/* Chrome Android "Desktop site" keeps a coarse pointer but exposes a wide
+   CSS viewport. Give that viewport mobile-like density instead of letting the
+   browser shrink a desktop-sized workspace into a miniature composition. */
+@media (pointer:coarse) and (min-width:768px){
+  .topbar{height:108px;padding-left:32px;padding-right:32px}
+  .tb-center{gap:14px}
+  .tb-logo{width:42px;height:42px;border-radius:12px;font-size:20px}
+  .tb-title{font-size:40px}
+  .tb-badge{padding:5px 12px;font-size:13px}
+  .modebar{padding:2px 20px 18px}
+  .modebar-track{padding:6px;gap:4px}
+  .modebar .mode-btn{padding:13px 28px;font-size:20px;gap:9px}
+  .modebar .mode-btn svg{width:21px;height:21px}
+  #pageAiVideo>.canvas{padding:18px 28px 8px}
+  #pageAiVideo>.panel-wrap{padding:0 28px 18px}
+  .panel,.demo-mode .panel{width:calc(100% - 24px);max-width:1280px;padding:15px 20px 20px!important;gap:15px;max-height:64dvh}
+  .panel-body{gap:15px}
+  .panel-handle{width:58px;height:6px}
+  .inline-models{gap:10px;padding-bottom:8px}
+  .inline-model-card{min-width:170px;max-width:230px;padding:15px 16px;border-radius:18px}
+  .inline-model-name{font-size:18px}
+  .inline-model-brand{font-size:12px;margin-top:6px}
+  .media-row{gap:13px}
+  .type-rail{padding:6px;gap:6px}
+  .rail-btn{width:48px;height:48px;border-radius:14px}
+  .rail-btn svg{width:20px;height:20px}
+  .rail-pill{left:6px;right:6px;height:48px}
+  .ref-sections{gap:12px}
+  .ref-group + .ref-group{padding-left:12px}
+  .ref-cards .upload-card,.ref-thumb{width:100px;height:104px;border-radius:18px}
+  .ref-cards .uc-icon{width:26px;height:26px}
+  .ref-cards .uc-label{font-size:14px}
+  .prompt-mount{flex-basis:170px}
+  .media-row .prompt-btn{min-width:170px;min-height:104px;padding:15px;border-radius:20px}
+  .media-row .prompt-btn-icon{width:40px;height:40px;border-radius:12px}
+  .media-row .prompt-btn-txt{font-size:18px;padding-top:7px}
+  .duration-card{padding:15px 18px;border-radius:18px}
+  .duration-card-title{font-size:17px}
+  .duration-card-val #durationLabel{font-size:22px}
+  .settings-row{gap:10px}
+  .chip{min-height:52px;padding:11px 15px;font-size:16px;border-radius:16px}
+  .tier-seg{min-height:52px}
+  .tier-seg-btn{padding:11px 15px;font-size:15px}
+  .gen-btn{min-height:76px;padding:16px;font-size:20px;border-radius:21px}
+  .mii-work-pet{left:max(calc(50% - 620px),28px);bottom:8px}
+}
 </style>
 </head>
 
@@ -2479,7 +2526,7 @@ var GPT_IMAGE_25_FAMILY = {
   key: 'gptimage25', brand: 'OPENAI', name: 'GPT IMAGE 2.5', featured: true, uiOnly: true,
   desc: 'OFFICIAL API PREVIEW',
   caps: {
-    image: 0, video: 0, audio: 0, frames: false, elements: false,
+    image: 4, video: 0, audio: 0, frames: false, elements: true,
     supportsAspectRatio: true,
     aspectRatios: ['1:1','3:2','2:3','16:9','9:16','4:3','3:4'],
     defaultAspectRatio: '1:1',
@@ -2498,7 +2545,7 @@ var GPT_IMAGE_25_FAMILY = {
     { id: 'gpt-image-2.5-sunburst', label: 'SUNBURST' }
   ]
 };
-var gptImage2Index = modelFamilies.image.findIndex(function(family) { return family.key === 'gptimage'; });
+var gptImage2Index = modelFamilies.image.findIndex(function(family) { return family.name === 'GPT IMAGE 2'; });
 modelFamilies.image.splice(gptImage2Index >= 0 ? gptImage2Index + 1 : modelFamilies.image.length, 0, GPT_IMAGE_25_FAMILY);
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself

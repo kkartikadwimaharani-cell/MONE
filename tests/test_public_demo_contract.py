@@ -55,9 +55,11 @@ def test_gpt_image_25_is_adjacent_ui_only_preparation():
     assert "name: 'GPT IMAGE 2.5'" in DEMO
     assert "gpt-image-2.5-flare" in DEMO
     assert "gpt-image-2.5-sunburst" in DEMO
+    assert "family.name === 'GPT IMAGE 2'" in DEMO
     assert "gptImage2Index + 1" in DEMO
     assert "var UI_ONLY_FAMILY_KEYS = ['gptimage25']" in DEMO
     assert "if (!isBackendConnected()) { showToast('UI PREVIEW · UPLOAD BELUM DIAKTIFKAN'); return; }" in DEMO
+    assert "image: 4, video: 0, audio: 0" in DEMO
 
     backend_sources = "\n".join(
         (ROOT / name).read_text()
@@ -72,3 +74,10 @@ def test_gpt_image_25_is_adjacent_ui_only_preparation():
 
 def test_image_detail_chip_names_the_real_capability():
     assert "rawCaps.supportsMegapixel ? 'MEGAPIXEL' : (rawCaps.supportsSize ? 'SIZE' : 'RESOLUTION')" in DEMO
+
+
+def test_coarse_pointer_desktop_site_keeps_mobile_density_and_pet_alignment():
+    coarse_css = DEMO.split("@media (pointer:coarse) and (min-width:768px){", 1)[1].split("</style>", 1)[0]
+    assert ".panel,.demo-mode .panel{width:calc(100% - 24px);max-width:1280px" in coarse_css
+    assert ".gen-btn{min-height:76px" in coarse_css
+    assert ".mii-work-pet{left:max(calc(50% - 620px),28px);bottom:8px}" in coarse_css
