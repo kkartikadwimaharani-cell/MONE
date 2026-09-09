@@ -1290,24 +1290,32 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
    tengah, model dock nempel di samping rail. Mobile/tablet tidak berubah. */
 @media (min-width:768px){
   .dash-wrap{max-width:820px;margin:0 auto;width:100%}
+  body:not(.demo-mode) .main{width:calc(100% - 248px)}
+  /* The public demo has no sidebar. Do not reserve the authenticated
+     application's 248px navigation gutter for it on tablet/desktop. */
+  .demo-mode .main{margin-left:0!important;width:100%!important}
 }
 @media (min-width:1100px){
-  :root{--rail:432px}
-  .main{
-    display:grid;height:100dvh;
+  :root{--rail:clamp(440px,36vw,520px)}
+  /* .modebar/.canvas/.panel-wrap live inside #pageAiVideo, not directly
+     inside .main. Making .main the grid placed that one page in a single
+     auto-sized cell, which is why desktop mode appeared tiny at top-right. */
+  .main{display:flex;height:100dvh;min-width:0}
+  .topbar{height:76px;padding-left:28px;padding-right:28px;width:100%;flex:0 0 auto}
+  #pageAiVideo.active{
+    display:grid;min-width:0;min-height:0;flex:1;
     grid-template-columns:minmax(0,1fr) var(--rail);
-    grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
   }
-  .topbar{grid-column:1;grid-row:1;height:76px;padding-left:28px;padding-right:28px}
-  .modebar{grid-column:1;grid-row:2;justify-content:center;padding:4px 28px 12px}
-  .canvas{grid-column:1;grid-row:3;overflow-y:auto;padding:28px 40px 36px;gap:20px}
+  #pageAiVideo>.modebar{grid-column:1;grid-row:1;justify-content:center;padding:4px 28px 12px}
+  #pageAiVideo>.canvas{grid-column:1;grid-row:2;min-width:0;min-height:0;overflow-y:auto;padding:28px 40px 36px;gap:20px}
   .canvas-preview,.canvas-result-wrap{max-width:640px}
   .gen-queue{max-width:640px;margin:0 auto}
 
   /* Rail kanan */
-  .panel-wrap{
-    grid-column:2;grid-row:1/4;display:flex;min-height:0;
-    padding:16px 16px 16px 4px;animation:none;
+  #pageAiVideo>.panel-wrap{
+    grid-column:2;grid-row:1/3;display:flex;min-width:0;min-height:0;
+    padding:12px 18px 18px 8px;animation:none;
   }
   .panel{
     width:100%;max-width:none;margin:0;min-height:0;max-height:100%;
@@ -1358,7 +1366,8 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
   .gen-btn{cursor:pointer}
 }
 @media (min-width:1440px){
-  :root{--rail:460px}
+  :root{--rail:clamp(480px,35vw,560px)}
+  body:not(.demo-mode) .main{width:calc(100% - 276px)}
   .canvas{padding:36px 56px 44px}
   .canvas-preview,.canvas-result-wrap,.gen-queue{max-width:720px}
 }
@@ -3081,10 +3090,12 @@ function applySelectedFamily(family, qualityIdx, options) {
   options = options || {};
   if (!family || (modelFamilies[activeMode] || []).indexOf(family) === -1) return false;
   if (activeMode === 'image' && family.qualities && family.qualities.length) {
-    var targetVariant = family.qualities[qualityIdx >= 0 ? qualityIdx : 0].label;
-    var targetCaps = IMAGE_CAPABILITIES[family.key + ':' + targetVariant];
+    var targetQuality = family.qualities[qualityIdx >= 0 ? qualityIdx : 0];
+    var targetVariant = targetQuality.label;
+    var targetCaps = IMAGE_CAPABILITIES[family.key + ':' + targetVariant] || targetQuality.caps;
     if (targetCaps) {
-      var targetLimit = targetCaps.singular_image ? 1 : (targetCaps.reference_images || 0);
+      var targetLimit = (targetCaps.singular_image || targetCaps.singularImage)
+        ? 1 : (targetCaps.reference_images || targetCaps.image || 0);
       if (media.image.length > targetLimit) {
         var message = targetLimit ? ('Tier ini hanya mendukung ' + targetLimit + ' reference. Remove extras?') : 'Tier ini tidak mendukung reference. Remove references?';
         if (!window.confirm(message)) return false;
@@ -3365,6 +3376,18 @@ function applyModelCapabilities() {
   if (imageCountControl) imageCountControl.style.display = rawCaps.supportsImageCount ? '' : 'none';
   if (imageQualityControl) imageQualityControl.style.display = (rawCaps.supportsQuality && selectedFamily.key !== 'gptimage') ? '' : 'none';
   if (imageAdvancedControl) imageAdvancedControl.style.display = (rawCaps.seed || rawCaps.negativePrompt || (rawCaps.sequentialModes || []).length) ? '' : 'none';
+  if (sheetDefs && sheetDefs.imageformat && rawCaps.supportsOutputFormat) {
+    sheetDefs.imageformat.options = (rawCaps.formats || []).map(function(value){ return String(value).toUpperCase(); });
+    if (sheetDefs.imageformat.options.indexOf(selectedImageFormat) < 0) selectedImageFormat = sheetDefs.imageformat.options[0];
+    var formatLabel = document.getElementById('imageFormatLabel');
+    if (formatLabel) formatLabel.textContent = selectedImageFormat;
+  }
+  if (sheetDefs && sheetDefs.imagequality && rawCaps.supportsQuality) {
+    sheetDefs.imagequality.options = (rawCaps.qualities || []).map(String);
+    if (sheetDefs.imagequality.options.indexOf(selectedImageQuality) < 0) selectedImageQuality = sheetDefs.imagequality.options[0];
+    var qualityLabel = document.getElementById('imageQualityLabel');
+    if (qualityLabel) qualityLabel.textContent = selectedImageQuality;
+  }
   maxQty = rawCaps.supportsImageCount ? (rawCaps.maxImages || 1) : 1;
   qty = Math.max(rawCaps.minImages || 1, Math.min(maxQty, activeMode === 'image' ? selectedImageCount : qty));
   if (activeMode === 'image') selectedImageCount = qty;

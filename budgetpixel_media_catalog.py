@@ -6,7 +6,11 @@ through ``GET /v1/models`` but only the contracts in this module are runnable.
 """
 import re
 
-from budgetpixel_provider import ProviderError
+from budgetpixel_provider import (
+    IMAGE_CAPABILITIES as CORE_IMAGE_CAPABILITIES,
+    ProviderError,
+    build_image_payload as build_core_image_payload,
+)
 
 
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,79}$")
@@ -112,6 +116,66 @@ AUDIO_ROWS = [
 IMAGE_CATALOG = {row["slug"]: row for row in IMAGE_ROWS}
 AUDIO_CATALOG = {row["slug"]: row for row in AUDIO_ROWS}
 
+# Catalogue slugs that share the already-reviewed image request contracts in
+# budgetpixel_provider. Keeping one contract source prevents the original app
+# and the read-only demo from drifting apart as controls are added.
+_CORE_IMAGE_ROUTE = {
+    "seedream-5.0-pro": ("seedream5", "PRO"),
+    "seedream-5.0-lite": ("seedream5", "LITE"),
+    "kling-v3": ("klingimage", "V3"),
+    "kling-v3-omni": ("klingimage", "OMNI"),
+    "gpt-image-2": ("gptimage", "STANDARD"),
+    "flux-2-klein": ("flux2", "KLEIN"),
+    "flux-2-pro": ("flux2", "PRO"),
+    "flux-2-dev": ("flux2", "DEV"),
+    "qwen-image": ("qwenbp", "STANDARD"),
+}
+
+
+def _contract_for_slug(slug):
+    route = _CORE_IMAGE_ROUTE.get(slug)
+    return dict(CORE_IMAGE_CAPABILITIES.get(route, {})) if route else {}
+
+
+def _image_ui_caps(item):
+    """Translate the request contract into the capability names used by UI."""
+    contract = _contract_for_slug(item["slug"])
+    image_limit = 1 if item["singular_image"] else item["reference_images"]
+    caps = {
+        "image": image_limit,
+        "video": 0,
+        "audio": 0,
+        "frames": False,
+        "elements": bool(image_limit),
+        "ratio": bool(contract.get("aspect_ratios")),
+        "resolution": bool(contract.get("resolutions")),
+        "requiresImage": item["requires_image"],
+        "supportsAspectRatio": bool(contract.get("aspect_ratios")),
+        "aspectRatios": list(contract.get("aspect_ratios", ())),
+        "defaultAspectRatio": contract.get("default_aspect_ratio", "1:1"),
+        "supportsResolution": bool(contract.get("resolutions")),
+        "resolutions": list(contract.get("resolutions", ())),
+        "supportsSize": bool(contract.get("sizes")),
+        "sizes": list(contract.get("sizes", ())),
+        "defaultSize": contract.get("default_size"),
+        "supportsMegapixel": bool(contract.get("megapixels")),
+        "megapixels": list(contract.get("megapixels", ())),
+        "defaultMegapixel": contract.get("default_megapixel"),
+        "supportsQuality": bool(contract.get("qualities")),
+        "qualities": list(contract.get("qualities", ())),
+        "supportsImageCount": bool(contract.get("image_count")),
+        "minImages": contract.get("image_count", (1, 1))[0],
+        "maxImages": contract.get("image_count", (1, 1))[1],
+        "supportsOutputFormat": bool(contract.get("formats")),
+        "formats": list(contract.get("formats", ())),
+        "seed": bool(contract.get("seed")),
+        "negativePrompt": bool(contract.get("negative_prompt")),
+        "sequentialModes": list(contract.get("sequential_modes", ())),
+        "maxImagesRange": list(contract.get("max_images", ())),
+        "singularImage": bool(contract.get("singular_image") or item["singular_image"]),
+    }
+    return caps
+
 
 def registry_rows():
     rows = []
@@ -138,6 +202,15 @@ def build_image_payload(slug, incoming, prompt, reference_images=None):
         raise ProviderError("INVALID_INPUT", "This image-edit model requires one source image.")
     if len(refs) > limit:
         raise ProviderError("INVALID_INPUT", "Reference image settings exceed model limits.")
+    core_route = _CORE_IMAGE_ROUTE.get(item["slug"])
+    if core_route:
+        # The catalogue endpoint differs, but the accepted body is identical.
+        # Reuse the strict validator so aspect ratio, size/resolution, quality,
+        # count and format selected in either UI are never silently discarded.
+        return build_core_image_payload(
+            core_route[0], core_route[1], incoming, prompt,
+            reference_images=refs,
+        )
     body = {"prompt": prompt}
     if refs:
         body["image" if item["singular_image"] else "reference_images"] = refs[0] if item["singular_image"] else refs
@@ -217,11 +290,7 @@ def public_ui_bundle(registry=None):
             quality = {"id": item["slug"], "label": item["label"],
                        "route": "catalog", "outputKind": kind}
             if kind == "image":
-                quality["caps"] = {"image": 1 if item["singular_image"] else item["reference_images"],
-                    "video": 0, "audio": 0, "frames": False,
-                    "elements": bool(item["reference_images"]), "ratio": False,
-                    "resolution": False, "duration": False,
-                    "requiresImage": item["requires_image"]}
+                quality["caps"] = _image_ui_caps(item)
             else:
                 quality["caps"] = _audio_caps(item)
             family["qualities"].append(quality)

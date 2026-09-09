@@ -42,6 +42,32 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
                 {"prompt": "cinematic portrait"},
             )
 
+    def test_reviewed_image_controls_are_exposed_in_shared_ui(self):
+        bundle = catalog.public_ui_bundle()
+        images = {row["name"]: row for row in bundle["image_families"]}
+        seedream = images["SEEDREAM 5"]["qualities"][0]["caps"]
+        self.assertTrue(seedream["supportsAspectRatio"])
+        self.assertTrue(seedream["supportsSize"])
+        self.assertEqual(seedream["sizes"], ["1K", "2K"])
+        self.assertTrue(seedream["supportsImageCount"])
+        gpt = images["GPT IMAGE 2"]["qualities"][0]["caps"]
+        self.assertTrue(gpt["supportsResolution"])
+        self.assertTrue(gpt["supportsQuality"])
+        self.assertTrue(gpt["supportsOutputFormat"])
+
+    def test_catalogue_image_payload_keeps_selected_controls(self):
+        body = catalog.build_image_payload(
+            "gpt-image-2",
+            {"aspect_ratio": "4:3", "resolution": "2K", "quality": "high",
+             "num_images": 2, "output_format": "jpeg"},
+            "editorial portrait",
+        )
+        self.assertEqual(body["aspect_ratio"], "4:3")
+        self.assertEqual(body["resolution"], "2K")
+        self.assertEqual(body["quality"], "high")
+        self.assertEqual(body["num_images"], 2)
+        self.assertEqual(body["output_format"], "jpeg")
+
     def test_midjourney_stays_visible_when_live_directory_is_partial(self):
         partial = {"models": [{"slug": "some-other-model", "handler": True}],
                    "sync_error": None}
