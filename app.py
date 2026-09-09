@@ -4060,6 +4060,7 @@ def ai_video_view():
     motion_ui = budgetpixel_motion_catalog.public_ui_families()
     return render_template(
         'ai-video.html',
+        demo_mode=False,
         image_capabilities=budgetpixel_provider.public_image_capabilities(),
         budgetpixel_registry=registry,
         budgetpixel_video_families=video_ui['families'],
@@ -4067,6 +4068,24 @@ def ai_video_view():
         budgetpixel_image_families=media_ui['image_families'],
         budgetpixel_audio_families=media_ui['audio_families'],
         budgetpixel_motion_families=motion_ui,
+    )
+
+
+@app.route('/mii-ai-video')
+def ai_video_demo_view():
+    """Public, UI-only preview that never loads account or generation data."""
+    video_ui = budgetpixel_video_catalog.public_ui_bundle()
+    media_ui = budgetpixel_media_catalog.public_ui_bundle()
+    return render_template(
+        'ai-video.html',
+        demo_mode=True,
+        image_capabilities={},
+        budgetpixel_registry={},
+        budgetpixel_video_families=video_ui['families'],
+        budgetpixel_kling_qualities=video_ui['kling_qualities'],
+        budgetpixel_image_families=media_ui['image_families'],
+        budgetpixel_audio_families=media_ui['audio_families'],
+        budgetpixel_motion_families=budgetpixel_motion_catalog.public_ui_families(),
     )
 
 

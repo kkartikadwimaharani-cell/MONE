@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 <meta http-equiv="Cache-Control" content="no-store">
-<title>MII AI VIDEO — Private Workspace</title>
+<title>MII AI VIDEO — {{ 'Interactive Demo' if demo_mode|default(false) else 'Private Workspace' }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -1529,10 +1529,38 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   .settings-row>.chip,.settings-row>.tier-seg{scroll-snap-align:start;min-height:44px;flex:0 0 auto;}
   .sheet{max-width:calc(100vw - 16px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 16px);}
 }
+
+/* Public preview: same product UI, with private navigation and network actions removed. */
+.demo-mode #sidebar,.demo-mode #sbOverlay{display:none!important}
+.demo-mode .topbar>.icon-btn{visibility:hidden;pointer-events:none}
+.demo-mode .tb-badge{color:#fff;border-color:rgba(255,255,255,.2);background:linear-gradient(180deg,#ff2748,#a9001c);box-shadow:0 0 20px rgba(255,32,64,.32)}
+.demo-notice{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.76);backdrop-filter:blur(14px)}
+.demo-notice.show{display:flex;animation:fadeIn .2s ease}
+.demo-notice-card{width:min(470px,100%);padding:26px;border-radius:26px;border:1px solid rgba(255,65,93,.42);background:linear-gradient(145deg,#1d1013,#101114 58%,#151515);box-shadow:0 28px 90px rgba(0,0,0,.7),0 0 44px rgba(255,32,64,.12)}
+.demo-notice-mark{display:inline-flex;padding:6px 10px;margin-bottom:18px;border:1px solid rgba(255,65,93,.4);border-radius:999px;color:#ff6078;background:rgba(255,32,64,.09);font:800 .62rem/1 var(--mono);letter-spacing:.16em}
+.demo-notice-card h2{font:800 clamp(1.35rem,5vw,2rem)/1.08 var(--disp);letter-spacing:-.035em}
+.demo-notice-card p{margin-top:13px;color:var(--text-dim);font-size:.92rem;line-height:1.65}
+.demo-notice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.demo-notice-actions>*{min-height:48px;display:grid;place-items:center;border-radius:14px;border:1px solid var(--border2);font:800 .73rem/1 var(--disp);letter-spacing:.06em;text-decoration:none;color:#fff;text-align:center}
+.demo-notice-actions .primary{border-color:transparent;background:linear-gradient(135deg,#ff2446,#a6001b);box-shadow:0 12px 30px rgba(255,32,64,.2)}
+@media(max-width:420px){.demo-notice-actions{grid-template-columns:1fr}.demo-notice-card{padding:22px}}
 </style>
 </head>
 
-<body>
+<body class="{{ 'demo-mode' if demo_mode|default(false) else '' }}">
+<script>
+var DEMO_MODE = {{ demo_mode|default(false)|tojson }};
+if (DEMO_MODE) {
+  var _demoNativeFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    var url = typeof input === 'string' ? input : ((input && input.url) || '');
+    if (/^(?:\/api\/aivideo(?:\/|$)|\/ai-video\/logout(?:\?|$))/.test(url)) {
+      return Promise.reject(new Error('DEMO_NETWORK_BLOCKED'));
+    }
+    return _demoNativeFetch(input, init);
+  };
+}
+</script>
 
 <div class="toast-wrap" id="toastWrap">
   <div class="toast" id="toast">
@@ -1541,6 +1569,20 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
     <button class="toast-action" id="toastAction" style="display:none"></button>
   </div>
 </div>
+
+{% if demo_mode|default(false) %}
+<div class="demo-notice" id="demoNotice" role="dialog" aria-modal="true" aria-labelledby="demoNoticeTitle" onclick="if(event.target===this)closeDemoNotice()">
+  <div class="demo-notice-card">
+    <span class="demo-notice-mark">MII AI VIDEO · PUBLIC DEMO</span>
+    <h2 id="demoNoticeTitle">FITUR KREATIF TERSEDIA DI WORKSPACE</h2>
+    <p id="demoNoticeText">Ini adalah pratinjau interaktif MII AI VIDEO. Kamu bebas menjelajahi model, mode, dan pengaturan. Tidak ada media yang diunggah, generasi yang dijalankan, atau kredit yang digunakan dari halaman ini.</p>
+    <div class="demo-notice-actions">
+      <button type="button" onclick="closeDemoNotice()">LANJUT JELAJAHI</button>
+      <a class="primary" href="/ai-video">BUKA WORKSPACE</a>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar(false)"></div>
 
@@ -1606,7 +1648,7 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
     <div class="tb-center">
       <span class="tb-logo" aria-hidden="true">M</span>
       <span class="tb-title" id="pageTitleTxt">MII AI VIDEO</span>
-      <span class="tb-badge">BETA</span>
+      <span class="tb-badge">{{ 'DEMO' if demo_mode|default(false) else 'BETA' }}</span>
     </div>
     <button class="icon-btn" id="settingsBtn" onclick="navigateTo('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2502,7 +2544,7 @@ function updateCollapsedBar(modelTxt, progressTxt) {
 var creditBalance = null;
 function formatBalance(v) { return v == null ? '— CREDITS' : Number(v).toLocaleString() + ' CREDITS'; }
 function updateCreditEstimate() {}
-function fetchCreditBalance() { fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
+function fetchCreditBalance() { if (DEMO_MODE) return; fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
   if(data && typeof data.total_available==='number') creditBalance=data.total_available;
 }).catch(function(){}); }
 
@@ -3619,6 +3661,7 @@ function renderModelDock() {
 
 // ══════════ UPLOAD SHEET + MEDIA ══════════
 function openUploadSheet(type) {
+  if (DEMO_MODE) { showDemoNotice('reference'); return; }
   closeModelDock();
   currentUploadType = type;
   document.getElementById('uploadSheetTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1);
@@ -4143,6 +4186,7 @@ function _runUpload(file, type, entry) {
 }
 
 function uploadFile(file, type, previewUrl) {
+  if (DEMO_MODE) { if (previewUrl) URL.revokeObjectURL(previewUrl); showDemoNotice('reference'); return; }
   // Track the entry by object identity (not array index). If the user
   // removes an earlier reference while this upload is still in flight, the
   // array shifts and a captured index would end up writing this upload's
@@ -4286,8 +4330,35 @@ function showToastAction(msg, actionLabel, onAction) {
   toastTimer = setTimeout(function() { toast.classList.remove('show'); actionBtn.style.display = 'none'; }, 4500);
 }
 
+function showDemoNotice(action) {
+  if (!DEMO_MODE) return;
+  var modal = document.getElementById('demoNotice');
+  var title = document.getElementById('demoNoticeTitle');
+  var copy = document.getElementById('demoNoticeText');
+  if (!modal || !title || !copy) return;
+  if (action === 'reference') {
+    title.textContent = 'REFERENSI MEDIA TERSEDIA DI WORKSPACE';
+    copy.textContent = 'Kamu sedang melihat pratinjau interaktif MII AI VIDEO. Semua model, mode, dan kontrol tetap bisa dijelajahi, tetapi media tidak akan diunggah dari halaman demo ini.';
+  } else if (action === 'enhance') {
+    title.textContent = 'PROMPT ENHANCE TERSEDIA DI WORKSPACE';
+    copy.textContent = 'Halaman demo menjaga pengalaman tetap aman dan bebas pemrosesan. Buka workspace untuk menyempurnakan prompt dan menggunakan fitur kreatif sepenuhnya.';
+  } else {
+    title.textContent = 'GENERASI AKTIF TERSEDIA DI WORKSPACE';
+    copy.textContent = 'Ini adalah pratinjau interaktif MII AI VIDEO. Pengaturanmu tidak dikirim, tidak ada generasi yang dijalankan, dan tidak ada kredit yang digunakan dari halaman ini.';
+  }
+  modal.classList.add('show');
+}
+function closeDemoNotice() {
+  var modal = document.getElementById('demoNotice');
+  if (modal) modal.classList.remove('show');
+}
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' && DEMO_MODE) closeDemoNotice();
+});
+
 // ══════════ FRAMES ══════════
 function openFrameInput(which) {
+  if (DEMO_MODE) { showDemoNotice('reference'); return; }
   document.getElementById(which === 'first' ? 'firstFrameInput' : 'lastFrameInput').click();
 }
 var FRAME_CARD_PLACEHOLDER = '<svg class="uc-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg><span class="uc-label">__LABEL__</span>';
@@ -4384,6 +4455,7 @@ var PE_ICON_COLLAPSE = '<path d="M9 3v3a2 2 0 0 1-2 2H4M20 8h-3a2 2 0 0 1-2-2V3M
 var enhanceBusy = false;
 var enhancePrevPrompt = null;
 function handlePromptEnhanceClick() {
+  if (DEMO_MODE) { showDemoNotice('enhance'); return; }
   if (enhanceBusy) return;
   var raw = (promptInput.value || '').trim();
   if (!raw) { showToast('Tulis prompt kasarnya dulu, baru Enhance'); return; }
@@ -4439,6 +4511,7 @@ function togglePromptExpand() {
 }
 
 function peAttachPick(type) {
+  if (DEMO_MODE) { showDemoNotice('reference'); return; }
   // Tambah referensi langsung dari dalam editor prompt (ala referensi):
   // buka file picker sistem tanpa menutup editor; upload memakai pipeline
   // yang sama, dan counter/chip di editor ikut ter-update otomatis.
@@ -4910,6 +4983,7 @@ function dismissGenQueueItem(taskId) {
 }
 
 function startGenerate() {
+  if (DEMO_MODE) { showDemoNotice('generate'); return; }
   var prompt = promptInput.value.trim();
   var activeQuality = selectedFamily && selectedFamily.qualities[selectedQualityIdx];
   var activeCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx) || {};
@@ -5114,7 +5188,7 @@ function formatElapsedTime(ms) {
 // without ever overwriting the live form (that overwrite was the actual bug
 // behind descriptions "following" the generate page instead of staying
 // locked to their own result).
-var ACTIVE_TASKS_KEY = 'mii_ai_video_active_tasks_v2';
+var ACTIVE_TASKS_KEY = DEMO_MODE ? 'mii_ai_video_demo_tasks_v1' : 'mii_ai_video_active_tasks_v2';
 function loadActiveTaskEntries() {
   try { return JSON.parse(localStorage.getItem(ACTIVE_TASKS_KEY) || '[]'); } catch(_) { return []; }
 }
@@ -5408,6 +5482,7 @@ document.addEventListener('visibilitychange', function() {
 // Each resumes with its OWN snapshotted settings and never touches the live
 // form — whatever you're configuring right now stays exactly as you left it.
 function resumeActiveTaskIfAny() {
+  if (DEMO_MODE) return;
   var entries = loadActiveTaskEntries();
   if (!entries.length) return;
   var now = Date.now();
@@ -5469,6 +5544,7 @@ function syncSharedTasks() {
     .catch(function() { sharedTaskSyncInFlight = false; });
 }
 function startSharedTaskSync() {
+  if (DEMO_MODE) return;
   refreshHistoryFromServer(function() { syncSharedTasks(); });
   if (!sharedTaskSyncTimer) sharedTaskSyncTimer = setInterval(syncSharedTasks, 4000);
 }
@@ -5743,7 +5819,7 @@ function doLogout() {
 }
 
 // ══════════ HISTORY (client-side, saved in this browser) ══════════
-var HISTORY_KEY = 'mii_ai_video_history_v1';
+var HISTORY_KEY = DEMO_MODE ? 'mii_ai_video_demo_history_v1' : 'mii_ai_video_history_v1';
 var historyMutationVersion = 0;
 var deletedHistoryIds = {};
 function noteHistoryMutation(deletedId) { historyMutationVersion++; if (deletedId) deletedHistoryIds[deletedId] = true; }
