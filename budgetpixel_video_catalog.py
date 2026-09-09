@@ -47,7 +47,8 @@ _ROWS = [
           ("720p", "1080p"), RATIOS[:5], True, True),
     _spec("kling-3.0-turbo", "KLING 3.0 TURBO", ("t2v", "i2v"), range(3, 16),
           ("720p", "1080p"), RATIOS, True, True),
-    _spec("pixverse-c1", "PIXVERSE C1", ("t2v", "i2v"), first=True),
+    _spec("pixverse-c1", "PIXVERSE C1", ("t2v", "i2v", "reference"), (5, 10, 15),
+          ("360p", "720p", "1080p"), RATIOS, True, True, True, (3, 0, 0)),
     _spec("kling-v3-omni-video", "KLING V3 OMNI", ("t2v", "i2v", "reference", "v2v"),
           range(3, 16), (), RATIOS, True, False, False, (9, 1, 0)),
     _spec("kling-v3.0-4k", "KLING 3.0 4K", ("t2v", "i2v"), range(3, 16),
@@ -60,20 +61,21 @@ _ROWS = [
           range(4, 16), ("480p", "720p"), RATIOS, True, True, True, (9, 1, 1)),
     _spec("seedance-2.0", "SEEDANCE 2.0 PRO", ("t2v", "i2v", "reference", "v2v"),
           range(4, 16), ("480p", "720p", "1080p", "4K"), RATIOS, True, True, True, (9, 1, 1)),
-    _spec("pixverse-v6", "PIXVERSE V6", ("t2v", "i2v"), (5, 8, 10, 15),
-          ("720p", "1080p"), RATIOS, False, True),
+    _spec("pixverse-v6", "PIXVERSE V6", ("t2v", "i2v", "reference"), (5, 10, 15),
+          ("360p", "720p", "1080p"), RATIOS, True, True, True, (3, 0, 0)),
     _spec("wan-2.7-video", "WAN 2.7", ("t2v", "i2v", "v2v"), (5, 10, 15),
           ("720p", "1080p"), RATIOS, True, True, True, (4, 1, 0)),
     _spec("wan-2.2-animate-move", "WAN 2.2 ANIMATE MOVE", ("v2v",), first=True, refs=(1, 1, 0)),
     _spec("wan-2.2-animate-replace", "WAN 2.2 ANIMATE REPLACE", ("v2v",), first=True, refs=(1, 1, 0)),
-    _spec("vidu-q3-pro", "VIDU Q3 PRO", ("t2v", "i2v"), first=True),
+    _spec("vidu-q3-pro", "VIDU Q3 PRO", ("t2v", "i2v"), (4, 8),
+          ("540p", "720p", "1080p"), RATIOS, True, True),
     _spec("p-video", "P-VIDEO", ("t2v", "i2v", "audio"), (5, 10),
           ("720p", "1080p"), RATIOS, True, True, True, (0, 0, 1)),
-    _spec("wan-2.6-i2v-flash", "WAN 2.6 I2V FLASH", ("i2v",), (5, 10),
+    _spec("wan-2.6-i2v-flash", "WAN 2.6 I2V FLASH", ("i2v",), (5, 10, 15),
           ("720p", "1080p"), (), True, True),
     _spec("seedance-1.5-pro", "SEEDANCE 1.5 PRO", ("t2v", "i2v"), (5, 10),
           ("480p", "720p", "1080p"), RATIOS, True, True),
-    _spec("wan-2.6", "WAN 2.6", ("t2v",), (5, 10), ("720p", "1080p"), RATIOS, True),
+    _spec("wan-2.6", "WAN 2.6", ("t2v",), (5, 10, 15), ("720p", "1080p"), RATIOS, True),
     _spec("kling-v2.6-pro", "KLING V2.6 PRO", ("t2v", "i2v"), (5, 10),
           ("1080p",), RATIOS, True, True),
     _spec("wan-2.5", "WAN 2.5", ("t2v",), (5, 10), ("720p", "1080p"), RATIOS, True),
@@ -95,9 +97,12 @@ _ROWS = [
           ("480p", "720p"), RATIOS, False, True),
     _spec("hailuo-02", "HAILUO 02", ("t2v", "i2v"), (6, 10),
           ("768p", "1080p"), RATIOS, False, True),
-    _spec("wan-2.2-i2v-a14b", "WAN 2.2 I2V A14B", ("i2v",), (5,), ("720p",), (), False, True),
-    _spec("wan-2.2-i2v-fast", "WAN 2.2 I2V FAST", ("i2v",), (5,), ("720p",), (), False, True),
-    _spec("wan-2.2-t2v-fast", "WAN 2.2 T2V FAST", ("t2v",), (5,), ("720p",), RATIOS),
+    _spec("wan-2.2-i2v-a14b", "WAN 2.2 I2V A14B", ("i2v",), (5, 6),
+          ("480p", "720p"), (), False, True),
+    _spec("wan-2.2-i2v-fast", "WAN 2.2 I2V FAST", ("i2v",), (5, 6, 7),
+          ("480p", "720p"), (), False, True),
+    _spec("wan-2.2-t2v-fast", "WAN 2.2 T2V FAST", ("t2v",), (5, 6, 7),
+          ("480p", "720p"), RATIOS),
     _spec("veo-3-fast", "VEO 3 FAST", ("t2v", "i2v"), (5, 6, 8), ("720p", "1080p"), RATIOS, True, True),
     _spec("seedance-1-pro-1080p", "SEEDANCE 1 PRO 1080P", ("t2v", "i2v"), (5, 10), ("1080p",), RATIOS, False, True),
     _spec("seedance-1-pro-480p", "SEEDANCE 1 PRO 480P", ("t2v", "i2v"), (5, 10), ("480p",), RATIOS, False, True),
@@ -274,7 +279,12 @@ def _ui_caps(item):
     }
     if durations:
         caps.update(durationMin=min(durations), durationMax=max(durations), durationStep=1,
-                    durations=list(durations), durationOptions=list(durations))
+                    durations=list(durations), durationOptions=list(durations),
+                    defaultDuration=durations[0])
+    if item["resolutions"]:
+        caps["defaultResolution"] = item["resolutions"][0]
+    if item["aspect_ratios"]:
+        caps["defaultAspectRatio"] = item["aspect_ratios"][0]
     return caps
 
 

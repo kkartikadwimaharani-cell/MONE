@@ -500,6 +500,8 @@ button{background:none;border:none;cursor:pointer}
    for its "Fast | Pro" control: one pill container, N equal buttons inside,
    the active one filled solid. */
 .tier-seg{display:flex;align-items:center;gap:2px;padding:3px;border-radius:12px;background:var(--btn);border:1px solid var(--border);flex-shrink:0}
+.settings-row .tier-seg{max-width:100%;overflow-x:auto;scrollbar-width:none;overscroll-behavior-inline:contain}
+.settings-row .tier-seg::-webkit-scrollbar{display:none}
 .tier-seg-btn{padding:8px 12px;border-radius:9px;font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.03em;color:var(--text-dim);background:transparent;white-space:nowrap;transition:all .18s}
 .tier-seg-btn.active{background:var(--accent);color:#fff}
 
@@ -1407,6 +1409,9 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 .sheet.mini .sheet-opt-desc{font-size:.62rem;margin-top:1px}
 .sheet.mini .sheet-opt-check{top:10px;right:8px}
 .sheet-overlay.mini-ov{background:transparent}
+.sheet-textarea{width:100%;min-height:150px;resize:vertical;border:1px solid var(--border2);border-radius:14px;background:rgba(0,0,0,.28);color:#fff;padding:12px;font:500 13px/1.5 var(--sans);outline:none}
+.sheet-textarea:focus{border-color:rgba(255,52,82,.65);box-shadow:0 0 0 3px rgba(255,32,64,.09)}
+.sheet-text-save{width:100%;min-height:42px;margin-top:8px;border-radius:12px;background:linear-gradient(135deg,#ff2446,#a6001b);color:#fff;font:800 .72rem/1 var(--disp);letter-spacing:.06em}
 /* Shared video settings reflow instead of shrinking controls or special-casing
    one provider. */
 .settings-row.video-settings{overflow-x:visible;flex-wrap:wrap}
@@ -1554,7 +1559,15 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .demo-notice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
 .demo-notice-actions>*{min-height:48px;display:grid;place-items:center;border-radius:14px;border:1px solid var(--border2);font:800 .73rem/1 var(--disp);letter-spacing:.06em;text-decoration:none;color:#fff;text-align:center}
 .demo-notice-actions .primary{border-color:transparent;background:linear-gradient(135deg,#ff2446,#a6001b);box-shadow:0 12px 30px rgba(255,32,64,.2)}
-@media(max-width:420px){.demo-notice-actions{grid-template-columns:1fr}.demo-notice-card{padding:22px}}
+@media(max-width:420px){
+  .demo-notice{padding:14px}
+  .demo-notice-card{padding:18px;border-radius:21px;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .demo-notice-mark{margin-bottom:13px;font-size:.56rem;letter-spacing:.13em}
+  .demo-notice-card h2{font-size:1.26rem;line-height:1.12}
+  .demo-notice-card p{margin-top:10px;font-size:.78rem;line-height:1.5}
+  .demo-notice-actions{grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+  .demo-notice-actions>*{min-height:44px;padding:8px 6px;font-size:.62rem}
+}
 
 /* Native 100% mobile density. This reproduces the compact composition that
    previously required browser zoom, while preserving real touch geometry. */
@@ -1608,13 +1621,11 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 <script>
 var DEMO_MODE = {{ demo_mode|default(false)|tojson }};
 if (DEMO_MODE) {
-  var _demoNativeFetch = window.fetch.bind(window);
-  window.fetch = function(input, init) {
-    var url = typeof input === 'string' ? input : ((input && input.url) || '');
-    if (/^(?:\/api(?:\/|$)|\/ai-video\/logout(?:\?|$))/.test(url)) {
-      return Promise.reject(new Error('DEMO_NETWORK_BLOCKED'));
-    }
-    return _demoNativeFetch(input, init);
+  // The public preview is fully server-rendered. Runtime fetch is denied as
+  // a fail-closed boundary, so future UI code cannot accidentally upload,
+  // generate, poll, or spend credits from this route.
+  window.fetch = function() {
+    return Promise.reject(new Error('PUBLIC_DEMO_NETWORK_DISABLED'));
   };
 }
 </script>
@@ -1631,8 +1642,8 @@ if (DEMO_MODE) {
 <div class="demo-notice" id="demoNotice" role="dialog" aria-modal="true" aria-labelledby="demoNoticeTitle" onclick="if(event.target===this)closeDemoNotice()">
   <div class="demo-notice-card">
     <span class="demo-notice-mark">MII AI VIDEO · PUBLIC DEMO</span>
-    <h2 id="demoNoticeTitle">FITUR KREATIF TERSEDIA DI WORKSPACE</h2>
-    <p id="demoNoticeText">Ini adalah pratinjau interaktif MII AI VIDEO. Kamu bebas menjelajahi model, mode, dan pengaturan. Tidak ada media yang diunggah, generasi yang dijalankan, atau kredit yang digunakan dari halaman ini.</p>
+    <h2 id="demoNoticeTitle">JELAJAHI WORKSPACE MII AI VIDEO</h2>
+    <p id="demoNoticeText">AKSES TAMPILAN WORKSPACE, JELAJAHI MODEL, MODE, DAN BERBAGAI KONTROL YANG TERSEDIA. VERSI DEMO INI HANYA UNTUK EKSPLORASI DAN TIDAK MENJALANKAN GENERASI ATAU MENGGUNAKAN KREDIT.</p>
     <div class="demo-notice-actions">
       <button type="button" onclick="closeDemoNotice()">LANJUT JELAJAHI</button>
       <a class="primary" href="/ai-video">BUKA WORKSPACE</a>
@@ -1964,6 +1975,9 @@ if (DEMO_MODE) {
         <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
         <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
         <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
+        <div class="chip" id="audioModeChip" onclick="openSheet('audiomode',this)" style="display:none"><span style="opacity:.6">Mode</span><span id="audioModeLabel">INSTRUMENTAL</span><span class="chip-car"></span></div>
+        <div class="chip" id="audioLyricsChip" onclick="openSheet('lyrics',this)" style="display:none"><span id="audioLyricsLabel">LYRICS</span><span class="chip-car"></span></div>
+        <div class="chip" id="vocalGenderChip" onclick="openSheet('vocalgender',this)" style="display:none"><span style="opacity:.6">Voice</span><span id="vocalGenderLabel">AUTO</span><span class="chip-car"></span></div>
         <div class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Atur audio video hasil">
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
@@ -2519,6 +2533,9 @@ var selectedBitrate = 'HIGH';
 var modelSpecificSettings = {};
 var selectedAudioFormat = 'WAV';   // Seed Audio: wav | mp3 | ogg_opus
 var selectedSampleRate = '44.100 Hz'; // 'standard' | 'high' — Seedance PRO only (generation service bitrate_mode param). Defaults to 'high': same price as 'standard', just less compression, and the user explicitly wants zero unnecessary quality loss.
+var selectedAudioMode = 'INSTRUMENTAL';
+var selectedVocalGender = 'AUTO';
+var selectedLyrics = '';
 var selectedImageFormat = 'PNG';
 var muteAudioEnabled = false; // Seedance + Motion Control only — strips the audio track from the generated video server-side (ffmpeg -an), not just a client-side player mute.
 var seedanceDefaultRes = { MINI: '480p', FAST: '720p', PRO: '1080p' };
@@ -2533,6 +2550,8 @@ function captureTierState() {
     imageResolution:selectedImageResolution, imageQuality:selectedImageQuality,
     imageCount:selectedImageCount, outputFormat:selectedImageFormat, seed:selectedImageSeed,
     negativePrompt:selectedNegativePrompt, sequentialMode:selectedSequentialMode,
+    audioFormat:selectedAudioFormat, audioMode:selectedAudioMode,
+    vocalGender:selectedVocalGender, lyrics:selectedLyrics,
     maxImages:selectedMaxImages, references:(media.image || []).slice()};
 }
 function restoreTierState(saved) {
@@ -2772,7 +2791,7 @@ function renderDurationSlider() {
   var steps = sheetDefs.duration.options.map(function(o){ return parseInt(o, 10); });
   if (!steps.length) return;
   var idx = steps.indexOf(selectedDuration);
-  if (idx === -1) { idx = steps.length - 1; selectedDuration = steps[idx]; }
+  if (idx === -1) { idx = 0; selectedDuration = steps[idx]; }
   slider.min = 0;
   slider.max = steps.length - 1;
   slider.step = 1;
@@ -2903,6 +2922,21 @@ var sheetDefs = {
     get: function(){ return selectedAudioFormat; },
     set: function(v){ selectedAudioFormat = v; document.getElementById('audioFormatLabel').textContent = v; }
   },
+  audiomode: {
+    title: 'Audio Mode', options: ['INSTRUMENTAL','SONG'],
+    get: function(){ return selectedAudioMode; },
+    set: function(v){ selectedAudioMode=v; document.getElementById('audioModeLabel').textContent=v; applyModelCapabilities(); persistCanonicalModelState(); }
+  },
+  vocalgender: {
+    title: 'Vocal Gender', options: ['AUTO','FEMALE','MALE'],
+    get: function(){ return selectedVocalGender; },
+    set: function(v){ selectedVocalGender=v; document.getElementById('vocalGenderLabel').textContent=v; persistCanonicalModelState(); }
+  },
+  lyrics: {
+    title: 'Lyrics', text: true, maxLength: 5000,
+    get: function(){ return selectedLyrics; },
+    set: function(v){ selectedLyrics=v; document.getElementById('audioLyricsLabel').textContent=v.trim() ? 'LYRICS · ADDED' : 'LYRICS'; persistCanonicalModelState(); }
+  },
   samplerate: {
     title: 'Sample Rate',
     options: ['16.000 Hz','24.000 Hz','32.000 Hz','44.100 Hz','48.000 Hz'],
@@ -2971,10 +3005,25 @@ function openSheet(key, anchorEl) {
   var list = document.getElementById('sheetList');
   var wheel = document.getElementById('wheelPicker');
   var disabledSet = def.disabled || [];
-  var visibleOptions = def.options.filter(function(opt) { return disabledSet.indexOf(opt) === -1; });
+  var visibleOptions = (def.options || []).filter(function(opt) { return disabledSet.indexOf(opt) === -1; });
 
   var asMini = !!(anchorEl && anchorEl.getBoundingClientRect);
-  if (def.wheel && !asMini) {
+  if (def.text) {
+    wheel.style.display = 'none';
+    list.style.display = 'block';
+    list.innerHTML = '';
+    var textArea = document.createElement('textarea');
+    textArea.className = 'sheet-textarea';
+    textArea.maxLength = def.maxLength || 5000;
+    textArea.placeholder = 'PASTE OR WRITE LYRICS';
+    textArea.value = def.get() || '';
+    var saveText = document.createElement('button');
+    saveText.type = 'button';
+    saveText.className = 'sheet-text-save';
+    saveText.textContent = 'SAVE LYRICS';
+    saveText.onclick = function(){ def.set(textArea.value); closeSheet(); };
+    list.appendChild(textArea); list.appendChild(saveText);
+  } else if (def.wheel && !asMini) {
     list.style.display = 'none';
     wheel.style.display = 'block';
     renderWheelPicker(def, visibleOptions);
@@ -3155,6 +3204,7 @@ function applySelectedFamily(family, qualityIdx, options) {
     }
   }
   var previousFamilyKey = selectedFamily && selectedFamily.key;
+  var previousVariantId = selectedModel;
   var previousStateKey = selectedFamily ? activeMode + ':' + selectedFamily.key + ':' + (selectedModelTier || selectedModel) : '';
   if (previousStateKey) modelSpecificSettings[previousStateKey] = captureTierState();
   var variants = family.qualities || [];
@@ -3172,12 +3222,16 @@ function applySelectedFamily(family, qualityIdx, options) {
   // Initialization is explicit: boot must apply defaults even though the
   // pre-DOM state already points at the first video family. A same-family
   // click, on the other hand, must not discard settings the user just chose.
-  var resetFamilyDefaults = !!options.initialize || previousFamilyKey !== family.key;
+  var resetFamilyDefaults = !!options.initialize || previousFamilyKey !== family.key || previousVariantId !== selectedModel;
   if (resetFamilyDefaults) {
     selectedRatio = activeMode === 'image' ? '1:1' : '16:9';
     selectedDuration = 5;
     muteAudioEnabled = false;
     selectedBitrate = 'HIGH';
+    selectedAudioFormat = 'MP3';
+    selectedAudioMode = 'INSTRUMENTAL';
+    selectedVocalGender = 'AUTO';
+    selectedLyrics = '';
     if (activeMode === 'image') {
       selectedImageSize = '';
       selectedImageMegapixel = '';
@@ -3204,6 +3258,10 @@ function applySelectedFamily(family, qualityIdx, options) {
     if (Number.isFinite(options.saved.duration)) selectedDuration = options.saved.duration;
     if (typeof options.saved.muteAudio === 'boolean') muteAudioEnabled = options.saved.muteAudio;
     if (typeof options.saved.bitrate === 'string') selectedBitrate = options.saved.bitrate === 'STANDARD' ? 'STANDARD' : 'HIGH';
+    if (typeof options.saved.audioFormat === 'string') selectedAudioFormat = options.saved.audioFormat;
+    if (typeof options.saved.audioMode === 'string') selectedAudioMode = options.saved.audioMode;
+    if (typeof options.saved.vocalGender === 'string') selectedVocalGender = options.saved.vocalGender;
+    if (typeof options.saved.lyrics === 'string') selectedLyrics = options.saved.lyrics;
     if (activeMode === 'image') restoreTierState(options.saved);
   }
   var modelLabel = document.getElementById('modelSelectTxt');
@@ -3264,7 +3322,8 @@ function persistCanonicalModelState() {
     var all = JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {};
     all[activeMode] = {family:selectedFamily.key, variant:selectedModel, ratio:selectedRatio,
       resolution:selectedResolution, duration:selectedDuration, muteAudio:muteAudioEnabled,
-      bitrate:selectedBitrate};
+      bitrate:selectedBitrate, audioFormat:selectedAudioFormat, audioMode:selectedAudioMode,
+      vocalGender:selectedVocalGender, lyrics:selectedLyrics};
     localStorage.setItem(MODEL_STATE_KEY, JSON.stringify(all));
   } catch (_) {}
 }
@@ -3335,7 +3394,7 @@ function applyModelCapabilities() {
     ratioOptions: rawCaps.aspectRatios,
     resolution: !!(rawCaps.resolutions && rawCaps.resolutions.length),
     resolutionOptions: rawCaps.resolutions,
-    duration: rawCaps.supportsDuration !== false,
+    duration: rawCaps.supportsDuration === true,
     durationUnknown: rawCaps.supportsDuration === true && durationSteps.length === 0,
     durationSteps: durationSteps,
     audioGeneration: !!rawCaps.supportsAudioGeneration,
@@ -3500,9 +3559,31 @@ function applyModelCapabilities() {
   var isSeedAudio = selectedFamily && selectedFamily.key === 'seedaudio';
   var isAudioModel = activeMode === 'audio';
   var afChip = document.getElementById('audioFormatChip');
-  if (afChip) afChip.style.display = isAudioModel ? '' : 'none';
+  if (afChip) afChip.style.display = isAudioModel && (rawCaps.supportsAudioFormatSelection || isSeedAudio) ? '' : 'none';
   var srChip = document.getElementById('sampleRateChip');
   if (srChip) srChip.style.display = isSeedAudio ? '' : 'none';
+  var audioModeChip = document.getElementById('audioModeChip');
+  var audioLyricsChip = document.getElementById('audioLyricsChip');
+  var vocalGenderChip = document.getElementById('vocalGenderChip');
+  var supportsAudioMode = isAudioModel && !!rawCaps.supportsInstrumental;
+  var supportsLyrics = isAudioModel && !!rawCaps.supportsLyrics;
+  var isSongMode = !supportsAudioMode || selectedAudioMode === 'SONG';
+  if (!supportsAudioMode) selectedAudioMode = 'INSTRUMENTAL';
+  if (!supportsLyrics) selectedLyrics = '';
+  if (!(rawCaps.vocalGenders || []).length) selectedVocalGender = 'AUTO';
+  if (audioModeChip) audioModeChip.style.display = supportsAudioMode ? '' : 'none';
+  if (audioLyricsChip) audioLyricsChip.style.display = supportsLyrics && isSongMode ? '' : 'none';
+  if (vocalGenderChip) vocalGenderChip.style.display = isAudioModel && isSongMode && (rawCaps.vocalGenders || []).length ? '' : 'none';
+  var audioModeLabel = document.getElementById('audioModeLabel');
+  var audioLyricsLabel = document.getElementById('audioLyricsLabel');
+  var vocalGenderLabel = document.getElementById('vocalGenderLabel');
+  if (audioModeLabel) audioModeLabel.textContent = selectedAudioMode;
+  if (audioLyricsLabel) audioLyricsLabel.textContent = selectedLyrics.trim() ? 'LYRICS · ADDED' : 'LYRICS';
+  if (vocalGenderLabel) vocalGenderLabel.textContent = selectedVocalGender;
+  if (sheetDefs && sheetDefs.vocalgender && (rawCaps.vocalGenders || []).length) {
+    sheetDefs.vocalgender.options = rawCaps.vocalGenders.map(function(v){ return String(v).toUpperCase(); });
+    if (sheetDefs.vocalgender.options.indexOf(selectedVocalGender) < 0) selectedVocalGender = sheetDefs.vocalgender.options[0];
+  }
   if (isAudioModel && rawCaps.audioFormats && sheetDefs && sheetDefs.audioformat) {
     sheetDefs.audioformat.options = rawCaps.audioFormats.map(function(v){ return String(v).toUpperCase(); });
     if (sheetDefs.audioformat.options.indexOf(selectedAudioFormat) < 0) selectedAudioFormat = sheetDefs.audioformat.options[0];
@@ -3561,7 +3642,8 @@ function applyModelCapabilities() {
     }
     var durOpts = sheetDefs.duration.options;
     if (durOpts.indexOf(selectedDuration + 's') === -1) {
-      selectedDuration = parseInt(durOpts[durOpts.length - 1], 10);
+      selectedDuration = rawCaps.defaultDuration != null
+        ? Number(rawCaps.defaultDuration) : parseInt(durOpts[0], 10);
     }
     renderDurationSlider();
   }
@@ -3609,7 +3691,7 @@ function applyModelCapabilities() {
       var value = rawCaps.supportsMegapixel ? selectedImageMegapixel : (rawCaps.supportsSize ? selectedImageSize : selectedImageResolution);
       resLabelEl.textContent = kind + ' · ' + value;
     } else if (resLabelEl && opts.indexOf(selectedResolution) === -1) {
-      selectedResolution = opts[opts.length - 1] || opts[0];
+      selectedResolution = rawCaps.defaultResolution || opts[0];
       resLabelEl.textContent = selectedResolution;
     }
   }
@@ -4430,16 +4512,8 @@ function showDemoNotice(action) {
   var title = document.getElementById('demoNoticeTitle');
   var copy = document.getElementById('demoNoticeText');
   if (!modal || !title || !copy) return;
-  if (action === 'reference') {
-    title.textContent = 'REFERENSI MEDIA TERSEDIA DI WORKSPACE';
-    copy.textContent = 'Kamu sedang melihat pratinjau interaktif MII AI VIDEO. Semua model, mode, dan kontrol tetap bisa dijelajahi, tetapi media tidak akan diunggah dari halaman demo ini.';
-  } else if (action === 'enhance') {
-    title.textContent = 'PROMPT ENHANCE TERSEDIA DI WORKSPACE';
-    copy.textContent = 'Halaman demo menjaga pengalaman tetap aman dan bebas pemrosesan. Buka workspace untuk menyempurnakan prompt dan menggunakan fitur kreatif sepenuhnya.';
-  } else {
-    title.textContent = 'GENERASI AKTIF TERSEDIA DI WORKSPACE';
-    copy.textContent = 'Ini adalah pratinjau interaktif MII AI VIDEO. Pengaturanmu tidak dikirim, tidak ada generasi yang dijalankan, dan tidak ada kredit yang digunakan dari halaman ini.';
-  }
+  title.textContent = 'JELAJAHI WORKSPACE MII AI VIDEO';
+  copy.textContent = 'AKSES TAMPILAN WORKSPACE, JELAJAHI MODEL, MODE, DAN BERBAGAI KONTROL YANG TERSEDIA. VERSI DEMO INI HANYA UNTUK EKSPLORASI DAN TIDAK MENJALANKAN GENERASI ATAU MENGGUNAKAN KREDIT.';
   modal.classList.add('show');
 }
 function closeDemoNotice() {
@@ -5083,7 +5157,16 @@ function startGenerate() {
   var activeCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx) || {};
   var isMotionModel = !!(activeQuality && activeQuality.outputKind === 'motion');
   var usingFrames = activeInputTab === 'frames';
-  var selectedMedia = usingFrames ? {image:[], video:[], audio:[]} : media;
+  function activeLimit(canonicalKey, legacyKey) {
+    var value = activeCaps[canonicalKey];
+    if (value == null) value = activeCaps[legacyKey];
+    return Math.max(0, Number(value) || 0);
+  }
+  var selectedMedia = usingFrames ? {image:[], video:[], audio:[]} : {
+    image: media.image.slice(0, activeLimit('maxReferenceImages', 'image')),
+    video: media.video.slice(0, activeLimit('maxReferenceVideos', 'video')),
+    audio: media.audio.slice(0, activeLimit('maxReferenceAudios', 'audio'))
+  };
   var selectedFrames = usingFrames ? frames : {first:null, last:null};
 
   if (!isBackendConnected()) {
@@ -5191,7 +5274,12 @@ function startGenerate() {
     body.output_bitrate = selectedBitrate;
   }
   if (activeMode === 'audio') {
-    body.audio_format = selectedAudioFormat.toLowerCase();
+    if (activeCaps.supportsAudioFormatSelection) body.audio_format = selectedAudioFormat.toLowerCase();
+    if (activeCaps.supportsLyrics && selectedLyrics.trim()) body.lyrics = selectedLyrics.trim();
+    if (activeCaps.supportsInstrumental) body.instrumental = selectedAudioMode === 'INSTRUMENTAL';
+    if ((activeCaps.vocalGenders || []).length && selectedAudioMode === 'SONG') {
+      body.vocal_gender = selectedVocalGender.toLowerCase();
+    }
   }
   if (selectedFamily.key === 'seedaudio') {
     body.sample_rate = parseInt(selectedSampleRate.replace(/\./g, '').replace(/\D+$/g, ''), 10) || 44100;
@@ -6659,6 +6747,7 @@ updateCanvasPreview();
 updateGenerateButtonState();
 fetchCreditBalance();
 renderLastResultCard();
+if (DEMO_MODE) showDemoNotice('intro');
 // Buka langsung ke workspace MII AI VIDEO (bukan Dashboard). Dashboard
 // tetap bisa diakses lewat sidebar, dan deep-link via hash tetap jalan
 // (mis. makima.cloud/ai-video#dashboard atau #history).

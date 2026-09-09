@@ -136,6 +136,28 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
         with self.assertRaises(ProviderError):
             catalog.build_audio_payload("sonilo-video-music", {}, "match the edit")
 
+    def test_every_audio_ui_contract_mirrors_catalog(self):
+        families = catalog.public_ui_bundle()["audio_families"]
+        rendered = {q["id"]: q["caps"] for family in families for q in family["qualities"]}
+        self.assertEqual(set(rendered), set(catalog.AUDIO_CATALOG))
+        for slug, item in catalog.AUDIO_CATALOG.items():
+            with self.subTest(slug=slug):
+                caps = rendered[slug]
+                self.assertEqual(caps["supportsDuration"], bool(item["durations"]))
+                self.assertEqual(caps["audioFormats"], list(item["formats"]))
+                self.assertEqual(caps["supportsLyrics"], item["supports_lyrics"])
+                self.assertEqual(caps["supportsInstrumental"], item["supports_instrumental"])
+                self.assertEqual(caps["vocalGenders"], list(item["vocal_genders"]))
+
+    def test_audio_tool_fields_are_model_specific(self):
+        self.assertEqual(catalog.audio_fields(catalog.AUDIO_CATALOG["sonilo-music"]),
+                         ["audio_format", "duration"])
+        self.assertEqual(catalog.audio_fields(catalog.AUDIO_CATALOG["lyria-3"]),
+                         ["lyrics", "image_urls"])
+        self.assertEqual(catalog.audio_fields(catalog.AUDIO_CATALOG["mureka-v9"]),
+                         ["lyrics", "instrumental", "vocal_gender"])
+        self.assertNotIn("duration", catalog.audio_fields(catalog.AUDIO_CATALOG["music-3.0"]))
+
 
 if __name__ == "__main__":
     unittest.main()

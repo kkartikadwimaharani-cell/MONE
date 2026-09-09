@@ -92,21 +92,28 @@ IMAGE_ROWS = [
 
 
 def _audio(slug, name, group, label="STANDARD", subtype="music", duration=(),
-           images=0, videos=0, formats=("mp3",), description=""):
+           images=0, videos=0, formats=("mp3",), lyrics=False,
+           instrumental=False, vocal_genders=(), description=""):
     return {"slug": slug, "name": name, "category": "audio", "subtype": subtype,
             "group": group, "label": label, "durations": tuple(duration),
             "reference_images": images, "reference_videos": videos,
-            "formats": tuple(formats), "description": description}
+            "formats": tuple(formats), "supports_lyrics": bool(lyrics),
+            "supports_instrumental": bool(instrumental),
+            "vocal_genders": tuple(vocal_genders), "description": description}
 
 
 AUDIO_ROWS = [
-    _audio("lyria-3", "LYRIA 3", "LYRIA", images=10,
+    _audio("lyria-3", "LYRIA 3", "LYRIA", images=10, lyrics=True,
            description="Music from a text prompt, optionally guided by images."),
-    _audio("mureka-v9", "MUREKA V9", "MUREKA",
+    _audio("mureka-v9", "MUREKA V9", "MUREKA", lyrics=True,
+           instrumental=True, vocal_genders=("auto", "female", "male"),
            description="Instrumental music from a style prompt."),
-    _audio("music-3.0", "MUSIC 3.0", "MINIMAX MUSIC", "3.0", formats=("wav", "mp3")),
-    _audio("music-2.6", "MUSIC 2.6", "MINIMAX MUSIC", "2.6", formats=("wav", "mp3")),
-    _audio("sonilo-music", "SONILO MUSIC", "SONILO MUSIC", "TEXT", range(5, 361), formats=("mp3", "wav")),
+    _audio("music-3.0", "MUSIC 3.0", "MINIMAX MUSIC", "3.0", formats=("wav", "mp3"),
+           lyrics=True, instrumental=True),
+    _audio("music-2.6", "MUSIC 2.6", "MINIMAX MUSIC", "2.6", formats=("wav", "mp3"),
+           lyrics=True, instrumental=True),
+    _audio("sonilo-music", "SONILO MUSIC", "SONILO MUSIC", "TEXT", "music",
+           range(5, 361), formats=("mp3", "wav")),
     _audio("sonilo-video-music", "SONILO VIDEO MUSIC", "SONILO MUSIC", "VIDEO", videos=1, formats=("mp3", "wav")),
     _audio("sonilo-sfx", "SONILO SFX", "SONILO SFX", "TEXT", "sfx", range(1, 181), formats=("mp3", "wav")),
     _audio("sonilo-video-sfx", "SONILO VIDEO SFX", "SONILO SFX", "VIDEO", "sfx", videos=1, formats=("mp3", "wav")),
@@ -115,6 +122,26 @@ AUDIO_ROWS = [
 
 IMAGE_CATALOG = {row["slug"]: row for row in IMAGE_ROWS}
 AUDIO_CATALOG = {row["slug"]: row for row in AUDIO_ROWS}
+
+
+def audio_fields(item):
+    """Return only request fields accepted by this audio model contract."""
+    fields = []
+    if len(item.get("formats", ())) > 1:
+        fields.append("audio_format")
+    if item.get("durations"):
+        fields.append("duration")
+    if item.get("supports_lyrics"):
+        fields.append("lyrics")
+    if item.get("supports_instrumental"):
+        fields.append("instrumental")
+    if item.get("vocal_genders"):
+        fields.append("vocal_gender")
+    if item.get("reference_images"):
+        fields.append("image_urls")
+    if item.get("reference_videos"):
+        fields.append("video_urls")
+    return fields
 
 # Catalogue slugs that share the already-reviewed image request contracts in
 # budgetpixel_provider. Keeping one contract source prevents the original app
@@ -371,11 +398,11 @@ def build_audio_payload(slug, incoming, prompt, reference_images=None, reference
     if item["reference_videos"] and item["label"] == "VIDEO" and not videos:
         raise ProviderError("INVALID_INPUT", "This audio model requires one source video.")
     fmt = str(incoming.get("audio_format") or item["formats"][0]).lower()
-    if fmt not in item["formats"]:
+    if len(item["formats"]) > 1 and fmt not in item["formats"]:
         raise ProviderError("INVALID_INPUT", "Audio format is not supported by this model.")
     body = {"prompt": prompt}
-    lyrics = str(incoming.get("lyrics") or "").strip()
-    instrumental = bool(incoming.get("instrumental", not lyrics))
+    lyrics = str(incoming.get("lyrics") or "").strip() if item["supports_lyrics"] else ""
+    instrumental = bool(incoming.get("instrumental", not lyrics)) if item["supports_instrumental"] else False
     if slug in ("music-3.0", "music-2.6"):
         body.update(format=fmt, instrumental=instrumental,
                     lyrics_optimizer=not instrumental and not lyrics)
@@ -401,16 +428,22 @@ def build_audio_payload(slug, incoming, prompt, reference_images=None, reference
 
 def _audio_caps(item):
     durations = item["durations"]
+    contiguous = bool(durations) and tuple(range(min(durations), max(durations) + 1)) == tuple(durations)
     caps = {"supportsT2V": False, "supportsI2V": False,
             "supportsElements": bool(item["reference_images"] or item["reference_videos"]),
             "maxReferenceImages": item["reference_images"],
             "maxReferenceVideos": item["reference_videos"], "maxReferenceAudios": 0,
             "supportsFirstFrame": False, "supportsEndFrame": False,
             "supportsDuration": bool(durations), "audioFormats": list(item["formats"]),
+            "supportsAudioFormatSelection": len(item["formats"]) > 1,
+            "supportsLyrics": item["supports_lyrics"],
+            "supportsInstrumental": item["supports_instrumental"],
+            "vocalGenders": list(item["vocal_genders"]),
             "requiresVideo": bool(item["reference_videos"] and item["label"] == "VIDEO")}
     if durations:
-        caps.update(durationMode="range", durationMin=min(durations),
-                    durationMax=max(durations), durationStep=1)
+        caps.update(durationMode="range" if contiguous else "discrete", durationMin=min(durations),
+                    durationMax=max(durations), durationStep=1,
+                    durationOptions=list(durations), defaultDuration=min(durations))
     return caps
 
 

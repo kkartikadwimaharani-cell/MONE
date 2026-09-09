@@ -350,10 +350,7 @@ def register_mcp(app, backend, data_dir):
                     'fields':list(dict.fromkeys(fields)),
                     'requires_image':bool(item.get('requires_image'))}
             for slug,item in media.AUDIO_CATALOG.items():
-                fields=['audio_format','lyrics','instrumental','vocal_gender']
-                if item.get('durations'): fields.append('duration')
-                if item.get('reference_images'): fields.append('image_urls')
-                if item.get('reference_videos'): fields.append('video_urls')
+                fields=media.audio_fields(item)
                 result['audio']['bpx-'+slug+':STANDARD']={
                     'slug':slug, 'modes':[item.get('subtype','audio')],
                     'durations':list(item.get('durations',())),
@@ -400,10 +397,7 @@ def register_mcp(app, backend, data_dir):
                     'requires_image':bool(item.get('requires_image')),
                 }
             for slug,item in backend['budgetpixel_media_catalog'].AUDIO_CATALOG.items():
-                fields=['audio_format','lyrics','instrumental','vocal_gender']
-                if item.get('durations'): fields.append('duration')
-                if item.get('reference_images'): fields.append('image_urls')
-                if item.get('reference_videos'): fields.append('video_urls')
+                fields=backend['budgetpixel_media_catalog'].audio_fields(item)
                 result['audio']['bpx-'+slug+':STANDARD']={
                     'slug':slug,'provider':'BudgetPixel','modes':[item.get('subtype','audio')],
                     'durations':list(item.get('durations',())),

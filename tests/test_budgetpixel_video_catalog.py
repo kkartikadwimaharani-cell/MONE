@@ -64,3 +64,40 @@ def test_ui_catalog_groups_variants_without_duplicate_family_cards():
     assert represented == len(catalog.VIDEO_CATALOG)
     assert families[0]["key"] == "bpx-seedance25"
     assert all(q["route"] == "catalog" for item in families for q in item["qualities"])
+
+
+def test_every_video_ui_contract_mirrors_catalog_capabilities():
+    families = catalog.public_ui_bundle()["families"]
+    rendered = {q["id"]: q["caps"] for family in families for q in family["qualities"]}
+    assert set(rendered) == set(catalog.VIDEO_CATALOG)
+    for slug, item in catalog.VIDEO_CATALOG.items():
+        caps = rendered[slug]
+        durations = list(item["durations"])
+        assert caps["supportsDuration"] is bool(durations)
+        assert caps.get("durationOptions", []) == durations
+        assert caps["resolutions"] == list(item["resolutions"])
+        assert caps["aspectRatios"] == list(item["aspect_ratios"])
+        if durations:
+            assert caps["defaultDuration"] == durations[0]
+
+
+def test_corrected_video_variants_expose_documented_duration_and_resolution():
+    assert catalog.VIDEO_CATALOG["pixverse-c1"]["durations"] == (5, 10, 15)
+    assert catalog.VIDEO_CATALOG["pixverse-c1"]["resolutions"] == ("360p", "720p", "1080p")
+    assert catalog.VIDEO_CATALOG["vidu-q3-pro"]["durations"] == (4, 8)
+    assert catalog.VIDEO_CATALOG["vidu-q3-pro"]["resolutions"] == ("540p", "720p", "1080p")
+    assert catalog.VIDEO_CATALOG["wan-2.6"]["durations"] == (5, 10, 15)
+    assert catalog.VIDEO_CATALOG["wan-2.6-i2v-flash"]["durations"] == (5, 10, 15)
+    assert catalog.VIDEO_CATALOG["wan-2.2-i2v-a14b"]["durations"] == (5, 6)
+    assert catalog.VIDEO_CATALOG["wan-2.2-i2v-fast"]["durations"] == (5, 6, 7)
+
+
+def test_variants_without_manual_duration_do_not_emit_fake_duration():
+    for slug in ("wan-2.2-animate-move", "wan-2.2-animate-replace", "ltx-2-fast"):
+        assert catalog.VIDEO_CATALOG[slug]["durations"] == ()
+        body = catalog.build_payload(
+            slug, {"duration": 15}, "move",
+            reference_images=["https://example.com/character.png"] if "animate" in slug else None,
+            reference_videos=["https://example.com/move.mp4"] if "animate" in slug else None,
+        )
+        assert "length_seconds" not in body
