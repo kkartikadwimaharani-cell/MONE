@@ -3882,6 +3882,12 @@ function updateGenerateButtonState() {
   if (!btn) return;
   var txt = btn.querySelector('.gen-txt');
   if (btn.hasAttribute('aria-disabled')) btn.removeAttribute('aria-disabled');
+  if (DEMO_MODE) {
+    btn.disabled = false;
+    btn.title = 'Lihat pengalaman generasi dalam demo';
+    if (txt) txt.textContent = 'GENERATE';
+    return;
+  }
   // Only families in CONNECTED_FAMILIES are actually wired to a real
   // backend/generation service endpoint right now. Every other model card is UI-only
   // so far — don't let the button imply it'll work when it can't.
