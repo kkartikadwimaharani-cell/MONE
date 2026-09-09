@@ -4287,6 +4287,28 @@ def aivideo_generate():
         bp_family, bp_variant = '__catalog__', slug
         endpoint = 'budgetpixel:' + catalog_output_type + ':' + slug
         duration = body.get('length_seconds', body.get('duration', 0))
+        request_metadata = {
+            'activeMode': 'video' if catalog_output_type == 'motion' else catalog_output_type,
+            'outputKind': catalog_output_type,
+            'modelDisplayName': str(registered.get('name') or slug),
+            'fullModelLabel': str(registered.get('name') or slug),
+            'model': model_key,
+            'model_slug': slug,
+            'family': family,
+            'prompt': prompt,
+            'image_urls': image_urls,
+            'video_urls': video_urls,
+            'audio_urls': audio_urls,
+            'first_frame_url': first_frame_url,
+            'last_frame_url': last_frame_url,
+            'duration': duration,
+            'resolution': payload.get('resolution') or '',
+            'aspect_ratio': payload.get('aspect_ratio') or '',
+            'mute_audio': mute_audio,
+            'audioApplicable': catalog_output_type in ('video', 'motion'),
+            'bitrateSnapshot': payload.get('output_bitrate') or payload.get('bitrate_mode') or '',
+            'source': 'agent' if getattr(g, 'mii_mcp_internal', False) else 'web',
+        }
 
     elif family in budgetpixel_image_families:
         if not _budgetpixel_api_key():
@@ -4802,6 +4824,50 @@ def aivideo_task_status(task_id):
         app.logger.warning('[ai-video][status] task_id=%s not found in AIVIDEO_TASKS (process restarted or invalid id?)', task_id)
         return jsonify({'error': 'Task tidak ditemukan (server mungkin baru saja restart). Coba generate ulang.'}), 404
     return jsonify(resp)
+
+
+@app.route('/api/aivideo/tasks/recent')
+def aivideo_recent_tasks():
+    """Expose one shared server queue to the authenticated web UI.
+
+    This endpoint only reads existing tasks. It never submits or retries a
+    generation, so opening the web page cannot create a duplicate charge.
+    """
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    now = time.time()
+    items = []
+    try:
+        recent = aivideo_archive.list_recent_tasks(50)
+    except Exception as e:
+        app.logger.warning('[ai-video][tasks] gagal memuat antrean bersama: %s', e)
+        return jsonify({'ok': False, 'items': [], 'error': 'Antrean belum dapat dimuat.'}), 503
+    for task in recent:
+        status = str(task.get('status') or 'pending')
+        created = float(task.get('created') or now)
+        if status in ('completed', 'failed') and now - created > 24 * 3600:
+            continue
+        meta = dict(task.get('request_metadata') or {})
+        meta.setdefault('model', task.get('model') or 'STANDARD')
+        meta.setdefault('family', task.get('family') or '')
+        meta.setdefault('modelDisplayName', str(task.get('model') or task.get('family') or 'MII GENERATION'))
+        meta.setdefault('fullModelLabel', meta['modelDisplayName'])
+        meta.setdefault('activeMode', 'image' if (task.get('output') or {}).get('image_url') else
+                        ('audio' if (task.get('output') or {}).get('audio_url') else 'video'))
+        item = {
+            'id': task.get('id'),
+            'status': status,
+            'progress': int(task.get('progress') or 0),
+            'created': created,
+            'meta': meta,
+        }
+        if status == 'completed':
+            item['output'] = task.get('output') or {}
+        elif status == 'failed':
+            item['error'] = task.get('error') or 'Generate gagal'
+        if item['id']:
+            items.append(item)
+    return jsonify({'ok': True, 'items': items})
 
 
 @app.route('/api/aivideo/result/<task_id>')

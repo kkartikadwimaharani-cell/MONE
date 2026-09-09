@@ -5425,10 +5425,59 @@ function resumeActiveTaskIfAny() {
   });
   refreshQueueBadge();
 }
+
+// Shared server queue: generations started from ChatGPT or another connected
+// agent appear here as the exact same task. This only observes task IDs and
+// status; it never calls the generate endpoint, so no duplicate task is made.
+var sharedTaskSyncInFlight = false;
+var sharedTaskSyncTimer = null;
+function sharedTaskAlreadySaved(taskId) {
+  return loadHistory().some(function(record) {
+    return record && (record.sourceTaskId === taskId || record.id === 'task_' + taskId);
+  });
+}
+function attachSharedTask(item) {
+  if (!item || !item.id || activeGens[item.id]) return;
+  if (item.status === 'completed' && sharedTaskAlreadySaved(item.id)) return;
+  var meta = item.meta || {};
+  meta.activeMode = meta.activeMode || 'video';
+  meta.fullModelLabel = meta.fullModelLabel || meta.modelDisplayName || meta.model || 'MII GENERATION';
+  var list = document.getElementById('genQueueList');
+  if (!list || document.getElementById('genq_' + item.id)) return;
+  list.insertAdjacentHTML('afterbegin', genQueueItemHtml(item.id, meta));
+  activeGens[item.id] = {
+    meta: meta,
+    startTs: Math.max(0, Number(item.created || 0) * 1000) || Date.now(),
+    shared: true
+  };
+  if (item.status !== 'completed' && item.status !== 'failed') {
+    saveActiveTaskEntry(item.id, meta, activeGens[item.id].startTs);
+  }
+  refreshQueueBadge();
+  pollQueueTask(item.id, { meta: meta });
+}
+function syncSharedTasks() {
+  if (sharedTaskSyncInFlight || document.visibilityState === 'hidden') return;
+  sharedTaskSyncInFlight = true;
+  fetchWithTimeout('/api/aivideo/tasks/recent', {}, 15000)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      sharedTaskSyncInFlight = false;
+      if (!data || !data.ok || !Array.isArray(data.items)) return;
+      data.items.forEach(attachSharedTask);
+    })
+    .catch(function() { sharedTaskSyncInFlight = false; });
+}
+function startSharedTaskSync() {
+  refreshHistoryFromServer(function() { syncSharedTasks(); });
+  if (!sharedTaskSyncTimer) sharedTaskSyncTimer = setInterval(syncSharedTasks, 4000);
+}
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', resumeActiveTaskIfAny);
+  document.addEventListener('DOMContentLoaded', startSharedTaskSync);
 } else {
   resumeActiveTaskIfAny();
+  startSharedTaskSync();
 }
 
 
