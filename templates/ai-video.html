@@ -1555,6 +1555,52 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .demo-notice-actions>*{min-height:48px;display:grid;place-items:center;border-radius:14px;border:1px solid var(--border2);font:800 .73rem/1 var(--disp);letter-spacing:.06em;text-decoration:none;color:#fff;text-align:center}
 .demo-notice-actions .primary{border-color:transparent;background:linear-gradient(135deg,#ff2446,#a6001b);box-shadow:0 12px 30px rgba(255,32,64,.2)}
 @media(max-width:420px){.demo-notice-actions{grid-template-columns:1fr}.demo-notice-card{padding:22px}}
+
+/* Native 100% mobile density. This reproduces the compact composition that
+   previously required browser zoom, while preserving real touch geometry. */
+@media(max-width:590px){
+  .topbar{height:54px;padding-left:12px;padding-right:12px}
+  .tb-logo{width:23px;height:23px;font-size:11px}
+  .tb-title{font-size:17px}
+  .tb-badge{padding:2px 7px;font-size:.52rem}
+  .modebar{padding:0 12px 7px}
+  .modebar-track{padding:3px}
+  .mode-pill{top:3px;bottom:3px}
+  .modebar .mode-btn{padding:7px 13px;font-size:.76rem;gap:6px}
+  .modebar .mode-btn svg{width:13px;height:13px}
+  .canvas{padding:12px 12px 3px}
+  .panel-wrap{padding:0 7px calc(8px + var(--safe-b))}
+  .panel{padding:8px 10px calc(10px + var(--safe-b));gap:8px;border-radius:25px 25px 20px 20px}
+  .panel-body{gap:8px}
+  .panel-handle-wrap{padding:1px 0 3px}
+  .panel-handle{width:34px;height:4px}
+  .inline-models{gap:6px;padding-bottom:5px;margin-bottom:1px}
+  .inline-model-card{min-width:98px;max-width:126px;padding:8px 9px;border-radius:12px}
+  .inline-model-name{font-size:10.5px}
+  .inline-model-brand{font-size:7.5px;margin-top:3px}
+  .media-row{gap:7px;margin-top:0}
+  .type-rail{padding:3px;gap:3px}
+  .rail-btn{width:30px;height:30px;border-radius:10px}
+  .rail-btn svg{width:13px;height:13px}
+  .rail-pill{left:3px;right:3px;height:30px}
+  .ref-sections{min-width:48px;gap:7px}
+  .ref-group + .ref-group{padding-left:7px}
+  .ref-cards .upload-card{width:58px;height:66px;border-radius:14px}
+  .ref-cards .uc-icon{width:16px;height:16px}
+  .ref-cards .uc-label{font-size:8px}
+  .ref-cards .uc-count{font-size:.54rem}
+  .ref-thumb{width:58px;height:66px;border-radius:14px}
+  .prompt-mount{flex-basis:84px}
+  .media-row .prompt-btn{min-width:84px;min-height:66px;padding:9px;border-radius:15px}
+  .media-row .prompt-btn-icon{width:26px;height:26px;border-radius:8px}
+  .media-row .prompt-btn-icon svg{width:12px;height:12px}
+  .media-row .prompt-btn-txt{font-size:12px;padding-top:4px}
+  .settings-row{gap:5px}
+  .chip{min-height:32px;padding:6px 9px;font-size:11px}
+  .tier-seg{min-height:32px}
+  .tier-seg-btn{padding:6px 9px;font-size:10px}
+  .gen-btn{min-height:48px;padding:10px;font-size:14px;border-radius:16px}
+}
 </style>
 </head>
 
@@ -3171,7 +3217,10 @@ function applySelectedFamily(family, qualityIdx, options) {
   var ratioLabel = document.getElementById('ratioLabel');
   var resolutionLabel = document.getElementById('resolutionLabel');
   if (ratioLabel) ratioLabel.textContent = selectedRatio;
-  if (resolutionLabel) resolutionLabel.textContent = selectedResolution;
+  /* Image detail is painted from selectedImageSize/Megapixel/Resolution by
+     applyModelCapabilities(). Repainting selectedResolution here leaked the
+     last Video value (usually 720p) into Image mode. */
+  if (resolutionLabel && activeMode !== 'image') resolutionLabel.textContent = selectedResolution;
   renderMuteAudioChip();
   var bitrateLabel = document.getElementById('bitrateLabel');
   if (bitrateLabel) bitrateLabel.textContent = selectedBitrate;
@@ -3231,9 +3280,13 @@ function resolveEffectiveCapabilities(family, variantIndex) {
         supportsAspectRatio:!!providerCaps.aspect_ratios, aspectRatios:providerCaps.aspect_ratios || [],
         defaultAspectRatio:providerCaps.default_aspect_ratio || '1:1',
         supportsResolution:!!providerCaps.resolutions, resolutions:providerCaps.resolutions || [],
+        defaultResolution:providerCaps.default_resolution || (providerCaps.resolutions || [])[0],
         supportsSize:!!providerCaps.sizes, sizes:providerCaps.sizes || [],
+        defaultSize:providerCaps.default_size || (providerCaps.sizes || [])[0],
         supportsMegapixel:!!providerCaps.megapixels, megapixels:providerCaps.megapixels || [],
+        defaultMegapixel:providerCaps.default_megapixel || (providerCaps.megapixels || [])[0],
         supportsQuality:!!providerCaps.qualities, qualities:providerCaps.qualities || [],
+        defaultQuality:providerCaps.default_quality || (family.key === 'gptimage' ? 'medium' : (providerCaps.qualities || [])[0]),
         supportsImageCount:!!providerCaps.image_count,
         minImages:providerCaps.image_count ? providerCaps.image_count[0] : 1,
         maxImages:providerCaps.image_count ? providerCaps.image_count[1] : 1,
@@ -3396,7 +3449,7 @@ function applyModelCapabilities() {
   }
   if (sheetDefs && sheetDefs.imagequality && rawCaps.supportsQuality) {
     sheetDefs.imagequality.options = (rawCaps.qualities || []).map(String);
-    if (sheetDefs.imagequality.options.indexOf(selectedImageQuality) < 0) selectedImageQuality = sheetDefs.imagequality.options[0];
+    if (sheetDefs.imagequality.options.indexOf(selectedImageQuality) < 0) selectedImageQuality = rawCaps.defaultQuality || sheetDefs.imagequality.options[0];
     var qualityLabel = document.getElementById('imageQualityLabel');
     if (qualityLabel) qualityLabel.textContent = selectedImageQuality;
   }
@@ -3521,15 +3574,15 @@ function applyModelCapabilities() {
       sheetDefs.resolution.title = 'Megapixel';
       sheetDefs.resolution.options = rawCaps.megapixels.map(String);
       sheetDefs.resolution.disabled = [];
-      if (sheetDefs.resolution.options.indexOf(String(selectedImageMegapixel)) < 0) selectedImageMegapixel = sheetDefs.resolution.options[0];
+      if (sheetDefs.resolution.options.indexOf(String(selectedImageMegapixel)) < 0) selectedImageMegapixel = String(rawCaps.defaultMegapixel || sheetDefs.resolution.options[0]);
     } else if (activeMode === 'image' && rawCaps.supportsSize) {
       sheetDefs.resolution.title = 'Size';
       sheetDefs.resolution.options = rawCaps.sizes.slice(); sheetDefs.resolution.disabled = [];
-      if (sheetDefs.resolution.options.indexOf(selectedImageSize) < 0) selectedImageSize = sheetDefs.resolution.options[0];
+      if (sheetDefs.resolution.options.indexOf(selectedImageSize) < 0) selectedImageSize = rawCaps.defaultSize || sheetDefs.resolution.options[0];
     } else if (activeMode === 'image' && rawCaps.supportsResolution) {
       sheetDefs.resolution.title = 'Resolution';
       sheetDefs.resolution.options = rawCaps.resolutions.slice(); sheetDefs.resolution.disabled = [];
-      if (sheetDefs.resolution.options.indexOf(selectedImageResolution) < 0) selectedImageResolution = sheetDefs.resolution.options[0];
+      if (sheetDefs.resolution.options.indexOf(selectedImageResolution) < 0) selectedImageResolution = rawCaps.defaultResolution || sheetDefs.resolution.options[0];
     } else if (caps.resolutionOptions) {
       sheetDefs.resolution.title = 'Resolution';
       sheetDefs.resolution.options = caps.resolutionOptions.slice();

@@ -156,6 +156,8 @@ def _image_ui_caps(item):
         "defaultAspectRatio": contract.get("default_aspect_ratio", "1:1"),
         "supportsResolution": bool(contract.get("resolutions")),
         "resolutions": list(contract.get("resolutions", ())),
+        "defaultResolution": contract.get("default_resolution") or
+                             (contract.get("resolutions") or (None,))[0],
         "supportsSize": bool(contract.get("sizes")),
         "sizes": list(contract.get("sizes", ())),
         "defaultSize": contract.get("default_size"),
@@ -164,6 +166,9 @@ def _image_ui_caps(item):
         "defaultMegapixel": contract.get("default_megapixel"),
         "supportsQuality": bool(contract.get("qualities")),
         "qualities": list(contract.get("qualities", ())),
+        "defaultQuality": contract.get("default_quality") or
+                          ("medium" if item["slug"] == "gpt-image-2" else
+                           ((contract.get("qualities") or (None,))[0])),
         "supportsImageCount": bool(contract.get("image_count")),
         "minImages": contract.get("image_count", (1, 1))[0],
         "maxImages": contract.get("image_count", (1, 1))[1],

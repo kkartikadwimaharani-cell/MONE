@@ -53,6 +53,7 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
         gpt = images["GPT IMAGE 2"]["qualities"][0]["caps"]
         self.assertTrue(gpt["supportsResolution"])
         self.assertTrue(gpt["supportsQuality"])
+        self.assertEqual(gpt["defaultQuality"], "medium")
         self.assertTrue(gpt["supportsOutputFormat"])
 
     def test_catalogue_image_payload_keeps_selected_controls(self):
