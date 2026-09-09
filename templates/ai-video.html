@@ -1642,8 +1642,8 @@ if (DEMO_MODE) {
 <div class="demo-notice" id="demoNotice" role="dialog" aria-modal="true" aria-labelledby="demoNoticeTitle" onclick="if(event.target===this)closeDemoNotice()">
   <div class="demo-notice-card">
     <span class="demo-notice-mark">MII AI VIDEO · PUBLIC DEMO</span>
-    <h2 id="demoNoticeTitle">JELAJAHI WORKSPACE MII AI VIDEO</h2>
-    <p id="demoNoticeText">AKSES TAMPILAN WORKSPACE, JELAJAHI MODEL, MODE, DAN BERBAGAI KONTROL YANG TERSEDIA. VERSI DEMO INI HANYA UNTUK EKSPLORASI DAN TIDAK MENJALANKAN GENERASI ATAU MENGGUNAKAN KREDIT.</p>
+    <h2 id="demoNoticeTitle">PUBLIC DEMO // SAFE MODE</h2>
+    <p id="demoNoticeText">EKSPLORASI MODEL DAN KONTROL AKTIF. GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN.</p>
     <div class="demo-notice-actions">
       <button type="button" onclick="closeDemoNotice()">LANJUT JELAJAHI</button>
       <a class="primary" href="/ai-video">BUKA WORKSPACE</a>
@@ -1768,18 +1768,18 @@ if (DEMO_MODE) {
   <div class="modebar" role="tablist" aria-label="Media type">
     <div class="modebar-track" id="modebarTrack">
       <div class="mode-pill" id="modePill"></div>
-      <div class="mode-btn" data-view="image" onclick="setView('image',this)" role="tab">
+      <button type="button" class="mode-btn" data-view="image" onclick="setView('image',this)" role="tab" aria-selected="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
         <span>Image</span>
-      </div>
-      <div class="mode-btn active" data-view="video" onclick="setView('video',this)" role="tab">
+      </button>
+      <button type="button" class="mode-btn active" data-view="video" onclick="setView('video',this)" role="tab" aria-selected="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
         <span>Video</span>
-      </div>
-      <div class="mode-btn" data-view="audio" onclick="setView('audio',this)" role="tab">
+      </button>
+      <button type="button" class="mode-btn" data-view="audio" onclick="setView('audio',this)" role="tab" aria-selected="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2l2-7 3 14 3-10 2 5 2-2h4"/></svg>
         <span>Audio</span>
-      </div>
+      </button>
     </div>
   </div>
 
@@ -1963,29 +1963,29 @@ if (DEMO_MODE) {
       </div>
 
       <div class="settings-row">
-        <div class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></div>
-        <div class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></div>
-        <div class="chip" id="imageFormatChip" onclick="openSheet('imageformat',this)" style="display:none"><span style="opacity:.6">Format</span><span id="imageFormatLabel">PNG</span><span class="chip-car"></span></div>
-        <div class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></div>
+        <button type="button" class="chip" id="ratioChip" onclick="openSheet('ratio',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><span id="ratioLabel">16:9</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="resolutionChip" onclick="openSheet('resolution',this)"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg><span id="resolutionLabel">720p</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="imageFormatChip" onclick="openSheet('imageformat',this)" style="display:none"><span style="opacity:.6">Format</span><span id="imageFormatLabel">PNG</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="bitrateChip" onclick="openSheet('bitrate',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span id="bitrateLabel">High</span><span class="chip-car"></span></button>
         <!-- Tier (MINI/FAST/PRO etc) as an inline segmented toggle, right after
              ratio/resolution/duration — matches the reference's "Fast | Pro"
              segmented control placement exactly, instead of a chip that opens
              a separate sheet. -->
         <div class="tier-seg" id="variantControl" style="display:none"></div>
-        <div class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></div>
-        <div class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></div>
-        <div class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></div>
-        <div class="chip" id="audioModeChip" onclick="openSheet('audiomode',this)" style="display:none"><span style="opacity:.6">Mode</span><span id="audioModeLabel">INSTRUMENTAL</span><span class="chip-car"></span></div>
-        <div class="chip" id="audioLyricsChip" onclick="openSheet('lyrics',this)" style="display:none"><span id="audioLyricsLabel">LYRICS</span><span class="chip-car"></span></div>
-        <div class="chip" id="vocalGenderChip" onclick="openSheet('vocalgender',this)" style="display:none"><span style="opacity:.6">Voice</span><span id="vocalGenderLabel">AUTO</span><span class="chip-car"></span></div>
-        <div class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Atur audio video hasil">
+        <button type="button" class="chip" id="motionChip" onclick="openSheet('motion',this)" style="display:none"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h10M14 6l6 6-6 6"/></svg><span id="motionLabel">Dynamic</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="audioFormatChip" onclick="openSheet('audioformat',this)" style="display:none"><span style="opacity:.6">Output</span><span id="audioFormatLabel">WAV</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="sampleRateChip" onclick="openSheet('samplerate',this)" style="display:none"><span style="opacity:.6">Sample</span><span id="sampleRateLabel">44.100 Hz</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="audioModeChip" onclick="openSheet('audiomode',this)" style="display:none"><span style="opacity:.6">Mode</span><span id="audioModeLabel">INSTRUMENTAL</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="audioLyricsChip" onclick="openSheet('lyrics',this)" style="display:none"><span id="audioLyricsLabel">LYRICS</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="vocalGenderChip" onclick="openSheet('vocalgender',this)" style="display:none"><span style="opacity:.6">Voice</span><span id="vocalGenderLabel">AUTO</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Atur audio video hasil">
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
           <span class="chip-car" id="muteAudioCaret" style="display:none"></span>
-        </div>
-        <div class="chip" id="imageQualityControl" onclick="openSheet('imagequality',this)" style="display:none"><span>Quality</span><span id="imageQualityLabel">Medium</span><span class="chip-car"></span></div>
-        <div class="chip" id="imageCountControl" onclick="openSheet('imagecount',this)" style="display:none"><span>Images</span><span id="qtyVal">1</span><span class="chip-car"></span></div>
-        <div class="chip" id="imageAdvancedControl" onclick="openImageAdvanced(this)" style="display:none"><span>Advanced</span><span class="chip-car"></span></div>
+        </button>
+        <button type="button" class="chip" id="imageQualityControl" onclick="openSheet('imagequality',this)" style="display:none"><span>Quality</span><span id="imageQualityLabel">Medium</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="imageCountControl" onclick="openSheet('imagecount',this)" style="display:none"><span>Images</span><span id="qtyVal">1</span><span class="chip-car"></span></button>
+        <button type="button" class="chip" id="imageAdvancedControl" onclick="openImageAdvanced(this)" style="display:none"><span>Advanced</span><span class="chip-car"></span></button>
       </div>
 
       <div class="action-row">
@@ -2729,8 +2729,9 @@ function moveRailPill(btn) {
   pill.style.transform = 'translateY(' + btn.offsetTop + 'px) translateZ(0)';
 }
 function setView(view, el) {
-  document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
   el.classList.add('active');
+  el.setAttribute('aria-selected', 'true');
   moveModePill(el);
   if (view === 'image' || view === 'video' || view === 'audio') {
     activeMode = view;
@@ -4512,8 +4513,8 @@ function showDemoNotice(action) {
   var title = document.getElementById('demoNoticeTitle');
   var copy = document.getElementById('demoNoticeText');
   if (!modal || !title || !copy) return;
-  title.textContent = 'JELAJAHI WORKSPACE MII AI VIDEO';
-  copy.textContent = 'AKSES TAMPILAN WORKSPACE, JELAJAHI MODEL, MODE, DAN BERBAGAI KONTROL YANG TERSEDIA. VERSI DEMO INI HANYA UNTUK EKSPLORASI DAN TIDAK MENJALANKAN GENERASI ATAU MENGGUNAKAN KREDIT.';
+  title.textContent = 'PUBLIC DEMO // SAFE MODE';
+  copy.textContent = 'EKSPLORASI MODEL DAN KONTROL AKTIF. GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN.';
   modal.classList.add('show');
 }
 function closeDemoNotice() {

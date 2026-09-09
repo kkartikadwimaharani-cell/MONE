@@ -6,12 +6,24 @@ DEMO = (ROOT / "templates" / "ai-video.html").read_text()
 HOME = (ROOT / "templates" / "index.html").read_text()
 
 
-def test_public_demo_copy_and_home_card_are_exact_and_unique():
-    assert "JELAJAHI WORKSPACE MII AI VIDEO" in DEMO
-    assert "VERSI DEMO INI HANYA UNTUK EKSPLORASI DAN TIDAK MENJALANKAN GENERASI ATAU MENGGUNAKAN KREDIT." in DEMO
+def test_public_demo_copy_and_home_card_are_compact_and_unique():
+    assert "PUBLIC DEMO // SAFE MODE" in DEMO
+    assert "GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN." in DEMO
     assert HOME.count("MII AI VIDEO · PUBLIC DEMO") == 1
-    assert "COBA LANGSUNG TAMPILAN WORKSPACE DAN JELAJAHI MODEL, MODE, SERTA KONTROL YANG TERSEDIA. AMAN UNTUK DICOBA TANPA MENJALANKAN GENERASI." in HOME
+    assert "UI PREVIEW // TANPA GENERASI · TANPA KREDIT" in HOME
     assert 'href="/mii-ai-video"' in HOME
+
+
+def test_primary_demo_controls_are_native_buttons():
+    for control_id in (
+        "ratioChip", "resolutionChip", "imageFormatChip", "bitrateChip",
+        "motionChip", "audioFormatChip", "sampleRateChip", "audioModeChip",
+        "audioLyricsChip", "vocalGenderChip", "muteAudioChip",
+        "imageQualityControl", "imageCountControl", "imageAdvancedControl",
+    ):
+        assert f'<button type="button" class="chip" id="{control_id}"' in DEMO
+    assert DEMO.count('<button type="button" class="mode-btn') == 3
+    assert "b.setAttribute('aria-selected', 'false')" in DEMO
 
 
 def test_demo_is_fail_closed_before_other_fetch_wrappers_load():
