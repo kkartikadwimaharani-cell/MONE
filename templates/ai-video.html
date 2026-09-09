@@ -1314,11 +1314,13 @@ button:focus-visible,.chip:focus-visible,.model-select:focus-visible{outline:2px
 
   /* Rail kanan */
   #pageAiVideo>.panel-wrap{
-    grid-column:2;grid-row:1/3;display:flex;min-width:0;min-height:0;
+    grid-column:2;grid-row:1/3;display:flex;align-items:flex-start;
+    min-width:0;min-height:0;overflow-y:auto;
     padding:12px 18px 18px 8px;animation:none;
   }
   .panel{
-    width:100%;max-width:none;margin:0;min-height:0;max-height:100%;
+    width:100%;max-width:none;margin:0;min-height:0;
+    max-height:calc(100dvh - 106px);overflow:hidden;
     border-radius:22px;padding:16px 16px 16px!important;
     animation:none;transform:none!important;
     box-shadow:0 18px 60px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.05) inset;
@@ -3126,10 +3128,18 @@ function applySelectedFamily(family, qualityIdx, options) {
   // click, on the other hand, must not discard settings the user just chose.
   var resetFamilyDefaults = !!options.initialize || previousFamilyKey !== family.key;
   if (resetFamilyDefaults) {
-    selectedRatio = '16:9';
+    selectedRatio = activeMode === 'image' ? '1:1' : '16:9';
     selectedDuration = 5;
     muteAudioEnabled = false;
     selectedBitrate = 'HIGH';
+    if (activeMode === 'image') {
+      selectedImageSize = '';
+      selectedImageMegapixel = '';
+      selectedImageResolution = '';
+      selectedImageQuality = '';
+      selectedImageFormat = 'PNG';
+      selectedImageCount = 1;
+    }
   }
   if (family.key === 'seedance25' && resetFamilyDefaults) {
     selectedRatio = '16:9';
@@ -3177,7 +3187,9 @@ function pickFamily(family, qualityIdx) {
   return applySelectedFamily(family, qualityIdx, { initialize: false });
 }
 
-var MODEL_STATE_KEY = 'mii_model_state_v1';
+/* Demo and private workspace must never share selection state. Task/history
+   already use separate keys; this closes the last cross-page state channel. */
+var MODEL_STATE_KEY = DEMO_MODE ? 'mii_demo_model_state_v1' : 'mii_model_state_v1';
 var DEFAULT_VIDEO_FAMILY_KEY = 'seedance25';
 function loadCanonicalModelState(mode) {
   try { return (JSON.parse(localStorage.getItem(MODEL_STATE_KEY) || '{}') || {})[mode] || null; } catch (_) { return null; }
@@ -3367,7 +3379,7 @@ function applyModelCapabilities() {
   var imageDetailSupported = activeMode === 'image' && (rawCaps.supportsSize || rawCaps.supportsMegapixel || rawCaps.supportsResolution);
   if (resChip) resChip.style.display = (caps.resolution || imageDetailSupported) ? '' : 'none';
   if (activeMode === 'image' && resChip) {
-    var detailTitle = rawCaps.supportsMegapixel ? 'MP' : (rawCaps.supportsSize ? 'Size' : 'Resolution');
+    var detailTitle = 'Quality';
     var detailValue = rawCaps.supportsMegapixel ? selectedImageMegapixel : (rawCaps.supportsSize ? selectedImageSize : selectedImageResolution);
     resChip.setAttribute('data-label', detailTitle);
     document.getElementById('resolutionLabel').textContent = detailTitle + ' · ' + detailValue;
@@ -3540,7 +3552,7 @@ function applyModelCapabilities() {
     var resLabelEl = document.getElementById('resolutionLabel');
     var opts = sheetDefs.resolution.options.filter(function(o){ return sheetDefs.resolution.disabled.indexOf(o) === -1; });
     if (activeMode === 'image' && resLabelEl) {
-      var kind = rawCaps.supportsMegapixel ? 'MP' : (rawCaps.supportsSize ? 'Size' : 'Resolution');
+      var kind = 'Quality';
       var value = rawCaps.supportsMegapixel ? selectedImageMegapixel : (rawCaps.supportsSize ? selectedImageSize : selectedImageResolution);
       resLabelEl.textContent = kind + ' · ' + value;
     } else if (resLabelEl && opts.indexOf(selectedResolution) === -1) {

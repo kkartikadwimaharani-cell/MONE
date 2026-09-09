@@ -132,14 +132,15 @@ _CORE_IMAGE_ROUTE = {
 }
 
 
-def _contract_for_slug(slug):
+def image_contract(slug):
+    """Return a copy of the reviewed control contract for one image slug."""
     route = _CORE_IMAGE_ROUTE.get(slug)
     return dict(CORE_IMAGE_CAPABILITIES.get(route, {})) if route else {}
 
 
 def _image_ui_caps(item):
     """Translate the request contract into the capability names used by UI."""
-    contract = _contract_for_slug(item["slug"])
+    contract = image_contract(item["slug"])
     image_limit = 1 if item["singular_image"] else item["reference_images"]
     caps = {
         "image": image_limit,
@@ -183,6 +184,9 @@ def registry_rows():
         kind = item["category"]
         params = {k: list(v) if isinstance(v, tuple) else v for k, v in item.items()
                   if k not in ("slug", "name", "group", "label", "description", "category")}
+        if kind == "image":
+            params.update({key: list(value) if isinstance(value, tuple) else value
+                           for key, value in image_contract(item["slug"]).items()})
         rows.append({"slug": item["slug"], "name": item["name"], "category": kind,
                      "family": "bpx-" + item["slug"], "variant": "STANDARD",
                      "endpoint": "/v1/%ss/%s" % (kind, item["slug"]),

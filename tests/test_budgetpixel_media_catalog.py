@@ -68,6 +68,16 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
         self.assertEqual(body["num_images"], 2)
         self.assertEqual(body["output_format"], "jpeg")
 
+    def test_model_registry_exposes_image_controls_to_agent_tools(self):
+        rows = {row["slug"]: row for row in catalog.registry_rows()}
+        seedream = rows["seedream-5.0-pro"]["parameters"]
+        self.assertIn("1:1", seedream["aspect_ratios"])
+        self.assertEqual(seedream["sizes"], ["1K", "2K"])
+        self.assertEqual(seedream["image_count"], [1, 4])
+        gpt = rows["gpt-image-2"]["parameters"]
+        self.assertEqual(gpt["qualities"], ["low", "medium", "high"])
+        self.assertEqual(gpt["formats"], ["png", "jpeg"])
+
     def test_midjourney_stays_visible_when_live_directory_is_partial(self):
         partial = {"models": [{"slug": "some-other-model", "handler": True}],
                    "sync_error": None}

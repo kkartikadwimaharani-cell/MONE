@@ -328,10 +328,26 @@ def register_mcp(app, backend, data_dir):
         if 'budgetpixel_media_catalog' in backend:
             media=backend['budgetpixel_media_catalog']
             for slug,item in media.IMAGE_CATALOG.items():
-                fields=['image_urls'] if item.get('reference_images') or item.get('singular_image') else []
+                accepts_references=bool(item.get('reference_images') or item.get('singular_image'))
+                fields=['image_urls'] if accepts_references else []
+                contract=media.image_contract(slug)
+                for public,cap in (('aspect_ratio','aspect_ratios'),('resolution','resolutions'),
+                                   ('size','sizes'),('quality','qualities'),('output_format','formats'),
+                                   ('megapixel','megapixels'),('num_images','image_count'),
+                                   ('seed','seed'),('negative_prompt','negative_prompt'),
+                                   ('sequential_image_generation','sequential_modes'),('max_images','max_images')):
+                    if contract.get(cap): fields.append(public)
                 result['image']['bpx-'+slug+':STANDARD']={
-                    'slug':slug, 'modes':['text-to-image'] + (['image-editing'] if fields else []),
-                    'fields':fields, 'requires_image':bool(item.get('requires_image'))}
+                    'slug':slug, 'modes':['text-to-image'] + (['image-editing'] if accepts_references else []),
+                    'aspect_ratios':list(contract.get('aspect_ratios',())),
+                    'resolutions':list(contract.get('resolutions',())),
+                    'sizes':list(contract.get('sizes',())),
+                    'megapixels':list(contract.get('megapixels',())),
+                    'qualities':list(contract.get('qualities',())),
+                    'output_formats':list(contract.get('formats',())),
+                    'image_count':list(contract.get('image_count',())),
+                    'fields':list(dict.fromkeys(fields)),
+                    'requires_image':bool(item.get('requires_image'))}
             for slug,item in media.AUDIO_CATALOG.items():
                 fields=['audio_format','lyrics','instrumental','vocal_gender']
                 if item.get('durations'): fields.append('duration')
