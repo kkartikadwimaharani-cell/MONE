@@ -294,16 +294,21 @@ def register_mcp(app, backend, data_dir):
         tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',
              {'slug':{'type':'string','minLength':1},'category':{'type':'string','enum':['image','video','audio','motion']}},['slug']),
         tool('motion_control','Animate one character image using one source video.',{'prompt':string,'model_slug':string,'video_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'image_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'mute_audio':{'type':'boolean'},'character_orientation':{'type':'string','enum':['video','image']},'trim_intro':{'type':'boolean'}},['video_urls','image_urls'],True),
-        tool('check_status','Read task status and output URL. Do not repeatedly poll unless requested.',{'task_id':{'type':'string','minLength':1}},['task_id']),
+        tool('check_status','Read one task status. Call at most once for troubleshooting: every generation card already refreshes itself until completed or failed. Never loop or repeatedly call this tool.',{'task_id':{'type':'string','minLength':1}},['task_id']),
     ]
+    generation_tools={
+        'miiaivideo_generate_video','miiaivideo_generate_image','miiaivideo_generate_audio',
+        'miiaivideo_generate_music','miiaivideo_generate_sfx','miiaivideo_video_to_music',
+        'miiaivideo_video_to_sfx','miiaivideo_motion_control',
+    }
     for item in tools:
         item['name']='miiaivideo_'+item['name']
-        if item['name']=='miiaivideo_check_status':
+        if item['name'] in generation_tools:
             item['_meta']={
                 'ui':{'resourceUri':'ui://miiaivideo/video-preview.html'},
                 'openai/outputTemplate':'ui://miiaivideo/video-preview.html',
-                'openai/toolInvocation/invoking':'Memeriksa hasil MIIAIVIDEO…',
-                'openai/toolInvocation/invoked':'Hasil MIIAIVIDEO siap',
+                'openai/toolInvocation/invoking':'Memulai proses MIIAIVIDEO…',
+                'openai/toolInvocation/invoked':'Proses MIIAIVIDEO berjalan',
             }
 
     def catalog():
@@ -602,18 +607,27 @@ def register_mcp(app, backend, data_dir):
         if version and version not in VERSIONS:
             return error('unsupported_protocol_version')
         if method=='initialize':
-            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'MIIAIVIDEO','version':'2.0.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate miiaivideo generation tool. Tasks run asynchronously. Do not repeatedly poll without user approval.'}
+            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'MIIAIVIDEO','version':'2.0.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
         elif method=='ping':
             result={}
         elif method=='tools/list':
             result={'tools':tools}
         elif method=='resources/list':
-            result={'resources':[{'uri':'ui://miiaivideo/video-preview.html','name':'MIIAIVIDEO video preview','mimeType':'text/html;profile=mcp-app'}]}
+            result={'resources':[{'uri':'ui://miiaivideo/video-preview.html','name':'MIIAIVIDEO result preview','mimeType':'text/html;profile=mcp-app'}]}
         elif method=='resources/read':
             if params.get('uri')!='ui://miiaivideo/video-preview.html':
                 return rpc_error(-32602,'Unknown resource')
-            html='''<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#08090d;color:#fff;font:14px system-ui}main{padding:12px}video{display:none;width:100%;max-height:70vh;border-radius:14px;background:#000}a{color:#ff405f}#state{padding:18px;border:1px solid #35202a;border-radius:14px}</style></head><body><main><div id="state">Video sedang diproses.</div><video id="player" controls playsinline preload="metadata"></video><p><a id="open" target="_blank" rel="noopener"></a></p></main><script>function render(r){r=(r&&r.structuredContent)||r||{};var o=r.output||{},u=o.video_url;if(!u){document.getElementById('state').textContent=r.error||('Status: '+(r.status||'processing'));return}var v=document.getElementById('player'),a=document.getElementById('open');v.src=u;v.style.display='block';document.getElementById('state').style.display='none';a.href=u;a.textContent='Buka / download video'}render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});</script></body></html>'''
-            meta={'ui':{'prefersBorder':True,'csp':{'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Pemutar hasil video MIIAIVIDEO','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
+            html='''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box}body{margin:0;background:#08090d;color:#fff;font:13px system-ui,-apple-system,sans-serif}main{padding:10px}.card{overflow:hidden;border:1px solid #35202a;border-radius:14px;background:linear-gradient(145deg,#151116,#0b0c10)}.head{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px}.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#ff2446,#8a0018);font-weight:850;box-shadow:0 0 18px #ff204044}.copy{min-width:0}.title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:2px;color:#a7a1a5;font:10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em}.pct{color:#ff526b;font:700 11px ui-monospace,monospace}.bar{height:3px;margin:0 10px 10px;background:#ffffff12;border-radius:9px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff1638,#ff6078);transition:width .35s}.media{display:none;border-top:1px solid #35202a;background:#050506}.media img,.media video{display:block;width:100%;max-height:300px;object-fit:contain;background:#050506}.media audio{display:block;width:calc(100% - 20px);margin:12px 10px}.foot{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #35202a}.foot a{color:#ff6078;font-size:11px;font-weight:750;text-decoration:none}.err{color:#ff7187}.done .mark{background:linear-gradient(135deg,#21b879,#0a6643);box-shadow:0 0 18px #35e6a033}.done .pct{color:#48e6aa}@media(max-width:420px){main{padding:7px}.head{padding:8px}.media img,.media video{max-height:230px}}
+</style></head><body><main><section class="card" id="card"><div class="head"><div class="mark">M</div><div class="copy"><div class="title" id="title">MIIAIVIDEO</div><div class="sub" id="state">MENYIAPKAN TASK</div></div><div class="pct" id="pct">0%</div></div><div class="bar" id="bar"><div class="fill" id="fill"></div></div><div class="media" id="media"><img id="image" alt="Hasil MIIAIVIDEO"><video id="video" controls playsinline preload="metadata"></video><audio id="audio" controls preload="metadata"></audio></div><div class="foot" id="foot"><span id="kind"></span><a id="open" target="_blank" rel="noopener">BUKA HASIL</a></div></section></main><script>
+(function(){var taskId='',timer=0,attempts=0,terminal=false,last={};var $=function(id){return document.getElementById(id)};
+function unwrap(r){return r&&r.structuredContent?r.structuredContent:(r||{})}
+function mediaOf(r){var o=r.output||r.result||{},imgs=o.images||[];return{video:o.video_url||(o.type==='video'?o.url:'')||'',image:o.image_url||(imgs[0]&&((imgs[0].url)||imgs[0]))||(o.type==='image'?o.url:'')||'',audio:o.audio_url||(o.type==='audio'?o.url:'')||''}}
+function schedule(){if(terminal||!taskId||attempts>120||!window.openai||typeof window.openai.callTool!=='function')return;clearTimeout(timer);timer=setTimeout(function(){attempts++;window.openai.callTool('miiaivideo_check_status',{task_id:taskId}).then(render).catch(function(){schedule()})},attempts<6?3000:6000)}
+function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MIIAIVIDEO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add('done');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
+render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});
+})();</script></body></html>'''
+            meta={'ui':{'prefersBorder':True,'csp':{'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MIIAIVIDEO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
             result={'contents':[{'uri':params['uri'],'mimeType':'text/html;profile=mcp-app','text':html,'_meta':meta}]}
         elif method in ('prompts/list','resources/templates/list'):
             result={ {'prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}
