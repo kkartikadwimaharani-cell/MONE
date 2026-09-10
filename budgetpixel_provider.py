@@ -117,6 +117,8 @@ IMAGE_MODELS = {
     ("gptimage", "LOW"): "/images/gpt-image-2",
     ("gptimage", "STANDARD"): "/images/gpt-image-2",
     ("gptimage", "HIGH"): "/images/gpt-image-2",
+    ("gptimage25", "FLARE"): "/images/gpt-image-2.5-flare",
+    ("gptimage25", "SUNBURST"): "/images/gpt-image-2.5-sunburst",
 }
 
 # Public request contract.  This registry is also the allow-list used by the
@@ -159,6 +161,16 @@ IMAGE_CAPABILITIES = {
     ("gptimage", "HIGH"): {"aspect_ratios": GPT_IMAGE_2_RATIOS, "resolutions": ("1K", "2K", "4K"),
                                "qualities": ("low", "medium", "high"), "image_count": (1, 4),
                                "reference_images": 9, "formats": ("png", "jpeg")},
+    ("gptimage25", "FLARE"): {"aspect_ratios": GPT_IMAGE_2_RATIOS,
+        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K", "4K"),
+        "default_resolution": "1K", "qualities": ("low", "medium", "high", "xhigh", "max"),
+        "default_quality": "medium", "image_count": (1, 4),
+        "reference_images": 9, "formats": ("png", "jpeg")},
+    ("gptimage25", "SUNBURST"): {"aspect_ratios": GPT_IMAGE_2_RATIOS,
+        "default_aspect_ratio": "1:1", "resolutions": ("1K", "2K", "4K"),
+        "default_resolution": "1K", "qualities": ("low", "medium", "high", "xhigh", "max"),
+        "default_quality": "high", "image_count": (1, 4),
+        "reference_images": 9, "formats": ("png", "jpeg")},
 }
 
 
@@ -208,7 +220,7 @@ def build_image_payload(family, variant, incoming, prompt, reference_images=None
         body["resolution"] = resolution
     if caps.get("qualities"):
         tier_quality = {"LOW": "low", "STANDARD": "medium", "HIGH": "high"}.get(str(variant).upper())
-        quality = str(incoming.get("quality") or tier_quality or caps["qualities"][0]).lower()
+        quality = str(incoming.get("quality") or tier_quality or caps.get("default_quality") or caps["qualities"][0]).lower()
         if quality not in caps["qualities"]:
             raise ProviderError("INVALID_INPUT", "Quality is not supported by this model.")
         body["quality"] = quality

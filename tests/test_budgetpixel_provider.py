@@ -28,6 +28,8 @@ class BudgetPixelProviderTests(unittest.TestCase):
             ('gptimage', 'LOW'): '/images/gpt-image-2',
             ('gptimage', 'STANDARD'): '/images/gpt-image-2',
             ('gptimage', 'HIGH'): '/images/gpt-image-2',
+            ('gptimage25', 'FLARE'): '/images/gpt-image-2.5-flare',
+            ('gptimage25', 'SUNBURST'): '/images/gpt-image-2.5-sunburst',
         }
         self.assertEqual(provider.VIDEO_MODELS, expected_video)
         self.assertEqual(provider.IMAGE_MODELS, expected_image)
@@ -40,6 +42,20 @@ class BudgetPixelProviderTests(unittest.TestCase):
         self.assertEqual(result['job_id'], 'job-1')
         kwargs = session.post.call_args.kwargs
         self.assertEqual(kwargs['headers']['Authorization'], 'Bearer secret')
+
+    def test_gpt_image_25_submission_uses_exact_reviewed_endpoints(self):
+        for variant, endpoint in (
+            ('FLARE', '/images/gpt-image-2.5-flare'),
+            ('SUNBURST', '/images/gpt-image-2.5-sunburst'),
+        ):
+            with self.subTest(variant=variant):
+                response = Mock(status_code=200)
+                response.json.return_value = {'id': 'img_test'}
+                session = Mock(post=Mock(return_value=response))
+                provider.submit_image(
+                    'gptimage25', variant, {'prompt': 'test'}, 'key', session=session,
+                )
+                self.assertEqual(session.post.call_args.args[0], provider.BASE_URL + endpoint)
 
     def test_status_normalization(self):
         for raw, normalized in [('pending', 'queued'), ('starting', 'processing'),

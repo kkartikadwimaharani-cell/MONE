@@ -92,6 +92,49 @@ class BudgetPixelMediaCatalogTests(unittest.TestCase):
         self.assertEqual(body["num_images"], 2)
         self.assertEqual(body["output_format"], "jpeg")
 
+    def test_gpt_image_25_contract_is_shared_by_ui_backend_and_tools(self):
+        bundle = catalog.public_ui_bundle()
+        family_names = [row["name"] for row in bundle["image_families"]]
+        self.assertEqual(family_names.index("GPT IMAGE 2.5"),
+                         family_names.index("GPT IMAGE 2") + 1)
+        images = {row["name"]: row for row in bundle["image_families"]}
+        family = images["GPT IMAGE 2.5"]
+        self.assertEqual(
+            [(q["id"], q["label"]) for q in family["qualities"]],
+            [("gpt-image-2.5-flare", "FLARE"),
+             ("gpt-image-2.5-sunburst", "SUNBURST")],
+        )
+        for quality in family["qualities"]:
+            caps = quality["caps"]
+            self.assertEqual(caps["image"], 9)
+            self.assertEqual(caps["resolutions"], ["1K", "2K", "4K"])
+            self.assertEqual(caps["qualities"], ["low", "medium", "high", "xhigh", "max"])
+            self.assertEqual(caps["formats"], ["png", "jpeg"])
+            self.assertEqual(caps["maxImages"], 4)
+
+        flare = catalog.build_image_payload(
+            "gpt-image-2.5-flare",
+            {"aspect_ratio": "21:9", "resolution": "4K", "quality": "xhigh",
+             "num_images": 4, "output_format": "jpeg"},
+            "wide campaign", reference_images=[f"https://example.com/{i}.png" for i in range(9)],
+        )
+        self.assertEqual(flare["aspect_ratio"], "21:9")
+        self.assertEqual(flare["resolution"], "4K")
+        self.assertEqual(flare["quality"], "xhigh")
+        self.assertEqual(flare["num_images"], 4)
+        self.assertEqual(flare["output_format"], "jpeg")
+        self.assertEqual(len(flare["reference_images"]), 9)
+
+        sunburst = catalog.build_image_payload("gpt-image-2.5-sunburst", {}, "portrait")
+        self.assertEqual(sunburst["quality"], "high")
+        self.assertEqual(sunburst["resolution"], "1K")
+
+        with self.assertRaises(ProviderError):
+            catalog.build_image_payload(
+                "gpt-image-2.5-flare", {}, "too many references",
+                reference_images=[f"https://example.com/{i}.png" for i in range(10)],
+            )
+
     def test_model_registry_exposes_image_controls_to_agent_tools(self):
         rows = {row["slug"]: row for row in catalog.registry_rows()}
         seedream = rows["seedream-5.0-pro"]["parameters"]

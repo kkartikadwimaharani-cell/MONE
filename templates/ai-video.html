@@ -2519,34 +2519,6 @@ var budgetPixelMotionFamilies = {{ budgetpixel_motion_families|default([], true)
 modelFamilies.video = modelFamilies.video.concat(budgetPixelVideoFamilies, budgetPixelMotionFamilies);
 modelFamilies.image = modelFamilies.image.concat(budgetPixelImageFamilies);
 modelFamilies.audio = modelFamilies.audio.concat(budgetPixelAudioFamilies);
-// UI preparation for OpenAI's official GPT Image 2.5 API models. This family
-// is intentionally absent from CONNECTED_FAMILIES: it can be explored in the
-// workspace, but cannot upload, generate, poll, or spend credit yet.
-var GPT_IMAGE_25_FAMILY = {
-  key: 'gptimage25', brand: 'OPENAI', name: 'GPT IMAGE 2.5', featured: true, uiOnly: true,
-  desc: 'OFFICIAL API PREVIEW',
-  caps: {
-    image: 4, video: 0, audio: 0, frames: false, elements: true,
-    supportsAspectRatio: true,
-    aspectRatios: ['1:1','3:2','2:3','16:9','9:16','4:3','3:4'],
-    defaultAspectRatio: '1:1',
-    supportsSize: true,
-    sizes: ['AUTO','1024x1024','1536x1024','1024x1536'],
-    defaultSize: 'AUTO',
-    supportsQuality: true,
-    qualities: ['AUTO','LOW','MEDIUM','HIGH','XHIGH','MAX'],
-    defaultQuality: 'AUTO',
-    supportsOutputFormat: true,
-    formats: ['PNG','JPEG','WEBP'],
-    supportsImageCount: false
-  },
-  qualities: [
-    { id: 'gpt-image-2.5-flare', label: 'FLARE' },
-    { id: 'gpt-image-2.5-sunburst', label: 'SUNBURST' }
-  ]
-};
-var gptImage2Index = modelFamilies.image.findIndex(function(family) { return family.name === 'GPT IMAGE 2'; });
-modelFamilies.image.splice(gptImage2Index >= 0 ? gptImage2Index + 1 : modelFamilies.image.length, 0, GPT_IMAGE_25_FAMILY);
 // Families with a real, working backend integration. Everything else in the
 // model list is a UI-only placeholder — the Generate button disables itself
 // and startGenerate() refuses early rather than silently mis-routing.
@@ -2555,8 +2527,8 @@ budgetPixelVideoFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(fami
 budgetPixelImageFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
 budgetPixelAudioFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
 budgetPixelMotionFamilies.forEach(function(family) { CONNECTED_FAMILIES.push(family.key); });
-var UI_ONLY_FAMILY_KEYS = ['gptimage25'];
-var UI_ONLY_MODEL_IDS = ['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'];
+var UI_ONLY_FAMILY_KEYS = [];
+var UI_ONLY_MODEL_IDS = [];
 function isFamilyVisible(family) {
   return !!family && (UI_ONLY_FAMILY_KEYS.indexOf(family.key) !== -1 || isFamilyBackendConnected(family));
 }

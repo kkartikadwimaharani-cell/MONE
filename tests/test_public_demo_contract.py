@@ -51,15 +51,11 @@ def test_wide_layout_keeps_mobile_style_bottom_composer():
     assert "width:min(760px,100%)" in desktop_css
 
 
-def test_gpt_image_25_is_adjacent_ui_only_preparation():
-    assert "name: 'GPT IMAGE 2.5'" in DEMO
-    assert "gpt-image-2.5-flare" in DEMO
-    assert "gpt-image-2.5-sunburst" in DEMO
-    assert "family.name === 'GPT IMAGE 2'" in DEMO
-    assert "gptImage2Index + 1" in DEMO
-    assert "var UI_ONLY_FAMILY_KEYS = ['gptimage25']" in DEMO
+def test_gpt_image_25_uses_shared_backend_catalog_not_a_ui_placeholder():
+    assert "var GPT_IMAGE_25_FAMILY" not in DEMO
+    assert "var UI_ONLY_FAMILY_KEYS = [];" in DEMO
+    assert "var UI_ONLY_MODEL_IDS = [];" in DEMO
     assert "if (!isBackendConnected()) { showToast('UI PREVIEW · UPLOAD BELUM DIAKTIFKAN'); return; }" in DEMO
-    assert "image: 4, video: 0, audio: 0" in DEMO
 
     backend_sources = "\n".join(
         (ROOT / name).read_text()
@@ -68,8 +64,8 @@ def test_gpt_image_25_is_adjacent_ui_only_preparation():
             "budgetpixel_registry.py", "mii_mcp.py",
         )
     )
-    assert "gpt-image-2.5-flare" not in backend_sources
-    assert "gpt-image-2.5-sunburst" not in backend_sources
+    assert "gpt-image-2.5-flare" in backend_sources
+    assert "gpt-image-2.5-sunburst" in backend_sources
 
 
 def test_image_detail_chip_names_the_real_capability():
