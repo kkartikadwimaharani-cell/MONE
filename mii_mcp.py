@@ -532,7 +532,7 @@ def register_mcp(app, backend, data_dir):
             endpoint='aivideo_task_status';payload=None;kwargs={'task_id':args['task_id']}
         else:
             endpoint='aivideo_generate';kwargs={};payload=dict(args)
-            defaults={'generate_video':('video','seedance25'),'generate_image':('image','bpx-flux-2-klein'),
+            defaults={'generate_video':('video','seedance25'),'generate_image':('image','bpx-midjourney-v7'),
                       'generate_audio':('audio','seedaudio'),'generate_music':('audio','bpx-music-3.0'),
                       'generate_sfx':('audio','bpx-sonilo-sfx'),
                       'video_to_music':('audio','bpx-sonilo-video-music'),
@@ -546,7 +546,7 @@ def register_mcp(app, backend, data_dir):
             if name in ('generate_video','motion_control'):
                 backend['_aivideo_clear_debug']()
             default_catalog_slug={'generate_video':'seedance-2.5',
-                                  'generate_image':'flux-2-klein',
+                                  'generate_image':'midjourney-v7',
                                   'generate_audio':'sonilo-sfx',
                                   'generate_music':'music-3.0','generate_sfx':'sonilo-sfx',
                                   'video_to_music':'sonilo-video-music',
@@ -556,6 +556,11 @@ def register_mcp(app, backend, data_dir):
             # default model: that could spend credits on a different model.
             # Older Seedance 2.5 agents retain their unambiguous alias.
             requested_slug=str(payload.get('model_slug') or '').strip().lower()
+            if requested_slug and payload.get('family'):
+                explicit_family=str(payload['family']).strip().lower()
+                expected_family='bpx-'+requested_slug
+                if explicit_family != expected_family and not (explicit_family=='seedance25' and requested_slug=='seedance-2.5'):
+                    return {'error':'Conflicting family and model_slug. Select one model from '+TOOL_PREFIX+'list_models.'}
             if not requested_slug and payload.get('family'):
                 explicit_family=str(payload['family']).strip().lower()
                 if explicit_family.startswith('bpx-'):
