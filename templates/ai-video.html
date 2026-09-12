@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 <meta http-equiv="Cache-Control" content="no-store">
-<title>MII AI VIDEO — {{ 'Interactive Demo' if demo_mode|default(false) else 'Private Workspace' }}</title>
+<title>MII AI STUDIO — {{ 'INTERACTIVE DEMO' if demo_mode|default(false) else 'PRIVATE WORKSPACE' }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -249,7 +249,7 @@ button{background:none;border:none;cursor:pointer}
 .task-logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--accent),#7a0014);display:grid;place-items:center;box-shadow:0 0 24px rgba(255,32,64,.5);animation:logoPulse 1.8s ease-in-out infinite}
 .task-logo span{font-family:var(--disp);font-size:1.15rem;font-weight:800;color:#fff}
 @keyframes logoPulse{0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(255,32,64,.4)}50%{transform:scale(1.08);box-shadow:0 0 34px rgba(255,32,64,.65)}}
-/* Brand loading ring — same animation as the MII AI VIDEO lock screen
+/* Brand loading ring — same animation as the MII AI STUDIO lock screen
    (spinning conic ring + pulsing inner ring + breathing "M"). Reused for
    every generate-in-progress state instead
    of a generic spinner. */
@@ -1543,24 +1543,24 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .demo-mode #sidebar,.demo-mode #sbOverlay{display:none!important}
 .demo-mode .topbar>.icon-btn{visibility:hidden;pointer-events:none}
 .demo-mode .tb-badge{color:#fff;border-color:rgba(255,255,255,.2);background:linear-gradient(180deg,#ff2748,#a9001c);box-shadow:0 0 20px rgba(255,32,64,.32)}
-.demo-notice{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.76);backdrop-filter:blur(14px)}
-.demo-notice.show{display:flex;animation:fadeIn .2s ease}
-.demo-notice-card{width:min(470px,100%);padding:26px;border-radius:26px;border:1px solid rgba(255,65,93,.42);background:linear-gradient(145deg,#1d1013,#101114 58%,#151515);box-shadow:0 28px 90px rgba(0,0,0,.7),0 0 44px rgba(255,32,64,.12)}
-.demo-notice-mark{display:inline-flex;padding:6px 10px;margin-bottom:18px;border:1px solid rgba(255,65,93,.4);border-radius:999px;color:#ff6078;background:rgba(255,32,64,.09);font:800 .62rem/1 var(--mono);letter-spacing:.16em}
-.demo-notice-card h2{font:800 clamp(1.35rem,5vw,2rem)/1.08 var(--disp);letter-spacing:-.035em}
-.demo-notice-card p{margin-top:13px;color:var(--text-dim);font-size:.92rem;line-height:1.65}
-.demo-notice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
-.demo-notice-actions>*{min-height:48px;display:grid;place-items:center;border-radius:14px;border:1px solid var(--border2);font:800 .73rem/1 var(--disp);letter-spacing:.06em;text-decoration:none;color:#fff;text-align:center}
-.demo-notice-actions .primary{border-color:transparent;background:linear-gradient(135deg,#ff2446,#a6001b);box-shadow:0 12px 30px rgba(255,32,64,.2)}
-@media(max-width:420px){
-  .demo-notice{padding:14px}
-  .demo-notice-card{padding:18px;border-radius:21px;max-height:calc(100dvh - 28px);overflow-y:auto}
-  .demo-notice-mark{margin-bottom:13px;font-size:.56rem;letter-spacing:.13em}
-  .demo-notice-card h2{font-size:1.26rem;line-height:1.12}
-  .demo-notice-card p{margin-top:10px;font-size:.78rem;line-height:1.5}
-  .demo-notice-actions{grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
-  .demo-notice-actions>*{min-height:44px;padding:8px 6px;font-size:.62rem}
-}
+.demo-notice{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;padding:clamp(14px,4vw,30px);overflow-y:auto;background:rgba(0,0,0,.82);backdrop-filter:blur(16px)}
+.demo-notice.show{display:flex;animation:fadeIn .25s ease}
+.demo-notice-card{position:relative;isolation:isolate;box-sizing:border-box;width:min(520px,100%);max-height:calc(100dvh - 28px);overflow-y:auto;padding:clamp(26px,5vw,42px);border:0;border-radius:28px;background:radial-gradient(ellipse at 50% 0%,rgba(150,17,48,.21),transparent 60%),linear-gradient(145deg,#1a171b,#0d0d10 70%,#120b0e);box-shadow:0 32px 100px rgba(0,0,0,.76),0 0 65px rgba(143,12,44,.14);text-align:center;scrollbar-width:thin}
+.demo-notice-card::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 50% 23%,rgba(194,28,61,.13),transparent 52%);animation:demoAmbient 9s ease-in-out infinite alternate}
+.demo-notice-mark{display:block;margin-bottom:16px;color:#e8b1bc;font:850 clamp(.76rem,2.2vw,.93rem)/1.2 var(--disp);letter-spacing:.17em}
+.demo-notice-card h2{margin:0;color:#fff;font:850 clamp(1.55rem,5vw,2.35rem)/1.04 var(--disp);letter-spacing:-.045em;text-shadow:0 0 24px rgba(229,65,94,.20)}
+.demo-notice-lead{margin:18px 0 0;color:#f7d9df;font:800 clamp(.82rem,2.5vw,1rem)/1.35 var(--disp);letter-spacing:.09em}
+.demo-notice-card #demoNoticeText{margin:14px auto 0;max-width:410px;color:rgba(251,224,230,.73);font:650 clamp(.68rem,2.3vw,.85rem)/1.65 var(--disp);letter-spacing:.025em;white-space:pre-line}
+.demo-notice-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:27px}
+.demo-notice-actions>*{box-sizing:border-box;min-width:0;min-height:54px;display:grid;place-items:center;padding:12px 10px;border:0;border-radius:14px;background:rgba(255,255,255,.055);font:800 clamp(.69rem,2vw,.79rem)/1.2 var(--disp);letter-spacing:.055em;text-decoration:none;color:#fff;text-align:center;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.demo-notice-actions .primary{background:linear-gradient(135deg,#ad0b2e,#65091c);box-shadow:0 12px 30px rgba(111,5,30,.29),0 0 21px rgba(224,34,73,.14)}
+.demo-notice-actions>*:hover{transform:translateY(-2px);background:rgba(255,255,255,.095)}
+.demo-notice-actions .primary:hover{background:linear-gradient(135deg,#c31338,#790b22);box-shadow:0 16px 32px rgba(111,5,30,.36),0 0 28px rgba(224,34,73,.2)}
+.demo-notice-actions>*:active{transform:scale(.98)}
+.demo-notice-actions>*:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@keyframes demoAmbient{to{opacity:.62;transform:translateY(3%)}}
+@media(max-width:420px){.demo-notice{padding:14px}.demo-notice-card{padding:29px 20px;border-radius:22px}.demo-notice-actions{grid-template-columns:1fr;gap:9px;margin-top:22px}.demo-notice-actions>*{min-height:50px}}
+@media(prefers-reduced-motion:reduce){.demo-notice.show,.demo-notice-card::before{animation:none}.demo-notice-actions>*{transition:none}}
 
 /* Native 100% mobile density. This reproduces the compact composition that
    previously required browser zoom, while preserving real touch geometry. */
@@ -1725,12 +1725,13 @@ if (DEMO_MODE) {
 {% if demo_mode|default(false) %}
 <div class="demo-notice" id="demoNotice" role="dialog" aria-modal="true" aria-labelledby="demoNoticeTitle" onclick="if(event.target===this)closeDemoNotice()">
   <div class="demo-notice-card">
-    <span class="demo-notice-mark">MII AI VIDEO · PUBLIC DEMO</span>
-    <h2 id="demoNoticeTitle">PUBLIC DEMO // SAFE MODE</h2>
-    <p id="demoNoticeText">EKSPLORASI MODEL DAN KONTROL AKTIF. GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN.</p>
+    <span class="demo-notice-mark">MII AI STUDIO</span>
+    <h2 id="demoNoticeTitle">PUBLIC DEMO MODE</h2>
+    <p class="demo-notice-lead">EXPLORE THE STUDIO</p>
+    <p id="demoNoticeText">ALL GENERATION SYSTEMS ARE DISABLED<br>NO API CALLS // NO POLLING // NO CREDIT USAGE</p>
     <div class="demo-notice-actions">
-      <button type="button" onclick="closeDemoNotice()">LANJUT JELAJAHI</button>
-      <a class="primary" href="/ai-video">BUKA WORKSPACE</a>
+      <button type="button" onclick="closeDemoNotice()">CONTINUE DEMO</button>
+      <a class="primary" href="/ai-video">ENTER STUDIO</a>
     </div>
   </div>
 </div>
@@ -1752,7 +1753,7 @@ if (DEMO_MODE) {
   <div class="sb-sec-lbl">Tools</div>
   <a class="sb-item active" data-page="aivideo" href="#" onclick="navigateTo('aivideo');return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
-    MII AI Video
+    MII AI STUDIO
   </a>
   <a class="sb-item" href="#" onclick="return false">
     <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -1799,7 +1800,7 @@ if (DEMO_MODE) {
     </button>
     <div class="tb-center">
       <span class="tb-logo" aria-hidden="true">M</span>
-      <span class="tb-title" id="pageTitleTxt">MII AI VIDEO</span>
+      <span class="tb-title" id="pageTitleTxt">MII AI STUDIO</span>
       <span class="tb-badge">{{ 'DEMO' if demo_mode|default(false) else 'BETA' }}</span>
     </div>
     <button class="icon-btn" id="settingsBtn" onclick="navigateTo('settings')">
@@ -1820,7 +1821,7 @@ if (DEMO_MODE) {
         <a class="dash-card featured" href="#" onclick="navigateTo('aivideo');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div>
           <div class="dash-card-main">
-            <div class="dash-card-title">MII AI Video</div>
+            <div class="dash-card-title">MII AI STUDIO</div>
             <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
           </div>
           <svg class="dash-card-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1847,7 +1848,7 @@ if (DEMO_MODE) {
     </div>
   </div>
 
-  <!-- PAGE: MII AI VIDEO -->
+  <!-- PAGE: MII AI STUDIO -->
   <div class="app-page active" id="pageAiVideo">
   <div class="modebar" role="tablist" aria-label="Media type">
     <div class="modebar-track" id="modebarTrack">
@@ -2726,7 +2727,7 @@ function toggleSidebar(open) {
 // ══════════ APP SHELL NAVIGATION (persistent header + sidebar, real pages) ══════════
 var PAGE_DEFS = {
   dashboard:   { el: 'pageDashboard',   title: 'Dashboard' },
-  aivideo:     { el: 'pageAiVideo',     title: 'MII AI VIDEO' },
+  aivideo:     { el: 'pageAiVideo',     title: 'MII AI STUDIO' },
   history:     { el: 'historyPage',     title: 'History',     onEnter: function(){ renderHistoryList(); } },
   archive:     { el: 'archivePage',     title: 'Archive',     onEnter: function(){ renderArchiveList(); } },
   settings:    { el: 'pageSettings',    title: 'Settings',    onEnter: function(){ var e=document.getElementById('settingsCreditBalanceTxt'); if(e) e.textContent = formatBalance(creditBalance); } },
@@ -3917,7 +3918,7 @@ function renderModelDock() {
     card.type = 'button';
     card.className = 'inline-model-card' + (family.key === selectedFamily.key ? ' selected' : '');
     card.setAttribute('aria-pressed', family.key === selectedFamily.key ? 'true' : 'false');
-    card.innerHTML = '<span class="inline-model-name">' + family.name + '</span><span class="inline-model-brand">' + (family.uiOnly ? 'UI PREVIEW' : 'MIIAIVIDEO') + '</span>';
+    card.innerHTML = '<span class="inline-model-name">' + family.name + '</span><span class="inline-model-brand">' + (family.uiOnly ? 'UI PREVIEW' : 'MII AI STUDIO') + '</span>';
     card.onclick = function() { pickFamily(family, 0); };
     all.appendChild(card);
   });
@@ -4609,8 +4610,8 @@ function showDemoNotice(action) {
   var title = document.getElementById('demoNoticeTitle');
   var copy = document.getElementById('demoNoticeText');
   if (!modal || !title || !copy) return;
-  title.textContent = 'PUBLIC DEMO // SAFE MODE';
-  copy.textContent = 'EKSPLORASI MODEL DAN KONTROL AKTIF. GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN.';
+  title.textContent = 'PUBLIC DEMO MODE';
+  copy.textContent = 'ALL GENERATION SYSTEMS ARE DISABLED\nNO API CALLS // NO POLLING // NO CREDIT USAGE';
   modal.classList.add('show');
 }
 function closeDemoNotice() {
@@ -6828,7 +6829,7 @@ updateGenerateButtonState();
 fetchCreditBalance();
 renderLastResultCard();
 if (DEMO_MODE) showDemoNotice('intro');
-// Buka langsung ke workspace MII AI VIDEO (bukan Dashboard). Dashboard
+// Buka langsung ke workspace MII AI STUDIO (bukan Dashboard). Dashboard
 // tetap bisa diakses lewat sidebar, dan deep-link via hash tetap jalan
 // (mis. makima.cloud/ai-video#dashboard atau #history).
 var bootPage = (location.hash || '').replace('#', '');

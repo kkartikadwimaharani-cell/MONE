@@ -122,7 +122,7 @@ def register_mcp(app, backend, data_dir):
     @bp.route('/.well-known/oauth-protected-resource')
     @bp.route('/.well-known/oauth-protected-resource/mcp')
     def protected_metadata():
-        return jsonify(resource=resource, authorization_servers=[origin], scopes_supported=[SCOPE], bearer_methods_supported=['header'], resource_name='MIIAIVIDEO')
+        return jsonify(resource=resource, authorization_servers=[origin], scopes_supported=[SCOPE], bearer_methods_supported=['header'], resource_name='MII AI STUDIO')
 
     @bp.route('/.well-known/oauth-authorization-server')
     def auth_metadata():
@@ -281,7 +281,7 @@ def register_mcp(app, backend, data_dir):
                         seed={'type':'integer'}, sequential_image_generation=string,
                         max_images={'type':'integer','minimum':1,'maximum':14})
     tools=[
-        tool('list_models','List supported MIIAIVIDEO model IDs quickly. Optionally filter by category or search text; use get_model_capabilities for one model\'s detailed controls.',
+        tool('list_models','List supported MII AI STUDIO model IDs quickly. Optionally filter by category or search text; use get_model_capabilities for one model\'s detailed controls.',
              {'category':{'type':'string','enum':['video','image','audio','motion']},
               'query':{'type':'string','minLength':1}}),
         tool('clear_debug','Clear AI Video diagnostics only. Does not delete tasks, history, credentials, or media.',write=True),
@@ -308,8 +308,8 @@ def register_mcp(app, backend, data_dir):
             item['_meta']={
                 'ui':{'resourceUri':'ui://miiaivideo/result-preview-v2.html'},
                 'openai/outputTemplate':'ui://miiaivideo/result-preview-v2.html',
-                'openai/toolInvocation/invoking':'Memulai proses MIIAIVIDEO…',
-                'openai/toolInvocation/invoked':'Proses MIIAIVIDEO berjalan',
+                'openai/toolInvocation/invoking':'Memulai proses MII AI STUDIO…',
+                'openai/toolInvocation/invoked':'Proses MII AI STUDIO berjalan',
             }
         elif item['name']=='miiaivideo_check_status':
             # Allows the single generation widget to refresh itself through
@@ -420,7 +420,7 @@ def register_mcp(app, backend, data_dir):
         for key,caps in bp_image_caps.items():
             family,variant=key.split(':',1)
             public_family='gptimagebp' if family=='gptimage' else family
-            item=dict(caps,configured=bool(backend['_budgetpixel_api_key']()),provider='MIIAIVIDEO')
+            item=dict(caps,configured=bool(backend['_budgetpixel_api_key']()),provider='MII AI STUDIO')
             fields=['image_urls'] if (item.get('reference_images') or item.get('singular_image')) else []
             for public,cap in (('aspect_ratio','aspect_ratios'),('resolution','resolutions'),
                                ('size','sizes'),('quality','qualities'),('output_format','formats'),
@@ -473,7 +473,7 @@ def register_mcp(app, backend, data_dir):
             counts={kind:len(items) for kind,items in complete.items()}
             returned=sum(len(items) for items in selected.values())
             return {
-                'brand':'MIIAIVIDEO',
+                'brand':'MII AI STUDIO',
                 'models':selected,
                 'counts':counts,
                 'returned':returned,
@@ -487,7 +487,7 @@ def register_mcp(app, backend, data_dir):
                     continue
                 for model_id,model in items.items():
                     if model.get('slug') == slug:
-                        return {'brand':'MIIAIVIDEO','category':kind,'model_id':model_id,'model':model}
+                        return {'brand':'MII AI STUDIO','category':kind,'model_id':model_id,'model':model}
             return {'error':'Unknown model slug.'}
         elif name=='clear_debug':
             return backend['_aivideo_clear_debug']()
@@ -524,7 +524,7 @@ def register_mcp(app, backend, data_dir):
                 live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
                 selected=backend['budgetpixel_registry'].model_by_slug(requested_slug,live,expected_kind)
                 if not selected or selected.get('category')!=expected_kind or not selected.get('handler'):
-                    return {'error':'Unknown or unavailable MIIAIVIDEO model slug for this output type.'}
+                    return {'error':'Unknown or unavailable MII AI STUDIO model slug for this output type.'}
                 payload['family']='bpx-'+requested_slug
                 payload['model_slug']=requested_slug
                 catalog_selected=True
@@ -649,28 +649,28 @@ def register_mcp(app, backend, data_dir):
         if version and version not in VERSIONS:
             return error('unsupported_protocol_version')
         if method=='initialize':
-            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'MIIAIVIDEO','version':'2.1.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
+            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.1.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
         elif method=='ping':
             result={}
         elif method=='tools/list':
             result={'tools':tools}
         elif method=='resources/list':
-            result={'resources':[{'uri':'ui://miiaivideo/result-preview-v2.html','name':'MIIAIVIDEO result preview','mimeType':'text/html;profile=mcp-app'}]}
+            result={'resources':[{'uri':'ui://miiaivideo/result-preview-v2.html','name':'MII AI STUDIO result preview','mimeType':'text/html;profile=mcp-app'}]}
         elif method=='resources/read':
             if params.get('uri')!='ui://miiaivideo/result-preview-v2.html':
                 return rpc_error(-32602,'Unknown resource')
             html='''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 *{box-sizing:border-box}body{margin:0;background:#08090d;color:#fff;font:13px system-ui,-apple-system,sans-serif}main{padding:10px}.card{overflow:hidden;border:1px solid #35202a;border-radius:14px;background:linear-gradient(145deg,#151116,#0b0c10)}.head{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px}.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#ff2446,#8a0018);font-weight:850;box-shadow:0 0 18px #ff204044}.copy{min-width:0}.title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:2px;color:#a7a1a5;font:10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em}.pct{color:#ff526b;font:700 11px ui-monospace,monospace}.bar{height:3px;margin:0 10px 10px;background:#ffffff12;border-radius:9px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff1638,#ff6078);transition:width .35s}.media{display:none;border-top:1px solid #35202a;background:#050506}.media img,.media video{display:block;width:100%;max-height:300px;object-fit:contain;background:#050506}.media audio{display:block;width:calc(100% - 20px);margin:12px 10px}.foot{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #35202a}.foot a{color:#ff6078;font-size:11px;font-weight:750;text-decoration:none}.err{color:#ff7187}.done .mark{background:linear-gradient(135deg,#21b879,#0a6643);box-shadow:0 0 18px #35e6a033}.done .pct{color:#48e6aa}.failed .mark{background:linear-gradient(135deg,#ff2446,#710014)}.failed .pct{color:#ff7187}@media(max-width:420px){main{padding:7px}.head{padding:8px}.media img,.media video{max-height:230px}}
-</style></head><body><main><section class="card" id="card"><div class="head"><div class="mark">M</div><div class="copy"><div class="title" id="title">MIIAIVIDEO</div><div class="sub" id="state">MENYIAPKAN TASK</div></div><div class="pct" id="pct">0%</div></div><div class="bar" id="bar"><div class="fill" id="fill"></div></div><div class="media" id="media"><img id="image" alt="Hasil MIIAIVIDEO"><video id="video" controls playsinline preload="metadata"></video><audio id="audio" controls preload="metadata"></audio></div><div class="foot" id="foot"><span id="kind"></span><a id="open" target="_blank" rel="noopener">BUKA HASIL</a></div></section></main><script>
+</style></head><body><main><section class="card" id="card"><div class="head"><div class="mark">M</div><div class="copy"><div class="title" id="title">MII AI STUDIO</div><div class="sub" id="state">MENYIAPKAN TASK</div></div><div class="pct" id="pct">0%</div></div><div class="bar" id="bar"><div class="fill" id="fill"></div></div><div class="media" id="media"><img id="image" alt="Hasil MII AI STUDIO"><video id="video" controls playsinline preload="metadata"></video><audio id="audio" controls preload="metadata"></audio></div><div class="foot" id="foot"><span id="kind"></span><a id="open" target="_blank" rel="noopener">BUKA HASIL</a></div></section></main><script>
 (function(){var taskId='',statusToken='',timer=0,attempts=0,terminal=false,last={};var $=function(id){return document.getElementById(id)};
 function unwrap(r){return r&&r.structuredContent?r.structuredContent:(r||{})}
 function mediaOf(r){var o=r.output||r.result||{},imgs=o.images||[];return{video:o.video_url||(o.type==='video'?o.url:'')||'',image:o.image_url||(imgs[0]&&((imgs[0].url)||imgs[0]))||(o.type==='image'?o.url:'')||'',audio:o.audio_url||(o.type==='audio'?o.url:'')||''}}
 function schedule(){if(terminal||!taskId||!statusToken)return;if(attempts>=360){$('state').textContent='CEK STATUS DI WEB';$('foot').style.display='flex';$('open').href='https://makima.cloud/ai-video';return}clearTimeout(timer);timer=setTimeout(function(){attempts++;fetch(__MII_WIDGET_STATUS_ENDPOINT__,{method:'POST',headers:{'Content-Type':'text/plain'},body:statusToken,credentials:'omit',cache:'no-store'}).then(function(response){if(response.status===401){terminal=true;$('state').textContent='STATUS KEDALUWARSA';return null}if(!response.ok)throw Error('Status unavailable');return response.json()}).then(function(data){if(data)render(data)}).catch(function(){$('state').textContent='MENUNGGU KONEKSI';schedule()})},attempts<6?3000:6000)}
-function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;statusToken=r.status_token||statusToken;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MIIAIVIDEO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add(status==='completed'?'done':'failed');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('card').classList.add('done');$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
+function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;statusToken=r.status_token||statusToken;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MII AI STUDIO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add(status==='completed'?'done':'failed');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('card').classList.add('done');$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
 render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});
 })();</script></body></html>'''
             html=html.replace('__MII_WIDGET_STATUS_ENDPOINT__',json.dumps(origin+'/mcp/widget-status'))
-            meta={'ui':{'prefersBorder':True,'csp':{'connectDomains':[origin],'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MIIAIVIDEO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'connect_domains':[origin],'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
+            meta={'ui':{'prefersBorder':True,'csp':{'connectDomains':[origin],'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MII AI STUDIO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'connect_domains':[origin],'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
             result={'contents':[{'uri':params['uri'],'mimeType':'text/html;profile=mcp-app','text':html,'_meta':meta}]}
         elif method in ('prompts/list','resources/templates/list'):
             result={ {'prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}

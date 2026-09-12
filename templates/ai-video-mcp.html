@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="id"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><meta http-equiv="Cache-Control" content="no-store">
-<title>MII // MCP CONNECTION</title>
+<title>MII AI STUDIO | MCP CONNECTION</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -16,19 +16,42 @@
 .button-row{display:flex;gap:10px;flex-wrap:wrap}.hidden{display:none!important}.key-reveal{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.warning{color:#ffd2d8}.grant{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 0;border-top:1px solid rgba(255,32,64,.14);overflow-wrap:anywhere}.grant:first-child{border-top:0}.grant small{display:block;color:var(--dim);font-size:.86rem;letter-spacing:.05em}.grant button{flex:none;min-height:46px;font-size:.9rem}.empty{color:var(--dim)}#feedback{min-height:28px;margin:16px 0;color:#ffc0ca;font-weight:700}
 .scope{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.scope span{padding:12px;border:1px solid rgba(255,32,64,.16);background:#060a0e;color:#d9c4c2;text-align:center;font-size:.82rem;font-weight:700;letter-spacing:.05em}
 @media(max-width:650px){body{padding:18px 12px 60px}.hero{display:block}.identity{align-items:flex-start}.avatar-shell{flex-basis:66px;width:66px;height:66px}.status{display:inline-block;margin:16px 0 0 84px}.grid{grid-template-columns:1fr;gap:16px}.wide{grid-column:auto}.panel{padding:20px}.panel-head{align-items:flex-start}.control-row{grid-template-columns:1fr}.control-row button{width:100%}.scope{grid-template-columns:1fr 1fr}.nav a{flex:1}.grant{align-items:flex-start;flex-direction:column}.grant button{width:100%}}@media(max-width:430px){html{font-size:15px}.identity{gap:13px}.avatar-shell{flex-basis:58px;width:58px;height:58px}.status{margin-left:71px}.eyebrow{font-size:.76rem}.title{font-size:1.72rem;letter-spacing:.02em}.sub{font-size:.76rem;overflow-wrap:anywhere}.panel{padding:18px 16px}.panel-head{display:grid;grid-template-columns:minmax(0,1fr) auto}.scope{grid-template-columns:1fr}.button-row button{width:100%}}@media(prefers-reduced-motion:reduce){.bar{animation:none;width:100%}}button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* MII AI STUDIO: typography and atmospheric depth without decorative rules. */
+:root{--bg:#050406;--panel:#121014;--line:rgba(206,49,78,.22);--hot:#cf3157;--dim:#b59ba2;--ok:#e6a4b2}
+body{background:radial-gradient(ellipse at 52% -12%,rgba(127,15,45,.23),transparent 56%),linear-gradient(155deg,#09070a,#030304 70%);color:#f9eff1}
+body:before{background-image:radial-gradient(circle,rgba(255,227,233,.025) .7px,transparent 1px);background-size:44px 44px}
+.wrap{text-transform:uppercase}
+.wrap input,.wrap .code{text-transform:none}
+.hero{align-items:center;margin-bottom:32px}.hero-copy{min-width:0}
+.eyebrow{color:#d596a5;letter-spacing:.16em}
+.title{font-family:var(--display);font-size:clamp(2rem,6vw,3.4rem);letter-spacing:-.025em;line-height:1.06;text-shadow:0 0 25px rgba(190,39,75,.22);overflow-wrap:anywhere}
+.sub{color:#c4aeb4;letter-spacing:.055em}
+.status{border:0;border-radius:999px;background:rgba(175,30,66,.10);color:#e8bbc5;padding:10px 16px}
+.avatar-shell{border:0;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 38%,rgba(178,24,62,.3),rgba(17,11,15,.9));box-shadow:0 0 28px rgba(176,23,62,.17)}
+.avatar-shell:before,.avatar-shell:after{content:none}.avatar{border-radius:18px}
+.signal{display:none}
+.nav a,.btn{border:0;border-radius:13px;background:rgba(255,255,255,.055)}.nav a:hover,.btn:hover{box-shadow:0 0 22px rgba(194,37,73,.17);background:rgba(155,22,51,.16)}
+.panel{border:0;border-radius:22px;background:radial-gradient(circle at 80% 0%,rgba(155,29,60,.07),transparent 48%),linear-gradient(155deg,#161319,#0a090d);box-shadow:0 22px 65px rgba(0,0,0,.34),0 0 35px rgba(140,14,48,.07)}
+.panel:before,.panel:after{content:none}.panel h2{letter-spacing:.04em;overflow-wrap:anywhere}
+.steps li{border:0;padding:11px 0}.grant,.key-reveal{border:0}.grant{padding:14px 0}.scope span,.code{border:0;border-radius:12px;background:rgba(255,255,255,.04)}
+input{border:1px solid rgba(208,74,101,.22);border-radius:12px;background:#09080b}button{border:0;border-radius:12px;background:linear-gradient(135deg,#b51a43,#670e27)}button.secondary{border:0;background:rgba(255,255,255,.07)}
+.panel-head{flex-wrap:wrap}
+@media(max-width:650px){.hero .identity{flex-direction:column;align-items:flex-start}.hero .avatar-shell{flex:0 0 64px;width:64px;height:64px}.hero .title{font-size:clamp(1.85rem,8.7vw,2.7rem)}.hero .status{margin:18px 0 0}.nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.nav a{min-width:0;padding:10px 6px;font-size:clamp(.58rem,2.5vw,.76rem);text-align:center;overflow-wrap:anywhere}.panel-head{display:flex;align-items:center;gap:8px}}
+@media(max-width:360px){.hero .title{font-size:clamp(1.7rem,8.3vw,2rem)}}
 </style></head>
 <body><main class="wrap">
-<nav class="nav"><a href="/ai-video">← AI VIDEO</a><a href="/ai-video/debug">DIAGNOSTICS</a><a href="/ai-video/app-secrets">APP SECRETS</a></nav>
-<header class="hero"><div class="identity"><div class="avatar-shell"><img class="avatar" src="/mcp/icon" alt="Makima — MIIAIVIDEO"></div><div class="hero-copy"><div class="eyebrow">MII AI VIDEO — AGENT NETWORK</div><h1 class="title">MCP CONNECTION</h1><div class="sub">SECURE GATEWAY · STREAMABLE HTTP · OAUTH</div></div></div><div class="status">SYSTEM READY</div></header>
-<div class="signal"><div class="signal-head"><span>CONNECTION BUS</span><span>ENCRYPTED</span></div><div class="track"><div class="bar"></div></div></div>
+<nav class="nav"><a href="/ai-video">← MII AI STUDIO</a><a href="/ai-video/debug">DIAGNOSTICS</a><a href="/ai-video/app-secrets">APP SECRETS</a></nav>
+<header class="hero"><div class="identity"><div class="avatar-shell"><img class="avatar" src="/mcp/icon" alt="MII AI STUDIO"></div><div class="hero-copy"><div class="eyebrow">MCP CONNECTION</div><h1 class="title">MII AI STUDIO</h1><div class="sub">SECURE AGENT ACCESS</div></div></div><div class="status">SYSTEM READY</div></header>
+
 <div class="grid">
 <section class="panel wide"><div class="panel-head"><h2>SERVER ENDPOINT</h2><span class="index">01 / CONNECT</span></div><p class="lead">Salin endpoint ini ke konektor MCP agent kamu. Pilih OAuth, login dengan password AI Video, lalu izinkan akses.</p><label class="field-label" for="mcpUrl">MCP SERVER URL</label><div class="control-row"><input id="mcpUrl" readonly value="{{ mcp_url }}"><button id="copyUrl">SALIN LINK</button></div><p class="meta">SATU ENDPOINT UNTUK SEMUA AGENT YANG MENDUKUNG MCP STREAMABLE HTTP + OAUTH.</p></section>
-<section class="panel"><div class="panel-head"><h2>CHATGPT / CLAUDE</h2><span class="index">02A</span></div><ol class="steps"><li><span class="step-copy">Buka Apps atau Connectors, lalu tambahkan konektor MCP khusus.</span></li><li><span class="step-copy">Gunakan nama <strong>MIIAIVIDEO</strong> dan tempel endpoint di atas.</span></li><li><span class="step-copy">Pilih OAuth, login ke makima.cloud, lalu izinkan akses.</span></li></ol></section>
-<section class="panel"><div class="panel-head"><h2>CODEX CLI</h2><span class="index">02B</span></div><p class="lead">Tambahkan server dan hubungkan akun:</p><pre class="code" id="codexConfig">codex mcp add miiaivideo --url {{ mcp_url }}
-codex mcp login miiaivideo</pre><button class="secondary" id="copyCodex">SALIN PERINTAH</button></section>
+<section class="panel"><div class="panel-head"><h2>CHATGPT / CLAUDE</h2><span class="index">02A</span></div><ol class="steps"><li><span class="step-copy">Buka Apps atau Connectors, lalu tambahkan konektor MCP khusus.</span></li><li><span class="step-copy">Gunakan nama <strong>MII AI STUDIO</strong> dan tempel endpoint di atas.</span></li><li><span class="step-copy">Pilih OAuth, login ke makima.cloud, lalu izinkan akses.</span></li></ol></section>
+<section class="panel"><div class="panel-head"><h2>CODEX CLI</h2><span class="index">02B</span></div><p class="lead">Tambahkan server dan hubungkan akun:</p><pre class="code" id="codexConfig">codex mcp add mii-ai-studio --url {{ mcp_url }}
+codex mcp login mii-ai-studio</pre><button class="secondary" id="copyCodex">SALIN PERINTAH</button></section>
 <section class="panel wide"><div class="panel-head"><h2>AGENT ACCESS KEY</h2><span class="index">03 / AUTHORIZE</span></div><p class="lead">Untuk agent dengan kolom API key atau Bearer header. Buat kunci terpisah untuk tiap agent. Kunci berlaku satu tahun dan dapat dicabut kapan saja.</p><label class="field-label" for="agentName">NAMA AGENT</label><div class="control-row"><input id="agentName" maxlength="80" placeholder="Contoh: Agent pribadi"><button id="createKey">BUAT KUNCI</button></div><div id="newKey" class="key-reveal hidden"><p class="warning">SIMPAN SEKARANG — KUNCI LENGKAP HANYA DITAMPILKAN SEKALI.</p><div class="control-row"><input id="secretKey" type="password" readonly autocomplete="off"><div class="button-row"><button class="secondary" id="showKey">TAMPILKAN</button><button id="copyKey">SALIN KUNCI</button></div></div><pre class="code">Authorization: Bearer KUNCI_KAMU</pre></div></section>
 <section class="panel wide"><div class="panel-head"><h2>ACTIVE CONNECTIONS</h2><span class="index">04 / CONTROL</span></div><div id="grants">{% for grant in grants %}<div class="grant"><span><strong>{{ grant.label }}</strong><small>{{ 'OAUTH CONNECTION' if grant.kind == 'oauth' else 'API KEY' }}</small></span><button class="secondary revoke" data-id="{{ grant.id }}">CABUT AKSES</button></div>{% else %}<p id="empty" class="empty">BELUM ADA AGENT YANG TERHUBUNG ATAU KUNCI YANG DIBUAT.</p>{% endfor %}</div></section>
-<section class="panel wide"><div class="panel-head"><h2>MIIAIVIDEO TOOL SCOPE</h2><span class="index">05 / CAPABILITIES</span></div><p class="lead">Agent dapat melihat model, membuat video, gambar dan audio, menjalankan motion control, serta memeriksa hasil. Generasi memakai kredit akunmu. Agent tidak dapat mengubah password atau membaca API key provider.</p><div class="scope"><span>MODEL LIST</span><span>VIDEO GENERATION</span><span>IMAGE GENERATION</span><span>AUDIO GENERATION</span><span>MOTION CONTROL</span><span>RESULT STATUS</span></div></section>
+<section class="panel wide"><div class="panel-head"><h2>MII AI STUDIO TOOL SCOPE</h2><span class="index">05 / CAPABILITIES</span></div><p class="lead">Agent dapat melihat model, membuat video, gambar dan audio, menjalankan motion control, serta memeriksa hasil. Generasi memakai kredit akunmu. Agent tidak dapat mengubah password atau membaca API key provider.</p><div class="scope"><span>MODEL LIST</span><span>VIDEO GENERATION</span><span>IMAGE GENERATION</span><span>AUDIO GENERATION</span><span>MOTION CONTROL</span><span>RESULT STATUS</span></div></section>
 </div><p id="feedback" role="status" aria-live="polite"></p>
 </main><script>
 const csrf={{ csrf|tojson }};const feedback=document.getElementById('feedback');
