@@ -2759,7 +2759,13 @@ var creditBalance = null;
 function formatBalance(v) { return v == null ? '— CREDITS' : Number(v).toLocaleString() + ' CREDITS'; }
 function updateCreditEstimate() {}
 function fetchCreditBalance() { if (DEMO_MODE) return; fetch('/api/aivideo/credits').then(function(r){return r.ok?r.json():null;}).then(function(data){
-  if(data && typeof data.total_available==='number') creditBalance=data.total_available;
+  if(data && typeof data.total_available==='number') {
+    creditBalance = data.total_available;
+    ['settingsCreditBalanceTxt', 'creditsBalanceVal', 'accBalanceVal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = formatBalance(creditBalance);
+    });
+  }
 }).catch(function(){}); }
 
 // ══════════ SIDEBAR ══════════
@@ -4189,6 +4195,7 @@ function openResultOverlayFromCanvas() {
 // Disabled unless there's a prompt AND at least one image/video reference
 // (or a first frame). Never triggers the API by itself — only tapping
 // GENERATE calls /api/aivideo/generate.
+var generationSubmitInFlight = false;
 function updateGenerateButtonState() {
   var btn = document.getElementById('generateBtn');
   if (!btn) return;
@@ -4198,6 +4205,11 @@ function updateGenerateButtonState() {
     btn.disabled = false;
     btn.title = 'Lihat pengalaman generasi dalam demo';
     if (txt) txt.textContent = 'GENERATE';
+    return;
+  }
+  if (generationSubmitInFlight) {
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'true');
     return;
   }
   // Only families in CONNECTED_FAMILIES are actually wired to a real
@@ -4395,6 +4407,7 @@ function renumberPromptTagsAfterRemoval(type, removedIdx) {
 // of the app (state, preview, payload) — only the diagnostics page would
 // lag, which isn't user-facing.
 function forgetUpload(item) {
+  if (DEMO_MODE) return;
   if (!item || !item.url) return;
   fetch('/api/aivideo/upload/forget', {
     method: 'POST',
@@ -4464,6 +4477,7 @@ function _pumpUploadQueue() {
 }
 
 function _runUpload(file, type, entry) {
+  if (DEMO_MODE) return Promise.resolve();
   var fd = new FormData();
   fd.append('file', file);
   fd.append('media_type', type);
@@ -4525,6 +4539,7 @@ function uploadFile(file, type, previewUrl) {
 // returns both the original and the (possibly resized) processed video —
 // which is what actually gets sent on Generate.
 function analyzeMotionControlVideo(entry) {
+  if (DEMO_MODE) { showDemoNotice('reference'); return; }
   showToast('Menganalisa video referensi…');
   fetch('/api/aivideo/motion-control/analyze', {
     method: 'POST',
@@ -4693,6 +4708,7 @@ function removeFrame(which, event) {
 }
 ['first','last'].forEach(function(which) {
   document.getElementById(which + 'FrameInput').addEventListener('change', function(e) {
+    if (DEMO_MODE) { e.target.value = ''; showDemoNotice('reference'); return; }
     var file = e.target.files[0];
     if (!file) return;
     var previewUrl = URL.createObjectURL(file);
@@ -5143,6 +5159,7 @@ function classifyFetchError(err, prefix) {
 // ignore the `download` attribute and just navigate to the file instead.
 // Fetching it as a blob first sidesteps that entirely.
 function downloadResult(url, suggestedName) {
+  if (DEMO_MODE) { showDemoNotice('generate'); return; }
   if (!url) return;
   showToast('Menyiapkan download…');
   var filename = suggestedName || ('mii-ai-video-' + Date.now());
@@ -5298,6 +5315,7 @@ function dismissGenQueueItem(taskId) {
 
 function startGenerate() {
   if (DEMO_MODE) { showDemoNotice('generate'); return; }
+  if (generationSubmitInFlight) return;
   var prompt = promptInput.value.trim();
   var activeQuality = selectedFamily && selectedFamily.qualities[selectedQualityIdx];
   var activeCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx) || {};
@@ -5449,13 +5467,10 @@ function startGenerate() {
     thumbSeed: (media.image[0] && (media.image[0].url || media.image[0].previewUrl)) || '',
   });
 
-  // Debounces only the literal double-tap of *this* click — does not block
-  // starting a different generation a moment later.
-  var btn = document.getElementById('generateBtn');
-  if (btn) {
-    btn.disabled = true;
-    setTimeout(function() { updateGenerateButtonState(); }, 900);
-  }
+  // Only one submission may be in flight. The button becomes available again
+  // after the server acknowledges the task or returns an error.
+  generationSubmitInFlight = true;
+  updateGenerateButtonState();
   document.getElementById('errorBox').classList.remove('show');
   notifyMiiPet('submitting', { taskId: 'submitting' });
 
@@ -5488,6 +5503,9 @@ function startGenerate() {
   .catch(function(err) {
     showError(classifyFetchError(err, 'Generate gagal'));
     notifyMiiPet('failed', { taskId: 'submitting' });
+  }).finally(function() {
+    generationSubmitInFlight = false;
+    updateGenerateButtonState();
   });
 }
 
@@ -5535,6 +5553,7 @@ function removeActiveTaskEntry(taskId) {
 }
 
 function pollQueueTask(taskId, opts) {
+  if (DEMO_MODE) return;
   var state = activeGens[taskId] || (activeGens[taskId] = { meta: (opts && opts.meta) || {}, startTs: Date.now() });
   var meta = state.meta || {};
   state.requestInFlight = false;
@@ -5750,6 +5769,7 @@ function openQueueResult(taskId) {
 }
 
 function retryQueueItem(taskId) {
+  if (DEMO_MODE) { showDemoNotice('generate'); return; }
   var g = activeGens[taskId];
   var el = document.getElementById('genq_' + taskId);
   if (el) el.remove();
@@ -6073,6 +6093,7 @@ function regenerateVideo() {
   startGenerate();
 }
 function useResultAsReference() {
+  if (DEMO_MODE) { showDemoNotice('reference'); return; }
   var r = window.__lastResult;
   if (!r || !r.url) return;
   var rec = r.id ? findHistoryRecord(r.id) : null;
@@ -6127,6 +6148,7 @@ function editPromptFromFail() {
 }
 
 function doLogout() {
+  if (DEMO_MODE) { showDemoNotice('intro'); return; }
   fetch('/ai-video/logout', { method: 'POST' })
     .then(function() { window.location.href = '/ai-video'; });
 }
@@ -6274,6 +6296,7 @@ function deleteHistoryRecord(id) {
 // left the item looking archived locally forever while never actually
 // existing in the server database (so it "worked" once, then vanished).
 function syncArchiveToServer(rec) {
+  if (DEMO_MODE) return Promise.resolve(false);
   if (!rec || !rec.id) return Promise.resolve(false);
   return fetchWithTimeout('/api/aivideo/archive', {
     method: 'POST',
@@ -6304,6 +6327,7 @@ function syncArchiveToServer(rec) {
     });
 }
 function removeArchiveFromServer(id) {
+  if (DEMO_MODE) return Promise.resolve(false);
   if (!id) return Promise.resolve(false);
   return fetchWithTimeout('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }, 15000)
     .then(function(r) { return r.json().catch(function() { return {}; }).then(function(data) { return r.ok && data && data.ok === true; }); })
@@ -6337,6 +6361,7 @@ function mergeServerArchiveIntoLocal(items) {
   saveHistoryList(dedupeHistoryRecords(list));
 }
 function refreshArchiveFromServer(onDone) {
+  if (DEMO_MODE) { if (onDone) onDone(true); return; }
   var requestVersion = historyMutationVersion;
   fetchWithTimeout('/api/aivideo/archive', {}, 15000)
     .then(function(r) { return r.json(); })
@@ -6371,6 +6396,7 @@ function mergeServerHistoryIntoLocal(items) {
   saveHistoryList(dedupeHistoryRecords(list));
 }
 function refreshHistoryFromServer(onDone) {
+  if (DEMO_MODE) { if (onDone) onDone(true); return; }
   var requestVersion = historyMutationVersion;
   fetchWithTimeout('/api/aivideo/archive?scope=all', {}, 15000)
     .then(function(r) { return r.json(); })
@@ -6572,6 +6598,7 @@ function buildHistGridItem(r) {
 function fetchStorageUsage() {
   var el = document.getElementById('apiStorageTxt');
   if (!el) return;
+  if (DEMO_MODE) { el.textContent = 'N/A'; return; }
   el.textContent = '…';
   fetchWithTimeout('/api/aivideo/storage', {}, 15000)
     .then(function(r) { return r.json(); })
@@ -6693,12 +6720,13 @@ function openHistoryItem(id) {
   openResultOverlay({ videoUrl: r.videoUrl || '', imageUrl: r.imageUrl || '', imageUrls: r.imageUrls || (r.imageUrl ? [r.imageUrl] : []), audioUrl: r.audioUrl || '', elapsedMs: r.elapsedMs, generatedAt: r.createdAtLabel, reopenRecord: r });
 }
 function downloadHistoryItem(id) {
+  if (DEMO_MODE) { showDemoNotice('generate'); return; }
   var r = findHistoryRecord(id);
   if (!r) return;
-  var a = document.createElement('a');
-  a.href = r.videoUrl || r.imageUrl || r.audioUrl;
-  if (!a.href) { showError('File tidak tersedia untuk diunduh'); return; }
-  a.download = 'mii-ai-' + Date.now() + (r.imageUrl ? imageDownloadExtension(r, r.imageUrl) : (r.audioUrl ? '.wav' : '.mp4')); document.body.appendChild(a); a.click(); a.remove();
+  var url = r.videoUrl || r.imageUrl || r.audioUrl;
+  if (!url) { showError('File tidak tersedia untuk diunduh'); return; }
+  var extension = r.videoUrl ? '.mp4' : (r.imageUrl ? imageDownloadExtension(r, r.imageUrl) : '.wav');
+  downloadResult(url, 'mii-ai-' + Date.now() + extension);
 }
 function restoreFromRecord(r) {
   // Restore model + quality
