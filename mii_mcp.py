@@ -306,8 +306,8 @@ def register_mcp(app, backend, data_dir):
         item['name']='miiaivideo_'+item['name']
         if item['name'] in generation_tools:
             item['_meta']={
-                'ui':{'resourceUri':'ui://miiaivideo/result-preview-v2.html'},
-                'openai/outputTemplate':'ui://miiaivideo/result-preview-v2.html',
+                'ui':{'resourceUri':'ui://miiaivideo/result-preview-v3.html'},
+                'openai/outputTemplate':'ui://miiaivideo/result-preview-v3.html',
                 'openai/toolInvocation/invoking':'Memulai proses MII AI STUDIO…',
                 'openai/toolInvocation/invoked':'Proses MII AI STUDIO berjalan',
             }
@@ -453,6 +453,37 @@ def register_mcp(app, backend, data_dir):
                 caps['fields']=['image_urls','video_urls','audio_urls','first_frame_url','last_frame_url','mute_audio']
         return result
 
+    def media_preview(result):
+        """Only expose completed, usable HTTPS media in MCP responses and widgets."""
+        if result.get('status') != 'completed' or not isinstance(result.get('output'), dict):
+            return None
+        output = result['output']
+        for kind, field in (('video', 'video_url'), ('image', 'image_url'), ('audio', 'audio_url')):
+            url = output.get(field)
+            if not isinstance(url, str) or not url:
+                continue
+            if url.startswith('/static/aivideo_uploads/'):
+                url = origin + url
+            try:
+                parsed = urlsplit(url)
+            except ValueError:
+                continue
+            if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password:
+                continue
+            ext = parsed.path.lower().rsplit('.', 1)[-1]
+            mime_types = {
+                'video': {'mp4': 'video/mp4'},
+                'image': {'png': 'image/png', 'jpg': 'image/jpeg',
+                          'jpeg': 'image/jpeg', 'webp': 'image/webp'},
+                'audio': {'mp3': 'audio/mpeg', 'wav': 'audio/wav',
+                          'ogg': 'audio/ogg', 'm4a': 'audio/mp4'},
+            }
+            return {'kind': kind, 'url': url,
+                    'mime_type': mime_types[kind].get(ext, {
+                        'video': 'video/mp4', 'image': 'image/png',
+                        'audio': 'audio/mpeg'}[kind])}
+        return None
+
     def call_backend(name,args):
         name=name.removeprefix('miiaivideo_')
         if name=='list_models':
@@ -583,7 +614,10 @@ def register_mcp(app, backend, data_dir):
             return {'error':'Backend returned an invalid response.'}
         if 'id' in result:
             result['task_id']=result['id']
-        if name in generation_tools and result.get('task_id') and not result.get('error'):
+        preview=media_preview(result)
+        if preview:
+            result['preview']=preview
+        if 'miiaivideo_'+name in generation_tools and result.get('task_id') and not result.get('error'):
             # Task-scoped, expiring read capability for the one embedded card.
             # Polling must not call another MCP tool (which creates a new card).
             result['status_token']=widget_status_signer.dumps({'task_id':result['task_id']})
@@ -619,7 +653,7 @@ def register_mcp(app, backend, data_dir):
             return widget_response({'error':'Status temporarily unavailable.'},503)
         if data.get('error') and not data.get('status'):
             return widget_response({'error':str(data['error'])[:200]},404)
-        return widget_response({key:data[key] for key in ('id','status','progress','output','error') if key in data})
+        return widget_response({key:data[key] for key in ('id','status','progress','output','preview','error') if key in data})
 
     @bp.route('/mcp',methods=['GET','POST','DELETE'])
     def mcp():
@@ -649,27 +683,32 @@ def register_mcp(app, backend, data_dir):
         if version and version not in VERSIONS:
             return error('unsupported_protocol_version')
         if method=='initialize':
-            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.1.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
+            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False},'resources':{'subscribe':False,'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.1.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
         elif method=='ping':
             result={}
         elif method=='tools/list':
             result={'tools':tools}
         elif method=='resources/list':
-            result={'resources':[{'uri':'ui://miiaivideo/result-preview-v2.html','name':'MII AI STUDIO result preview','mimeType':'text/html;profile=mcp-app'}]}
+            result={'resources':[{'uri':'ui://miiaivideo/result-preview-v3.html','name':'MII AI STUDIO result preview','mimeType':'text/html;profile=mcp-app'}]}
         elif method=='resources/read':
-            if params.get('uri')!='ui://miiaivideo/result-preview-v2.html':
+            if params.get('uri')!='ui://miiaivideo/result-preview-v3.html':
                 return rpc_error(-32602,'Unknown resource')
             html='''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 *{box-sizing:border-box}body{margin:0;background:#08090d;color:#fff;font:13px system-ui,-apple-system,sans-serif}main{padding:10px}.card{overflow:hidden;border:1px solid #35202a;border-radius:14px;background:linear-gradient(145deg,#151116,#0b0c10)}.head{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px}.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#ff2446,#8a0018);font-weight:850;box-shadow:0 0 18px #ff204044}.copy{min-width:0}.title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:2px;color:#a7a1a5;font:10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em}.pct{color:#ff526b;font:700 11px ui-monospace,monospace}.bar{height:3px;margin:0 10px 10px;background:#ffffff12;border-radius:9px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff1638,#ff6078);transition:width .35s}.media{display:none;border-top:1px solid #35202a;background:#050506}.media img,.media video{display:block;width:100%;max-height:300px;object-fit:contain;background:#050506}.media audio{display:block;width:calc(100% - 20px);margin:12px 10px}.foot{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #35202a}.foot a{color:#ff6078;font-size:11px;font-weight:750;text-decoration:none}.err{color:#ff7187}.done .mark{background:linear-gradient(135deg,#21b879,#0a6643);box-shadow:0 0 18px #35e6a033}.done .pct{color:#48e6aa}.failed .mark{background:linear-gradient(135deg,#ff2446,#710014)}.failed .pct{color:#ff7187}@media(max-width:420px){main{padding:7px}.head{padding:8px}.media img,.media video{max-height:230px}}
 </style></head><body><main><section class="card" id="card"><div class="head"><div class="mark">M</div><div class="copy"><div class="title" id="title">MII AI STUDIO</div><div class="sub" id="state">MENYIAPKAN TASK</div></div><div class="pct" id="pct">0%</div></div><div class="bar" id="bar"><div class="fill" id="fill"></div></div><div class="media" id="media"><img id="image" alt="Hasil MII AI STUDIO"><video id="video" controls playsinline preload="metadata"></video><audio id="audio" controls preload="metadata"></audio></div><div class="foot" id="foot"><span id="kind"></span><a id="open" target="_blank" rel="noopener">BUKA HASIL</a></div></section></main><script>
 (function(){var taskId='',statusToken='',timer=0,attempts=0,terminal=false,last={};var $=function(id){return document.getElementById(id)};
 function unwrap(r){return r&&r.structuredContent?r.structuredContent:(r||{})}
-function mediaOf(r){var o=r.output||r.result||{},imgs=o.images||[];return{video:o.video_url||(o.type==='video'?o.url:'')||'',image:o.image_url||(imgs[0]&&((imgs[0].url)||imgs[0]))||(o.type==='image'?o.url:'')||'',audio:o.audio_url||(o.type==='audio'?o.url:'')||''}}
-function schedule(){if(terminal||!taskId||!statusToken)return;if(attempts>=360){$('state').textContent='CEK STATUS DI WEB';$('foot').style.display='flex';$('open').href='https://makima.cloud/ai-video';return}clearTimeout(timer);timer=setTimeout(function(){attempts++;fetch(__MII_WIDGET_STATUS_ENDPOINT__,{method:'POST',headers:{'Content-Type':'text/plain'},body:statusToken,credentials:'omit',cache:'no-store'}).then(function(response){if(response.status===401){terminal=true;$('state').textContent='STATUS KEDALUWARSA';return null}if(!response.ok)throw Error('Status unavailable');return response.json()}).then(function(data){if(data)render(data)}).catch(function(){$('state').textContent='MENUNGGU KONEKSI';schedule()})},attempts<6?3000:6000)}
+function safeUrl(u){try{var v=new URL(u,__MII_PREVIEW_ORIGIN__);return v.protocol==='https:'?v.href:''}catch(_){return ''}}
+function mediaOf(r){var p=r.preview||{},o=r.output||r.result||{},imgs=o.images||[];return{video:safeUrl(p.kind==='video'?p.url:o.video_url||(o.type==='video'?o.url:'')),image:safeUrl(p.kind==='image'?p.url:o.image_url||(imgs[0]&&((imgs[0].url)||imgs[0]))||(o.type==='image'?o.url:'')),audio:safeUrl(p.kind==='audio'?p.url:o.audio_url||(o.type==='audio'?o.url:''))}}
+function schedule(){if(terminal||!taskId||!statusToken)return;if(attempts>=360){$('state').textContent='CEK STATUS DI WEB';$('foot').style.display='flex';$('open').href=__MII_PREVIEW_ORIGIN__+'/ai-video';return}clearTimeout(timer);timer=setTimeout(function(){attempts++;fetch(__MII_WIDGET_STATUS_ENDPOINT__,{method:'POST',headers:{'Content-Type':'text/plain'},body:statusToken,credentials:'omit',cache:'no-store'}).then(function(response){if(response.status===401){terminal=true;$('state').textContent='STATUS KEDALUWARSA';return null}if(!response.ok)throw Error('Status unavailable');return response.json()}).then(function(data){if(data)render(data)}).catch(function(){$('state').textContent='MENUNGGU KONEKSI';schedule()})},attempts<6?3000:6000)}
 function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;statusToken=r.status_token||statusToken;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MII AI STUDIO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add(status==='completed'?'done':'failed');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('card').classList.add('done');$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
+// MCP Apps hosts deliver structuredContent after the View handshake; keep ChatGPT's legacy bridge as a fallback.
+window.addEventListener('message',function(e){if(e.source!==window.parent||!e.data||e.data.jsonrpc!=='2.0')return;var msg=e.data;if(msg.id==='mii-preview-init'&&msg.result){window.parent.postMessage({jsonrpc:'2.0',method:'ui/notifications/initialized',params:{}},'*')}else if(msg.method==='ui/notifications/tool-result'){render(msg.params&&msg.params.structuredContent||msg.params)}});
+if(window.parent!==window){window.parent.postMessage({jsonrpc:'2.0',id:'mii-preview-init',method:'ui/initialize',params:{protocolVersion:'2026-01-26',clientInfo:{name:'MII AI STUDIO PREVIEW',version:'1.0.0'},appCapabilities:{availableDisplayModes:['inline']}}},'*')}
 render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});
 })();</script></body></html>'''
             html=html.replace('__MII_WIDGET_STATUS_ENDPOINT__',json.dumps(origin+'/mcp/widget-status'))
+            html=html.replace('__MII_PREVIEW_ORIGIN__',json.dumps(origin))
             meta={'ui':{'prefersBorder':True,'csp':{'connectDomains':[origin],'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MII AI STUDIO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'connect_domains':[origin],'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
             result={'contents':[{'uri':params['uri'],'mimeType':'text/html;profile=mcp-app','text':html,'_meta':meta}]}
         elif method in ('prompts/list','resources/templates/list'):
@@ -697,8 +736,16 @@ render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('o
             except Exception:
                 app.logger.exception('MCP tool failed: %s',definition['name'])
                 data={'error':'Generation backend failed. Check AI Video diagnostics.'}
-            result={'content':[{'type':'text','text':json.dumps(data,ensure_ascii=False)}],
-                    'structuredContent':data,'isError':bool(data.get('error'))}
+            content=[{'type':'text','text':json.dumps(data,ensure_ascii=False)}]
+            preview=data.get('preview')
+            if isinstance(preview,dict):
+                # Portable, typed link for agents without an MCP Apps viewer.
+                content.append({'type':'resource_link','uri':preview['url'],
+                                'name':'MII AI STUDIO '+preview['kind'].upper()+' PREVIEW',
+                                'mimeType':preview['mime_type'],
+                                'description':'Open the completed media in a compatible client.'})
+            result={'content':content,'structuredContent':data,
+                    'isError':bool(data.get('error'))}
         else:
             return rpc_error(-32601,'Method not found')
         return jsonify(jsonrpc='2.0',id=msg['id'],result=result)
