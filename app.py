@@ -4202,6 +4202,11 @@ def aivideo_enhance():
     """Perbaiki prompt user via Gemini (tombol Enhance di editor prompt)."""
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    if not getattr(g, 'mii_mcp_internal', False) and not _aivideo_bearer_authed():
+        workspace_token = session.get('mii_workspace_token')
+        supplied_token = request.headers.get('X-MII-Workspace-Token', '')
+        if not workspace_token or not hmac.compare_digest(workspace_token, supplied_token):
+            return jsonify({'error': 'Enhance hanya tersedia dari workspace.'}), 403
     data = request.get_json(silent=True) or {}
     raw = (data.get('prompt') or '').strip()
     mode = (data.get('mode') or 'video').lower()

@@ -1694,6 +1694,9 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   #framesMediaRow{grid-template-columns:36px minmax(0,1fr)}
   #framesMediaRow>#framesRailMount{min-width:0}
 }
+/* One-frame models must not reserve the hidden Last Frame column. */
+#framesMediaRow>.frame-row.single-frame{grid-template-columns:minmax(0,1fr);justify-items:center}
+#framesMediaRow>.frame-row.single-frame .frame-card{width:100%;max-width:260px}
 </style>
 </head>
 
@@ -2356,7 +2359,9 @@ if (DEMO_MODE) {
       if (tok) {
         init.headers = Object.assign({}, init.headers || {}, { 'X-CSRF-Token': tok });
       }
-      if (!DEMO_MODE && MII_WORKSPACE_TOKEN && url.split('?')[0] === '/api/aivideo/generate') {
+      var workspaceEndpoint = url.split('?')[0];
+      if (!DEMO_MODE && MII_WORKSPACE_TOKEN &&
+          (workspaceEndpoint === '/api/aivideo/generate' || workspaceEndpoint === '/api/aivideo/enhance')) {
         init.headers = Object.assign({}, init.headers || {}, { 'X-MII-Workspace-Token': MII_WORKSPACE_TOKEN });
       }
     }
@@ -3550,6 +3555,8 @@ function applyModelCapabilities() {
   }
   var lastFrameCard = document.getElementById('cardLastFrame');
   if (lastFrameCard) lastFrameCard.style.display = caps.frames && caps.lastFrame ? '' : 'none';
+  var frameRow = document.querySelector('#framesMediaRow > .frame-row');
+  if (frameRow) frameRow.classList.toggle('single-frame', !!caps.frames && !caps.lastFrame);
   if (!caps.frames && frames.first) resetFrameCard('first');
   if ((!caps.frames || !caps.lastFrame) && frames.last) resetFrameCard('last');
 
