@@ -31,6 +31,14 @@ class UniversalVideoFramesTests(unittest.TestCase):
                 line += self.html[self.html.index(line):self.html.index(line) + 900]
             self.assertIn('supportsFirstFrame:true', line, family)
 
+    def test_single_frame_models_fill_the_own_lane_on_mobile_and_desktop(self):
+        # The same template renders the authenticated Studio and public demo.
+        self.assertIn("frameRow.classList.toggle('single-frame', !!caps.frames && !caps.lastFrame)", self.html)
+        self.assertIn("#framesMediaRow>.frame-row.single-frame{grid-template-columns:minmax(0,1fr);justify-items:stretch}", self.html)
+        self.assertIn("#framesMediaRow>.frame-row.single-frame .frame-card{width:100%;max-width:none;", self.html)
+        self.assertIn("#framesMediaRow>#framesPromptMount{grid-column:3;grid-row:1;", self.html)
+        self.assertIn("#framesMediaRow>#framesPromptMount{grid-column:2;grid-row:2;", self.html)
+
     def test_frame_state_is_independent_and_incompatible_payload_is_filtered(self):
         self.assertIn("var frames = { first: null, last: null }", self.html)
         self.assertIn("var selectedMedia = usingFrames ? {image:[], video:[], audio:[]} : media", self.html)

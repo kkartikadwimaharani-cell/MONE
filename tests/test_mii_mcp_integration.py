@@ -168,8 +168,59 @@ class MiiMcpIntegrationTests(unittest.TestCase):
 
         listed=self.rpc(key,'resources/list').get_json()['result']['resources']
         self.assertEqual(listed[0]['mimeType'],'text/html;profile=mcp-app')
-        read=self.rpc(key,'resources/read',{'uri':'ui://miiaivideo/video-preview.html'}).get_json()
-        self.assertIn('<video',read['result']['contents'][0]['text'])
+        read=self.rpc(key,'resources/read',{'uri':listed[0]['uri']}).get_json()
+        widget=read['result']['contents'][0]['text']
+        for element in ('<video', '<audio', '<img', 'ui/notifications/tool-result',
+                        'ui/notifications/initialized',
+                        "if(typeof u!=='string'||!u.trim())return '';"):
+            self.assertIn(element,widget)
+
+    def test_signed_widget_status_and_typed_previews_without_provider_calls(self):
+        key=self.key()['key']
+        initialize=self.rpc(key,'initialize').get_json()['result']
+        self.assertIn('resources',initialize['capabilities'])
+        listed=self.rpc(key,'tools/list').get_json()['result']['tools']
+        generation=next(t for t in listed if t['name']=='miiaivideo_generate_video')
+        self.assertEqual(generation['_meta']['ui']['resourceUri'],
+                         self.rpc(key,'resources/list').get_json()['result']['resources'][0]['uri'])
+        patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        worker=patch.object(self.module.threading,'Thread').start()
+        started=self.call(key,'generate_video',{'prompt':'Preview contract test',
+                                                'family':'seedance25','variant':'STANDARD'})
+        self.assertFalse(started['isError'],started)
+        payload=started['structuredContent']
+        task_id=payload['task_id']
+        token=payload['status_token']
+        self.assertTrue(token)
+        worker.assert_called_once()
+        pending=self.client.post('/mcp/widget-status',data=token,
+                                 content_type='text/plain').get_json()
+        self.assertNotIn('preview',pending)
+        self.assertEqual(self.client.post('/mcp/widget-status',data='bad-token',
+                                          content_type='text/plain').status_code,401)
+        media=(
+            ('video','video_url','https://dl.dropboxusercontent.com/s/demo/clip.mp4','video/mp4'),
+            ('image','image_url','/static/aivideo_uploads/demo.png','image/png'),
+            ('audio','audio_url','https://dl.dropboxusercontent.com/s/demo/track.mp3','audio/mpeg'),
+        )
+        for kind,field,url,mime in media:
+            with self.subTest(kind=kind):
+                with patch.dict(self.module.AIVIDEO_TASKS,{task_id:{
+                    'status':'completed','progress':100,'output':{field:url},
+                    'error':None,
+                }}):
+                    expected='https://makima.cloud'+url if url.startswith('/') else url
+                    status=self.call(key,'check_status',{'task_id':task_id})
+                    self.assertFalse(status['isError'],status)
+                    self.assertEqual(status['structuredContent']['preview'],
+                                     {'kind':kind,'url':expected,'mime_type':mime})
+                    self.assertEqual(status['content'][1]['type'],'resource_link')
+                    self.assertEqual(status['content'][1]['uri'],expected)
+                    self.assertEqual(status['content'][1]['mimeType'],mime)
+                    widget=self.client.post('/mcp/widget-status',data=token,
+                                            content_type='text/plain')
+                    self.assertEqual(widget.status_code,200,widget.data)
+                    self.assertEqual(widget.get_json()['preview']['url'],expected)
 
     def oauth_code(self, simulate_restart=False):
         r=self.client.post('/oauth/register',json={'client_name':'Test agent','redirect_uris':['https://agent.example/callback'],'token_endpoint_auth_method':'none'})
