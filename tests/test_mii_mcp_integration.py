@@ -46,7 +46,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         patch.object(self.module,'_dropbox_status_check',side_effect=AssertionError('No network for rendering')).start()
         r=self.client.get('/ai-video/debug')
         self.assertEqual(r.status_code,200)
-        self.assertIn(b'MIIAIVIDEO MCP',r.data)
+        self.assertIn(b'MII AI STUDIO MCP',r.data)
         data=self.client.get('/api/aivideo/debug-data').get_json()
         for key in ('storage','generation','motion','pipeline','request_log'):
             self.assertIsInstance(data[key],dict)
@@ -74,7 +74,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         self.assertEqual(self.client.get('/ai-video/mcp').status_code,200)
         issued=self.key()
         self.assertNotIn(issued['key'].encode(),self.client.get('/ai-video/mcp').data)
-        self.assertEqual(self.rpc(issued['key'],'initialize').get_json()['result']['serverInfo']['name'],'MIIAIVIDEO')
+        self.assertEqual(self.rpc(issued['key'],'initialize').get_json()['result']['serverInfo']['name'],'MII AI STUDIO')
         self.assertEqual(self.client.post('/ai-video/mcp/revoke',json={'id':issued['id']},headers={'X-CSRF-Token':'test-csrf'}).status_code,200)
         self.assertEqual(self.rpc(issued['key'],'ping').status_code,401)
 
@@ -222,7 +222,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                 async with streamable_http_client('https://makima.cloud/mcp',http_client=http) as (read,write,_):
                     async with ClientSession(read,write) as client:
                         info=await client.initialize()
-                        self.assertEqual(info.serverInfo.name,'MIIAIVIDEO')
+                        self.assertEqual(info.serverInfo.name,'MII AI STUDIO')
                         definitions=await client.list_tools()
                         self.assertEqual(len(definitions.tools),13)
                         result=await client.call_tool('miiaivideo_list_models',{})
