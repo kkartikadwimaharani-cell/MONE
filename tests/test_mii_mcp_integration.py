@@ -171,7 +171,8 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         read=self.rpc(key,'resources/read',{'uri':listed[0]['uri']}).get_json()
         widget=read['result']['contents'][0]['text']
         for element in ('<video', '<audio', '<img', 'ui/notifications/tool-result',
-                        'ui/notifications/initialized'):
+                        'ui/notifications/initialized',
+                        "if(typeof u!=='string'||!u.trim())return '';"):
             self.assertIn(element,widget)
 
     def test_signed_widget_status_and_typed_previews_without_provider_calls(self):
@@ -192,6 +193,9 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         token=payload['status_token']
         self.assertTrue(token)
         worker.assert_called_once()
+        pending=self.client.post('/mcp/widget-status',data=token,
+                                 content_type='text/plain').get_json()
+        self.assertNotIn('preview',pending)
         self.assertEqual(self.client.post('/mcp/widget-status',data='bad-token',
                                           content_type='text/plain').status_code,401)
         media=(
