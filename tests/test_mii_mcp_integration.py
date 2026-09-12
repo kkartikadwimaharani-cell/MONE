@@ -140,7 +140,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
 
     def test_bad_controls_unknown_tool_missing_task_and_provider_failure(self):
         key=self.key()['key']
-        for args in ({'prompt':'x','family':'flux','variant':'STANDARD'}, {'prompt':'x','family':'imagen','image_urls':['https://example.com/a.png']}, {'prompt':'x','family':'gptimage','resolution':'4K'}):
+        for args in ({'prompt':'x','family':'flux','variant':'STANDARD'}, {'prompt':'x','family':'imagen','image_urls':['https://example.com/a.png']}, {'prompt':'x','family':'gptimage','resolution':'4K'}, {'prompt':'x','family':'bpx-midjourney-v7','model_slug':'flux-2-klein'}):
             self.assertTrue(self.call(key,'generate_image',args)['isError'])
         self.assertTrue(self.call(key,'check_status',{'task_id':'missing'})['isError'])
         self.assertTrue(self.call(key,'motion_control',{'video_urls':[]})['isError'])
