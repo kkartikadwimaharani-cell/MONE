@@ -1,8 +1,10 @@
 import io
+import sqlite3
 import unittest
 from unittest.mock import patch
 
 import app
+import aivideo_archive
 
 
 class AiVideoDebugTests(unittest.TestCase):
@@ -97,7 +99,7 @@ class AiVideoDebugTests(unittest.TestCase):
         app._aivideo_debug_append_upload({'url': 'https://files.example/x'})
         app._aivideo_log_request('mock', 'generation', status_code=200)
         archive_marker = {'history': 'must remain'}
-        with app.app.test_request_context('/ai-video/debug/clear'):
+        with app.app.test_request_context('/ai-video/debug/clear', method='POST'):
             app.session['mii_aivideo_auth'] = True
             response = app.ai_video_debug_clear()
         self.assertEqual(response.status_code, 302)
@@ -106,6 +108,66 @@ class AiVideoDebugTests(unittest.TestCase):
         self.assertEqual(app._aivideo_debug_snapshot()['last_uploads'], [])
         self.assertEqual(app._AIVIDEO_REQUEST_LOG, [])
 
+
+    def test_security_history_only_records_threshold_and_denied_writes(self):
+        with app._AIVIDEO_UNLOCK_LOCK:
+            app._AIVIDEO_UNLOCK_ATTEMPTS.clear()
+            app._AIVIDEO_GLOBAL_FAILS.clear()
+            app._AIVIDEO_GLOBAL_LOCK_UNTIL = 0
+        with app.app.test_client() as client, \
+                patch.object(app, 'get_site_status', return_value={'maintenance': False}), \
+                patch.object(app, '_mii_aivideo_password', return_value='correct-password'), \
+                patch.object(app.aivideo_archive, 'record_unlock_attempt', return_value=(0, 0)), \
+                patch.object(app.aivideo_archive, 'record_security_event') as recorder:
+            for _ in range(2):
+                self.assertEqual(client.post('/ai-video/unlock', json={'password': 'wrong-password'}, headers={'CF-Connecting-IP': '203.0.113.8', 'User-Agent': 'Android Chrome'}).status_code, 401)
+            self.assertEqual(recorder.call_count, 0)
+            self.assertEqual(client.post('/ai-video/unlock', json={'password': 'wrong-password'},
+                                         headers={'CF-Connecting-IP': '203.0.113.8',
+                                                  'User-Agent': 'Android Chrome'}).status_code, 423)
+            self.assertEqual(recorder.call_count, 1)
+            self.assertEqual(recorder.call_args.args[0], 'PASSWORD LOCKOUT THRESHOLD')
+            self.assertEqual(recorder.call_args.args[3], '127.0.0.1')
+            self.assertNotIn('wrong-password', repr(recorder.call_args))
+            self.assertEqual(client.post('/api/aivideo/generate', json={'prompt': 'private prompt'},
+                                         headers={'User-Agent': 'Android Chrome'}).status_code, 401)
+            self.assertEqual(recorder.call_count, 2)
+            self.assertNotIn('private prompt', repr(recorder.call_args))
+            self.assertEqual(client.get('/api/aivideo/debug-data',
+                                        headers={'Authorization': 'Bearer example'}).status_code, 401)
+        with app._AIVIDEO_UNLOCK_LOCK:
+            app._AIVIDEO_UNLOCK_ATTEMPTS.clear()
+            app._AIVIDEO_GLOBAL_FAILS.clear()
+            app._AIVIDEO_GLOBAL_LOCK_UNTIL = 0
+
+    def test_security_history_bounded_and_deduplicated(self):
+        conn = sqlite3.connect(':memory:', check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        try:
+            with patch.object(aivideo_archive, '_get_conn', return_value=conn):
+                self.assertTrue(aivideo_archive.record_security_event(
+                    'PASSWORD LOCKOUT THRESHOLD', '/ai-video/unlock', '203.0.113.8',
+                    '127.0.0.1', 'UNVERIFIED PROXY HEADER', 'Android Chrome', 423))
+                self.assertFalse(aivideo_archive.record_security_event(
+                    'PASSWORD LOCKOUT THRESHOLD', '/ai-video/unlock', '203.0.113.8',
+                    '127.0.0.1', 'UNVERIFIED PROXY HEADER', 'Android Chrome', 423))
+                events = aivideo_archive.list_security_events()['events']
+                self.assertEqual(len(events), 1)
+                self.assertEqual(events[0]['ip_source'], 'UNVERIFIED PROXY HEADER')
+                self.assertEqual(events[0]['device'], 'Android Chrome')
+        finally:
+            conn.close()
+
+    def test_debug_clear_requires_post_and_csrf(self):
+        with app.app.test_client() as client, \
+                patch.object(app, 'get_site_status', return_value={'maintenance': False}):
+            with client.session_transaction() as sess:
+                sess['mii_aivideo_auth'] = True
+                sess['mii_csrf'] = 'csrf-value'
+            self.assertEqual(client.get('/ai-video/debug/clear').status_code, 405)
+            self.assertEqual(client.post('/ai-video/debug/clear').status_code, 403)
+            self.assertEqual(client.post('/ai-video/debug/clear',
+                                         headers={'X-CSRF-Token': 'csrf-value'}).status_code, 302)
 
 if __name__ == '__main__':
     unittest.main()
