@@ -12,6 +12,7 @@ import subprocess
 import hashlib
 import base64
 import hmac
+import ipaddress
 import secrets
 import tempfile
 import math
@@ -2437,6 +2438,34 @@ def _aivideo_client_ip():
         return forwarded.split(',')[0].strip()
     return request.remote_addr or ''
 
+def _aivideo_record_suspicious(kind, http_status, route=None):
+    """Capture blocked security events only; never body, password or token.
+
+    Forwarded address headers may be forged if the Railway origin is directly
+    reachable. Save the socket address as well and mark the reported IP as
+    unverified until the deployment restricts access to its trusted proxy.
+    """
+    def valid_ip(value):
+        try:
+            return str(ipaddress.ip_address(str(value).strip()))
+        except (ValueError, TypeError):
+            return ''
+
+    socket_ip = valid_ip(request.remote_addr) or 'UNKNOWN'
+    claimed = valid_ip(request.headers.get('CF-Connecting-IP'))
+    if not claimed:
+        claimed = valid_ip(request.headers.get('X-Forwarded-For', '').split(',')[0])
+    ip_address = claimed or socket_ip
+    source = 'UNVERIFIED PROXY HEADER' if claimed else 'SOCKET ADDRESS'
+    device = re.sub(r'[\x00-\x1f\x7f]', ' ', request.headers.get('User-Agent', ''))[:180] or 'UNKNOWN'
+    try:
+        aivideo_archive.record_security_event(kind, route or request.path,
+                                             ip_address, socket_ip, source,
+                                             device, http_status)
+    except Exception:
+        app.logger.exception('[ai-video][security] failed to record blocked event')
+
+
 # ── Segmind (Seedance 2.0) ──────────────────────────────────────────────
 # IMPORTANT: no hardcoded fallback key here on purpose. A real API key was
 # previously committed directly in this file as a fallback value, which
@@ -2940,8 +2969,12 @@ def _aivideo_bearer_authed():
     return hmac.compare_digest(auth_header[7:].encode('utf-8'), mcp_key.encode('utf-8'))
 
 
+def _aivideo_browser_authed():
+    return bool(session.get('mii_aivideo_auth'))
+
+
 def _aivideo_authed():
-    return bool(session.get('mii_aivideo_auth')) or bool(getattr(g, 'mii_mcp_internal', False)) or _aivideo_bearer_authed()
+    return _aivideo_browser_authed() or bool(getattr(g, 'mii_mcp_internal', False)) or _aivideo_bearer_authed()
 
 
 # ---------------------------------------------------------------------------
@@ -2995,6 +3028,31 @@ def _aivideo_csrf_cookie(response):
             _AIVIDEO_CSRF_COOKIE, tok,
             secure=not _IS_DEV, httponly=False, samesite='Lax', max_age=60 * 60 * 12,
         )
+    return response
+
+
+_AIVIDEO_SECURITY_WRITE_PATHS = {
+    '/api/aivideo/generate', '/api/aivideo/enhance', '/api/aivideo/upload',
+    '/api/aivideo/upload/forget', '/api/aivideo/app-secrets/update',
+    '/api/aivideo/app-secrets/delete', '/api/aivideo/app-secrets/import-legacy',
+    '/api/aivideo/dropbox/credentials', '/api/aivideo/dropbox/authorize',
+    '/api/aivideo/dropbox/disconnect', '/api/aivideo/dropbox/import-legacy',
+    '/ai-video/debug/clear',
+}
+
+
+@app.after_request
+def _aivideo_record_denied_write(response):
+    if (request.method in ('POST', 'PUT', 'PATCH', 'DELETE')
+            and request.path in _AIVIDEO_SECURITY_WRITE_PATHS
+            and response.status_code in (401, 403)):
+        kind = ('CSRF REJECTED' if response.status_code == 403
+                and _aivideo_browser_authed()
+                and not _aivideo_bearer_authed()
+                and request.headers.get(_AIVIDEO_CSRF_HEADER) != session.get('mii_csrf')
+                else 'WORKSPACE OR ADMIN ACCESS REJECTED' if response.status_code == 403
+                else 'UNAUTHORIZED WRITE REJECTED')
+        _aivideo_record_suspicious(kind, response.status_code)
     return response
 
 
@@ -4124,11 +4182,13 @@ def ai_video_unlock():
     now = time.time()
     global_remaining = _aivideo_global_lock_remaining()
     if global_remaining:
+        _aivideo_record_suspicious('GLOBAL LOGIN LOCKOUT', 423)
         return jsonify({'ok': False, 'locked': True, 'retry_after': global_remaining,
                          'error': 'Terlalu banyak percobaan salah dari berbagai sumber. Login dikunci sementara untuk semua orang.'}), 423
     with _AIVIDEO_UNLOCK_LOCK:
         fails, locked_until = _AIVIDEO_UNLOCK_ATTEMPTS.get(ip, (0, 0))
     if locked_until > now:
+        _aivideo_record_suspicious('IP LOGIN LOCKOUT', 423)
         try:
             total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
         except Exception:
@@ -4161,8 +4221,11 @@ def ai_video_unlock():
             _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (0, locked_until)
         else:
             _AIVIDEO_UNLOCK_ATTEMPTS[ip] = (fails, 0)
-    _aivideo_register_global_fail()
+    global_just_locked = _aivideo_register_global_fail()
+    if global_just_locked:
+        _aivideo_record_suspicious('GLOBAL FAILURE THRESHOLD', 423)
     if ip_just_locked:
+        _aivideo_record_suspicious('PASSWORD LOCKOUT THRESHOLD', 423)
         try:
             total_attempts, total_failed = aivideo_archive.record_unlock_attempt(False)
         except Exception:
@@ -5223,10 +5286,10 @@ def aivideo_storage_usage():
         return jsonify({'error': str(e)}), 502
 
 
-@app.route('/ai-video/debug/clear')
+@app.route('/ai-video/debug/clear', methods=['POST'])
 def ai_video_debug_clear():
-    if not _aivideo_authed():
-        return render_template('ai-video-lock.html')
+    if not _aivideo_browser_authed():
+        return jsonify({'error': 'unauthorized'}), 401
 
     _aivideo_clear_debug()
     return redirect('/ai-video/debug')
@@ -5252,14 +5315,19 @@ def _aivideo_diagnostics():
                    created_at=entry.get('at'), elapsed_ms=entry.get('duration_ms'),
                    final_payload=entry.get('request_body'))
         entries.append(row)
-    return dict(snap, storage={
+    try:
+        security_history = aivideo_archive.list_security_events()
+    except Exception:
+        app.logger.exception('[ai-video][security] history unavailable')
+        security_history = {'count': 0, 'retention_days': 30, 'events': [], 'error': 'HISTORY UNAVAILABLE'}
+    return dict(snap, security_history=security_history, storage={
         'status': 'READY' if storage.get('ok') else ('ERROR' if storage.get('ok') is False else 'NOT CHECKED'),
         'mode': state.get('state'), 'detail': storage.get('detail') or 'Belum ada pemeriksaan koneksi',
         'checked_at': storage.get('at'),
     }, generation={
         'status': 'READY' if configured else 'NOT CONFIGURED',
         'api_configuration': 'CONFIGURED' if configured else 'MISSING',
-        'video_backend': 'MIIAIVIDEO', 'image_backend': 'MIIAIVIDEO',
+        'video_backend': 'MII AI STUDIO', 'image_backend': 'MII AI STUDIO',
         'task_engine': 'BACKGROUND', 'polling': 'ON REQUEST',
         'last_request': (snap.get('last_request') or {}).get('at'),
         'detail': 'Konfigurasi tersedia; koneksi provider belum diuji' if configured else 'Isi API key di App Secrets',
@@ -5274,16 +5342,19 @@ def _aivideo_diagnostics():
 
 @app.route('/ai-video/debug')
 def ai_video_debug_page():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return render_template('ai-video-lock.html', next_page='/ai-video/debug')
     return render_template('ai-video-debug.html', **_aivideo_diagnostics())
 
 
 @app.route('/api/aivideo/debug-data')
 def ai_video_debug_data():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
-    return jsonify(_aivideo_diagnostics())
+    response = jsonify(_aivideo_diagnostics())
+    response.headers['Cache-Control'] = 'no-store, private'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
 
 
 @app.route('/ai-video/app-secrets')
@@ -5293,14 +5364,14 @@ def ai_video_app_secrets_page():
     survives GitHub repo swaps/redeploys without touching Railway
     Variables. Same encrypted-at-rest approach as the Dropbox Connection
     Manager, generalized. See secrets_store.py."""
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return render_template('ai-video-lock.html')
     return render_template('ai-video-app-secrets.html')
 
 
 @app.route('/api/aivideo/app-secrets/list')
 def api_app_secrets_list():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     meta = _app_secrets_store.get_all_meta()
     items = []
@@ -5324,7 +5395,7 @@ def api_app_secrets_list():
 
 @app.route('/api/aivideo/app-secrets/update', methods=['POST'])
 def api_app_secrets_update():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     payload = request.get_json(silent=True) or {}
     key = str(payload.get('key', '')).strip()
@@ -5350,7 +5421,7 @@ def api_app_secrets_update():
 
 @app.route('/api/aivideo/app-secrets/delete', methods=['POST'])
 def api_app_secrets_delete():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     payload = request.get_json(silent=True) or {}
     key = str(payload.get('key', '')).strip()
@@ -5366,7 +5437,7 @@ def api_app_secrets_import_legacy():
     """Copy every currently-set Railway env var (from APP_SECRET_DEFS) into
     the encrypted store in one click, same idea as the Dropbox manager's
     import button."""
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     imported = []
     for d in APP_SECRET_DEFS:
@@ -5392,7 +5463,7 @@ def ai_video_dropbox_token_page():
     authorization-code copy-paste or Railway env var edits. All data is
     fetched client-side from /api/aivideo/dropbox/*; this just renders the
     page shell (and the auth gate)."""
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return render_template('ai-video-lock.html')
     return render_template('ai-video-dropbox-token.html')
 
@@ -5405,14 +5476,14 @@ def _dropbox_oauth_error_response(e):
 
 @app.route('/api/aivideo/dropbox/status')
 def api_dropbox_status():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     return jsonify({'ok': True, 'data': _dropbox_manager.status()})
 
 
 @app.route('/api/aivideo/dropbox/credentials', methods=['POST'])
 def api_dropbox_credentials():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     payload = request.get_json(silent=True) or {}
     app_key = str(payload.get('app_key', '')).strip()
@@ -5429,7 +5500,7 @@ def api_dropbox_credentials():
 
 @app.route('/api/aivideo/dropbox/authorize', methods=['POST'])
 def api_dropbox_authorize():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     state = secrets.token_urlsafe(32)
     session['mii_dropbox_oauth_state'] = state
@@ -5447,7 +5518,7 @@ def ai_video_dropbox_callback():
     header is possible on a cross-site GET redirect, so protection instead
     comes from verifying the `state` value against what we stashed in the
     session right before redirecting to Dropbox."""
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return render_template('ai-video-lock.html')
 
     error = request.args.get('error')
@@ -5486,7 +5557,7 @@ def ai_video_dropbox_callback():
 
 @app.route('/api/aivideo/dropbox/test', methods=['POST'])
 def api_dropbox_test():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     try:
         result = _dropbox_manager.test_connection()
@@ -5499,7 +5570,7 @@ def api_dropbox_test():
 
 @app.route('/api/aivideo/dropbox/disconnect', methods=['POST'])
 def api_dropbox_disconnect():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     payload = request.get_json(silent=True) or {}
     mode = payload.get('mode', 'tokens')
@@ -5512,7 +5583,7 @@ def api_dropbox_disconnect():
 
 @app.route('/api/aivideo/dropbox/import-legacy', methods=['POST'])
 def api_dropbox_import_legacy():
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     try:
         _dropbox_manager.import_legacy()
@@ -5539,7 +5610,7 @@ def ai_video_dropbox_oauth_exchange():
     NOT need to be stored anywhere; the app mints fresh ones automatically
     from the refresh_token at runtime.
     """
-    if not _aivideo_authed():
+    if not _aivideo_browser_authed():
         return jsonify({'error': 'unauthorized'}), 401
     if not (DROPBOX_APP_KEY and DROPBOX_APP_SECRET):
         return jsonify({'error': 'DROPBOX_APP_KEY / DROPBOX_APP_SECRET belum diset di Railway'}), 500
