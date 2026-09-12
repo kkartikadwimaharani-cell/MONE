@@ -60,7 +60,7 @@
   // Homepage copy is kept together so every visible homepage label switches as one.
   var homepageTranslations = {
     id: {
-      homePageTitle:'MII NETWORK — PRODUK DIGITAL DAN TEKNOLOGI KREATIF',
+      homePageTitle:'MII NETWORK — PRODUK DIGITAL DAN TEKNOLOGI KREATIF', homeDemoAria:'Demo publik MII AI STUDIO',
       homeMainNavigation:'Navigasi utama', homeFooterNavigation:'Navigasi footer',
       homeHeroAria:'Beranda MII NETWORK', homeFoxAria:'Emblem rubah MII',
       navigation:'NAVIGASI', drawer_subtitle:'PRODUK DIGITAL DAN ALAT AI',
@@ -81,7 +81,7 @@
       home:'BERANDA', social:'SOSIAL', project:'PROYEK', contact:'KONTAK'
     },
     en: {
-      homePageTitle:'MII NETWORK — DIGITAL PRODUCTS AND CREATIVE TECH',
+      homePageTitle:'MII NETWORK — DIGITAL PRODUCTS AND CREATIVE TECH', homeDemoAria:'MII AI STUDIO public demo',
       homeMainNavigation:'Main navigation', homeFooterNavigation:'Footer navigation',
       homeHeroAria:'MII NETWORK homepage', homeFoxAria:'MII fox emblem',
       navigation:'NAVIGATION', drawer_subtitle:'DIGITAL PRODUCTS AND AI TOOLS',
@@ -102,7 +102,7 @@
       home:'HOME', social:'SOCIAL', project:'PROJECTS', contact:'CONTACT'
     },
     cn: {
-      homePageTitle:'MII NETWORK — 数字产品与创意科技',
+      homePageTitle:'MII NETWORK — 数字产品与创意科技', homeDemoAria:'MII AI STUDIO 公开演示',
       homeMainNavigation:'主导航', homeFooterNavigation:'页脚导航',
       homeHeroAria:'MII NETWORK 首页', homeFoxAria:'MII 狐狸标志',
       navigation:'导航', drawer_subtitle:'数字产品与人工智能工具',
