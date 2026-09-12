@@ -103,6 +103,7 @@
     },
     cn: {
       homePageTitle:'MII NETWORK — 数字产品与创意科技', homeDemoAria:'MII AI STUDIO 公开演示',
+      language:'语言', language_menu:'选择语言', open_navigation_menu:'打开导航菜单', close_menu:'关闭菜单',
       homeMainNavigation:'主导航', homeFooterNavigation:'页脚导航',
       homeHeroAria:'MII NETWORK 首页', homeFoxAria:'MII 狐狸标志',
       navigation:'导航', drawer_subtitle:'数字产品与人工智能工具',
