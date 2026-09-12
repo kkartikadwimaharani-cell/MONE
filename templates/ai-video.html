@@ -1728,7 +1728,7 @@ if (DEMO_MODE) {
     <span class="demo-notice-mark">MII AI STUDIO</span>
     <h2 id="demoNoticeTitle">PUBLIC DEMO MODE</h2>
     <p class="demo-notice-lead">EXPLORE THE STUDIO</p>
-    <p id="demoNoticeText">ALL GENERATION SYSTEMS ARE DISABLED<br>NO API CALLS // NO POLLING // NO CREDIT USAGE</p>
+    <p id="demoNoticeText">ALL GENERATION SYSTEMS ARE DISABLED<br>NO API CALLS NO POLLING NO CREDIT USAGE</p>
     <div class="demo-notice-actions">
       <button type="button" onclick="closeDemoNotice()">CONTINUE DEMO</button>
       <a class="primary" href="/ai-video">ENTER STUDIO</a>
@@ -4611,7 +4611,7 @@ function showDemoNotice(action) {
   var copy = document.getElementById('demoNoticeText');
   if (!modal || !title || !copy) return;
   title.textContent = 'PUBLIC DEMO MODE';
-  copy.textContent = 'ALL GENERATION SYSTEMS ARE DISABLED\nNO API CALLS // NO POLLING // NO CREDIT USAGE';
+  copy.textContent = 'ALL GENERATION SYSTEMS ARE DISABLED\nNO API CALLS NO POLLING NO CREDIT USAGE';
   modal.classList.add('show');
 }
 function closeDemoNotice() {

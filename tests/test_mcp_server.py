@@ -36,4 +36,4 @@ class McpServerTests(unittest.TestCase):
                 'clientInfo': {'name': 'test', 'version': '1.0'},
             }})
             self.assertEqual(response.status_code, 200)
-            self.assertIn('MiiAiVideo', response.text)
+            self.assertIn('MII AI STUDIO', response.text)

@@ -74,7 +74,83 @@ def init_db():
             ('bitrate', "TEXT DEFAULT ''"), ('source_task_id', "TEXT DEFAULT ''")):
             if column not in existing_cols:
                 conn.execute('ALTER TABLE aivideo_archive ADD COLUMN %s %s' % (column, declaration))
+        _ensure_security_table(conn)
         conn.commit()
+
+
+def _ensure_security_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS aivideo_security_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_ts INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            route TEXT NOT NULL,
+            ip_address TEXT NOT NULL,
+            socket_ip TEXT NOT NULL,
+            ip_source TEXT NOT NULL,
+            device TEXT NOT NULL,
+            http_status INTEGER NOT NULL
+        )
+    """)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_aivideo_security_created "
+        "ON aivideo_security_events (created_ts DESC)"
+    )
+
+
+def record_security_event(kind, route, ip_address, socket_ip, ip_source, device, http_status):
+    """Only blocked security events, never request bodies or credentials.
+
+    Duplicate events are collapsed for one minute. Retain at most 30 days
+    and 2000 records so a denied-request flood cannot grow this table forever.
+    """
+    import time as _time
+    now = int(_time.time())
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_security_table(conn)
+        conn.execute("DELETE FROM aivideo_security_events WHERE created_ts < ?", (now - 30 * 86400,))
+        last = conn.execute(
+            "SELECT created_ts FROM aivideo_security_events "
+            "WHERE kind=? AND route=? AND ip_address=? ORDER BY id DESC LIMIT 1",
+            (kind, route, ip_address),
+        ).fetchone()
+        if last is not None and now - last[0] < 60:
+            conn.commit()
+            return False
+        conn.execute(
+            "INSERT INTO aivideo_security_events "
+            "(created_ts,kind,route,ip_address,socket_ip,ip_source,device,http_status) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (now, kind[:48], route[:96], ip_address[:64], socket_ip[:64],
+             ip_source[:32], device[:180], int(http_status)),
+        )
+        threshold = conn.execute(
+            "SELECT id FROM aivideo_security_events ORDER BY id DESC LIMIT 1 OFFSET 1999"
+        ).fetchone()
+        if threshold is not None:
+            conn.execute("DELETE FROM aivideo_security_events WHERE id < ?", (threshold[0],))
+        conn.commit()
+        return True
+
+
+def list_security_events(limit=60):
+    """Read-only bounded history for the password-authenticated Debug page."""
+    import time as _time
+    with _write_lock:
+        conn = _get_conn()
+        _ensure_security_table(conn)
+        cutoff = int(_time.time()) - 30 * 86400
+        count = conn.execute(
+            "SELECT COUNT(*) FROM aivideo_security_events WHERE created_ts >= ?", (cutoff,)
+        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT created_ts,kind,route,ip_address,socket_ip,ip_source,device,http_status "
+            "FROM aivideo_security_events WHERE created_ts >= ? "
+            "ORDER BY id DESC LIMIT ?",
+            (cutoff, max(1, min(int(limit), 100))),
+        ).fetchall()
+    return {'count': count, 'retention_days': 30, 'events': [dict(row) for row in rows]}
 
 
 def _ensure_tasks_table(conn):

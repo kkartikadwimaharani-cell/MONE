@@ -23,9 +23,7 @@
     /* PUBLIC DEMO: typographic hierarchy and quiet atmospheric depth. */
     .home-cta.studio-promo{position:relative;isolation:isolate;box-sizing:border-box;min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:0!important;width:100%!important;max-width:1120px!important;min-height:clamp(420px,43vw,580px);margin-inline:auto!important;padding:clamp(56px,7vw,100px) clamp(22px,6vw,84px)!important;overflow:hidden;border:0!important;border-radius:clamp(26px,4vw,38px)!important;background:radial-gradient(ellipse at 50% 40%,rgba(95,8,28,.29),transparent 56%),linear-gradient(155deg,#080709,#030304 65%,#0a0508)!important;box-shadow:0 34px 95px rgba(0,0,0,.44),0 0 65px rgba(109,7,30,.12)!important;text-align:center}
     .home-cta.studio-promo::before,.home-cta.studio-promo::after{content:none!important;display:none!important}
-    .studio-atmos{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 41%,rgba(177,19,51,.20),transparent 39%),radial-gradient(circle at 78% 73%,rgba(116,11,36,.12),transparent 31%),radial-gradient(circle,rgba(255,221,228,.028) .7px,transparent 1px);background-size:auto,auto,45px 45px;animation:studioAtmosDrift 18s ease-in-out infinite alternate}
-    .studio-particle{position:absolute;width:3px;height:3px;border-radius:50%;background:#e95471;box-shadow:0 0 13px rgba(245,49,89,.52);opacity:.33;animation:studioFloat 17s ease-in-out infinite}
-    .studio-particle:nth-child(1){left:12%;top:28%;animation-delay:-3s}.studio-particle:nth-child(2){left:81%;top:23%;animation-delay:-9s}.studio-particle:nth-child(3){left:74%;top:78%;animation-delay:-13s}.studio-particle:nth-child(4){left:22%;top:75%;animation-delay:-6s}
+    .studio-atmos{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 41%,rgba(177,19,51,.20),transparent 39%),radial-gradient(circle at 78% 73%,rgba(116,11,36,.12),transparent 31%);background-size:auto,auto;animation:studioAtmosDrift 18s ease-in-out infinite alternate}
     .home-cta.studio-promo .cta-copy{position:relative;z-index:1;width:100%;max-width:100%;min-width:0}
     .home-cta.studio-promo .demo-kicker{display:block;margin:0 0 clamp(22px,3vw,36px);color:#d991a2;font:800 clamp(.65rem,1vw,.8rem)/1.25 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase}
     .home-cta.studio-promo .studio-pretitle{margin:0 0 8px;color:#e9d1d5;font:800 clamp(.9rem,1.65vw,1.25rem)/1.2 Inter,sans-serif;letter-spacing:.24em}
@@ -37,13 +35,12 @@
     .home-cta.studio-promo .studio-enter:hover{transform:translateY(-3px);filter:brightness(1.12);box-shadow:0 19px 46px rgba(95,3,27,.44),0 0 38px rgba(213,18,58,.25)!important}
     .home-cta.studio-promo .studio-enter:active{transform:scale(.98)}
     .home-cta.studio-promo .studio-enter:focus-visible{outline:2px solid #fff;outline-offset:4px}
-    @keyframes studioAtmosDrift{from{background-position:0 0,0 0,0 0}to{background-position:3% 2%,-3% 4%,22px 18px}}
-    @keyframes studioFloat{0%,100%{transform:translate3d(0,0,0);opacity:.18}50%{transform:translate3d(13px,-17px,0);opacity:.44}}
+    @keyframes studioAtmosDrift{from{background-position:0 0,0 0}to{background-position:3% 2%,-3% 4%}}
     @keyframes studioLightSweep{0%,18%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
     @keyframes studioCtaBreath{0%,100%{box-shadow:0 15px 40px rgba(84,2,23,.34),0 0 25px rgba(213,18,58,.15)}50%{box-shadow:0 17px 43px rgba(84,2,23,.38),0 0 39px rgba(213,18,58,.22)}}
     @media(max-width:900px){.home-cta.studio-promo{min-height:0;padding:clamp(52px,8vw,76px) clamp(20px,5vw,42px)!important}}
     @media(max-width:560px){.home-cta.studio-promo{padding:58px 18px 55px!important;border-radius:26px!important}.home-cta.studio-promo .demo-kicker{font-size:.65rem;letter-spacing:.15em;margin-bottom:24px}.home-cta.studio-promo .studio-pretitle{font-size:.9rem;letter-spacing:.18em}.home-cta.studio-promo .studio-headline{font-size:clamp(2rem,10vw,3.55rem)!important;letter-spacing:-.07em!important;line-height:1.03!important}.home-cta.studio-promo .studio-statement{font-size:clamp(1.03rem,4.6vw,1.35rem);letter-spacing:.045em}.home-cta.studio-promo .studio-description{font-size:.76rem;max-width:27rem;margin-inline:auto}.home-cta.studio-promo .studio-assurance{font-size:.67rem;letter-spacing:.065em}.home-cta.studio-promo .studio-enter{width:100%!important;min-height:58px!important;font-size:.85rem!important;margin-top:29px!important}}
-    @media(prefers-reduced-motion:reduce){.studio-atmos,.studio-particle,.home-cta.studio-promo .studio-headline,.home-cta.studio-promo .studio-enter{animation:none!important;transition:none!important}}
+    @media(prefers-reduced-motion:reduce){.studio-atmos,.home-cta.studio-promo .studio-headline,.home-cta.studio-promo .studio-enter{animation:none!important;transition:none!important}}
   </style>
 </head>
 <body>
@@ -174,14 +171,14 @@
       </section>
 
       <section class="home-cta studio-promo" aria-label="MII AI STUDIO PUBLIC DEMO">
-        <div class="studio-atmos" aria-hidden="true"><span class="studio-particle"></span><span class="studio-particle"></span><span class="studio-particle"></span><span class="studio-particle"></span></div>
+        <div class="studio-atmos" aria-hidden="true"></div>
         <div class="cta-copy">
-          <span class="demo-kicker">MII AI STUDIO // PUBLIC DEMO</span>
+          <span class="demo-kicker">MII AI STUDIO PUBLIC DEMO</span>
           <p class="studio-pretitle">ENTER THE</p>
           <h2 class="studio-headline">MII AI STUDIO</h2>
-          <p class="studio-statement">ONE STUDIO. ENDLESS POSSIBILITIES.</p>
+          <p class="studio-statement">ONE STUDIO ENDLESS POSSIBILITIES</p>
           <p class="studio-description">EXPLORE THE COMPLETE CREATIVE WORKSPACE</p>
-          <p class="studio-assurance">NO GENERATION // NO CREDITS REQUIRED</p>
+          <p class="studio-assurance">NO GENERATION NO CREDITS REQUIRED</p>
         </div>
         <a class="premium-btn primary cta-button studio-enter" href="/mii-ai-video">ENTER STUDIO</a>
       </section>

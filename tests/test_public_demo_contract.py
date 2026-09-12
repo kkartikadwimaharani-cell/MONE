@@ -7,10 +7,10 @@ HOME = (ROOT / "templates" / "index.html").read_text()
 
 
 def test_public_demo_copy_and_home_card_are_compact_and_unique():
-    assert "PUBLIC DEMO // SAFE MODE" in DEMO
-    assert "GENERASI, UPLOAD, POLLING, DAN KREDIT DINONAKTIFKAN." in DEMO
-    assert HOME.count("MII AI VIDEO · PUBLIC DEMO") == 1
-    assert "UI PREVIEW // TANPA GENERASI · TANPA KREDIT" in HOME
+    assert "PUBLIC DEMO MODE" in DEMO
+    assert "NO API CALLS NO POLLING NO CREDIT USAGE" in DEMO
+    assert HOME.count(">MII AI STUDIO PUBLIC DEMO</span>") == 1
+    assert "ONE STUDIO ENDLESS POSSIBILITIES" in HOME
     assert 'href="/mii-ai-video"' in HOME
 
 

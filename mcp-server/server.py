@@ -55,7 +55,7 @@ if _ICON_PATH.exists():
     _icons = [Icon(src=_icon_data_uri, mimeType="image/jpeg", sizes=["1536x1536"])]
 
 mcp = FastMCP(
-    "MiiAiVideo",
+    "MII AI STUDIO",
     host="0.0.0.0",
     instructions=(
         "Tools for generating AI video/image via MII's makima.cloud AI Video "
