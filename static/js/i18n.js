@@ -57,6 +57,76 @@
   miiStoreTranslations.zh = miiStoreTranslations.cn;
   Object.keys(miiStoreTranslations).forEach(function(lang) { dictionaries[lang] = Object.assign({}, dictionaries.en, dictionaries[lang] || {}, miiStoreTranslations[lang]); });
 
+  // Homepage copy is kept together so every visible homepage label switches as one.
+  var homepageTranslations = {
+    id: {
+      homePageTitle:'MII NETWORK — PRODUK DIGITAL DAN TEKNOLOGI KREATIF',
+      homeMainNavigation:'Navigasi utama', homeFooterNavigation:'Navigasi footer',
+      homeHeroAria:'Beranda MII NETWORK', homeFoxAria:'Emblem rubah MII',
+      navigation:'NAVIGASI', drawer_subtitle:'PRODUK DIGITAL DAN ALAT AI',
+      homeToolsExtension:'EKSTENSI TOOLS', digital_products_nav:'PRODUK DIGITAL',
+      social_media:'MEDIA SOSIAL', clear_cache:'HAPUS CACHE',
+      heroTagline:'PRODUK DIGITAL • ALAT AI • TEKNOLOGI KREATIF',
+      openMakima:'BUKA MAKIMA AI', contactWhatsapp:'HUBUNGI VIA WHATSAPP',
+      exploreSocials:'JELAJAHI SOSIAL', socialMedia:'MEDIA SOSIAL',
+      connectLabel:'TERHUBUNG', portfolioLabel:'PORTOFOLIO', projects:'PROYEK',
+      open:'BUKA', openVault:'BUKA VAULT', viewProduct:'LIHAT PRODUK',
+      joinEvent:'IKUTI UNDIAN', homeDigitalProducts:'PRODUK DIGITAL',
+      homeCommunity:'KOMUNITAS', homeJoinCommunity:'GABUNG',
+      homeComingSoon:'SEGERA HADIR', homeEnterStudio:'MASUK STUDIO',
+      homeDemoKicker:'MII AI STUDIO DEMO PUBLIK', homeDemoPrelude:'MASUK KE',
+      homeDemoStatement:'SATU STUDIO TANPA BATAS KREATIVITAS',
+      homeDemoDescription:'JELAJAHI RUANG KERJA KREATIF LENGKAP',
+      homeDemoAssurance:'TANPA GENERASI TANPA KREDIT',
+      home:'BERANDA', social:'SOSIAL', project:'PROYEK', contact:'KONTAK'
+    },
+    en: {
+      homePageTitle:'MII NETWORK — DIGITAL PRODUCTS AND CREATIVE TECH',
+      homeMainNavigation:'Main navigation', homeFooterNavigation:'Footer navigation',
+      homeHeroAria:'MII NETWORK homepage', homeFoxAria:'MII fox emblem',
+      navigation:'NAVIGATION', drawer_subtitle:'DIGITAL PRODUCTS AND AI TOOLS',
+      homeToolsExtension:'TOOLS EXTENSION', digital_products_nav:'DIGITAL PRODUCTS',
+      social_media:'SOCIAL MEDIA', clear_cache:'CLEAR CACHE',
+      heroTagline:'DIGITAL PRODUCTS • AI TOOLS • CREATIVE TECH',
+      openMakima:'OPEN MAKIMA AI', contactWhatsapp:'CONTACT WHATSAPP',
+      exploreSocials:'EXPLORE SOCIALS', socialMedia:'SOCIAL MEDIA',
+      connectLabel:'CONNECT', portfolioLabel:'PORTFOLIO', projects:'PROJECTS',
+      open:'OPEN', openVault:'OPEN VAULT', viewProduct:'VIEW PRODUCT',
+      joinEvent:'JOIN DRAW', homeDigitalProducts:'DIGITAL PRODUCTS',
+      homeCommunity:'COMMUNITY', homeJoinCommunity:'JOIN',
+      homeComingSoon:'COMING SOON', homeEnterStudio:'ENTER STUDIO',
+      homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'ENTER THE',
+      homeDemoStatement:'ONE STUDIO ENDLESS POSSIBILITIES',
+      homeDemoDescription:'EXPLORE THE COMPLETE CREATIVE WORKSPACE',
+      homeDemoAssurance:'NO GENERATION NO CREDITS REQUIRED',
+      home:'HOME', social:'SOCIAL', project:'PROJECTS', contact:'CONTACT'
+    },
+    cn: {
+      homePageTitle:'MII NETWORK — 数字产品与创意科技',
+      homeMainNavigation:'主导航', homeFooterNavigation:'页脚导航',
+      homeHeroAria:'MII NETWORK 首页', homeFoxAria:'MII 狐狸标志',
+      navigation:'导航', drawer_subtitle:'数字产品与人工智能工具',
+      homeToolsExtension:'工具扩展', digital_products_nav:'数字产品',
+      social_media:'社交媒体', clear_cache:'清除缓存',
+      heroTagline:'数字产品 • AI 工具 • 创意科技',
+      openMakima:'打开 MAKIMA AI', contactWhatsapp:'联系 WHATSAPP',
+      exploreSocials:'探索社交平台', socialMedia:'社交媒体',
+      connectLabel:'联系', portfolioLabel:'作品集', projects:'项目',
+      open:'打开', openVault:'打开 VAULT', viewProduct:'查看产品',
+      joinEvent:'参加抽奖', homeDigitalProducts:'数字产品',
+      homeCommunity:'社区', homeJoinCommunity:'加入',
+      homeComingSoon:'即将推出', homeEnterStudio:'进入 STUDIO',
+      homeDemoKicker:'MII AI STUDIO 公开演示', homeDemoPrelude:'走进',
+      homeDemoStatement:'一个工作室 无限创意可能',
+      homeDemoDescription:'探索完整创意工作空间',
+      homeDemoAssurance:'不生成内容 不消耗积分',
+      home:'首页', social:'社交', project:'项目', contact:'联系'
+    }
+  };
+  Object.keys(homepageTranslations).forEach(function(lang) {
+    dictionaries[lang] = Object.assign({}, dictionaries[lang] || {}, homepageTranslations[lang]);
+  });
+
   var languages = [
     { code: 'id', label: 'Indonesia' }, { code: 'en', label: 'English' }, { code: 'cn', label: '中文' }
   ];
@@ -78,7 +148,7 @@
     var previous = window.currentLanguage;
     window.currentLanguage = lang;
     try { window.localStorage.setItem(storageKey, lang); } catch (e) {}
-    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('lang', lang === 'cn' ? 'zh-CN' : lang);
     document.body.classList.toggle('cjk-lang', /^(ja|ko|zh|cn)$/.test(lang));
     document.body.classList.toggle('ru-lang', lang === 'ru');
 
