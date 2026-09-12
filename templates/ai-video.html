@@ -1706,6 +1706,40 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 .gen-btn:disabled{animation:none}
 .edge-glow::before{background:conic-gradient(from var(--edge-angle),transparent 0 68%,#ff003c 84%,#ff5377 90%,#ff003c 96%,transparent 100%);filter:drop-shadow(0 0 8px rgba(255,0,60,.8))}
 @media(prefers-reduced-motion:reduce){.edge-glow::before{animation:none;display:none}}
+/* One scrollable, history-sized lane for live jobs and finished previews. */
+.canvas-activity{width:min(520px,100%);min-width:0;max-height:min(42dvh,340px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;display:flex;flex-direction:column;gap:12px;padding:2px 3px 4px;flex:0 1 auto;text-align:left}
+.canvas-activity:empty{display:none}
+.canvas-activity .gen-queue{width:100%;max-width:none;max-height:none;overflow:visible;padding:0;margin:0;flex-shrink:0}
+.canvas-activity .canvas-recent{width:100%;max-width:none;padding:0;gap:7px;flex-shrink:0}
+.canvas-recent-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px;padding:0 3px}
+.canvas-recent-link{border:0;background:transparent;color:#ff6d83;font:700 .7rem var(--body);cursor:pointer;padding:5px 3px}
+.canvas-recent-link:focus-visible,.cr-card:focus-visible,.cr-x:focus-visible{outline:2px solid #ff5377;outline-offset:2px}
+.canvas-activity .canvas-recent-row{display:flex;flex-direction:column;gap:7px;overflow:visible;padding:0}
+.canvas-activity .cr-card{box-sizing:border-box;display:grid;grid-template-columns:58px minmax(0,1fr) 32px;align-items:center;gap:10px;width:100%;height:70px;min-width:0;padding:6px;border-radius:14px;overflow:hidden;background:var(--card);text-align:left}
+.canvas-activity .cr-card>img,.canvas-activity .cr-card>video,.canvas-activity .cr-card>.cr-aud{grid-column:1;grid-row:1;width:58px;height:56px;border-radius:9px;object-fit:cover}
+.canvas-activity .cr-card.audio>.cr-aud{width:24px;height:24px;justify-self:center;align-self:center}
+.canvas-activity .cr-card.audio{display:grid;place-items:initial}
+.canvas-activity .cr-play{inset:6px auto auto 6px;width:58px;height:56px}
+.canvas-activity .cr-info{grid-column:2;grid-row:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px}
+.canvas-activity .cr-title{display:block;max-width:100%;font:750 .78rem/1.2 var(--body);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canvas-activity .cr-meta{display:block;max-width:100%;font:600 .64rem/1.2 var(--mono);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canvas-activity .cr-status{font:750 .62rem/1.1 var(--mono);letter-spacing:.06em;color:#3cffb0}
+.canvas-activity .cr-x{position:static;grid-column:3;grid-row:1;justify-self:center;width:30px;height:30px;font-size:19px}
+.canvas.has-queue{padding-bottom:clamp(22px,4dvh,42px)}
+.result-body{width:min(100%,780px);margin-inline:auto}
+#resultImageFull{width:min(100%,460px);max-height:min(40dvh,400px);margin-inline:auto;cursor:zoom-in}
+#resultVideoFull{width:min(100%,600px);max-height:44dvh;margin-inline:auto}
+#resultVideoFull.is-portrait{max-height:52dvh}
+@media(max-width:590px){
+  .canvas-activity{max-height:min(36dvh,260px);gap:9px}
+  .canvas-activity .cr-card{grid-template-columns:52px minmax(0,1fr) 32px;gap:8px;height:64px;padding:5px}
+  .canvas-activity .cr-card>img,.canvas-activity .cr-card>video{width:52px;height:52px}
+  .canvas-activity .cr-play{inset:5px auto auto 5px;width:52px;height:52px}
+  .result-body{padding:14px;gap:14px}
+  #resultImageFull{max-height:36dvh}
+  #resultVideoFull{max-height:38dvh}
+  #resultVideoFull.is-portrait{max-height:46dvh}
+}
 </style>
 </head>
 
@@ -1903,17 +1937,18 @@ if (DEMO_MODE) {
       </div>
     </div>
 
-    <!-- Hasil terbaru: image & video yang selesai tampil berdampingan di
-         halaman generate, masing-masing bisa dibuka detailnya. -->
-    <div class="canvas-recent" id="canvasRecent" style="display:none">
-      <div class="canvas-recent-lbl">Hasil Terbaru</div>
-      <div class="canvas-recent-row" id="canvasRecentRow"></div>
+    <!-- One bounded activity area: processing cards move into the recent
+         results list once saved, while the complete list stays in History. -->
+    <div class="canvas-activity" id="canvasActivity">
+      <div class="gen-queue" id="genQueueList"></div>
+      <div class="canvas-recent" id="canvasRecent" style="display:none">
+        <div class="canvas-recent-head">
+          <span class="canvas-recent-lbl">Hasil Terbaru</span>
+          <button type="button" class="canvas-recent-link" onclick="navigateTo('history')">History</button>
+        </div>
+        <div class="canvas-recent-row" id="canvasRecentRow"></div>
+      </div>
     </div>
-
-    <!-- Multiple generations can run at once now — each gets its own compact
-         card here instead of one box that used to take over the whole
-         canvas and lock every setting until it finished. -->
-    <div class="gen-queue" id="genQueueList"></div>
 
     <div class="error-box" id="errorBox"></div>
   </div>
@@ -2244,7 +2279,7 @@ if (DEMO_MODE) {
       <div class="video-fail-msg">Video gagal dimuat — coba refresh koneksi lalu tekan tombol di bawah</div>
       <button type="button" class="video-fail-retry" onclick="retryVideoLoad('resultVideoFull')">Coba lagi</button>
     </div>
-    <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" onerror="imgFallback(this)" />
+    <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" title="Tap to enlarge" onclick="openImagePreview(this.src)" onerror="imgFallback(this)" />
     <div class="result-meta-grid" id="resultMetaGrid"></div>
     <div class="result-compare-block" id="resultCompareBlock" style="display:none">
       <div class="result-section-label"><span>Hasil &amp; Referensi</span></div>
@@ -5626,18 +5661,23 @@ function pollQueueTask(taskId, opts) {
             state.completed = true;
             markDone();
             if (out.archive_available === false && e.item) e.item.classList.add('save-failed');
-            if (e.actions) e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="openQueueResult(\'' + taskId + '\')">Open Result</button>';
+            // A saved job now has exactly one visible card: its recent-result
+            // entry. Keep the queue card only if cloud save failed, because
+            // it is then the only way to reach the generated media.
+            if (rec) {
+              if (e.item) e.item.remove();
+              delete activeGens[taskId];
+            } else if (e.actions) {
+              e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="openQueueResult(\'' + taskId + '\')">Open Result</button>';
+            }
             refreshQueueBadge();
-            // Keep completion compact for every media type. The History-style
-            // recent row is the default preview; full media opens only after
-            // an explicit tap, so a result never takes over the workspace.
             updateCanvasPreview();
             renderCanvasRecent();
             var isImageResult = !!imageUrl && !videoUrl;
             var isAudioResult = !!audioUrl && !videoUrl && !imageUrl;
             var thumbEl = document.getElementById('genqThumb_' + taskId);
             var ringEl = document.getElementById('genqRing_' + taskId);
-            if (thumbEl && ringEl) {
+            if (!rec && thumbEl && ringEl) {
               if (isImageResult) {
                 thumbEl.src = imageUrl;
                 thumbEl.style.display = 'block';
@@ -5654,10 +5694,8 @@ function pollQueueTask(taskId, opts) {
             var completionText = out.archive_available === false
               ? 'Result generated. Cloud save is temporarily unavailable.'
               : (isAudioResult ? 'Audio selesai' : (isImageResult ? 'Gambar selesai' : 'Video selesai')) + ' — tersimpan di History';
-            showToastAction(completionText, 'Lihat', function() {
-              if (rec) openHistoryItem(rec.id);
-            });
-            // Keep completed cards available until the user opens or dismisses them.
+            if (rec) showToast(completionText);
+            else showToastAction(completionText, 'Lihat', function() { openQueueResult(taskId); });
           } else {
             state.failed = true; refreshQueueBadge();
             markFailed('Selesai tapi URL tidak ditemukan di response (Invalid response)');
@@ -5706,7 +5744,9 @@ function openQueueResult(taskId) {
   var state = activeGens[taskId];
   if (!state || !state.resultPayload) return;
   var rec = state.resultRecordId ? findHistoryRecord(state.resultRecordId) : null;
-  openResultOverlay(Object.assign({}, state.resultPayload, rec ? { reopenRecord: rec } : {}));
+  openResultOverlay(Object.assign({}, state.resultPayload, rec ? { reopenRecord: rec } : {
+    snapshotMeta: state.meta, saveFailed: true
+  }));
 }
 
 function retryQueueItem(taskId) {
@@ -5876,7 +5916,8 @@ function openResultOverlay(payload) {
   // live generate panel — the panel may have been changed to a different
   // model/quality/duration/ratio since this specific video was generated,
   // and this page must stay "locked" to what was really used.
-  var rec = payload.reopenRecord || (window.__lastResult && window.__lastResult.id ? findHistoryRecord(window.__lastResult.id) : null);
+  var rec = payload.reopenRecord || (!payload.snapshotMeta && window.__lastResult && window.__lastResult.id ? findHistoryRecord(window.__lastResult.id) : null);
+  var snapshot = payload.snapshotMeta || {};
 
   // Kling Swap shows a before/after pair further down the page — the result
   // video in that pair (labeled SESUDAH) already IS this same video, so
@@ -5927,7 +5968,7 @@ function openResultOverlay(payload) {
   dlBtnFull.setAttribute('data-url', mediaUrl);
   dlBtnFull.setAttribute('data-filename', 'mii-ai-' + Date.now() + (isAudio ? '.wav' : (isImage ? imageDownloadExtension(rec || payload, mediaUrl) : '.mp4')));
 
-  document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : promptInput.value.trim()) || '—';
+  document.getElementById('resultPromptText').textContent = (rec ? rec.prompt : (snapshot.prompt || promptInput.value.trim())) || '—';
 
   var elapsed = (payload.elapsedMs != null) ? payload.elapsedMs : (window.__genStartTs ? (Date.now() - window.__genStartTs) : 0);
   var genTimeTxt = rec ? (rec.genTime || formatElapsed(rec.elapsedMs || 0)) : formatElapsed(elapsed);
@@ -5940,13 +5981,13 @@ function openResultOverlay(payload) {
     durationVal = rec.duration || '';   // kosong untuk image/audio — kartunya disembunyikan
     ratioVal = rec.ratio || '';
   } else {
-    // No history record at all (shouldn't normally happen — saveGenerationToHistory
-    // runs before this page can be opened) — fall back to the live panel.
+    // Cloud storage can fail after generation. Keep the original request's
+    // model and prompt instead of borrowing whatever the composer now shows.
     var hasTier = selectedFamily.qualities.length > 1;
-    modelLabel = hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName;
-    qualityVal = selectedResolution;
-    durationVal = isImage ? selectedResolution : (selectedDuration + 's');
-    ratioVal = selectedRatio;
+    modelLabel = snapshot.fullModelLabel || snapshot.modelDisplayName || (hasTier ? (selectedModelName + ' ' + selectedModelTier) : selectedModelName);
+    qualityVal = snapshot.quality || snapshot.resolution || selectedResolution;
+    durationVal = isImage || isAudio ? '' : ((snapshot.duration || selectedDuration) + 's');
+    ratioVal = snapshot.aspect_ratio || selectedRatio;
   }
   var qLabel = 'Quality';
   if (qualityVal && !/\d/.test(String(qualityVal))) qLabel = 'Tier'; // 720p/1080p/4K berisi angka; MINI/PRO/DEV tidak
@@ -5957,16 +5998,16 @@ function openResultOverlay(payload) {
   var items = [
     { label: 'Type', value: isAudio ? 'AUDIO' : (isImage ? 'IMAGE' : 'VIDEO') },
     { label: 'Model', value: modelLabel },
-    { label: isImage ? 'Variant' : qLabel, value: isImage && rec ? rec.modelTier : qualityVal },
-    { label: 'Quality', value: isImage && rec ? rec.imageQuality : '' },
-    { label: isImage ? 'Resolution' : 'Duration', value: isImage && rec ? rec.resolution : durationVal },
+    { label: isImage ? 'Variant' : qLabel, value: isImage ? (rec ? rec.modelTier : snapshot.model) : qualityVal },
+    { label: 'Quality', value: isImage ? (rec ? rec.imageQuality : snapshot.quality) : '' },
+    { label: isImage ? 'Resolution' : 'Duration', value: isImage ? (rec ? rec.resolution : snapshot.resolution) : durationVal },
     { label: 'Aspect Ratio', value: ratioVal },
     { label: 'Image Count', value: isImage && rec ? rec.imageCount : '' },
     { label: 'Output Format', value: isImage && rec ? String(rec.outputFormat || '').toUpperCase() : '' },
     { label: 'Generation Time', value: genTimeTxt },
     { label: 'Created At', value: genAtTxt },
     { label: 'Status', value: rec ? (rec.status || 'COMPLETED') : 'COMPLETED' },
-    { label: 'Archive Status', value: rec ? (rec.archived ? 'ARCHIVED' : 'HISTORY') : 'HISTORY' }
+    { label: 'Archive Status', value: rec ? (rec.archived ? 'ARCHIVED' : 'HISTORY') : (payload.saveFailed ? 'SAVE UNAVAILABLE' : 'HISTORY') }
   ].filter(function(it) {
     // Kartu tanpa nilai (mis. Duration untuk image/audio, ratio record lama)
     // tidak ditampilkan sama sekali — bukan "undefined"/kosong.
@@ -5983,7 +6024,7 @@ function openResultOverlay(payload) {
   } else {
     metaGridEl.style.display = '';
     metaGridEl.innerHTML = items.map(function(it) {
-      return '<div class="result-meta-item"><span class="result-meta-label">' + it.label + '</span><span class="result-meta-value">' + it.value + '</span></div>';
+      return '<div class="result-meta-item"><span class="result-meta-label">' + escapeHtml(it.label) + '</span><span class="result-meta-value">' + escapeHtml(String(it.value)) + '</span></div>';
     }).join('');
   }
 
@@ -6134,17 +6175,25 @@ function renderCanvasRecent() {
   if (!wrap || !row) return;
   // canvasDismissed: hasil yang di-"hapus" dari halaman generate saja —
   // record History-nya TIDAK disentuh, jadi tetap ada di halaman History.
-  var list = loadHistory().filter(function(r) { return !canvasDismissed[r.id]; }).slice(0, 8);
+  var list = loadHistory().filter(function(r) { return !canvasDismissed[r.id]; }).slice(0, 4);
   if (!list.length) { wrap.style.display = 'none'; row.innerHTML = ''; return; }
   row.innerHTML = '';
   list.forEach(function(r) {
     var card = document.createElement('div');
     card.className = 'cr-card';
-    card.onclick = function() { showRecordInCanvas(r.id); };
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Buka hasil ' + (r.model || r.mediaType || 'generate'));
+    card.onclick = function() { openHistoryItem(r.id); };
+    card.onkeydown = function(ev) {
+      if (ev.target !== card || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+      ev.preventDefault(); openHistoryItem(r.id);
+    };
     var mediaEl;
     if (r.videoUrl) {
       mediaEl = document.createElement('video');
-      mediaEl.src = r.videoUrl; mediaEl.muted = true; mediaEl.playsInline = true; mediaEl.preload = 'metadata';
+      mediaEl.src = r.videoUrl; mediaEl.muted = true; mediaEl.playsInline = true;
+      mediaEl.poster = r.thumb || ''; mediaEl.preload = 'metadata';
       card.appendChild(mediaEl);
       var play = document.createElement('span');
       play.className = 'cr-play';
@@ -6160,18 +6209,34 @@ function renderCanvasRecent() {
       mediaEl.src = r.imageUrl || r.thumb || '';
       card.appendChild(mediaEl);
     }
-    var tag = document.createElement('span');
-    tag.className = 'cr-tag';
-    tag.textContent = r.videoUrl ? 'VIDEO' : (r.audioUrl && !r.imageUrl ? 'AUDIO' : 'IMAGE');
-    card.appendChild(tag);
+    var info = document.createElement('div');
+    info.className = 'cr-info';
+    var title = document.createElement('span');
+    title.className = 'cr-title';
+    title.textContent = r.model || 'MII AI STUDIO';
+    var detail = document.createElement('span');
+    detail.className = 'cr-meta';
+    detail.textContent = (r.videoUrl ? 'VIDEO' : (r.audioUrl && !r.imageUrl ? 'AUDIO' : 'IMAGE')) + (r.createdAtLabel ? ' · ' + r.createdAtLabel : '');
+    var ready = document.createElement('span');
+    ready.className = 'cr-status';
+    ready.textContent = 'READY';
+    info.appendChild(title); info.appendChild(detail); info.appendChild(ready);
+    card.appendChild(info);
     // X kecil = hapus dari halaman generate saja; History tetap utuh.
     var x = document.createElement('span');
     x.className = 'cr-x';
     x.textContent = '\u00d7';
+    x.tabIndex = 0;
+    x.setAttribute('role', 'button');
+    x.setAttribute('aria-label', 'Sembunyikan dari halaman generate');
     x.onclick = function(ev) {
       ev.stopPropagation();
       dismissFromCanvas(r.id);
       showToast('Dihapus dari halaman \u2014 tetap ada di History');
+    };
+    x.onkeydown = function(ev) {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      ev.preventDefault(); ev.stopPropagation(); x.click();
     };
     card.appendChild(x);
     row.appendChild(card);

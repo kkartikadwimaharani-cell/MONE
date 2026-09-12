@@ -38,7 +38,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         return self.client.post('/mcp',json={'jsonrpc':'2.0','id':1,'method':method,'params':params or {}},headers={'Authorization':'Bearer '+key})
 
     def call(self,key,name,args=None):
-        r=self.rpc(key,'tools/call',{'name':'miiaivideo_'+name,'arguments':args or {}})
+        r=self.rpc(key,'tools/call',{'name':'mii_ai_studio_'+name,'arguments':args or {}})
         self.assertEqual(r.status_code,200,r.data)
         return r.get_json()['result']
 
@@ -140,12 +140,14 @@ class MiiMcpIntegrationTests(unittest.TestCase):
 
     def test_bad_controls_unknown_tool_missing_task_and_provider_failure(self):
         key=self.key()['key']
-        for args in ({'prompt':'x','family':'flux','variant':'STANDARD'}, {'prompt':'x','family':'imagen','image_urls':['https://example.com/a.png']}, {'prompt':'x','family':'gptimage','resolution':'4K'}):
+        for args in ({'prompt':'x','family':'flux','variant':'STANDARD'}, {'prompt':'x','family':'imagen','image_urls':['https://example.com/a.png']}, {'prompt':'x','family':'gptimage','resolution':'4K'}, {'prompt':'x','family':'bpx-midjourney-v7','model_slug':'flux-2-klein'}):
             self.assertTrue(self.call(key,'generate_image',args)['isError'])
         self.assertTrue(self.call(key,'check_status',{'task_id':'missing'})['isError'])
         self.assertTrue(self.call(key,'motion_control',{'video_urls':[]})['isError'])
         self.assertIn('error',self.rpc(key,'tools/call',{'name':'not_a_tool'}).get_json())
         self.assertIn('error',self.rpc(key,'tools/call',{'name':'miiaivideo_generate_video','arguments':{'prompt':9}}).get_json())
+        legacy=self.rpc(key,'tools/call',{'name':'miiaivideo_list_models','arguments':{}}).get_json()
+        self.assertIn('models',legacy['result']['structuredContent'])
         patch.object(self.module,'_budgetpixel_api_key',return_value='').start()
         self.assertTrue(self.call(key,'generate_video',{'prompt':'x'})['isError'])
 
@@ -180,7 +182,10 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         initialize=self.rpc(key,'initialize').get_json()['result']
         self.assertIn('resources',initialize['capabilities'])
         listed=self.rpc(key,'tools/list').get_json()['result']['tools']
-        generation=next(t for t in listed if t['name']=='miiaivideo_generate_video')
+        self.assertEqual(len(listed),len({t['name'] for t in listed}))
+        self.assertTrue(all(t['name'].startswith('mii_ai_studio_') for t in listed))
+        self.assertTrue(all(t['title'].startswith('MII AI STUDIO ') for t in listed))
+        generation=next(t for t in listed if t['name']=='mii_ai_studio_generate_video')
         self.assertEqual(generation['_meta']['ui']['resourceUri'],
                          self.rpc(key,'resources/list').get_json()['result']['resources'][0]['uri'])
         patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
@@ -276,7 +281,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                         self.assertEqual(info.serverInfo.name,'MII AI STUDIO')
                         definitions=await client.list_tools()
                         self.assertEqual(len(definitions.tools),13)
-                        result=await client.call_tool('miiaivideo_list_models',{})
+                        result=await client.call_tool('mii_ai_studio_list_models',{})
                         self.assertFalse(result.isError)
                         self.assertIn('models',json.loads(result.content[0].text))
         asyncio.run(run())
