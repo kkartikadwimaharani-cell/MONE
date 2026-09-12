@@ -5315,12 +5315,7 @@ def _aivideo_diagnostics():
                    created_at=entry.get('at'), elapsed_ms=entry.get('duration_ms'),
                    final_payload=entry.get('request_body'))
         entries.append(row)
-    try:
-        security_history = aivideo_archive.list_security_events()
-    except Exception:
-        app.logger.exception('[ai-video][security] history unavailable')
-        security_history = {'count': 0, 'retention_days': 30, 'events': [], 'error': 'HISTORY UNAVAILABLE'}
-    return dict(snap, security_history=security_history, storage={
+    return dict(snap, storage={
         'status': 'READY' if storage.get('ok') else ('ERROR' if storage.get('ok') is False else 'NOT CHECKED'),
         'mode': state.get('state'), 'detail': storage.get('detail') or 'Belum ada pemeriksaan koneksi',
         'checked_at': storage.get('at'),
@@ -5345,6 +5340,22 @@ def ai_video_debug_page():
     if not _aivideo_browser_authed():
         return render_template('ai-video-lock.html', next_page='/ai-video/debug')
     return render_template('ai-video-debug.html', **_aivideo_diagnostics())
+
+
+@app.route('/ai-video/security-history')
+def ai_video_security_history_page():
+    """Independent, browser-authenticated audit view, separate from generation diagnostics."""
+    if not _aivideo_browser_authed():
+        return render_template('ai-video-lock.html', next_page='/ai-video/security-history')
+    try:
+        history = aivideo_archive.list_security_events(limit=100)
+    except Exception:
+        app.logger.exception('[ai-video][security] history unavailable')
+        history = {'count': 0, 'retention_days': 30, 'events': [], 'error': 'HISTORY UNAVAILABLE'}
+    response = Response(render_template('ai-video-security-history.html', history=history))
+    response.headers['Cache-Control'] = 'no-store, private'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
 
 
 @app.route('/api/aivideo/debug-data')
