@@ -295,7 +295,7 @@ def register_mcp(app, backend, data_dir):
         tool('generate_sfx','Generate a sound effect only with a listed SFX model.',dict(common,duration={'type':'integer','minimum':1}),['prompt'],True),
         tool('video_to_music','Generate music from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
         tool('video_to_sfx','Generate sound effects from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
-        tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',
+        tool('get_model_capabilities','Return the exact local schema and status for a model ID from list_models or its bare catalogue slug.',
              {'slug':{'type':'string','minLength':1},'category':{'type':'string','enum':['image','video','audio','motion']}},['slug']),
         tool('motion_control','Animate one character image using one source video.',{'prompt':string,'model_slug':string,'video_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'image_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'mute_audio':{'type':'boolean'},'character_orientation':{'type':'string','enum':['video','image']},'trim_intro':{'type':'boolean'}},['video_urls','image_urls'],True),
         tool('check_status','Read one task status. Call at most once for troubleshooting: every generation card already refreshes itself until completed or failed. Never loop or repeatedly call this tool.',{'task_id':{'type':'string','minLength':1}},['task_id']),
@@ -515,17 +515,17 @@ def register_mcp(app, backend, data_dir):
                 'counts':counts,
                 'returned':returned,
                 'detail_tool':TOOL_PREFIX+'get_model_capabilities',
-                'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-.',
+                'note':'Pass any listed model ID to get_model_capabilities for its exact controls.',
             }
         elif name=='get_model_capabilities':
-            slug=str(args['slug']).lower()
+            slug=str(args['slug']).strip().lower()
             for kind,items in catalog().items():
                 if args.get('category') and args.get('category') != kind:
                     continue
                 for model_id,model in items.items():
-                    if model.get('slug') == slug:
+                    if model_id.lower() == slug or str(model.get('slug') or '').lower() == slug:
                         return {'brand':'MII AI STUDIO','category':kind,'model_id':model_id,'model':model}
-            return {'error':'Unknown model slug.'}
+            return {'error':'Unknown model ID or slug.'}
         elif name=='clear_debug':
             return backend['_aivideo_clear_debug']()
         elif name=='check_status':

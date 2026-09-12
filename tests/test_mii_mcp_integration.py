@@ -84,6 +84,59 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         self.assertIn(b'Unlock',self.client.get('/ai-video/mcp').data)
         self.assertEqual(self.client.post('/ai-video/mcp/keys',json={}).status_code,401)
 
+    def test_studio_metadata_and_balance_are_authenticated(self):
+        with self.client.session_transaction() as s:s.clear()
+        with patch.object(self.module.budgetpixel_provider,'get_credits') as provider:
+            self.assertEqual(self.client.get('/api/aivideo/credits').status_code,401)
+            self.assertEqual(self.client.get('/api/aivideo/image-capabilities').status_code,401)
+            provider.assert_not_called()
+        self.owner()
+        with patch.object(self.module,'_budgetpixel_api_key',return_value=''):
+            self.assertEqual(self.client.get('/api/aivideo/credits').status_code,503)
+        with patch.object(self.module,'_budgetpixel_api_key',return_value='test-key'), \
+             patch.object(self.module.budgetpixel_provider,'get_credits',return_value={'total_available':27,'private':'secret'}) as provider:
+            response=self.client.get('/api/aivideo/credits')
+            self.assertEqual(response.status_code,200)
+            self.assertEqual(response.get_json(),{'total_available':27})
+            provider.assert_called_once_with('test-key',timeout=10)
+            image=self.client.get('/api/aivideo/image-capabilities')
+            self.assertEqual(image.status_code,200)
+            self.assertEqual(image.get_json()['capabilities'],self.module.budgetpixel_provider.public_image_capabilities())
+        with patch.object(self.module,'_budgetpixel_api_key',return_value='test-key'), \
+             patch.object(self.module.budgetpixel_provider,'get_credits',return_value={'total_available':True}):
+            self.assertEqual(self.client.get('/api/aivideo/credits').status_code,502)
+        with patch.object(self.module,'_budgetpixel_api_key',return_value='test-key'), \
+             patch.object(self.module.budgetpixel_provider,'get_credits',side_effect=RuntimeError('private token')):
+            response=self.client.get('/api/aivideo/credits')
+            self.assertEqual(response.status_code,502)
+            self.assertNotIn(b'private token',response.data)
+
+    def test_public_demo_csp_denies_api_connections(self):
+        response=self.client.get('/mii-ai-video')
+        self.assertEqual(response.status_code,200)
+        csp=response.headers['Content-Security-Policy']
+        self.assertIn("connect-src 'none'",csp)
+        self.assertIn("form-action 'none'",csp)
+        self.assertNotIn(b'BUDGETPIXEL_API_KEY',response.data)
+
+    def test_every_listed_model_id_resolves_without_generating(self):
+        key=self.key()['key']
+        models=json.loads(self.call(key,'list_models')['content'][0]['text'])['models']
+        bare_slug=None
+        for category,ids in models.items():
+            for model_id in ids:
+                with self.subTest(category=category,model_id=model_id):
+                    result=self.call(key,'get_model_capabilities',{'slug':model_id,'category':category})
+                    self.assertFalse(result['isError'],result)
+                    detail=json.loads(result['content'][0]['text'])
+                    self.assertEqual(detail['model_id'],model_id)
+                    if bare_slug is None and detail['model'].get('slug'):
+                        bare_slug=(category,detail['model']['slug'])
+        self.assertIsNotNone(bare_slug)
+        category,slug=bare_slug
+        detail=json.loads(self.call(key,'get_model_capabilities',{'slug':slug,'category':category})['content'][0]['text'])
+        self.assertEqual(detail['model']['slug'],slug)
+
     def test_key_cannot_admin_or_skip_csrf(self):
         issued=self.key()['key']
         self.assertEqual(self.client.post('/ai-video/mcp/keys',json={}).status_code,403)
