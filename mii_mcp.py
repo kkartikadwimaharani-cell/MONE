@@ -23,6 +23,9 @@ VERSIONS = ('2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05')
 TOOL_PREFIX = 'mii_ai_studio_'
 PREVIEW_URI = 'ui://mii-ai-studio/result-preview-v4.html'
 LEGACY_PREVIEW_URI = 'ui://miiaivideo/result-preview-v3.html'
+MCP_REQUEST_MAX_BYTES = 256000
+MCP_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+MCP_IMAGE_REQUEST_MAX_BYTES = 7 * 1024 * 1024
 
 
 def digest(value):
@@ -288,6 +291,8 @@ def register_mcp(app, backend, data_dir):
              {'category':{'type':'string','enum':['video','image','audio','motion']},
               'query':{'type':'string','minLength':1}}),
         tool('clear_debug','Clear AI Video diagnostics only. Does not delete tasks, history, credentials, or media.',write=True),
+        tool('upload_reference','Upload ONE PNG/JPEG/WEBP reference image (up to 5 MB). Send image_base64 as raw base64 or a data:image/...;base64,... URL. Call once per image, then pass returned HTTPS URLs in image_urls in the same order. Uploading does not spend generation credits.',
+             {'image_base64':{'type':'string','minLength':1,'maxLength':((MCP_IMAGE_MAX_BYTES+2)//3)*4+64}},['image_base64'],True),
         tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
         tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
         tool('generate_audio','Start Seed Audio generation using account credits only when requested.',{'prompt':{'type':'string','minLength':1},'audio_format':string,'sample_rate':{'type':'integer'},'audio_urls':videos,'image_urls':images},['prompt'],True),
@@ -518,14 +523,45 @@ def register_mcp(app, backend, data_dir):
                 'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-.',
             }
         elif name=='get_model_capabilities':
-            slug=str(args['slug']).lower()
+            slug=str(args['slug']).strip().lower()
             for kind,items in catalog().items():
                 if args.get('category') and args.get('category') != kind:
                     continue
                 for model_id,model in items.items():
-                    if model.get('slug') == slug:
+                    if slug in (model_id.lower(), str(model.get('slug') or '').lower(),
+                                'bpx-'+str(model.get('slug') or '').lower()):
                         return {'brand':'MII AI STUDIO','category':kind,'model_id':model_id,'model':model}
             return {'error':'Unknown model slug.'}
+        elif name=='upload_reference':
+            supplied=args['image_base64']
+            match=re.match(r'^data:image/(png|jpeg|webp);base64,',supplied,re.IGNORECASE)
+            if supplied.startswith('data:') and not match:
+                return {'error':'Reference must be a PNG, JPEG, or WEBP base64 image.'}
+            encoded=supplied[match.end():] if match else supplied
+            if len(encoded)>((MCP_IMAGE_MAX_BYTES+2)//3)*4:
+                return {'error':'Reference image exceeds 5 MB.'}
+            try:
+                raw=base64.b64decode(encoded,validate=True)
+            except (ValueError,base64.binascii.Error):
+                return {'error':'Invalid base64 reference image.'}
+            if not raw or len(raw)>MCP_IMAGE_MAX_BYTES:
+                return {'error':'Reference image must be at most 5 MB.'}
+            kind=backend['_detect_upload_kind'](raw)
+            extensions={'png':'.png','jpg':'.jpg','webp':'.webp'}
+            declared=('jpg' if match and match.group(1).lower()=='jpeg'
+                      else match.group(1).lower() if match else None)
+            if kind not in extensions or (declared and declared != kind):
+                return {'error':'Reference must contain a valid PNG, JPEG, or WEBP image.'}
+            filename='mcp-reference-'+secrets.token_hex(12)+extensions[kind]
+            try:
+                url=backend['_dropbox_upload_and_link'](raw,filename)
+            except Exception:
+                app.logger.exception('MCP reference upload failed')
+                return {'error':'Reference upload failed. Check AI Video diagnostics.'}
+            if not safe_redirect(url) or urlsplit(url).scheme!='https':
+                return {'error':'Reference upload did not return an HTTPS URL.'}
+            return {'url':url,'mime_type':{'png':'image/png','jpg':'image/jpeg','webp':'image/webp'}[kind],
+                    'size_bytes':len(raw)}
         elif name=='clear_debug':
             return backend['_aivideo_clear_debug']()
         elif name=='check_status':
@@ -556,6 +592,10 @@ def register_mcp(app, backend, data_dir):
             # default model: that could spend credits on a different model.
             # Older Seedance 2.5 agents retain their unambiguous alias.
             requested_slug=str(payload.get('model_slug') or '').strip().lower()
+            if requested_slug.startswith('bpx-'):
+                requested_slug=requested_slug[4:]
+            if requested_slug.endswith(':standard'):
+                requested_slug=requested_slug[:-9]
             if requested_slug and payload.get('family'):
                 explicit_family=str(payload['family']).strip().lower()
                 expected_family='bpx-'+requested_slug
@@ -569,6 +609,8 @@ def register_mcp(app, backend, data_dir):
                     requested_slug='seedance-2.5'
                 else:
                     return {'error':'Unsupported family. Use model_slug from '+TOOL_PREFIX+'list_models.'}
+            if requested_slug.endswith(':standard'):
+                requested_slug=requested_slug[:-9]
             if not requested_slug:
                 requested_slug=default_catalog_slug
             catalog_selected=False
@@ -691,9 +733,18 @@ def register_mcp(app, backend, data_dir):
             return response
         if request.method!='POST':
             return error('Streamable HTTP uses POST; no SSE stream or session to delete.',405)
-        if request.content_length and request.content_length>256000:
+        # Upload images individually instead of embedding all references in a
+        # generation call. Keep the old small limit for every other MCP method.
+        request.max_content_length=MCP_IMAGE_REQUEST_MAX_BYTES
+        if request.content_length and request.content_length>MCP_IMAGE_REQUEST_MAX_BYTES:
             return error('request_too_large',413)
         msg=request.get_json(silent=True)
+        is_image_upload=(isinstance(msg,dict) and msg.get('method')=='tools/call'
+                         and isinstance(msg.get('params'),dict)
+                         and msg['params'].get('name') in
+                         (TOOL_PREFIX+'upload_reference','miiaivideo_upload_reference'))
+        if not is_image_upload and len(request.get_data())>MCP_REQUEST_MAX_BYTES:
+            return error('request_too_large',413)
         def rpc_error(code,message):
             return jsonify(jsonrpc='2.0',id=msg.get('id') if isinstance(msg,dict) else None,error={'code':code,'message':message})
         if not isinstance(msg,dict) or msg.get('jsonrpc')!='2.0' or not isinstance(msg.get('method'),str):
@@ -752,7 +803,7 @@ render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('o
                 p=props[key];typ=p['type']
                 if (typ=='string' and not isinstance(value,str)) or (typ=='integer' and type(value)!=int) or (typ=='boolean' and type(value)!=bool) or (typ=='array' and (not isinstance(value,list) or any(not isinstance(v,str) for v in value))):
                     return rpc_error(-32602,'Invalid argument type: '+key)
-                if isinstance(value,str) and (len(value)<p.get('minLength',0) or len(value)>100000):
+                if isinstance(value,str) and (len(value)<p.get('minLength',0) or len(value)>p.get('maxLength',100000)):
                     return rpc_error(-32602,'Invalid string: '+key)
                 if typ=='integer' and not p.get('minimum',value)<=value<=p.get('maximum',value):
                     return rpc_error(-32602,'Argument outside limits: '+key)
