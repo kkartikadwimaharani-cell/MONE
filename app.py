@@ -2221,6 +2221,7 @@ def set_security_headers(response):
     # plain HTTP (stale bookmark, captive portal, direct Railway origin
     # bypassing Cloudflare). This was previously missing entirely.
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    demo_page = request.endpoint == 'ai_video_demo_view'
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
         # NOTE: 'unsafe-inline' on script-src is a known, deliberate gap —
@@ -2232,12 +2233,13 @@ def set_security_headers(response):
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "connect-src 'self'; "
-        "img-src 'self' data: blob: https:; "
+        + ("connect-src 'none'; " if demo_page else "connect-src 'self'; ")
+        + "img-src 'self' data: blob: https:; "
         "media-src 'self' blob:; "
         "object-src 'none'; "
         "base-uri 'self'; "
-        "frame-ancestors 'none';"
+        + ("form-action 'none'; " if demo_page else "")
+        + "frame-ancestors 'none';"
     )
     # No-cache headers for HTML responses
     content_type = response.headers.get('Content-Type', '')
@@ -4878,6 +4880,36 @@ def api_aivideo_capabilities():
             'catalog': registry,
         },
     })
+
+
+@app.route('/api/aivideo/image-capabilities')
+def api_aivideo_image_capabilities():
+    """Return the same image controls rendered into the authenticated Studio."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    return jsonify({'capabilities': budgetpixel_provider.public_image_capabilities()})
+
+
+@app.route('/api/aivideo/credits')
+def api_aivideo_credits():
+    """Read the provider balance server-side without exposing its API key."""
+    if not _aivideo_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    api_key = _budgetpixel_api_key()
+    if not api_key:
+        return jsonify({'error': 'Credit provider is not configured.'}), 503
+    try:
+        balance = budgetpixel_provider.get_credits(api_key, timeout=10)
+        total = balance.get('total_available') if isinstance(balance, dict) else None
+        if type(total) is not int or total < 0:
+            raise ValueError('Invalid provider credit balance')
+    except (budgetpixel_provider.ProviderError, ValueError) as exc:
+        app.logger.warning('[ai-video][credits] provider error: %s', type(exc).__name__)
+        return jsonify({'error': 'Credit balance is temporarily unavailable.'}), 502
+    except Exception as exc:
+        app.logger.warning('[ai-video][credits] request failed: %s', type(exc).__name__)
+        return jsonify({'error': 'Credit balance is temporarily unavailable.'}), 502
+    return jsonify({'total_available': total})
 
 
 def _aivideo_task_payload(task_id):
