@@ -12,15 +12,15 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#090909;
-  --card:#171717;
-  --card2:#1c1c1c;
-  --btn:#242424;
+  --bg:#080309;
+  --card:#21000e;
+  --card2:#2a0011;
+  --btn:#330013;
   --border:rgba(255,255,255,.08);
   --border2:rgba(255,255,255,.13);
-  --accent:#ff2040;
-  --accent-hover:#ff3555;
-  --accent-dim:rgba(255,32,64,.14);
+  --accent:#ff003c;
+  --accent-hover:#ff174b;
+  --accent-dim:rgba(255,0,60,.18);
   --text:#ffffff;
   --text-dim:rgba(255,255,255,.58);
   --text-faint:rgba(255,255,255,.32);
@@ -1698,6 +1698,14 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
 /* A single start frame fills its own lane instead of sitting in a narrow island. */
 #framesMediaRow>.frame-row.single-frame{grid-template-columns:minmax(0,1fr);justify-items:stretch}
 #framesMediaRow>.frame-row.single-frame .frame-card{width:100%;max-width:none;height:clamp(76px,9vw,104px)}
+
+/* Unified saturated crimson palette for both private Studio and safe demo.
+   Visual CSS only: disabled demo controls remain disabled. */
+.mode-btn.active{background:linear-gradient(115deg,#ff003c,#b8002b);box-shadow:0 0 20px rgba(255,0,60,.42)}
+.gen-btn:not(:disabled){background:linear-gradient(115deg,#ff003c,#c5002d 70%,#4e0018);box-shadow:0 0 30px rgba(255,0,60,.46)}
+.gen-btn:disabled{animation:none}
+.edge-glow::before{background:conic-gradient(from var(--edge-angle),transparent 0 68%,#ff003c 84%,#ff5377 90%,#ff003c 96%,transparent 100%);filter:drop-shadow(0 0 8px rgba(255,0,60,.8))}
+@media(prefers-reduced-motion:reduce){.edge-glow::before{animation:none;display:none}}
 </style>
 </head>
 

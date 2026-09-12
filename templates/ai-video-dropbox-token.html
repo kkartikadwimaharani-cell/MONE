@@ -188,25 +188,31 @@ input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(255,
 .text-center{text-align:center}
 .mt-6{margin-top:6px}
 
-/* Shared studio diagnostics palette: luminous graphite, crisp state colors. */
-:root{--bg:#111820;--bg2:#1c2430;--panel:#26303c;--panel2:#303844;--border:rgba(255,91,139,.31);--border-dim:rgba(255,115,154,.17);--border-strong:rgba(255,119,160,.42);--cyan:#ff416f;--cyan-dim:rgba(255,65,111,.58);--magenta:#ff8aa7;--amber:#ffd080;--ok:#48eca5;--ok-bg:rgba(72,236,165,.17);--bad:#ff748b;--bad-glow:rgba(255,116,139,.5);--bad-bg:rgba(255,116,139,.17);--txt:#fff7f9;--dim:#d2bdc5;--faint:rgba(255,240,245,.53);--shadow-card:0 18px 46px rgba(0,6,18,.3)}
-body{background:radial-gradient(ellipse 100% 54% at 50% -10%,rgba(238,35,90,.21),transparent 64%),radial-gradient(ellipse 72% 48% at 90% 95%,rgba(78,142,196,.12),transparent 65%),linear-gradient(var(--bg2),var(--bg))}
+/* Studio palette: luminous crimson and solid, truthful status colors. */
+:root{--bg:#070309;--bg2:#18000a;--panel:#26000f;--panel2:#350014;--border:rgba(255,0,60,.4);--border-dim:rgba(255,0,60,.2);--border-strong:rgba(255,0,60,.54);--cyan:#ff174b;--cyan-dim:rgba(255,0,60,.62);--magenta:#ff003c;--amber:#ffcc00;--ok:#00ff88;--ok-bg:rgba(0,255,136,.16);--bad:#ff234b;--bad-glow:rgba(255,0,60,.6);--bad-bg:rgba(255,0,60,.2);--txt:#fff;--dim:#eadbe2;--faint:rgba(255,255,255,.6);--shadow-card:0 18px 46px rgba(0,0,0,.33)}
+body{background:radial-gradient(ellipse 95% 53% at 50% -10%,rgba(255,0,60,.22),transparent 62%),linear-gradient(var(--bg2),var(--bg))}
 body::before{opacity:.2}
-body::after{background:linear-gradient(rgba(255,75,119,0),rgba(255,75,119,.13) 45%,rgba(255,75,119,0))}
-.card{border-radius:17px;background:linear-gradient(150deg,var(--panel2),var(--panel));box-shadow:var(--shadow-card),inset 0 1px 0 rgba(255,255,255,.12)}
-.card-icon,.hud-mark{border-radius:12px;background:linear-gradient(135deg,rgba(255,55,111,.26),rgba(255,127,163,.1))}
-.page-sub,.card-desc,.helper-text,.info-row .k{color:#e0cbd3}
-.status-pill{border-radius:999px;padding:9px 14px;background:rgba(255,255,255,.09)}
-.status-pill.connected{box-shadow:0 0 22px rgba(72,236,165,.2)}
-.status-pill.warn{background:rgba(255,208,128,.17)}
-.status-pill.error{background:rgba(255,116,139,.19);box-shadow:0 0 20px rgba(255,116,139,.14)}
+body::after{background:linear-gradient(rgba(255,0,60,0),rgba(255,0,60,.13) 45%,rgba(255,0,60,0))}
+.card{border-radius:17px;background:radial-gradient(circle at 85% 0,rgba(255,0,60,.18),transparent 52%),linear-gradient(150deg,var(--panel2),var(--panel));box-shadow:var(--shadow-card),0 0 24px rgba(255,0,60,.13)}
+.card-icon,.hud-mark{border-radius:12px;background:linear-gradient(135deg,#c30032,#620017);color:#fff;box-shadow:0 0 26px rgba(255,0,60,.35)}
+.page-title{color:#fff;text-shadow:0 0 18px rgba(255,0,60,.48)}
+.page-sub,.card-desc,.helper-text,.info-row .k{color:#eadbe2}
+.status-pill{border-radius:999px;padding:9px 14px}
+.status-pill.connected{background:#00ff88;color:#002614;border-color:#00ff88;box-shadow:0 0 23px rgba(0,255,136,.44)}
+.status-pill.connected .dot{background:#00572e;box-shadow:0 0 9px rgba(0,60,35,.4)}
+.status-pill.warn{background:#ffcc00;color:#302000;border-color:#ffcc00;box-shadow:0 0 18px rgba(255,204,0,.28)}
+.status-pill.warn .dot{background:#4f3200}
+.status-pill.error{background:#ff003c;color:#fff;border-color:#ff003c;box-shadow:0 0 20px rgba(255,0,60,.42)}
+.status-pill.error .dot{background:#fff}
+.status-pill.off{background:#ff003c;color:#fff;border-color:#ff003c;box-shadow:0 0 18px rgba(255,0,60,.38)}
+.status-pill.off .dot{background:#fff}
 .btn{border-radius:11px;min-height:48px}
-.btn-primary{background:linear-gradient(115deg,#eb2456,#a50e3c);border-color:rgba(255,150,182,.6);box-shadow:0 12px 25px rgba(226,21,75,.24)}
-.btn-primary:hover{background:linear-gradient(115deg,#ff3869,#bf1849)}
-.btn-secondary{background:rgba(245,249,255,.1);border-color:rgba(255,171,195,.33)}
+.btn-primary{background:linear-gradient(115deg,#ff003c,#c5002d);border-color:#ff174b;box-shadow:0 0 24px rgba(255,0,60,.38)}
+.btn-primary:hover{background:linear-gradient(115deg,#ff174b,#e00035);box-shadow:0 0 30px rgba(255,0,60,.5)}
+.btn-secondary{background:linear-gradient(115deg,#a40029,#570019);border-color:rgba(255,0,60,.4)}
 .info-row .v{color:#fff}
-input[type=text],input[type=password],.code-box{background:#19222d;border-radius:10px}
-.toast,.modal{background:linear-gradient(145deg,#343b48,#242d38);border-radius:14px}
+input[type=text],input[type=password],.code-box{background:#110409;border-radius:10px}
+.toast,.modal{background:linear-gradient(145deg,#350014,#1a050c);border-radius:14px}
 @media(prefers-reduced-motion:reduce){body::after,.status-pill.connected .dot{animation:none}}
 </style>
 </head>
