@@ -4,13 +4,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DEMO = (ROOT / "templates" / "ai-video.html").read_text()
 HOME = (ROOT / "templates" / "index.html").read_text()
+APP = (ROOT / "app.py").read_text()
 
 
 def test_public_demo_copy_and_home_card_are_compact_and_unique():
     assert "PUBLIC DEMO MODE" in DEMO
     assert "NO API CALLS NO POLLING NO CREDIT USAGE" in DEMO
-    assert HOME.count(">MII AI STUDIO PUBLIC DEMO</span>") == 1
-    assert "ONE STUDIO ENDLESS POSSIBILITIES" in HOME
+    assert HOME.count('data-i18n="homeDemoKicker">MII AI STUDIO DEMO PUBLIK</span>') == 1
+    assert "SATU STUDIO TANPA BATAS KREATIVITAS" in HOME
     assert 'href="/mii-ai-video"' in HOME
 
 
@@ -33,6 +34,10 @@ def test_demo_is_fail_closed_before_other_fetch_wrappers_load():
     assert "if (DEMO_MODE) { showDemoNotice('generate'); return; }" in DEMO
     assert "if (DEMO_MODE) { showDemoNotice('reference'); return; }" in DEMO
     assert "if (DEMO_MODE) return; fetch('/api/aivideo/credits')" in DEMO
+    assert DEMO.count("if (DEMO_MODE) { if (onDone) onDone(true); return; }") == 2
+    assert "request.endpoint == 'ai_video_demo_view'" in APP
+    assert "connect-src 'none';" in APP
+    assert "form-action 'none';" in APP
 
 
 def test_variant_switch_resets_then_clamps_capability_state():
