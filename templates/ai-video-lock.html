@@ -204,7 +204,15 @@ body::before{
 .stat-lbl{font-size:.56rem;font-weight:700;letter-spacing:.05em;color:rgba(255,225,230,.5);text-transform:uppercase;text-align:center;position:relative;z-index:1}
 .stat-num.bump{animation:statBump .4s cubic-bezier(.34,1.56,.64,1) both}
 @keyframes statBump{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
-  </style>
+  
+/* Same saturated Studio crimson; counters and lock state keep their meaning. */
+:root{--red:#ff003c;--red2:#ff174b}
+body{background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(255,0,60,.29),transparent),#070309}
+.lockbox{background:radial-gradient(circle at 50% 0,rgba(255,0,60,.13),transparent 65%),linear-gradient(145deg,#26000f,#100309);box-shadow:0 30px 90px rgba(0,0,0,.5),0 0 38px rgba(255,0,60,.17)}
+.logo-m{color:#ff003c;text-shadow:0 0 24px rgba(255,0,60,.7)}
+.visit-dot{background:#00ff88;box-shadow:0 0 13px rgba(0,255,136,.75)}
+.stat-box.fail .stat-num{color:#ff174b;text-shadow:0 0 15px rgba(255,0,60,.65)}
+</style>
 </head>
 <body>
 
