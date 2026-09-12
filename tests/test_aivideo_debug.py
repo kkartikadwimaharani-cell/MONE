@@ -217,5 +217,58 @@ class AiVideoDebugTests(unittest.TestCase):
             self.assertEqual(client.post('/ai-video/debug/clear',
                                          headers={'X-CSRF-Token': 'csrf-value'}).status_code, 302)
 
+
+    def test_dropbox_debug_status_reflects_real_test_and_redacts_metadata(self):
+        now = app.time.time()
+        state = {
+            'state': 'connected', 'source': 'oauth',
+            'account_name': 'Studio Account', 'account_id_masked': 'dbid:***',
+            'auto_refresh': True, 'last_refresh_at': now - 30,
+            'last_test_at': None, 'last_test_ok': None,
+        }
+        with app.app.test_request_context('/api/aivideo/debug-data'), \
+                patch.object(app._dropbox_manager, 'status', return_value=state), \
+                patch.object(app.budgetpixel_registry, 'get_registry',
+                             return_value={'models': [], 'synced_at': None, 'sync_error': None}):
+            app._aivideo_debug_set('dropbox', mode='oauth_connected',
+                                  detail='Bearer should-not-leak', ok=None)
+            unchecked = app._aivideo_diagnostics()
+            self.assertEqual(unchecked['storage']['status'], 'NOT CHECKED')
+            self.assertNotIn('should-not-leak', repr(unchecked))
+            self.assertEqual(unchecked['dropbox']['account_id_masked'], 'dbid:***')
+            state.update(last_test_at=now - 20, last_test_ok=True)
+            self.assertEqual(app._aivideo_diagnostics()['storage']['status'], 'READY')
+            state['last_test_at'] = now - 700
+            self.assertEqual(app._aivideo_diagnostics()['storage']['status'], 'NOT CHECKED')
+            state['last_test_ok'] = False
+            self.assertEqual(app._aivideo_diagnostics()['storage']['status'], 'ERROR')
+            state.update(state='not_connected', last_test_ok=False)
+            self.assertEqual(app._aivideo_diagnostics()['storage']['status'], 'NOT CONFIGURED')
+
+    def test_dropbox_debug_action_requires_browser_session_and_csrf(self):
+        with app.app.test_client() as client, \
+                patch.object(app, 'get_site_status', return_value={'maintenance': False}), \
+                patch.object(app._dropbox_manager, 'test_connection',
+                             return_value={'account_name': 'Studio Account',
+                                           'account_id_masked': 'dbid:***'}) as test_connection, \
+                patch.object(app._dropbox_manager, 'status',
+                             return_value={'state': 'connected', 'source': 'oauth',
+                                           'last_test_at': None, 'last_test_ok': None}):
+            self.assertEqual(client.get('/api/aivideo/dropbox/status').status_code, 401)
+            self.assertEqual(client.post('/api/aivideo/dropbox/test').status_code, 401)
+            test_connection.assert_not_called()
+            with client.session_transaction() as sess:
+                sess['mii_aivideo_auth'] = True
+                sess['mii_csrf'] = 'test-csrf'
+            page = client.get('/ai-video/debug')
+            self.assertIn(b'MANAGE DROPBOX', page.data)
+            self.assertIn(b'TEST CONNECTION', page.data)
+            self.assertEqual(client.post('/api/aivideo/dropbox/test').status_code, 403)
+            test_connection.assert_not_called()
+            passed = client.post('/api/aivideo/dropbox/test',
+                                 headers={'X-CSRF-Token': 'test-csrf'})
+            self.assertEqual(passed.status_code, 200)
+            test_connection.assert_called_once_with()
+
 if __name__ == '__main__':
     unittest.main()
