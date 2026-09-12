@@ -4054,6 +4054,8 @@ def ai_video_view():
             pass
         return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
                                 total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
+    workspace_token = session.get('mii_workspace_token') or secrets.token_urlsafe(32)
+    session['mii_workspace_token'] = workspace_token
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
     video_ui = budgetpixel_video_catalog.public_ui_bundle(registry)
     media_ui = budgetpixel_media_catalog.public_ui_bundle(registry)
@@ -4061,6 +4063,7 @@ def ai_video_view():
     return render_template(
         'ai-video.html',
         demo_mode=False,
+        workspace_token=workspace_token,
         image_capabilities=budgetpixel_provider.public_image_capabilities(),
         budgetpixel_registry=registry,
         budgetpixel_video_families=video_ui['families'],
@@ -4233,6 +4236,11 @@ def aivideo_enhance():
 def aivideo_generate():
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
+    if not getattr(g, 'mii_mcp_internal', False) and not _aivideo_bearer_authed():
+        workspace_token = session.get('mii_workspace_token')
+        supplied_token = request.headers.get('X-MII-Workspace-Token', '')
+        if not workspace_token or not hmac.compare_digest(workspace_token, supplied_token):
+            return jsonify({'error': 'Generate hanya tersedia dari workspace.'}), 403
     payload = request.get_json(silent=True) or {}
     app.logger.info('[ai-video][generate] incoming request body=%s', json.dumps(payload)[:3000])
     _aivideo_debug_set('last_request', incoming_payload=payload)
