@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<meta name="robots" content="noindex,nofollow">
+<title>MII AI STUDIO | SECURITY HISTORY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#060407;--surface:#1a141b;--text:#f7ecf0;--muted:#bea8af;--crimson:#d5325a;--ready:#47d39d;--warn:#e1b572;--bad:#ed758d;--display:'Orbitron',sans-serif;--body:'JetBrains Mono',monospace}
+*{box-sizing:border-box}
+html{overflow-x:hidden}
+body{margin:0;min-height:100vh;overflow-x:hidden;padding:clamp(22px,4vw,50px) 16px 90px;background:radial-gradient(ellipse 64% 35% at 50% -10%,rgba(128,18,49,.27),transparent 80%),radial-gradient(ellipse 55% 40% at 100% 70%,rgba(95,15,37,.1),transparent 80%),linear-gradient(145deg,#0c080d,#050406 78%);color:var(--text);font:12px/1.55 var(--body)}
+body::before{content:"";position:fixed;left:50%;top:-20%;width:min(86vw,870px);height:min(86vw,870px);border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(142,26,59,.1),transparent 70%);transform:translateX(-50%);animation:breathe 18s ease-in-out infinite alternate}
+@keyframes breathe{to{opacity:.52;transform:translate(-46%,6%)}}
+a{color:inherit;text-decoration:none}
+.wrap{position:relative;max-width:1040px;margin:0 auto;min-width:0}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:clamp(36px,7vw,70px)}
+.brand{font:800 clamp(14px,2vw,20px) var(--display);letter-spacing:-.025em;white-space:nowrap}
+.nav-actions{display:flex;gap:10px;flex-wrap:wrap}
+.link{min-height:44px;padding:11px 17px;display:inline-flex;justify-content:center;align-items:center;border-radius:12px;background:rgba(255,255,255,.065);color:#f6dfe6;font-weight:700;letter-spacing:.04em;transition:transform .18s,background .18s}
+.link:hover{transform:translateY(-2px);background:rgba(183,34,74,.24)}
+.link:focus-visible{outline:2px solid var(--ready);outline-offset:3px}
+.link.primary{background:linear-gradient(135deg,#b61743,#690b29);color:#fff;box-shadow:0 9px 27px rgba(119,13,40,.17)}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:26px;flex-wrap:wrap;margin-bottom:26px}
+.kicker{font-size:10px;letter-spacing:.22em;font-weight:700;color:#dc9bad}
+h1{font:800 clamp(28px,6vw,62px)/1.1 var(--display);letter-spacing:-.05em;margin:12px 0 16px;text-shadow:0 0 30px rgba(191,39,79,.16)}
+.subtitle{margin:0;color:var(--muted);font-size:12px;max-width:650px;letter-spacing:.03em}
+.health{display:inline-flex;align-items:center;gap:9px;border-radius:999px;background:rgba(50,176,119,.14);color:var(--ready);padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;white-space:nowrap}
+.health::before{content:"";height:7px;width:7px;border-radius:50%;background:currentColor;box-shadow:0 0 13px rgba(71,211,157,.35)}
+.health.warning{color:var(--warn);background:rgba(218,164,84,.12)}
+.summary{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-radius:22px;padding:clamp(19px,3vw,30px);background:radial-gradient(circle at 85% 0,rgba(158,28,62,.11),transparent 45%),linear-gradient(145deg,#21161e,#100e13);box-shadow:0 18px 50px rgba(0,0,0,.22);margin-bottom:17px}
+.count{font:800 clamp(28px,5vw,44px) var(--display);color:#fff;min-width:1ch}
+.count-label{font-weight:700;letter-spacing:.08em}
+.retention{color:var(--muted);margin-left:auto}
+.notice{padding:17px 20px;margin-bottom:20px;border-radius:16px;background:rgba(255,255,255,.035);color:var(--muted);font-size:11px;line-height:1.75}
+.events{display:grid;gap:14px}
+.event{min-width:0;border-radius:20px;padding:clamp(18px,3vw,25px);background:radial-gradient(circle at 95% 2%,rgba(172,32,67,.08),transparent 48%),linear-gradient(150deg,#1c161d,#100e13);box-shadow:0 16px 38px rgba(0,0,0,.2);transition:transform .2s,background .2s}
+.event:hover{transform:translateY(-2px);background-color:#231821}
+.event-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.kind{font:700 clamp(13px,2vw,17px)/1.4 var(--display);color:#f3cbd4;overflow-wrap:anywhere}
+.time{color:#c5adb6;font-size:11px;overflow-wrap:anywhere}
+.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 23px}
+.field{min-width:0}.field dt{color:#a89099;font-size:9px;letter-spacing:.11em;font-weight:700;margin-bottom:5px}.field dd{margin:0;color:#f5e9ed;font-size:11px;overflow-wrap:anywhere;word-break:break-word}
+.empty{border-radius:22px;padding:clamp(28px,6vw,60px);text-align:center;background:linear-gradient(145deg,#1b151b,#0f0d11);color:#e5ccd3;font-weight:700;letter-spacing:.08em}
+@media(max-width:700px){.meta{grid-template-columns:repeat(2,minmax(0,1fr))}.retention{margin-left:0}}
+@media(max-width:450px){body{padding:20px 14px 60px}.nav{margin-bottom:38px}.nav-actions{width:100%}.nav-actions .link{flex:1 1 auto;padding:10px 12px}.brand{white-space:normal}.hero{gap:17px}.meta{grid-template-columns:minmax(0,1fr)}.event-head{flex-direction:column}.summary{gap:10px}}
+@media(prefers-reduced-motion:reduce){body::before{animation:none}.event,.link{transition:none}.event:hover,.link:hover{transform:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav class="nav" aria-label="SECURITY NAVIGATION">
+    <a class="brand" href="/ai-video/debug">MII AI STUDIO</a>
+    <div class="nav-actions"><a class="link" href="/ai-video/debug">SYSTEM DIAGNOSTICS</a><a class="link primary" href="/ai-video/security-history">REFRESH HISTORY</a></div>
+  </nav>
+  <header class="hero">
+    <div><div class="kicker">PRIVATE WORKSPACE AUDIT</div><h1>SECURITY HISTORY</h1><p class="subtitle">ONLY LOCKOUT THRESHOLDS AND DENIED WRITE REQUESTS ARE RECORDED</p></div>
+    {% if history.error %}<span class="health warning" role="status">HISTORY UNAVAILABLE</span>{% else %}<span class="health" role="status">AUDIT READY</span>{% endif %}
+  </header>
+  <section class="summary" aria-label="EVENT SUMMARY"><span class="count">{{ history.count }}</span><span class="count-label">BLOCKED EVENTS</span><span class="retention">RETENTION {{ history.retention_days }} DAYS</span></section>
+  <p class="notice">PROXY IP HEADERS AND DEVICE DETAILS MAY BE REPORTED BY CLIENTS AND ARE NOT PROOF OF IDENTITY. RECORDED EVENTS ARE SECURITY SIGNALS, NOT PROOF OF AN ATTACK.</p>
+  <section class="events" aria-label="BLOCKED EVENT HISTORY">
+    {% if history.error %}<div class="empty">HISTORY TEMPORARILY UNAVAILABLE</div>
+    {% elif history.events %}{% for event in history.events %}
+    <article class="event">
+      <div class="event-head"><span class="kind">{{ event.kind }}</span><time class="time" data-timestamp="{{ event.created_ts }}">{{ event.created_ts }}</time></div>
+      <dl class="meta">
+        <div class="field"><dt>REPORTED IP</dt><dd>{{ event.ip_address or 'UNKNOWN' }}</dd></div>
+        <div class="field"><dt>IP SOURCE</dt><dd>{{ event.ip_source or 'UNKNOWN' }}</dd></div>
+        <div class="field"><dt>SOCKET IP</dt><dd>{{ event.socket_ip or 'UNKNOWN' }}</dd></div>
+        <div class="field"><dt>REPORTED DEVICE</dt><dd>{{ event.device or 'UNKNOWN' }}</dd></div>
+        <div class="field"><dt>ROUTE</dt><dd>{{ event.route or 'UNKNOWN' }}</dd></div>
+        <div class="field"><dt>HTTP STATUS</dt><dd>{{ event.http_status or 'UNKNOWN' }}</dd></div>
+      </dl>
+    </article>
+    {% endfor %}{% else %}<div class="empty">NO BLOCKED EVENTS RECORDED</div>{% endif %}
+  </section>
+</main>
+<script>
+document.querySelectorAll('[data-timestamp]').forEach(function(el){
+  var seconds=Number(el.getAttribute('data-timestamp')),date=new Date(seconds*1000);
+  if(Number.isFinite(seconds)&&!isNaN(date.getTime())){el.dateTime=date.toISOString();el.textContent=date.toLocaleString()}
+});
+</script>
+</body>
+</html>
