@@ -1654,6 +1654,21 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   .gen-btn{min-height:76px;padding:16px;font-size:20px;border-radius:21px}
   .mii-work-pet{left:max(calc(50% - 620px),28px);bottom:8px}
 }
+/* Compact results workspace: a focused preview never pushes the composer off-screen. */
+.canvas-result-wrap.has-result{max-height:min(43dvh,350px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.canvas-result-wrap.has-result .canvas-preview{flex:0 0 auto;aspect-ratio:auto!important;height:min(24dvh,205px)}
+.canvas-result-wrap.has-result .canvas-result-box{padding:8px;gap:6px}
+.canvas-result-wrap.has-result .canvas-result-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.canvas-result-wrap.has-result .result-btn{padding:7px 2px;min-height:50px}
+.canvas-result-wrap.has-result .result-btn .rb-ico{line-height:1}
+.canvas-result-wrap.has-result .result-btn .rb-lbl{font-size:10px}
+.gen-queue{max-height:min(38dvh,360px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:2px 4px}
+.canvas-recent{flex:0 0 auto;max-width:100%}
+@media(max-width:430px){
+  .canvas-result-wrap.has-result{max-height:min(40dvh,310px)}
+  .canvas-result-wrap.has-result .canvas-preview{height:min(21dvh,170px)}
+  .gen-queue{max-height:min(34dvh,290px)}
+}
 </style>
 </head>
 
@@ -5570,7 +5585,7 @@ function pollQueueTask(taskId, opts) {
             // Keep completion compact for every media type. The History-style
             // recent row is the default preview; full media opens only after
             // an explicit tap, so a result never takes over the workspace.
-            hideCanvasResultUI();
+            updateCanvasPreview();
             renderCanvasRecent();
             var isImageResult = !!imageUrl && !videoUrl;
             var isAudioResult = !!audioUrl && !videoUrl && !imageUrl;

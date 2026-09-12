@@ -33,6 +33,7 @@ def register_mcp(app, backend, data_dir):
         raise ValueError('MII_PUBLIC_URL must be an HTTPS origin without a path')
     resource = origin + '/mcp'
     client_signer = URLSafeTimedSerializer(app.secret_key, salt='miiaivideo-mcp-client-v1')
+    widget_status_signer = URLSafeTimedSerializer(app.secret_key, salt='miiaivideo-widget-status-v1')
     app.config.setdefault('MII_MCP_DB', os.environ.get('MII_MCP_DB') or os.path.join(data_dir, 'mcp_access.sqlite3'))
 
     @contextmanager
@@ -582,7 +583,43 @@ def register_mcp(app, backend, data_dir):
             return {'error':'Backend returned an invalid response.'}
         if 'id' in result:
             result['task_id']=result['id']
+        if name in generation_tools and result.get('task_id') and not result.get('error'):
+            # Task-scoped, expiring read capability for the one embedded card.
+            # Polling must not call another MCP tool (which creates a new card).
+            result['status_token']=widget_status_signer.dumps({'task_id':result['task_id']})
         return result
+
+    @bp.route('/mcp/widget-status', methods=['POST','OPTIONS'])
+    def widget_status():
+        def widget_response(data, code=200):
+            response=jsonify(data)
+            response.status_code=code
+            response.headers['Access-Control-Allow-Origin']='*'
+            response.headers['Access-Control-Allow-Methods']='POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers']='Content-Type'
+            return response
+        if request.method=='OPTIONS':
+            return widget_response({})
+        if request.content_length and request.content_length>4096:
+            return widget_response({'error':'Invalid status token.'},413)
+        token=request.get_data(as_text=True)
+        try:
+            signed=widget_status_signer.loads(token, max_age=6*3600)
+        except (BadSignature, SignatureExpired):
+            return widget_response({'error':'Status link expired.'},401)
+        task_id=signed.get('task_id') if isinstance(signed,dict) else None
+        if not isinstance(task_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',task_id):
+            return widget_response({'error':'Invalid status token.'},401)
+        try:
+            data=call_backend('miiaivideo_check_status',{'task_id':task_id})
+        except Exception:
+            app.logger.exception('MCP widget status failed')
+            return widget_response({'error':'Status temporarily unavailable.'},503)
+        if not isinstance(data,dict):
+            return widget_response({'error':'Status temporarily unavailable.'},503)
+        if data.get('error') and not data.get('status'):
+            return widget_response({'error':str(data['error'])[:200]},404)
+        return widget_response({key:data[key] for key in ('id','status','progress','output','error') if key in data})
 
     @bp.route('/mcp',methods=['GET','POST','DELETE'])
     def mcp():
@@ -625,14 +662,15 @@ def register_mcp(app, backend, data_dir):
             html='''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 *{box-sizing:border-box}body{margin:0;background:#08090d;color:#fff;font:13px system-ui,-apple-system,sans-serif}main{padding:10px}.card{overflow:hidden;border:1px solid #35202a;border-radius:14px;background:linear-gradient(145deg,#151116,#0b0c10)}.head{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px}.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#ff2446,#8a0018);font-weight:850;box-shadow:0 0 18px #ff204044}.copy{min-width:0}.title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:2px;color:#a7a1a5;font:10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em}.pct{color:#ff526b;font:700 11px ui-monospace,monospace}.bar{height:3px;margin:0 10px 10px;background:#ffffff12;border-radius:9px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff1638,#ff6078);transition:width .35s}.media{display:none;border-top:1px solid #35202a;background:#050506}.media img,.media video{display:block;width:100%;max-height:300px;object-fit:contain;background:#050506}.media audio{display:block;width:calc(100% - 20px);margin:12px 10px}.foot{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #35202a}.foot a{color:#ff6078;font-size:11px;font-weight:750;text-decoration:none}.err{color:#ff7187}.done .mark{background:linear-gradient(135deg,#21b879,#0a6643);box-shadow:0 0 18px #35e6a033}.done .pct{color:#48e6aa}.failed .mark{background:linear-gradient(135deg,#ff2446,#710014)}.failed .pct{color:#ff7187}@media(max-width:420px){main{padding:7px}.head{padding:8px}.media img,.media video{max-height:230px}}
 </style></head><body><main><section class="card" id="card"><div class="head"><div class="mark">M</div><div class="copy"><div class="title" id="title">MIIAIVIDEO</div><div class="sub" id="state">MENYIAPKAN TASK</div></div><div class="pct" id="pct">0%</div></div><div class="bar" id="bar"><div class="fill" id="fill"></div></div><div class="media" id="media"><img id="image" alt="Hasil MIIAIVIDEO"><video id="video" controls playsinline preload="metadata"></video><audio id="audio" controls preload="metadata"></audio></div><div class="foot" id="foot"><span id="kind"></span><a id="open" target="_blank" rel="noopener">BUKA HASIL</a></div></section></main><script>
-(function(){var taskId='',timer=0,attempts=0,terminal=false,last={};var $=function(id){return document.getElementById(id)};
+(function(){var taskId='',statusToken='',timer=0,attempts=0,terminal=false,last={};var $=function(id){return document.getElementById(id)};
 function unwrap(r){return r&&r.structuredContent?r.structuredContent:(r||{})}
 function mediaOf(r){var o=r.output||r.result||{},imgs=o.images||[];return{video:o.video_url||(o.type==='video'?o.url:'')||'',image:o.image_url||(imgs[0]&&((imgs[0].url)||imgs[0]))||(o.type==='image'?o.url:'')||'',audio:o.audio_url||(o.type==='audio'?o.url:'')||''}}
-function schedule(){if(terminal||!taskId||attempts>120||!window.openai||typeof window.openai.callTool!=='function')return;clearTimeout(timer);timer=setTimeout(function(){attempts++;window.openai.callTool('miiaivideo_check_status',{task_id:taskId}).then(render).catch(function(){schedule()})},attempts<6?3000:6000)}
-function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MIIAIVIDEO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add(status==='completed'?'done':'failed');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('card').classList.add('done');$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
+function schedule(){if(terminal||!taskId||!statusToken)return;if(attempts>=360){$('state').textContent='CEK STATUS DI WEB';$('foot').style.display='flex';$('open').href='https://makima.cloud/ai-video';return}clearTimeout(timer);timer=setTimeout(function(){attempts++;fetch(__MII_WIDGET_STATUS_ENDPOINT__,{method:'POST',headers:{'Content-Type':'text/plain'},body:statusToken,credentials:'omit',cache:'no-store'}).then(function(response){if(response.status===401){terminal=true;$('state').textContent='STATUS KEDALUWARSA';return null}if(!response.ok)throw Error('Status unavailable');return response.json()}).then(function(data){if(data)render(data)}).catch(function(){$('state').textContent='MENUNGGU KONEKSI';schedule()})},attempts<6?3000:6000)}
+function render(raw){var r=unwrap(raw);if(!r||typeof r!=='object')return;last=r;taskId=r.task_id||r.id||taskId;statusToken=r.status_token||statusToken;var status=String(r.status||'pending').toLowerCase(),p=Math.max(0,Math.min(100,Number(r.progress)||0)),m=mediaOf(r);$('fill').style.width=p+'%';$('pct').textContent=p+'%';$('title').textContent=(r.model||r.model_name||'MIIAIVIDEO').toString();$('state').textContent=r.error?String(r.error):(status==='completed'?'HASIL SIAP':status==='failed'?'PROSES GAGAL':status==='pending'||status==='queued'?'MENUNGGU PROSES':'SEDANG MEMPROSES');$('state').className='sub'+(r.error?' err':'');terminal=status==='completed'||status==='failed'||!!r.error;if(terminal){$('card').classList.add(status==='completed'?'done':'failed');$('bar').style.display='none'}var u=m.video||m.image||m.audio;if(u){terminal=true;$('card').classList.add('done');$('media').style.display='block';$('foot').style.display='flex';$('open').href=u;var kind=m.video?'VIDEO':m.image?'IMAGE':'AUDIO';$('kind').textContent=kind;if(m.video){$('video').src=m.video;$('video').style.display='block';$('image').style.display=$('audio').style.display='none'}else if(m.image){$('image').src=m.image;$('image').style.display='block';$('video').style.display=$('audio').style.display='none'}else{$('audio').src=m.audio;$('audio').style.display='block';$('image').style.display=$('video').style.display='none'}}if(!terminal)schedule()}
 render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('openai:set_globals',function(e){if(e.detail&&e.detail.globals)render(e.detail.globals.toolOutput)});
 })();</script></body></html>'''
-            meta={'ui':{'prefersBorder':True,'csp':{'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MIIAIVIDEO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
+            html=html.replace('__MII_WIDGET_STATUS_ENDPOINT__',json.dumps(origin+'/mcp/widget-status'))
+            meta={'ui':{'prefersBorder':True,'csp':{'connectDomains':[origin],'resourceDomains':[origin,'https://*.dropboxusercontent.com']}},'openai/widgetDescription':'Status dan preview hasil Image, Video, atau Audio MIIAIVIDEO dalam satu kartu yang diperbarui otomatis.','openai/widgetPrefersBorder':True,'openai/widgetCSP':{'connect_domains':[origin],'resource_domains':[origin,'https://*.dropboxusercontent.com']}}
             result={'contents':[{'uri':params['uri'],'mimeType':'text/html;profile=mcp-app','text':html,'_meta':meta}]}
         elif method in ('prompts/list','resources/templates/list'):
             result={ {'prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}
