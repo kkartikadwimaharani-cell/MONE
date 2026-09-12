@@ -20,6 +20,9 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 SCOPE = 'mii:generate'
 VERSIONS = ('2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05')
+TOOL_PREFIX = 'mii_ai_studio_'
+PREVIEW_URI = 'ui://mii-ai-studio/result-preview-v4.html'
+LEGACY_PREVIEW_URI = 'ui://miiaivideo/result-preview-v3.html'
 
 
 def digest(value):
@@ -298,20 +301,22 @@ def register_mcp(app, backend, data_dir):
         tool('check_status','Read one task status. Call at most once for troubleshooting: every generation card already refreshes itself until completed or failed. Never loop or repeatedly call this tool.',{'task_id':{'type':'string','minLength':1}},['task_id']),
     ]
     generation_tools={
-        'miiaivideo_generate_video','miiaivideo_generate_image','miiaivideo_generate_audio',
-        'miiaivideo_generate_music','miiaivideo_generate_sfx','miiaivideo_video_to_music',
-        'miiaivideo_video_to_sfx','miiaivideo_motion_control',
+        'generate_video','generate_image','generate_audio',
+        'generate_music','generate_sfx','video_to_music',
+        'video_to_sfx','motion_control',
     }
     for item in tools:
-        item['name']='miiaivideo_'+item['name']
-        if item['name'] in generation_tools:
+        short_name=item['name']
+        item['name']=TOOL_PREFIX+short_name
+        item['title']='MII AI STUDIO '+short_name.replace('_',' ').upper()
+        if short_name in generation_tools:
             item['_meta']={
-                'ui':{'resourceUri':'ui://miiaivideo/result-preview-v3.html'},
-                'openai/outputTemplate':'ui://miiaivideo/result-preview-v3.html',
+                'ui':{'resourceUri':PREVIEW_URI},
+                'openai/outputTemplate':PREVIEW_URI,
                 'openai/toolInvocation/invoking':'Memulai proses MII AI STUDIO…',
                 'openai/toolInvocation/invoked':'Proses MII AI STUDIO berjalan',
             }
-        elif item['name']=='miiaivideo_check_status':
+        elif short_name=='check_status':
             # Allows the single generation widget to refresh itself through
             # the Apps SDK bridge. No outputTemplate here: manual status
             # checks stay text-only and cannot clone another preview card.
@@ -485,6 +490,7 @@ def register_mcp(app, backend, data_dir):
         return None
 
     def call_backend(name,args):
+        name=name.removeprefix(TOOL_PREFIX)
         name=name.removeprefix('miiaivideo_')
         if name=='list_models':
             # Keep discovery fast and comfortably below connector response limits.
@@ -508,7 +514,7 @@ def register_mcp(app, backend, data_dir):
                 'models':selected,
                 'counts':counts,
                 'returned':returned,
-                'detail_tool':'miiaivideo_get_model_capabilities',
+                'detail_tool':TOOL_PREFIX+'get_model_capabilities',
                 'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-.',
             }
         elif name=='get_model_capabilities':
@@ -526,7 +532,7 @@ def register_mcp(app, backend, data_dir):
             endpoint='aivideo_task_status';payload=None;kwargs={'task_id':args['task_id']}
         else:
             endpoint='aivideo_generate';kwargs={};payload=dict(args)
-            defaults={'generate_video':('video','seedance25'),'generate_image':('image','nanobanana'),
+            defaults={'generate_video':('video','seedance25'),'generate_image':('image','bpx-flux-2-klein'),
                       'generate_audio':('audio','seedaudio'),'generate_music':('audio','bpx-music-3.0'),
                       'generate_sfx':('audio','bpx-sonilo-sfx'),
                       'video_to_music':('audio','bpx-sonilo-video-music'),
@@ -540,13 +546,26 @@ def register_mcp(app, backend, data_dir):
             if name in ('generate_video','motion_control'):
                 backend['_aivideo_clear_debug']()
             default_catalog_slug={'generate_video':'seedance-2.5',
-                                  'generate_image':'midjourney-v7',
+                                  'generate_image':'flux-2-klein',
                                   'generate_audio':'sonilo-sfx',
                                   'generate_music':'music-3.0','generate_sfx':'sonilo-sfx',
                                   'video_to_music':'sonilo-video-music',
                                   'video_to_sfx':'sonilo-video-sfx',
                                   'motion_control':'kling-3-motion-control-std'}.get(name,'')
-            requested_slug=str(payload.get('model_slug') or default_catalog_slug).lower()
+            # Never silently swap an explicitly requested family for the
+            # default model: that could spend credits on a different model.
+            # Older Seedance 2.5 agents retain their unambiguous alias.
+            requested_slug=str(payload.get('model_slug') or '').strip().lower()
+            if not requested_slug and payload.get('family'):
+                explicit_family=str(payload['family']).strip().lower()
+                if explicit_family.startswith('bpx-'):
+                    requested_slug=explicit_family[4:]
+                elif explicit_family=='seedance25':
+                    requested_slug='seedance-2.5'
+                else:
+                    return {'error':'Unsupported family. Use model_slug from '+TOOL_PREFIX+'list_models.'}
+            if not requested_slug:
+                requested_slug=default_catalog_slug
             catalog_selected=False
             if requested_slug and name in ('generate_video','generate_image','generate_audio',
                                            'generate_music','generate_sfx','video_to_music','video_to_sfx','motion_control'):
@@ -563,7 +582,7 @@ def register_mcp(app, backend, data_dir):
             variant=payload.pop('variant',{'seedance':'MINI','seedream':'PRO','flux':'SCHNELL','veo':'FAST','klingswap':'STD'}.get(family,'STANDARD')).upper()
             caps=catalog()[kind].get(family+':'+variant)
             if not caps:
-                return {'error':'Unsupported model or variant. Call miiaivideo_list_models first.'}
+                return {'error':'Unsupported model or variant. Call '+TOOL_PREFIX+'list_models first.'}
             for field,key in (('resolution','resolutions'),('aspect_ratio','aspect_ratios'),('duration','durations')):
                 value=payload.get(field)
                 if value not in (None,''):
@@ -617,7 +636,7 @@ def register_mcp(app, backend, data_dir):
         preview=media_preview(result)
         if preview:
             result['preview']=preview
-        if 'miiaivideo_'+name in generation_tools and result.get('task_id') and not result.get('error'):
+        if name in generation_tools and result.get('task_id') and not result.get('error'):
             # Task-scoped, expiring read capability for the one embedded card.
             # Polling must not call another MCP tool (which creates a new card).
             result['status_token']=widget_status_signer.dumps({'task_id':result['task_id']})
@@ -645,7 +664,7 @@ def register_mcp(app, backend, data_dir):
         if not isinstance(task_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',task_id):
             return widget_response({'error':'Invalid status token.'},401)
         try:
-            data=call_backend('miiaivideo_check_status',{'task_id':task_id})
+            data=call_backend(TOOL_PREFIX+'check_status',{'task_id':task_id})
         except Exception:
             app.logger.exception('MCP widget status failed')
             return widget_response({'error':'Status temporarily unavailable.'},503)
@@ -683,15 +702,15 @@ def register_mcp(app, backend, data_dir):
         if version and version not in VERSIONS:
             return error('unsupported_protocol_version')
         if method=='initialize':
-            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False},'resources':{'subscribe':False,'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.1.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use miiaivideo_list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll miiaivideo_check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
+            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False},'resources':{'subscribe':False,'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.2.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use '+TOOL_PREFIX+'list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll '+TOOL_PREFIX+'check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
         elif method=='ping':
             result={}
         elif method=='tools/list':
             result={'tools':tools}
         elif method=='resources/list':
-            result={'resources':[{'uri':'ui://miiaivideo/result-preview-v3.html','name':'MII AI STUDIO result preview','mimeType':'text/html;profile=mcp-app'}]}
+            result={'resources':[{'uri':PREVIEW_URI,'name':'MII AI STUDIO result preview','mimeType':'text/html;profile=mcp-app'}]}
         elif method=='resources/read':
-            if params.get('uri')!='ui://miiaivideo/result-preview-v3.html':
+            if params.get('uri') not in (PREVIEW_URI,LEGACY_PREVIEW_URI):
                 return rpc_error(-32602,'Unknown resource')
             html='''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 *{box-sizing:border-box}body{margin:0;background:#08090d;color:#fff;font:13px system-ui,-apple-system,sans-serif}main{padding:10px}.card{overflow:hidden;border:1px solid #35202a;border-radius:14px;background:linear-gradient(145deg,#151116,#0b0c10)}.head{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px}.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#ff2446,#8a0018);font-weight:850;box-shadow:0 0 18px #ff204044}.copy{min-width:0}.title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:2px;color:#a7a1a5;font:10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.04em}.pct{color:#ff526b;font:700 11px ui-monospace,monospace}.bar{height:3px;margin:0 10px 10px;background:#ffffff12;border-radius:9px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#ff1638,#ff6078);transition:width .35s}.media{display:none;border-top:1px solid #35202a;background:#050506}.media img,.media video{display:block;width:100%;max-height:300px;object-fit:contain;background:#050506}.media audio{display:block;width:calc(100% - 20px);margin:12px 10px}.foot{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #35202a}.foot a{color:#ff6078;font-size:11px;font-weight:750;text-decoration:none}.err{color:#ff7187}.done .mark{background:linear-gradient(135deg,#21b879,#0a6643);box-shadow:0 0 18px #35e6a033}.done .pct{color:#48e6aa}.failed .mark{background:linear-gradient(135deg,#ff2446,#710014)}.failed .pct{color:#ff7187}@media(max-width:420px){main{padding:7px}.head{padding:8px}.media img,.media video{max-height:230px}}
@@ -714,7 +733,10 @@ render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('o
         elif method in ('prompts/list','resources/templates/list'):
             result={ {'prompts/list':'prompts','resources/templates/list':'resourceTemplates'}[method]:[]}
         elif method=='tools/call':
-            definition=next((t for t in tools if t['name']==params.get('name')),None)
+            tool_name=params.get('name')
+            if isinstance(tool_name,str) and tool_name.startswith('miiaivideo_'):
+                tool_name=TOOL_PREFIX+tool_name[len('miiaivideo_'):]
+            definition=next((t for t in tools if t['name']==tool_name),None)
             args=params.get('arguments') or {}
             if not definition or not isinstance(args,dict):
                 return rpc_error(-32602,'Unknown tool or invalid arguments')
