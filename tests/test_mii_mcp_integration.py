@@ -118,6 +118,52 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         self.assertEqual(worker.call_count,count)
         self.assertGreaterEqual(count,37)
 
+    def test_large_reference_uploads_then_seedance_submission_without_spending(self):
+        key=self.key()['key']
+        # The old 256 KB MCP cap rejected even one ordinary reference sheet.
+        image=b'\x89PNG\r\n\x1a\n'+b'x'*300000
+        uploads=patch.object(self.module,'_dropbox_upload_and_link',
+                             side_effect=lambda raw,filename: 'https://example.com/refs/'+filename).start()
+        urls=[]
+        for index in range(8):
+            encoded=base64.b64encode(image+str(index).encode()).decode()
+            result=self.call(key,'upload_reference',{'image_base64':'data:image/png;base64,'+encoded})
+            self.assertFalse(result['isError'],result)
+            urls.append(result['structuredContent']['url'])
+        self.assertEqual(len(set(urls)),8)
+        self.assertEqual(uploads.call_count,8)
+        self.assertEqual(uploads.call_args_list[0].args[0],image+b'0')
+
+        caps=self.call(key,'get_model_capabilities',
+                       {'slug':'bpx-seedance-2.5:STANDARD','category':'video'})
+        self.assertFalse(caps['isError'],caps)
+        self.assertEqual(caps['structuredContent']['model_id'],
+                         'bpx-seedance-2.5:STANDARD')
+        patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        worker=patch.object(self.module.threading,'Thread').start()
+        result=self.call(key,'generate_video',{
+            'prompt':'Eight distinct adults in a modern home',
+            'model_slug':'bpx-seedance-2.5:STANDARD',
+            'duration':30,'resolution':'720p','aspect_ratio':'16:9',
+            'mute_audio':False,'image_urls':urls,
+        })
+        self.assertFalse(result['isError'],result)
+        self.assertIn('task_id',result['structuredContent'])
+        worker.assert_called_once()
+        audit=self.module._aivideo_debug_snapshot()['last_provider_links']
+        self.assertEqual(audit['count'],8)
+        self.assertEqual([link['url'] for link in audit['links']],urls)
+
+        invalid=self.call(key,'upload_reference',{'image_base64':'data:text/plain;base64,'+encoded})
+        self.assertTrue(invalid['isError'])
+        self.assertEqual(uploads.call_count,8)
+
+    def test_non_upload_mcp_requests_keep_small_body_limit(self):
+        key=self.key()['key']
+        response=self.rpc(key,'tools/list',{'padding':'x'*300000})
+        self.assertEqual(response.status_code,413)
+        self.assertEqual(response.get_json()['error'],'request_too_large')
+
     def test_budgetpixel_image_runner_uses_image_lifecycle(self):
         task_id='image-runner-test'
         with self.module.AIVIDEO_TASKS_LOCK:
