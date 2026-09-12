@@ -109,6 +109,54 @@ class AiVideoDebugTests(unittest.TestCase):
         self.assertEqual(app._AIVIDEO_REQUEST_LOG, [])
 
 
+    def test_security_history_is_independent_and_password_protected(self):
+        event = {'created_ts': 1700000000, 'kind': 'DENIED WRITE REQUEST',
+                 'route': '/api/aivideo/generate', 'ip_address': '<script>alert(1)</script>',
+                 'socket_ip': '127.0.0.1', 'ip_source': 'UNVERIFIED PROXY HEADER',
+                 'device': 'Android Chrome', 'http_status': 401}
+        with app.app.test_client() as client, \
+                patch.object(app, 'get_site_status', return_value={'maintenance': False}), \
+                patch.object(app.aivideo_archive, 'list_security_events',
+                             return_value={'count': 1, 'retention_days': 30, 'events': [event]}) as read, \
+                patch.object(app._dropbox_manager, 'status') as storage:
+            locked = client.get('/ai-video/security-history')
+            self.assertEqual(locked.status_code, 200)
+            self.assertIn(b'PRIVATE WORKSPACE', locked.data)
+            read.assert_not_called()
+            with client.session_transaction() as sess:
+                sess['mii_aivideo_auth'] = True
+            page = client.get('/ai-video/security-history')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn(b'SECURITY HISTORY', page.data)
+            self.assertIn(b'DENIED WRITE REQUEST', page.data)
+            self.assertNotIn(b'<script>alert(1)</script>', page.data)
+            self.assertIn(b'&lt;script&gt;', page.data)
+            self.assertIn(b'no-store', page.headers['Cache-Control'])
+            read.assert_called_once_with(limit=100)
+            storage.assert_not_called()
+
+    def test_security_history_failure_is_rendered_without_debug_dependency(self):
+        with app.app.test_client() as client, \
+                patch.object(app, 'get_site_status', return_value={'maintenance': False}), \
+                patch.object(app.aivideo_archive, 'list_security_events',
+                             side_effect=RuntimeError('temporary database failure')):
+            with client.session_transaction() as sess:
+                sess['mii_aivideo_auth'] = True
+            page = client.get('/ai-video/security-history')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn(b'HISTORY TEMPORARILY UNAVAILABLE', page.data)
+            self.assertNotIn(b'AUDIT READY', page.data)
+
+    def test_debug_payload_does_not_load_security_history(self):
+        with app.app.test_request_context('/api/aivideo/debug-data'), \
+                patch.object(app.aivideo_archive, 'list_security_events') as read, \
+                patch.object(app._dropbox_manager, 'status', return_value={'state': 'NOT CONFIGURED'}), \
+                patch.object(app.budgetpixel_registry, 'get_registry',
+                             return_value={'models': [], 'synced_at': None, 'sync_error': None}):
+            result = app._aivideo_diagnostics()
+            self.assertNotIn('security_history', result)
+            read.assert_not_called()
+
     def test_security_history_only_records_threshold_and_denied_writes(self):
         with app._AIVIDEO_UNLOCK_LOCK:
             app._AIVIDEO_UNLOCK_ATTEMPTS.clear()
