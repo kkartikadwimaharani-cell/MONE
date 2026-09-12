@@ -5301,6 +5301,46 @@ def _aivideo_diagnostics():
     log = _aivideo_request_log_snapshot()
     state = _dropbox_manager.status()
     storage = snap.get('dropbox') or {}
+    connection_state = state.get('state') or 'not_connected'
+    tested_at = state.get('last_test_at')
+    test_ok = state.get('last_test_ok')
+    # Legacy OAuth/environment connections cannot persist test metadata in the
+    # encrypted store; use only a recent in-process test for that case.
+    if tested_at is None and storage.get('at'):
+        checked = _parse_ts(storage['at'])
+        if checked and storage.get('mode') in ('legacy_env', 'oauth_connected'):
+            tested_at = checked.timestamp()
+            test_ok = storage.get('ok')
+    recent_test = False
+    if isinstance(tested_at, (int, float)):
+        elapsed = time.time() - tested_at
+        recent_test = 0 <= elapsed < 600
+    if connection_state in ('not_connected', 'credentials_saved'):
+        storage_status = 'NOT CONFIGURED'
+    elif connection_state == 'key_mismatch' or test_ok is False:
+        storage_status = 'ERROR'
+    elif test_ok is True and recent_test:
+        storage_status = 'READY'
+    else:
+        storage_status = 'NOT CHECKED'
+    storage_detail = {
+        'READY': 'Recent connection test passed',
+        'ERROR': 'Connection test failed or reauthorization is required',
+        'NOT CONFIGURED': 'Connect Dropbox to enable storage',
+        'NOT CHECKED': 'Connection configured; run a connection test to verify it',
+    }[storage_status]
+    # The debug payload is admin-only, but still expose metadata, never tokens
+    # or provider error bodies. A connected account does not imply a valid token.
+    connection = {
+        'state': connection_state,
+        'source': state.get('source'),
+        'account_name': state.get('account_name') or None,
+        'account_id_masked': state.get('account_id_masked') or None,
+        'auto_refresh': bool(state.get('auto_refresh')) if state.get('source') == 'oauth' else False,
+        'last_refresh_at': state.get('last_refresh_at'),
+        'last_test_at': tested_at,
+        'last_test_ok': test_ok,
+    }
     configured = bool(_segmind_api_key() or _budgetpixel_api_key())
     catalog = budgetpixel_registry.get_registry(_budgetpixel_api_key())
     catalog_counts = {}
@@ -5315,10 +5355,11 @@ def _aivideo_diagnostics():
                    created_at=entry.get('at'), elapsed_ms=entry.get('duration_ms'),
                    final_payload=entry.get('request_body'))
         entries.append(row)
-    return dict(snap, storage={
-        'status': 'READY' if storage.get('ok') else ('ERROR' if storage.get('ok') is False else 'NOT CHECKED'),
-        'mode': state.get('state'), 'detail': storage.get('detail') or 'Belum ada pemeriksaan koneksi',
-        'checked_at': storage.get('at'),
+    return dict(snap, dropbox=connection, storage={
+        'status': storage_status, 'mode': connection_state, 'detail': storage_detail,
+        'account': connection['account_name'], 'account_id': connection['account_id_masked'],
+        'auto_refresh': connection['auto_refresh'],
+        'last_refresh': connection['last_refresh_at'], 'checked_at': tested_at,
     }, generation={
         'status': 'READY' if configured else 'NOT CONFIGURED',
         'api_configuration': 'CONFIGURED' if configured else 'MISSING',
@@ -5573,11 +5614,16 @@ def api_dropbox_test():
     try:
         result = _dropbox_manager.test_connection()
     except dropbox_oauth.DropboxOAuthError as e:
+        _aivideo_debug_set('dropbox', mode=_dropbox_manager.status().get('source'),
+                           ok=False, detail='Connection test failed')
         return _dropbox_oauth_error_response(e)
     except Exception as e:
+        _aivideo_debug_set('dropbox', mode=_dropbox_manager.status().get('source'),
+                           ok=False, detail='Connection test failed')
         return _dropbox_oauth_error_response(dropbox_oauth.DropboxOAuthError(str(e), status=502))
+    _aivideo_debug_set('dropbox', mode=_dropbox_manager.status().get('source'),
+                       ok=True, detail='Connection verified')
     return jsonify({'ok': True, 'message': 'Connection test successful', 'data': result})
-
 
 @app.route('/api/aivideo/dropbox/disconnect', methods=['POST'])
 def api_dropbox_disconnect():

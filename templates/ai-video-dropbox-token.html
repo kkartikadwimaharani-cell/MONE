@@ -345,25 +345,39 @@ function fmtTime(ts) {
   try { return new Date(ts * 1000).toLocaleString(); } catch (e) { return '—'; }
 }
 
+function escapeText(value) {
+  var el = document.createElement('span');
+  el.textContent = value || '—';
+  return el.innerHTML;
+}
+
+function tokenHealth(d) {
+  if (d.last_test_ok === false) return '<span class="v" style="color:var(--bad)">Test Failed</span>';
+  if (d.last_test_ok === true && d.last_test_at && Date.now() / 1000 - d.last_test_at < 600)
+    return '<span class="v ok">Recently Verified</span>';
+  return '<span class="v" style="color:var(--amber)">Not Recently Tested</span>';
+}
+
 function connectedCardHTML(d) {
   return (
     '<div class="card">' +
       '<div class="card-icon-row"><div class="card-icon">' + ICONS.cloud + '</div>' +
       '<div><div class="card-title">Dropbox</div><div class="card-desc">Connected &amp; Auto-Refreshing</div></div></div>' +
       '<div class="info-list">' +
-        '<div class="info-row"><span class="k">Account</span><span class="v">' + (d.account_name || '—') + '</span></div>' +
-        '<div class="info-row"><span class="k">Account ID</span><span class="v mono">' + (d.account_id_masked || '—') + '</span></div>' +
-        '<div class="info-row"><span class="k">Auto Refresh</span><span class="v ok">Enabled</span></div>' +
-        '<div class="info-row"><span class="k">Access Token</span><span class="v ok">Healthy</span></div>' +
+        '<div class="info-row"><span class="k">Account</span><span class="v">' + escapeText(d.account_name) + '</span></div>' +
+        '<div class="info-row"><span class="k">Account ID</span><span class="v mono">' + escapeText(d.account_id_masked) + '</span></div>' +
+        '<div class="info-row"><span class="k">Auto Refresh</span><span class="v">' + (d.source === 'oauth' ? 'Enabled' : 'Legacy Configuration') + '</span></div>' +
+        '<div class="info-row"><span class="k">Access Token</span>' + tokenHealth(d) + '</div>' +
         '<div class="info-row"><span class="k">Last Refresh</span><span class="v">' + fmtTime(d.last_refresh_at) + '</span></div>' +
         '<div class="info-row"><span class="k">Last Connection Test</span><span class="v">' + fmtTime(d.last_test_at) + '</span></div>' +
-        '<div class="info-row"><span class="k">Scopes</span><span class="v mono" style="text-align:right;max-width:60%">' + (d.scope || '—') + '</span></div>' +
+        '<div class="info-row"><span class="k">Scopes</span><span class="v mono" style="text-align:right;max-width:60%">' + escapeText(d.scope) + '</span></div>' +
       '</div>' +
       '<button class="btn btn-secondary" id="btnTest">Test Connection</button>' +
       '<div class="btn-row">' +
         '<button class="btn btn-secondary" id="btnReconnect">Reconnect</button>' +
         '<button class="btn btn-danger" id="btnDisconnect">Disconnect</button>' +
       '</div>' +
+      '<a class="btn btn-secondary" href="/ai-video/debug">Open System Diagnostics</a>' +
     '</div>'
   );
 }
