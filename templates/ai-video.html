@@ -1669,12 +1669,30 @@ video.uc-thumb{position:absolute;inset:0;width:100%;height:100%;pointer-events:n
   .canvas-result-wrap.has-result .canvas-preview{height:min(21dvh,170px)}
   .gen-queue{max-height:min(34dvh,290px)}
 }
+/* Frames: reserve a real grid cell for Prompt at every viewport width.
+   Generic .media-row rules below the original mobile grid must not turn this
+   row back into flex (which clips Prompt outside the panel). */
+#framesMediaRow{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(150px,.4fr);align-items:stretch;width:100%;min-width:0}
+#framesMediaRow>#framesRailMount{grid-column:1;grid-row:1;min-width:0}
+#framesMediaRow>.frame-row{grid-column:2;grid-row:1;width:100%;min-width:0}
+#framesMediaRow>#framesPromptMount{grid-column:3;grid-row:1;width:100%;min-width:0}
+#framesMediaRow .prompt-btn{width:100%;min-width:0;height:100%}
+@media(max-width:900px){
+  #framesMediaRow{grid-template-columns:40px minmax(0,1fr)}
+  #framesMediaRow>#framesRailMount{grid-row:1 / span 2}
+  #framesMediaRow>#framesPromptMount{grid-column:2;grid-row:2;min-height:48px}
+}
+@media(max-width:430px){
+  #framesMediaRow{grid-template-columns:36px minmax(0,1fr)}
+  #framesMediaRow>#framesRailMount{min-width:0}
+}
 </style>
 </head>
 
 <body class="{{ 'demo-mode' if demo_mode|default(false) else '' }}">
 <script>
 var DEMO_MODE = {{ demo_mode|default(false)|tojson }};
+var MII_WORKSPACE_TOKEN = {{ workspace_token|default('')|tojson }};
 if (DEMO_MODE) {
   // The public preview is fully server-rendered. Runtime fetch is denied as
   // a fail-closed boundary, so future UI code cannot accidentally upload,
@@ -2329,6 +2347,9 @@ if (DEMO_MODE) {
       var tok = readCookie('mii_csrf');
       if (tok) {
         init.headers = Object.assign({}, init.headers || {}, { 'X-CSRF-Token': tok });
+      }
+      if (!DEMO_MODE && MII_WORKSPACE_TOKEN && url.split('?')[0] === '/api/aivideo/generate') {
+        init.headers = Object.assign({}, init.headers || {}, { 'X-MII-Workspace-Token': MII_WORKSPACE_TOKEN });
       }
     }
     return origFetch(input, init);
