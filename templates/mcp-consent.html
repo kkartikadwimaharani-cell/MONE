@@ -1,10 +1,26 @@
 {% extends 'mcp-base.html' %}{% block content %}
+<style>
+/* Consent inherits the secure flow; visual treatment only. */
+body{background:radial-gradient(ellipse at 50% -10%,rgba(132,15,45,.22),transparent 54%),linear-gradient(150deg,#080709,#030304 72%);text-transform:uppercase}
+body:before{background-image:radial-gradient(circle,rgba(255,224,231,.026) .7px,transparent 1px);background-size:44px 44px}
+main{max-width:820px}
+.topline strong,.tag,.index{color:#dfa5b2}
+.avatar-shell{border:0;border-radius:21px;overflow:hidden;background:rgba(169,26,61,.12)}
+.avatar-shell:before,.avatar-shell:after,section:before,section:after,.card:before,.card:after{content:none}
+.avatar-shell img{border-radius:18px}
+section,.card{border:0;border-radius:24px;background:radial-gradient(circle at 80% 0%,rgba(148,28,57,.08),transparent 48%),linear-gradient(145deg,#161318,#0c0b0f);box-shadow:0 23px 66px rgba(0,0,0,.35)}
+.permission-list li,.route{border-top:0}
+.safe{border:0;border-radius:14px;background:rgba(176,35,68,.085);color:#f3d9df}
+.safe b{color:#f0b2c0}
+button{border:0;border-radius:14px;background:linear-gradient(135deg,#b81036,#6d091e)}
+button.secondary{border:0;background:rgba(255,255,255,.06)}
+@media(max-width:520px){.topline{flex-wrap:wrap}section,.card{padding:22px 18px}}
+</style>
 <div class="topline"><span>MII AI STUDIO // AUTH GATEWAY</span><strong>ENCRYPTED</strong></div>
 <header>
   <div class="avatar-shell"><img src="/mcp/icon" alt="Makima — MII AI STUDIO"></div>
   <div><div class="tag">SECURE AGENT ACCESS</div><h1>HUBUNGKAN AGENT?</h1></div>
 </header>
-<div class="signal"><div class="signal-head"><span>OAUTH HANDSHAKE</span><span>AWAITING DECISION</span></div><div class="track"><div class="bar"></div></div></div>
 <section>
   <div class="panel-head"><h2>{{ client_name }}</h2><span class="index">01 / AUTHORIZE</span></div>
   <p>Agent ini meminta izin memakai <strong>MII AI STUDIO</strong> atas namamu.</p>
