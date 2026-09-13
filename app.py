@@ -171,7 +171,13 @@ aivideo_archive.init_db()
 # Maintenance status storage, Telegram bot control panel, and event rewards
 # ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+_DEFAULT_DATA_DIR = os.path.join(BASE_DIR, 'data')
+DATA_DIR = os.path.abspath(
+    os.environ.get('MII_DATA_DIR')
+    or os.environ.get('RAILWAY_VOLUME_MOUNT_PATH')
+    or _DEFAULT_DATA_DIR
+)
+os.makedirs(DATA_DIR, exist_ok=True)
 SITE_STATUS_FILE = os.path.join(DATA_DIR, 'site_status.json')
 EVENT_DATA_FILE = os.path.join(DATA_DIR, 'event_data.json')
 _STATUS_LOCK = threading.Lock()
@@ -201,6 +207,9 @@ APP_SECRET_DEFS = [
     {'key': 'MII_AIVIDEO_PASSWORD', 'env_names': ['MII_AIVIDEO_PASSWORD'],
      'label': 'AI Video Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
      'help': 'Login /ai-video'},
+    {'key': 'MAKIMA_ADMIN_PASSWORD', 'env_names': ['MAKIMA_ADMIN_PASSWORD'],
+     'label': 'Makima AI Admin Password', 'category': 'Admin Passwords', 'kind': 'password',
+     'help': 'Login MAKIMA AI. Wajib diisi; tidak ada password bawaan.'},
     {'key': 'MII_MCP_API_KEY', 'env_names': ['MII_MCP_API_KEY'],
      'label': 'MCP Server API Key', 'category': 'Admin Passwords', 'kind': 'api_key',
      'help': 'Dipakai server MCP MiiAiVideo buat manggil API ini tanpa perlu login browser. Generate string acak panjang, bukan password biasa.'},
@@ -4036,6 +4045,8 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
         if dl.status_code >= 400:
             raise RuntimeError(f'Gagal download hasil BudgetPixel ({dl.status_code})')
         result_bytes = dl.content
+        if not result_bytes:
+            raise RuntimeError('Hasil BudgetPixel kosong')
     except budgetpixel_provider.ProviderError as e:
         msg = e.public_message
         app.logger.warning('%s gagal [%s]: %s', log_prefix, e.code, str(e))
@@ -4068,11 +4079,20 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
 
     upload_dir = os.path.join(app.root_path, 'static', 'aivideo_uploads')
     os.makedirs(upload_dir, exist_ok=True)
-    if output_type == 'audio':
+    detected_kind = _detect_upload_kind(result_bytes)
+    if output_type == 'image':
+        requested_format = str(input_body.get('output_format') or 'png').lower()
+        requested_format = {'jpeg': 'jpg'}.get(requested_format, requested_format)
+        ext = {'jpg': 'jpg', 'png': 'png', 'webp': 'webp'}.get(
+            detected_kind,
+            requested_format if requested_format in ('jpg', 'png', 'webp') else 'png',
+        )
+    elif output_type == 'audio':
         requested_format = str(input_body.get('format') or input_body.get('audio_format') or 'mp3').lower()
-        ext = requested_format if requested_format in ('mp3', 'wav', 'ogg', 'm4a') else 'mp3'
+        ext = detected_kind if detected_kind in ('mp3', 'wav') else (
+            requested_format if requested_format in ('mp3', 'wav') else 'mp3')
     else:
-        ext = 'png' if output_type == 'image' else 'mp4'
+        ext = 'mp4'
     fname = f'{task_id}.{ext}'
     with open(os.path.join(upload_dir, fname), 'wb') as f:
         f.write(result_bytes)
@@ -4861,21 +4881,31 @@ def aivideo_generate():
 
 @app.route('/api/aivideo/capabilities')
 def api_aivideo_capabilities():
-    """Model/family/variant capability registry — image and video, both
-    fully routed through BudgetPixel now (including all three Seedance 2.0
-    tiers — MINI/FAST/PRO — confirmed at docs.budgetpixel.com/concepts/models).
-    Built for the MiiAiVideo MCP server's list_models tool, but harmless to
-    call from anywhere authenticated (same data the browser UI already gets
-    baked into ai-video.html)."""
+    """Return only the current reviewed BudgetPixel registry.
+
+    A local handler means the model is integrated, not unlimited: provider
+    credits, rate limits, catalogue state, and upstream availability still
+    apply. This endpoint never submits a generation.
+    """
     if not _aivideo_authed():
         return jsonify({'error': 'unauthorized'}), 401
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
+    models = [
+        model for model in registry.get('models', [])
+        if model.get('handler') and model.get('available')
+    ]
+    counts = {
+        kind: sum(1 for model in models if model.get('category') == kind)
+        for kind in ('video', 'image', 'audio', 'motion')
+    }
     return jsonify({
         'ok': True,
         'data': {
-            'image': budgetpixel_provider.public_image_capabilities(),
-            'video': budgetpixel_provider.public_video_capabilities(),
-            'catalog': registry,
+            'models': models,
+            'counts': counts,
+            'configured': bool(_budgetpixel_api_key()),
+            'synced_at': registry.get('synced_at'),
+            'sync_error': registry.get('sync_error'),
         },
     })
 
@@ -7071,8 +7101,15 @@ def download_photo():
         return jsonify({'error': 'Gagal mengunduh foto'}), 502
 
 
-@app.route('/api/test-gemini', methods=['GET'])
+@app.route('/api/test-gemini', methods=['POST'])
 def test_gemini():
+    # This endpoint makes a real provider request, so it must never be public.
+    if not _aivideo_browser_authed():
+        return jsonify({'error': 'unauthorized'}), 401
+    expected = session.get('mii_csrf')
+    supplied = request.headers.get(_AIVIDEO_CSRF_HEADER, '')
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify({'error': 'CSRF token tidak valid atau hilang. Muat ulang halaman.'}), 403
     api_key = get_secret("GEMINI_API_KEY", "GOOGLE_API_KEY")
     if not api_key:
         return jsonify({
@@ -7229,7 +7266,8 @@ def _parse_makima_image_payload(image_payload):
 
 
 def _get_makima_access_password():
-    return os.environ.get('MAKIMA_ADMIN_PASSWORD', '') or 'MYBINI02'
+    # Fail closed: a public password embedded in source is not authentication.
+    return get_secret('MAKIMA_ADMIN_PASSWORD')
 
 
 def _is_valid_makima_access_key(provided_password):
@@ -7484,7 +7522,8 @@ def ai_chat():
 
 @app.route('/api/test-env', methods=['GET'])
 def test_env():
-    import sys
+    if not _aivideo_browser_authed():
+        return jsonify({'error': 'unauthorized'}), 401
     import platform
     # Find env var names containing GEMINI or GOOGLE (names only, not values)
     env_names = [k for k in os.environ.keys() if 'GEMINI' in k.upper() or 'GOOGLE' in k.upper()]
