@@ -2,7 +2,17 @@ import sqlite3
 import threading
 import os
 
-_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analytics.db')
+_MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+_DATA_DIR = os.path.abspath(
+    os.environ.get('MII_DATA_DIR')
+    or os.environ.get('RAILWAY_VOLUME_MOUNT_PATH')
+    or _MODULE_DIR
+)
+_DB_PATH = os.path.abspath(
+    os.environ.get('MII_ANALYTICS_DB')
+    or os.path.join(_DATA_DIR, 'analytics.db')
+)
+os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
 _write_lock = threading.Lock()
 _conn = None
 

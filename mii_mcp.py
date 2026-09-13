@@ -277,15 +277,33 @@ def register_mcp(app, backend, data_dir):
         return dict(name=name,description=description,inputSchema={'type':'object','properties':props or {},'required':required or [],'additionalProperties':False},annotations={'readOnlyHint':not write,'destructiveHint':False,'idempotentHint':not write,'openWorldHint':True})
 
     string={'type':'string'}
-    images={'type':'array','items':string,'maxItems':9}
-    videos={'type':'array','items':string,'maxItems':3}
-    common={'prompt':{'type':'string','minLength':1},'family':string,'variant':string,
+    prompt_string={'type':'string','minLength':1,'maxLength':20000}
+    images={'type':'array','items':string,'maxItems':15}
+    videos={'type':'array','items':string,'maxItems':5}
+    audios={'type':'array','items':string,'maxItems':5}
+    one_video={'type':'array','items':string,'minItems':1,'maxItems':1}
+    common={'prompt':prompt_string,'family':string,'variant':string,
             'model_slug':string,'resolution':string,'aspect_ratio':string,
             'negative_prompt':string,'image_urls':images}
     image_controls=dict(common, size=string, quality=string, output_format=string,
                         megapixel=string, num_images={'type':'integer','minimum':1,'maximum':4},
                         seed={'type':'integer'}, sequential_image_generation=string,
-                        max_images={'type':'integer','minimum':1,'maximum':14})
+                        max_images={'type':'integer','minimum':1,'maximum':15})
+    audio_controls={'prompt':prompt_string,'family':string,'variant':string,
+                    'model_slug':string,
+                    'duration':{'type':'integer','minimum':1,'maximum':360},
+                    'audio_format':{'type':'string','enum':['mp3','wav']},
+                    'lyrics':string,'instrumental':{'type':'boolean'},
+                    'vocal_gender':{'type':'string','enum':['auto','female','male']},
+                    'image_urls':images,'video_urls':videos}
+    music_controls=dict(audio_controls)
+    sfx_controls={'prompt':prompt_string,'family':string,'variant':string,
+                  'model_slug':string,
+                  'duration':{'type':'integer','minimum':1,'maximum':180},
+                  'audio_format':{'type':'string','enum':['mp3','wav']}}
+    video_music_controls={'prompt':prompt_string,'family':string,'variant':string,
+                          'model_slug':string,'video_urls':one_video,
+                          'audio_format':{'type':'string','enum':['mp3','wav']}}
     tools=[
         tool('list_models','List supported MII AI STUDIO model IDs quickly. Optionally filter by category or search text; use get_model_capabilities for one model\'s detailed controls.',
              {'category':{'type':'string','enum':['video','image','audio','motion']},
@@ -293,13 +311,13 @@ def register_mcp(app, backend, data_dir):
         tool('clear_debug','Clear AI Video diagnostics only. Does not delete tasks, history, credentials, or media.',write=True),
         tool('upload_reference','Upload ONE PNG/JPEG/WEBP reference image (up to 5 MB). Send image_base64 as raw base64 or a data:image/...;base64,... URL. Call once per image, then pass returned HTTPS URLs in image_urls in the same order. Uploading does not spend generation credits.',
              {'image_base64':{'type':'string','minLength':1,'maxLength':((MCP_IMAGE_MAX_BYTES+2)//3)*4+64}},['image_base64'],True),
-        tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=videos),['prompt'],True),
+        tool('generate_video','Clear old diagnostics, validate outbound media links, then start video generation using account credits only when requested. Returns task_id.',dict(common,duration={'type':'integer','minimum':1,'maximum':30},mute_audio={'type':'boolean'},first_frame_url=string,last_frame_url=string,video_urls=videos,audio_urls=audios),['prompt'],True),
         tool('generate_image','Start image generation using account credits only when requested. Returns task_id.',image_controls,['prompt'],True),
-        tool('generate_audio','Start Seed Audio generation using account credits only when requested.',{'prompt':{'type':'string','minLength':1},'audio_format':string,'sample_rate':{'type':'integer'},'audio_urls':videos,'image_urls':images},['prompt'],True),
-        tool('generate_music','Generate music only with a model listed as available for music.',dict(common,lyrics=string,duration={'type':'integer','minimum':1}),['prompt'],True),
-        tool('generate_sfx','Generate a sound effect only with a listed SFX model.',dict(common,duration={'type':'integer','minimum':1}),['prompt'],True),
-        tool('video_to_music','Generate music from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
-        tool('video_to_sfx','Generate sound effects from one source video.',dict(common,video_urls={'type':'array','items':string,'minItems':1,'maxItems':1}),['video_urls'],True),
+        tool('generate_audio','Generate audio with one available MII AI STUDIO audio model. Defaults to Sonilo SFX; use model_slug to select music or another audio model.',audio_controls,['prompt'],True),
+        tool('generate_music','Generate music only with a model listed as available for music.',music_controls,['prompt'],True),
+        tool('generate_sfx','Generate a sound effect only with a listed SFX model.',sfx_controls,['prompt'],True),
+        tool('video_to_music','Generate music from exactly one source video.',video_music_controls,['video_urls'],True),
+        tool('video_to_sfx','Generate sound effects from exactly one source video.',video_music_controls,['video_urls'],True),
         tool('get_model_capabilities','Return the exact local schema and status for one catalogue slug.',
              {'slug':{'type':'string','minLength':1},'category':{'type':'string','enum':['image','video','audio','motion']}},['slug']),
         tool('motion_control','Animate one character image using one source video.',{'prompt':string,'model_slug':string,'video_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'image_urls':{'type':'array','items':string,'minItems':1,'maxItems':1},'mute_audio':{'type':'boolean'},'character_orientation':{'type':'string','enum':['video','image']},'trim_intro':{'type':'boolean'}},['video_urls','image_urls'],True),
@@ -345,7 +363,10 @@ def register_mcp(app, backend, data_dir):
                     'aspect_ratios':list(item.get('aspect_ratios',())),
                     'resolutions':list(item.get('resolutions',())),
                     'durations':list(item.get('durations',())),
-                    'fields':list(dict.fromkeys(fields))}
+                    'fields':list(dict.fromkeys(fields)),
+                    'max_reference_images':int(item.get('reference_images') or 0),
+                    'max_reference_videos':int(item.get('reference_videos') or 0),
+                    'max_reference_audios':int(item.get('reference_audios') or 0)}
         if 'budgetpixel_media_catalog' in backend:
             media=backend['budgetpixel_media_catalog']
             for slug,item in media.IMAGE_CATALOG.items():
@@ -369,98 +390,32 @@ def register_mcp(app, backend, data_dir):
                     'output_formats':list(contract.get('formats',())),
                     'image_count':list(contract.get('image_count',())),
                     'fields':list(dict.fromkeys(fields)),
-                    'requires_image':bool(item.get('requires_image'))}
+                    'requires_image':bool(item.get('requires_image')),
+                    'max_reference_images':int(
+                        1 if item.get('singular_image') else
+                        contract.get('reference_images',item.get('reference_images') or 0))}
             for slug,item in media.AUDIO_CATALOG.items():
                 fields=media.audio_fields(item)
                 result['audio']['bpx-'+slug+':STANDARD']={
                     'slug':slug, 'modes':[item.get('subtype','audio')],
                     'durations':list(item.get('durations',())),
                     'audio_formats':list(item.get('formats',())), 'fields':fields,
-                    'requires_video':bool(item.get('reference_videos'))}
+                    'requires_video':bool(item.get('reference_videos')),
+                    'max_reference_images':int(item.get('reference_images') or 0),
+                    'max_reference_videos':int(item.get('reference_videos') or 0),
+                    'max_reference_audios':0}
         if 'budgetpixel_motion_catalog' in backend:
             for slug,item in backend['budgetpixel_motion_catalog'].MOTION_CATALOG.items():
                 result['motion']['bpx-'+slug+':STANDARD']={
                     'slug':slug, 'modes':['motion-control'],
-                    'fields':['image_urls','video_urls','mute_audio','character_orientation','trim_intro']}
-        return result
-        # Legacy catalogue kept below temporarily for migration reference; it
-        # is intentionally unreachable and cannot appear in MCP responses.
-        bp_caps=backend['budgetpixel_provider'].public_video_capabilities()
-        for key,caps in bp_caps.items():
-            result['video'][key]=dict(caps,configured=bool(backend['_budgetpixel_api_key']()))
-        if 'budgetpixel_video_catalog' in backend:
-            for slug,item in backend['budgetpixel_video_catalog'].VIDEO_CATALOG.items():
-                family='bpx-'+slug
-                fields=[]
-                if item.get('resolutions'): fields.append('resolution')
-                if item.get('aspect_ratios'): fields.append('aspect_ratio')
-                if item.get('durations'): fields.append('duration')
-                if item.get('first_frame'): fields.extend(('image_urls','first_frame_url'))
-                if item.get('end_frame'): fields.append('last_frame_url')
-                if item.get('reference_videos'): fields.append('video_urls')
-                if item.get('reference_audios'): fields.append('audio_urls')
-                if item.get('generate_audio'): fields.append('mute_audio')
-                result['video'][family+':STANDARD']={
-                    'slug':slug,'provider':'BudgetPixel','modes':list(item.get('modes',())),
-                    'aspect_ratios':list(item.get('aspect_ratios',())),
-                    'resolutions':list(item.get('resolutions',())),
-                    'durations':list(item.get('durations',())),
-                    'fields':list(dict.fromkeys(fields)),
-                    'configured':bool(backend['_budgetpixel_api_key']()),
-                }
-        if 'budgetpixel_media_catalog' in backend:
-            for slug,item in backend['budgetpixel_media_catalog'].IMAGE_CATALOG.items():
-                fields=['image_urls'] if item.get('reference_images') or item.get('singular_image') else []
-                result['image']['bpx-'+slug+':STANDARD']={
-                    'slug':slug,'provider':'BudgetPixel',
-                    'modes':['text-to-image'] + (['image-editing'] if fields else []),
-                    'fields':fields,'configured':bool(backend['_budgetpixel_api_key']()),
-                    'requires_image':bool(item.get('requires_image')),
-                }
-            for slug,item in backend['budgetpixel_media_catalog'].AUDIO_CATALOG.items():
-                fields=backend['budgetpixel_media_catalog'].audio_fields(item)
-                result['audio']['bpx-'+slug+':STANDARD']={
-                    'slug':slug,'provider':'BudgetPixel','modes':[item.get('subtype','audio')],
-                    'durations':list(item.get('durations',())),
-                    'audio_formats':list(item.get('formats',())),
-                    'fields':fields,'configured':bool(backend['_budgetpixel_api_key']()),
-                    'requires_video':bool(item.get('reference_videos') and item.get('label')=='VIDEO'),
-                }
-        bp_image_caps=backend['budgetpixel_provider'].public_image_capabilities()
-        for key,caps in bp_image_caps.items():
-            family,variant=key.split(':',1)
-            public_family='gptimagebp' if family=='gptimage' else family
-            item=dict(caps,configured=bool(backend['_budgetpixel_api_key']()),provider='MII AI STUDIO')
-            fields=['image_urls'] if (item.get('reference_images') or item.get('singular_image')) else []
-            for public,cap in (('aspect_ratio','aspect_ratios'),('resolution','resolutions'),
-                               ('size','sizes'),('quality','qualities'),('output_format','formats'),
-                               ('megapixel','megapixels'),('num_images','image_count'),
-                               ('seed','seed'),('negative_prompt','negative_prompt'),
-                               ('sequential_image_generation','sequential_modes'),('max_images','max_images')):
-                if item.get(cap): fields.append(public)
-            item['fields']=fields
-            result['image'][public_family+':'+variant]=item
-        def add(kind,family,variants,ratios=(),resolutions=(),durations=(),fields=()):
-            for variant in variants:
-                result[kind][family+':'+variant]={'aspect_ratios':list(ratios),'resolutions':list(resolutions),'durations':list(durations),'fields':list(fields),'configured':bool(backend['_segmind_api_key']())}
-        # All Seedance 2.0 tiers (MINI/FAST/PRO) come from bp_caps above —
-        # confirmed fully routed through BudgetPixel per
-        # docs.budgetpixel.com/concepts/models (see app.py's 'seedance'
-        # branch). Nothing in this family needs Segmind anymore.
-        add('video','kling',backend['KLING_MODEL_MAP'],backend['KLING_RATIOS'],durations=range(3,16),fields=('image_urls','first_frame_url','last_frame_url','negative_prompt','mute_audio'))
-        add('video','veo',backend['VEO_ENDPOINT_BY_TIER'],backend['VEO_RATIOS'],backend['VEO_RESOLUTIONS'],backend['VEO_DURATIONS'],('image_urls','first_frame_url','last_frame_url','negative_prompt','mute_audio'))
-        add('image','nanobanana',backend['NANOBANANA_RESOLUTION_BY_TIER'],backend['NANOBANANA_RATIOS'],('1K','2K','4K'),fields=('image_urls',))
-        add('image','gptimage',backend['GPTIMAGE2_QUALITY_BY_TIER'],backend['GPTIMAGE2_SIZE_BY_RATIO'],fields=('image_urls',))
-        add('image','seedream',['PRO'],backend['SEEDREAM5PRO_RATIOS'],backend['SEEDREAM5PRO_SIZES'],fields=('image_urls',))
-        add('image','flux',backend['FLUX_ENDPOINT_BY_TIER'],backend['FLUX_RATIOS'])
-        add('image','imagen',['STANDARD'],backend['IMAGEN4_RATIOS'],fields=('negative_prompt',))
-        add('image','qwen',['STANDARD'],backend['QWENIMAGE_RATIOS'],fields=('negative_prompt',))
-        add('audio','seedaudio',['STANDARD'],fields=('audio_format','sample_rate','audio_urls','image_urls'))
-        result['audio']['seedaudio:STANDARD'].update(audio_formats=list(backend['SEEDAUDIO_FORMATS']),sample_rates=list(backend['SEEDAUDIO_SAMPLE_RATES']))
-        add('motion','klingswap',['STD','PRO'],fields=('video_urls','image_urls','mute_audio'))
-        for key,caps in result['video'].items():
-            if 'fields' not in caps:
-                caps['fields']=['image_urls','video_urls','audio_urls','first_frame_url','last_frame_url','mute_audio']
+                    'fields':['image_urls','video_urls','mute_audio','character_orientation','trim_intro'],
+                    'max_reference_images':1,'max_reference_videos':1,
+                    'max_reference_audios':0}
+        configured=bool(backend.get('_budgetpixel_api_key',lambda: '')())
+        for items in result.values():
+            for item in items.values():
+                item['configured']=configured
+                item['availability']='integrated' if configured else 'not_configured'
         return result
 
     def media_preview(result):
@@ -520,7 +475,8 @@ def register_mcp(app, backend, data_dir):
                 'counts':counts,
                 'returned':returned,
                 'detail_tool':TOOL_PREFIX+'get_model_capabilities',
-                'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-.',
+                'configured':all(model.get('configured') for items in complete.values() for model in items.values()),
+                'note':'Model IDs are FAMILY:VARIANT. Use model_slug for IDs beginning with bpx-. Integrated means the local handler exists; provider credits, rate limits, and upstream availability still apply.',
             }
         elif name=='get_model_capabilities':
             slug=str(args['slug']).strip().lower()
@@ -620,8 +576,20 @@ def register_mcp(app, backend, data_dir):
                                ('image' if name=='generate_image' else ('motion' if name=='motion_control' else 'audio')))
                 live=backend['budgetpixel_registry'].get_registry(backend['_budgetpixel_api_key']())
                 selected=backend['budgetpixel_registry'].model_by_slug(requested_slug,live,expected_kind)
-                if not selected or selected.get('category')!=expected_kind or not selected.get('handler'):
+                if (not selected or selected.get('category')!=expected_kind
+                        or not selected.get('handler') or not selected.get('available')):
                     return {'error':'Unknown or unavailable MII AI STUDIO model slug for this output type.'}
+                modes=set(selected.get('modes') or ())
+                parameters=selected.get('parameters') or {}
+                requires_video=bool(parameters.get('reference_videos'))
+                if name in ('generate_music','video_to_music') and 'music' not in modes:
+                    return {'error':'Select a music model for this tool.'}
+                if name in ('generate_sfx','video_to_sfx') and 'sfx' not in modes:
+                    return {'error':'Select an SFX model for this tool.'}
+                if name in ('video_to_music','video_to_sfx') and not requires_video:
+                    return {'error':'Select a video-conditioned audio model for this tool.'}
+                if name in ('generate_music','generate_sfx') and requires_video:
+                    return {'error':'Use the matching video_to_music or video_to_sfx tool for this model.'}
                 payload['family']='bpx-'+requested_slug
                 payload['model_slug']=requested_slug
                 catalog_selected=True
@@ -642,15 +610,16 @@ def register_mcp(app, backend, data_dir):
             controls=set(payload)-{'prompt','family','model_slug','resolution','aspect_ratio','duration'}
             if any(key not in caps.get('fields',[]) for key in controls):
                 return {'error':'This model does not accept one of the supplied controls.'}
-            limits={'image_urls':9,'video_urls':3,'audio_urls':3}
-            if family=='kling': limits.update(image_urls=1,video_urls=0,audio_urls=0)
-            if family=='veo': limits.update(image_urls=3,video_urls=0,audio_urls=0)
-            if family=='klingswap': limits.update(image_urls=5,video_urls=1,audio_urls=0)
-            if family=='seedaudio': limits.update(image_urls=1)
+            limits={
+                'image_urls':int(caps.get('max_reference_images') or 0),
+                'video_urls':int(caps.get('max_reference_videos') or 0),
+                'audio_urls':int(caps.get('max_reference_audios') or 0),
+            }
             for field,maximum in limits.items():
-                if len(payload.get(field,[]))>maximum:
+                values=payload.get(field,[])
+                if len(values)>maximum:
                     return {'error':'Too many '+field+' for this model.'}
-                for uri in payload.get(field,[]):
+                for uri in values:
                     if not safe_redirect(uri) or urlsplit(uri).scheme!='https':
                         return {'error':'References must be HTTPS URLs.'}
             for field in ('first_frame_url','last_frame_url'):
@@ -758,7 +727,7 @@ def register_mcp(app, backend, data_dir):
         if version and version not in VERSIONS:
             return error('unsupported_protocol_version')
         if method=='initialize':
-            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False},'resources':{'subscribe':False,'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.2.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use '+TOOL_PREFIX+'list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll '+TOOL_PREFIX+'check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
+            result={'protocolVersion':params.get('protocolVersion') if params.get('protocolVersion') in VERSIONS else VERSIONS[0],'capabilities':{'tools':{'listChanged':False},'resources':{'subscribe':False,'listChanged':False}},'serverInfo':{'name':'MII AI STUDIO','version':'2.3.0','websiteUrl':origin+'/ai-video/mcp','icons':[{'src':origin+'/mcp/icon','mimeType':'image/jpeg'}]},'instructions':'Generate only when requested. Use '+TOOL_PREFIX+'list_models first, then the appropriate generation tool. Its single result card tracks the task automatically. Never poll '+TOOL_PREFIX+'check_status in a loop or call it repeatedly; use it at most once for troubleshooting.'}
         elif method=='ping':
             result={}
         elif method=='tools/list':
@@ -805,8 +774,12 @@ render((window.openai&&window.openai.toolOutput)||{});window.addEventListener('o
                     return rpc_error(-32602,'Invalid argument type: '+key)
                 if isinstance(value,str) and (len(value)<p.get('minLength',0) or len(value)>p.get('maxLength',100000)):
                     return rpc_error(-32602,'Invalid string: '+key)
+                if 'enum' in p and value not in p['enum']:
+                    return rpc_error(-32602,'Unsupported value: '+key)
                 if typ=='integer' and not p.get('minimum',value)<=value<=p.get('maximum',value):
                     return rpc_error(-32602,'Argument outside limits: '+key)
+                if typ=='array' and len(value)<p.get('minItems',0):
+                    return rpc_error(-32602,'Not enough references: '+key)
                 if typ=='array' and len(value)>p.get('maxItems',len(value)):
                     return rpc_error(-32602,'Too many references')
             try:

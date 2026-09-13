@@ -95,19 +95,34 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         defs=self.rpc(key,'tools/list').get_json()['result']['tools']
         self.assertEqual(len(defs),13)
         models=json.loads(self.call(key,'list_models')['content'][0]['text'])['models']
-        patch.object(self.module,'_segmind_api_key',return_value='test-only').start()
+        self.assertEqual(sum(len(items) for items in models.values()),116)
         patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        self.module.budgetpixel_registry.reset_cache()
         worker=patch.object(self.module.threading,'Thread').start()
-        patch.object(self.module,'validateVideo',return_value={'dropbox_url_processed':'https://example.com/video.mp4','processed':{'duration':5,'aspect_ratio':'16:9'}}).start()
         count=0
+        example='https://example.com/reference'
         for kind,items in models.items():
             for combo in items:
                 with self.subTest(model=combo):
-                    family,variant=combo.split(':')
-                    args={'prompt':'A quiet city','family':family,'variant':variant}
-                    name={'video':'generate_video','image':'generate_image','audio':'generate_audio','motion':'motion_control'}[kind]
-                    if kind=='audio':args={'prompt':'Quiet rain','audio_format':'wav','sample_rate':44100}
-                    if kind=='motion':args={'prompt':'Maintain movement','variant':variant,'video_urls':['https://example.com/video.mp4']}
+                    caps=self.call(key,'get_model_capabilities',
+                                   {'slug':combo,'category':kind})['structuredContent']['model']
+                    args={'prompt':'A quiet city','model_slug':combo}
+                    name={'video':'generate_video','image':'generate_image',
+                          'audio':'generate_audio','motion':'motion_control'}[kind]
+                    if kind=='video' and 't2v' not in caps.get('modes',[]):
+                        if caps.get('max_reference_videos'):
+                            args['video_urls']=[example+'.mp4']
+                        elif caps.get('max_reference_images'):
+                            args['image_urls']=[example+'.png']
+                        else:
+                            args['first_frame_url']=example+'.png'
+                    elif kind=='image' and caps.get('requires_image'):
+                        args['image_urls']=[example+'.png']
+                    elif kind=='audio' and caps.get('requires_video'):
+                        args['video_urls']=[example+'.mp4']
+                    elif kind=='motion':
+                        args.update(image_urls=[example+'.png'],
+                                    video_urls=[example+'.mp4'])
                     data=self.call(key,name,args)
                     self.assertFalse(data['isError'],data)
                     result=json.loads(data['content'][0]['text'])
@@ -116,7 +131,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
                     self.assertFalse(status['isError'],status)
                     count+=1
         self.assertEqual(worker.call_count,count)
-        self.assertGreaterEqual(count,37)
+        self.assertEqual(count,116)
 
     def test_large_reference_uploads_then_seedance_submission_without_spending(self):
         key=self.key()['key']
@@ -171,10 +186,11 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         submit=patch.object(self.module.budgetpixel_provider,'submit_image',return_value={'job_id':'img-job'}).start()
         submit_video=patch.object(self.module.budgetpixel_provider,'submit_video').start()
         poll=patch.object(self.module.budgetpixel_provider,'poll',return_value={'status':'completed','url':'https://example.com/result.png'}).start()
-        response=Mock(status_code=200,content=b'fake-image-bytes')
+        response=Mock(status_code=200,content=b'\xff\xd8\xff\xe0fake-jpeg-bytes')
         patch.object(self.module.requests_lib,'get',return_value=response).start()
         patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
-        patch.object(self.module,'_dropbox_upload_and_link',return_value='https://example.com/permanent.png').start()
+        upload=patch.object(self.module,'_dropbox_upload_and_link',
+                            return_value='https://example.com/permanent.jpg').start()
         self.module._run_budgetpixel_task(task_id,'flux2','KLEIN',{'prompt':'x'},'image')
         submit.assert_called_once()
         submit_video.assert_not_called()
@@ -182,20 +198,50 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         with self.module.AIVIDEO_TASKS_LOCK:
             task=dict(self.module.AIVIDEO_TASKS[task_id])
         self.assertEqual(task['status'],'completed')
-        self.assertEqual(task['output']['image_url'],'https://example.com/permanent.png')
+        self.assertEqual(task['output']['image_url'],'https://example.com/permanent.jpg')
+        self.assertTrue(upload.call_args.args[1].endswith('.jpg'))
 
     def test_bad_controls_unknown_tool_missing_task_and_provider_failure(self):
         key=self.key()['key']
         for args in ({'prompt':'x','family':'flux','variant':'STANDARD'}, {'prompt':'x','family':'imagen','image_urls':['https://example.com/a.png']}, {'prompt':'x','family':'gptimage','resolution':'4K'}, {'prompt':'x','family':'bpx-midjourney-v7','model_slug':'flux-2-klein'}):
             self.assertTrue(self.call(key,'generate_image',args)['isError'])
         self.assertTrue(self.call(key,'check_status',{'task_id':'missing'})['isError'])
-        self.assertTrue(self.call(key,'motion_control',{'video_urls':[]})['isError'])
+        invalid_motion=self.rpc(key,'tools/call',{'name':'mii_ai_studio_motion_control','arguments':{'video_urls':[]}}).get_json()
+        self.assertEqual(invalid_motion['error']['code'],-32602)
         self.assertIn('error',self.rpc(key,'tools/call',{'name':'not_a_tool'}).get_json())
         self.assertIn('error',self.rpc(key,'tools/call',{'name':'miiaivideo_generate_video','arguments':{'prompt':9}}).get_json())
         legacy=self.rpc(key,'tools/call',{'name':'miiaivideo_list_models','arguments':{}}).get_json()
         self.assertIn('models',legacy['result']['structuredContent'])
         patch.object(self.module,'_budgetpixel_api_key',return_value='').start()
         self.assertTrue(self.call(key,'generate_video',{'prompt':'x'})['isError'])
+
+    def test_audio_schema_reference_limits_and_subtype_guards(self):
+        key=self.key()['key']
+        definitions={item['name']:item for item in
+                     self.rpc(key,'tools/list').get_json()['result']['tools']}
+        video=definitions['mii_ai_studio_generate_video']['inputSchema']['properties']
+        audio=definitions['mii_ai_studio_generate_audio']['inputSchema']['properties']
+        self.assertEqual(video['image_urls']['maxItems'],15)
+        self.assertEqual(video['video_urls']['maxItems'],5)
+        self.assertEqual(video['audio_urls']['maxItems'],5)
+        self.assertIn('duration',audio)
+        self.assertIn('instrumental',audio)
+        self.assertIn('vocal_gender',audio)
+        self.assertIn('video_urls',audio)
+        self.assertNotIn('sample_rate',audio)
+        self.assertNotIn('audio_urls',audio)
+
+        patch.object(self.module,'_budgetpixel_api_key',return_value='test-only').start()
+        self.module.budgetpixel_registry.reset_cache()
+        wrong_music=self.call(key,'generate_music',{
+            'prompt':'x','model_slug':'sonilo-sfx'})
+        self.assertTrue(wrong_music['isError'])
+        wrong_video=self.call(key,'video_to_music',{
+            'model_slug':'music-3.0','video_urls':['https://example.com/in.mp4']})
+        self.assertTrue(wrong_video['isError'])
+        invalid=self.rpc(key,'tools/call',{'name':'mii_ai_studio_video_to_music',
+                                           'arguments':{'video_urls':[]}})
+        self.assertIn('error',invalid.get_json())
 
     def test_clear_debug_auto_clear_link_audit_and_preview_resource(self):
         key=self.key()['key']
@@ -321,14 +367,16 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         async def run():
             transport=httpx.ASGITransport(app=WSGIMiddleware(self.app))
             async with httpx.AsyncClient(transport=transport,headers={'Authorization':'Bearer '+key}) as http:
-                async with streamable_http_client('https://makima.cloud/mcp',http_client=http) as (read,write,_):
+                async with streamable_http_client('https://makima.cloud/mcp',http_client=http) as streams:
+                    read, write = streams[:2]
                     async with ClientSession(read,write) as client:
                         info=await client.initialize()
-                        self.assertEqual(info.serverInfo.name,'MII AI STUDIO')
+                        server_info=getattr(info,'server_info',None) or getattr(info,'serverInfo')
+                        self.assertEqual(server_info.name,'MII AI STUDIO')
                         definitions=await client.list_tools()
                         self.assertEqual(len(definitions.tools),13)
                         result=await client.call_tool('mii_ai_studio_list_models',{})
-                        self.assertFalse(result.isError)
+                        self.assertFalse(getattr(result,'is_error',getattr(result,'isError',None)))
                         self.assertIn('models',json.loads(result.content[0].text))
         asyncio.run(run())
 
