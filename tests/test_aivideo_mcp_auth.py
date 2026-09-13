@@ -36,11 +36,15 @@ class AivideoMcpBearerAuthTests(unittest.TestCase):
         resp = self.client.get('/api/aivideo/capabilities', headers=self.bearer('mcp-secret-key-xyz'))
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()['data']
-        self.assertIn('image', data)
-        self.assertIn('video', data)
-        # Both provider families must be present, not just BudgetPixel's.
-        self.assertTrue(any(k.startswith('seedance:') for k in data['video']))
-        self.assertTrue(any(k.startswith('seedance25:') or k.startswith('wan30:') for k in data['video']))
+        self.assertIn('models', data)
+        self.assertIn('counts', data)
+        self.assertEqual(sum(data['counts'].values()), len(data['models']))
+        self.assertGreaterEqual(sum(data['counts'].values()), 116)
+        slugs={model['slug'] for model in data['models']}
+        self.assertIn('seedance-2.5', slugs)
+        self.assertIn('wan-3.0-video-prime', slugs)
+        self.assertTrue(all(model.get('handler') and model.get('available')
+                            for model in data['models']))
 
     def test_bearer_auth_is_exempt_from_csrf_check_on_post_routes(self):
         # A browser session would need a matching X-CSRF-Token header on any
