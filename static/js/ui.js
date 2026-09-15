@@ -436,7 +436,7 @@ window.setAppMode = setAppMode;
         '<p class="store-subtitle">' + uiText('digital_products') + '</p>' +
       '</div>' +
       '<div class="store-grid">' +
-        '<a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="store-card">' +
+        '<a href="https://www.instagram.com/miint.aigc?stkn=cjk2OTZ1cG1maDV2" target="_blank" rel="noopener noreferrer" class="store-card">' +
           '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></div>' +
           '<div class="store-card-title">INSTAGRAM</div>' +
           '<div class="store-card-desc">' + uiText('follow_updates') + '</div>' +
