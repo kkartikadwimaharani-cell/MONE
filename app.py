@@ -2224,13 +2224,13 @@ def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
     # HSTS: force HTTPS for a full year (with subdomains) once a browser has
     # seen it once, even if a future request somehow reaches this app over
     # plain HTTP (stale bookmark, captive portal, direct Railway origin
     # bypassing Cloudflare). This was previously missing entirely.
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = (
+    response.headers.setdefault('Content-Security-Policy', (
         "default-src 'self'; "
         # NOTE: 'unsafe-inline' on script-src is a known, deliberate gap —
         # the frontend currently relies on inline onclick="..." handlers
@@ -2247,11 +2247,11 @@ def set_security_headers(response):
         "object-src 'none'; "
         "base-uri 'self'; "
         "frame-ancestors 'none';"
-    )
+    ))
     # No-cache headers for HTML responses
     content_type = response.headers.get('Content-Type', '')
     if 'text/html' in content_type:
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        response.headers.setdefault('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
         response.headers['CDN-Cache-Control'] = 'no-store'
         response.headers['Cloudflare-CDN-Cache-Control'] = 'no-store'
         response.headers['Pragma'] = 'no-cache'
@@ -4114,6 +4114,30 @@ def _run_budgetpixel_task(task_id, bp_family, bp_variant, input_body, output_typ
     _set(status='completed', progress=100, output={output_key: final_url, 'size_bytes': len(result_bytes)})
 
 
+def _aivideo_lock_response(next_page='/ai-video', retry_after=0, visit_total=0,
+                           total_attempts=0, total_failed=0):
+    """Render the public lock shell without exposing workspace or secret data."""
+    response = Response(render_template(
+        'ai-video-lock.html', next_page=next_page, retry_after=retry_after,
+        visit_total=visit_total, total_attempts=total_attempts,
+        total_failed=total_failed,
+    ))
+    response.headers['Cache-Control'] = 'no-store, private, max-age=0'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
+        "connect-src 'self'; "
+        "img-src 'self' data:; "
+        "media-src 'none'; object-src 'none'; base-uri 'none'; "
+        "form-action 'self'; frame-ancestors 'none'; worker-src 'none';"
+    )
+    return response
+
+
 @app.route('/ai-video')
 def ai_video_view():
     if not _aivideo_authed():
@@ -4130,8 +4154,10 @@ def ai_video_view():
             attempt_stats = aivideo_archive.get_lock_stats()
         except Exception:
             pass
-        return render_template('ai-video-lock.html', retry_after=retry_after, visit_total=visit_total,
-                                total_attempts=attempt_stats[0], total_failed=attempt_stats[1])
+        return _aivideo_lock_response(
+            retry_after=retry_after, visit_total=visit_total,
+            total_attempts=attempt_stats[0], total_failed=attempt_stats[1],
+        )
     workspace_token = session.get('mii_workspace_token') or secrets.token_urlsafe(32)
     session['mii_workspace_token'] = workspace_token
     registry = budgetpixel_registry.get_registry(_budgetpixel_api_key())
@@ -4219,6 +4245,8 @@ def ai_video_unlock():
 
     data = request.get_json(silent=True) or {}
     pw = str(data.get('password', ''))
+    if len(pw) > 256:
+        return jsonify({'ok': False, 'error': 'Password tidak valid.'}), 400
     # Constant-time comparison — plain `==` short-circuits on the first
     # differing byte, which is a (low-severity but free-to-fix) timing
     # side channel for a shared-secret password.
@@ -5417,7 +5445,7 @@ def ai_video_debug_page():
 def ai_video_security_history_page():
     """Independent, browser-authenticated audit view, separate from generation diagnostics."""
     if not _aivideo_browser_authed():
-        return render_template('ai-video-lock.html', next_page='/ai-video/security-history')
+        return _aivideo_lock_response(next_page='/ai-video/security-history')
     try:
         history = aivideo_archive.list_security_events(limit=100)
     except Exception:
