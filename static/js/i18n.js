@@ -74,9 +74,9 @@
       joinEvent:'IKUTI UNDIAN', homeDigitalProducts:'PRODUK DIGITAL',
       homeCommunity:'KOMUNITAS', homeJoinCommunity:'GABUNG',
       homeComingSoon:'SEGERA HADIR', homeOpenStudio:'BUKA STUDIO', homeEnterStudio:'BUKA DEMO',
-      homeDemoKicker:'DEMO PUBLIK MII AI STUDIO', homeDemoPrelude:'PRATINJAU ANTARMUKA',
+      homeDemoKicker:'DEMO PUBLIK MII AI STUDIO', homeDemoPrelude:'PRATINJAU PUBLIK',
       homeDemoStatement:'DEMO TAMPILAN DAN KONTROL',
-      homeDemoDescription:'GENERASI DINONAKTIFKAN DI HALAMAN DEMO',
+      homeDemoDescription:'TANPA GENERASI',
       homeDemoAssurance:'TANPA API, POLLING, ATAU PEMAKAIAN KREDIT',
       home:'BERANDA', social:'SOSIAL', project:'PROYEK', contact:'KONTAK'
     },
@@ -95,9 +95,9 @@
       joinEvent:'JOIN DRAW', homeDigitalProducts:'DIGITAL PRODUCTS',
       homeCommunity:'COMMUNITY', homeJoinCommunity:'JOIN',
       homeComingSoon:'COMING SOON', homeOpenStudio:'OPEN STUDIO', homeEnterStudio:'OPEN DEMO',
-      homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'INTERFACE PREVIEW',
+      homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'PUBLIC PREVIEW',
       homeDemoStatement:'INTERFACE AND CONTROLS DEMO',
-      homeDemoDescription:'GENERATION IS DISABLED ON THIS DEMO PAGE',
+      homeDemoDescription:'GENERATION DISABLED',
       homeDemoAssurance:'NO API, POLLING, OR CREDIT USAGE',
       home:'HOME', social:'SOCIAL', project:'PROJECTS', contact:'CONTACT'
     },
@@ -117,9 +117,9 @@
       joinEvent:'参加抽奖', homeDigitalProducts:'数字产品',
       homeCommunity:'社区', homeJoinCommunity:'加入',
       homeComingSoon:'即将推出', homeOpenStudio:'打开工作室', homeEnterStudio:'打开演示',
-      homeDemoKicker:'MII AI STUDIO 公开演示', homeDemoPrelude:'界面预览',
+      homeDemoKicker:'MII AI STUDIO 公开演示', homeDemoPrelude:'公开预览',
       homeDemoStatement:'界面与控件演示',
-      homeDemoDescription:'此页面已禁用生成功能',
+      homeDemoDescription:'已禁用生成功能',
       homeDemoAssurance:'不会调用 API 不会轮询 不会消耗积分',
       home:'首页', social:'社交', project:'项目', contact:'联系'
     }
