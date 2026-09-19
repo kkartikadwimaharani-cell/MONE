@@ -159,7 +159,7 @@ class MiiMcpIntegrationTests(unittest.TestCase):
         result=self.call(key,'generate_video',{
             'prompt':'Eight distinct adults in a modern home',
             'model_slug':'bpx-seedance-2.5:STANDARD',
-            'duration':30,'resolution':'720p','aspect_ratio':'16:9',
+            'duration':15,'resolution':'720p','aspect_ratio':'16:9',
             'mute_audio':False,'image_urls':urls,
         })
         self.assertFalse(result['isError'],result)
