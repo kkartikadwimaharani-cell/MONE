@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-store">
   <title>MII AI STUDIO | PRIVATE WORKSPACE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#ff1638;--red2:#ff4060}
@@ -205,25 +202,100 @@ body::before{
 .stat-num.bump{animation:statBump .4s cubic-bezier(.34,1.56,.64,1) both}
 @keyframes statBump{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
   
-/* Same saturated Studio crimson; counters and lock state keep their meaning. */
-:root{--red:#ff003c;--red2:#ff174b}
-body{background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(255,0,60,.29),transparent),#070309}
-.lockbox{background:radial-gradient(circle at 50% 0,rgba(255,0,60,.13),transparent 65%),linear-gradient(145deg,#26000f,#100309);box-shadow:0 30px 90px rgba(0,0,0,.5),0 0 38px rgba(255,0,60,.17)}
-.logo-m{color:#ff003c;text-shadow:0 0 24px rgba(255,0,60,.7)}
-.visit-dot{background:#00ff88;box-shadow:0 0 13px rgba(0,255,136,.75)}
-.stat-box.fail .stat-num{color:#ff174b;text-shadow:0 0 15px rgba(255,0,60,.65)}
+/* Premium private-gateway layer. No third-party fonts or assets are loaded. */
+:root{--red:#ff174b;--red2:#ff4768;--ink:#070407;--panel:#10070b;--line:rgba(255,71,104,.22);--muted:rgba(255,235,240,.56);--green:#49f5a5}
+html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+body{
+  min-height:100dvh;padding:28px 14px;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 50% -10%,rgba(255,23,75,.28),transparent 38%),
+    radial-gradient(circle at 8% 58%,rgba(113,0,34,.18),transparent 32%),
+    radial-gradient(circle at 92% 70%,rgba(84,0,28,.16),transparent 30%),
+    linear-gradient(160deg,#080307 0%,#030204 58%,#080308 100%);
+}
+body::before{background-image:linear-gradient(rgba(255,55,90,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,55,90,.035) 1px,transparent 1px);background-size:38px 38px;mask-image:radial-gradient(ellipse 76% 68% at 50% 42%,#000 0 42%,transparent 88%)}
+body::after{content:"";position:fixed;inset:-40%;pointer-events:none;background:conic-gradient(from 180deg at 50% 50%,transparent,rgba(255,23,75,.055),transparent 30%);animation:ambientSpin 18s linear infinite}
+@keyframes ambientSpin{to{transform:rotate(360deg)}}
+.lockbox{
+  width:min(430px,calc(100vw - 28px));gap:14px;padding:25px;border-radius:28px;isolation:isolate;
+  border:1px solid rgba(255,69,102,.25);
+  background:linear-gradient(155deg,rgba(34,8,17,.91),rgba(8,5,8,.97) 56%,rgba(18,4,10,.96));
+  box-shadow:0 42px 120px rgba(0,0,0,.72),0 0 70px rgba(255,0,55,.12),inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+.lockbox::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.06),transparent 22%,transparent 70%,rgba(255,23,75,.045));z-index:-1}
+.lockbox::after{content:"";position:absolute;left:22%;right:22%;top:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);box-shadow:0 0 18px var(--red)}
+.gateway-bar{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.065)}
+.gateway-kicker{font-size:.58rem;font-weight:800;letter-spacing:.18em;color:rgba(255,235,240,.42);text-transform:uppercase}
+.gateway-status{display:inline-flex;align-items:center;gap:6px;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:rgba(220,255,239,.78);text-transform:uppercase}
+.gateway-status::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(73,245,165,.85);animation:visitDotPulse 1.8s ease-in-out infinite}
+.brand-block{display:flex;flex-direction:column;align-items:center;gap:7px;padding:2px 0 0}
+.logo-ring{width:76px;height:76px;background:radial-gradient(circle,rgba(255,23,75,.20),transparent 68%);filter:drop-shadow(0 14px 28px rgba(255,0,55,.15))}
+.logo-ring::before{inset:-5px;background:conic-gradient(from 0deg,transparent,rgba(255,66,103,.95),transparent 42%)}
+.logo-ring::after{border-color:rgba(255,77,110,.42)}
+.logo-m{font-size:2rem;color:var(--red);text-shadow:0 0 26px rgba(255,23,75,.72)}
+.brand-title{font-size:1.62rem;letter-spacing:-.035em}
+.brand-sub{margin-top:0!important;font-size:.61rem;letter-spacing:.26em;color:rgba(255,225,233,.47)}
+.protocol-card{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px;border:1px solid rgba(255,62,96,.24);border-radius:16px;background:linear-gradient(120deg,rgba(255,23,75,.11),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.protocol-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#ff264f,#79001d);box-shadow:0 10px 24px -12px rgba(255,23,75,.9)}
+.protocol-icon svg{width:19px;height:19px}
+.protocol-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+.protocol-copy span{font-size:.52rem;font-weight:800;letter-spacing:.15em;color:rgba(255,225,233,.43);text-transform:uppercase}
+.protocol-copy strong{font-size:.68rem;line-height:1.3;letter-spacing:.035em;color:rgba(255,247,249,.92)}
+.protocol-badges{display:flex;flex-direction:column;gap:4px}
+.protocol-badges b{min-width:37px;padding:3px 6px;border-radius:7px;border:1px solid rgba(255,73,108,.32);background:rgba(255,23,75,.08);color:#ff6b87;font-size:.5rem;letter-spacing:.1em;text-align:center}
+.visit-pill{width:100%;justify-content:center;padding:9px 12px;border-radius:13px;border-color:rgba(255,255,255,.075);background:rgba(255,255,255,.026)}
+.visit-dot{background:var(--green);box-shadow:0 0 12px rgba(73,245,165,.8)}
+.stats-row{gap:7px}
+.stat-box{padding:9px 6px;border-radius:13px;background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.012))}
+.stat-box.fail .stat-num{color:var(--red2);text-shadow:0 0 15px rgba(255,23,75,.65)}
+.auth-panel{width:100%;display:flex;flex-direction:column;gap:11px;padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.19);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.field-label{display:flex;align-items:center;justify-content:space-between;font-size:.56rem;font-weight:800;letter-spacing:.14em;color:rgba(255,232,238,.46);text-transform:uppercase}
+.field-label span:last-child{color:rgba(73,245,165,.64)}
+.pw-field{position:relative}
+.pw-field-icon{position:absolute;left:14px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:rgba(255,226,233,.42);pointer-events:none}
+.pw-field-icon svg{width:100%;height:100%}
+.pw-input{padding:14px 46px 14px 42px;border-radius:13px;border-color:rgba(255,62,96,.24);background:rgba(255,255,255,.035);font-family:inherit;text-align:left;letter-spacing:.11em}
+.pw-input:focus{border-color:rgba(255,75,109,.72);box-shadow:0 0 0 3px rgba(255,23,75,.10),0 0 28px rgba(255,23,75,.08)}
+.pw-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:rgba(255,230,236,.42);display:grid;place-items:center;cursor:pointer}
+.pw-toggle:hover{background:rgba(255,255,255,.05);color:#fff}
+.pw-toggle svg{width:17px;height:17px}
+.attempts-row{min-height:25px;gap:8px}
+.attempt-pip{width:25px;height:25px}
+.unlock-btn{min-height:50px;padding:14px;border-radius:14px;background:linear-gradient(110deg,#ff254e 0%,#d10031 48%,#760019 100%);box-shadow:0 16px 34px -18px rgba(255,23,75,.95),inset 0 1px 0 rgba(255,255,255,.22)}
+.unlock-btn span{display:inline-flex;align-items:center;gap:9px}
+.security-note{display:flex;align-items:center;justify-content:center;gap:7px;color:rgba(255,229,235,.38);font-size:.58rem;font-weight:700;letter-spacing:.055em;text-align:center}
+.security-note svg{width:14px;height:14px;color:rgba(73,245,165,.65)}
+.back-link{padding-top:1px;font-size:.65rem}
+@media(max-width:420px){
+  body{padding:16px 10px}.lockbox{width:min(100%,390px);padding:20px 17px;border-radius:24px;gap:12px}
+  .gateway-kicker{letter-spacing:.12em}.brand-title{font-size:1.46rem}.protocol-card{grid-template-columns:34px minmax(0,1fr) auto;padding:10px;gap:9px}.protocol-icon{width:34px;height:34px}.protocol-copy strong{font-size:.62rem}.visit-lbl{font-size:.56rem}.stat-lbl{font-size:.52rem}.auth-panel{padding:12px}
+}
+@media(max-height:730px){body{align-items:flex-start}.lockbox{margin:auto}.logo-ring{width:64px;height:64px}.brand-block{gap:4px}.protocol-card{padding-block:9px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
 <div class="hit-flash" id="hitFlash"></div>
 
-<div class="lockbox" id="lockbox">
-  <div class="logo-ring"><span class="logo-m">M</span></div>
-  <div>
+<main class="lockbox" id="lockbox">
+  <div class="gateway-bar">
+    <span class="gateway-kicker">MII Secure Gateway</span>
+    <span class="gateway-status">Protected</span>
+  </div>
+
+  <header class="brand-block">
+    <div class="logo-ring"><span class="logo-m">M</span></div>
     <div class="brand-title">MII AI STUDIO</div>
     <div class="brand-sub" style="margin-top:6px">Private Workspace</div>
-  </div>
+  </header>
+
+  <section class="protocol-card" aria-label="Dukungan koneksi studio">
+    <div class="protocol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9 4 12l4 3"/><path d="m16 9 4 3-4 3"/><path d="m14 5-4 14"/></svg></div>
+    <div class="protocol-copy"><span>Studio Access Layer</span><strong>MII AI STUDIO SUDAH MENDUKUNG MCP DAN CLI</strong></div>
+    <div class="protocol-badges" aria-hidden="true"><b>MCP</b><b>CLI</b></div>
+  </section>
 
   <div class="visit-pill" id="visitPill" title="Total device unik yang pernah membuka halaman ini">
     <span class="visit-dot"></span>
@@ -244,21 +316,27 @@ body{background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(255,0,60,.29),tra
     </div>
   </div>
 
-  <div class="pw-field">
-    <input type="password" id="pwInput" class="pw-input" placeholder="Masukkan password" autocomplete="off" />
-  </div>
+  <section class="auth-panel" aria-label="Autentikasi workspace">
+    <div class="field-label"><span>Workspace Access Key</span><span>HTTPS</span></div>
+    <div class="pw-field">
+      <span class="pw-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+      <input type="password" id="pwInput" class="pw-input" placeholder="Masukkan password" autocomplete="current-password" autocapitalize="none" spellcheck="false" maxlength="256" aria-label="Password MII AI Studio" />
+      <button class="pw-toggle" id="pwToggle" type="button" aria-label="Tampilkan password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+    </div>
 
-  <div class="attempts-row" id="attemptsRow"></div>
+    <div class="attempts-row" id="attemptsRow" aria-label="Sisa percobaan login"></div>
 
-  <div class="err-msg" id="errMsg">
-    <span class="err-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
-    <span class="err-txt" id="errTxt"></span>
-  </div>
-  <div class="locked-msg" id="lockedMsg"></div>
+    <div class="err-msg" id="errMsg" role="alert" aria-live="polite">
+      <span class="err-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
+      <span class="err-txt" id="errTxt"></span>
+    </div>
+    <div class="locked-msg" id="lockedMsg" role="status" aria-live="polite"></div>
 
-  <button class="unlock-btn" id="unlockBtn" onclick="doUnlock()">Unlock</button>
+    <button class="unlock-btn" id="unlockBtn" type="button"><span>Unlock Studio <b aria-hidden="true">&#8594;</b></span></button>
+  </section>
+  <div class="security-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Encrypted session · no public workspace data</span></div>
   <a href="/" class="back-link">&larr; Kembali ke Beranda</a>
-</div>
+</main>
 
 <script>
 var input = document.getElementById('pwInput');
@@ -269,6 +347,7 @@ var lockedMsg = document.getElementById('lockedMsg');
 var lockbox = document.getElementById('lockbox');
 var hitFlash = document.getElementById('hitFlash');
 var attemptsRow = document.getElementById('attemptsRow');
+var pwToggle = document.getElementById('pwToggle');
 var countdownTimer = null;
 var TOTAL_ATTEMPTS = 3;
 
@@ -319,7 +398,7 @@ function enterLockedState(retryAfter) {
       lockedMsg.classList.remove('show');
       input.disabled = false;
       btn.disabled = false;
-      btn.textContent = 'Unlock';
+      btn.innerHTML = '<span>Unlock Studio <b aria-hidden="true">&#8594;</b></span>';
       renderAttemptPips(TOTAL_ATTEMPTS); // server resets the fail count once the lock expires
       return;
     }
@@ -333,11 +412,15 @@ function enterLockedState(retryAfter) {
 function doUnlock() {
   var pw = input.value.trim();
   if (!pw) { showError('Password wajib diisi'); return; }
+  input.value = '';
   btn.disabled = true;
   btn.textContent = 'Memeriksa...';
   fetch('/ai-video/unlock', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
     body: JSON.stringify({password: pw})
   })
   .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
@@ -358,12 +441,14 @@ function doUnlock() {
     if (typeof data.attempts_left === 'number') renderAttemptPips(data.attempts_left);
     showError(data.error || 'Password salah');
     btn.disabled = false;
-    btn.textContent = 'Unlock';
+    btn.innerHTML = '<span>Unlock Studio <b aria-hidden="true">&#8594;</b></span>';
+    input.focus();
   })
   .catch(function() {
     showError('Terjadi kesalahan, coba lagi');
     btn.disabled = false;
-    btn.textContent = 'Unlock';
+    btn.innerHTML = '<span>Unlock Studio <b aria-hidden="true">&#8594;</b></span>';
+    input.focus();
   });
 }
 
@@ -375,6 +460,13 @@ function showError(msg) {
 
 input.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doUnlock();
+});
+btn.addEventListener('click', doUnlock);
+pwToggle.addEventListener('click', function() {
+  var reveal = input.type === 'password';
+  input.type = reveal ? 'text' : 'password';
+  pwToggle.setAttribute('aria-label', reveal ? 'Sembunyikan password' : 'Tampilkan password');
+  input.focus();
 });
 
 var initialRetryAfter = {{ (retry_after or 0) | tojson }};
@@ -430,6 +522,9 @@ function animateVisitNum(el, from, to) {
   fetch('/ai-video/lock-visit', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
     body: JSON.stringify({device_id: deviceId})
   })
   .then(function(r) { return r.json(); })
@@ -472,4 +567,3 @@ function updateAttemptStats(data) {
 
 </body>
 </html>
-
