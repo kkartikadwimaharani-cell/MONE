@@ -215,7 +215,7 @@
           <article class="project-card project-products"><span class="project-icon icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></span><h3>TWITTER</h3><a href="https://x.com/asaminetwork9" target="_blank" rel="noopener noreferrer">BUKA TWITTER</a></article>
           <article class="project-card bounty-card project-bounty"><span class="project-icon icon-bounty-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="m12 1.8 2.9 6 6.5.7-4.8 4.5 1.2 6.5L12 16.3l-5.8 3.2 1.2-6.5-4.8-4.5 6.5-.7 2.9-6Z"/></svg></span><h3>MII REWARD DRAW</h3><a href="/bounty" data-i18n="joinEvent">IKUTI DRAW</a></article>
           <article class="project-card project-community"><span class="project-icon icon-community-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="8.5" cy="7.5" r="3.3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 19.8c.4-4.2 2.8-6.5 6.5-6.5s6.1 2.3 6.5 6.5c0 .5-.3.9-.8.9H2.8c-.5 0-.8-.4-.8-.9Z"/><path d="M15.3 14c2.6.4 4.1 2.1 4.5 5.3.1.6-.3 1-.8 1h-2"/></svg></span><h3{% if not community_name or community_name|upper == "COMMUNITY" or community_name|upper == "KOMUNITAS" %} data-i18n="homeCommunity"{% endif %}>{{ community_name or 'KOMUNITAS' }}</h3>{% if community_link %}<a href="{{ community_link }}" target="_blank" rel="noopener noreferrer"{% if not community_btn_label or community_btn_label|upper == "GABUNG" or community_btn_label|upper == "JOIN" %} data-i18n="homeJoinCommunity"{% endif %}>{{ community_btn_label or 'GABUNG' }}</a>{% else %}<span class="btn-disabled" data-i18n="homeComingSoon">SEGERA HADIR</span>{% endif %}</article>
-          <article class="project-card project-aivideo"><span class="project-icon icon-aivideo-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm13 5 5-3v10l-5-3v-4Z"/></svg></span><h3>MII AI STUDIO</h3><a href="/mii-ai-video" data-i18n="homeEnterStudio">BUKA DEMO</a></article>
+          <article class="project-card project-aivideo"><span class="project-icon icon-aivideo-card icon-filled" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm13 5 5-3v10l-5-3v-4Z"/></svg></span><h3>MII AI STUDIO</h3><a href="/ai-video" data-i18n="homeOpenStudio">BUKA STUDIO</a></article>
         </div>
       </section>
 
@@ -303,7 +303,7 @@
   })();
   </script>
   <script src="{{ asset_url('js/config.js') }}"></script>
-  <script src="{{ asset_url('js/i18n.js') }}&amp;home=20260919-4"></script>
+  <script src="{{ asset_url('js/i18n.js') }}&amp;home=20260919-5"></script>
   <script src="{{ asset_url('js/ui.js') }}"></script>
   <script src="{{ asset_url('js/downloader.js') }}"></script>
   <script src="{{ asset_url('js/photo.js') }}"></script>
