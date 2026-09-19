@@ -21,17 +21,17 @@
   <link rel="stylesheet" href="{{ asset_url('css/makima-ai.css') }}">
   <style>
     /* PUBLIC DEMO: typographic hierarchy and quiet atmospheric depth. */
-    .home-cta.studio-promo{position:relative;isolation:isolate;box-sizing:border-box;min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:0!important;width:100%!important;max-width:1120px!important;min-height:clamp(420px,43vw,580px);margin-inline:auto!important;padding:clamp(56px,7vw,100px) clamp(22px,6vw,84px)!important;overflow:hidden;border:0!important;border-radius:clamp(26px,4vw,38px)!important;background:radial-gradient(ellipse at 50% 40%,rgba(95,8,28,.29),transparent 56%),linear-gradient(155deg,#080709,#030304 65%,#0a0508)!important;box-shadow:0 34px 95px rgba(0,0,0,.44),0 0 65px rgba(109,7,30,.12)!important;text-align:center}
+    .home-cta.studio-promo{position:relative;isolation:isolate;box-sizing:border-box;min-width:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:0!important;width:100%!important;max-width:1120px!important;min-height:clamp(350px,36vw,460px);margin-inline:auto!important;padding:clamp(44px,5vw,70px) clamp(22px,6vw,84px)!important;overflow:hidden;border:0!important;border-radius:clamp(26px,4vw,38px)!important;background:radial-gradient(ellipse at 50% 40%,rgba(95,8,28,.29),transparent 56%),linear-gradient(155deg,#080709,#030304 65%,#0a0508)!important;box-shadow:0 34px 95px rgba(0,0,0,.44),0 0 65px rgba(109,7,30,.12)!important;text-align:center}
     .home-cta.studio-promo::before,.home-cta.studio-promo::after{content:none!important;display:none!important}
     .studio-atmos{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 41%,rgba(177,19,51,.20),transparent 39%),radial-gradient(circle at 78% 73%,rgba(116,11,36,.12),transparent 31%);background-size:auto,auto;animation:studioAtmosDrift 18s ease-in-out infinite alternate}
     .home-cta.studio-promo .cta-copy{position:relative;z-index:1;width:100%;max-width:100%;min-width:0;text-transform:uppercase}
-    .home-cta.studio-promo .demo-kicker{display:block;margin:0 0 clamp(22px,3vw,36px);color:#d991a2;font:800 clamp(.65rem,1vw,.8rem)/1.25 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+    .home-cta.studio-promo .demo-kicker{display:block;margin:0 0 clamp(18px,2vw,24px);color:#d991a2;font:700 clamp(.68rem,1vw,.82rem)/1.25 'Outfit',sans-serif;letter-spacing:.24em;text-transform:uppercase}
     .home-cta.studio-promo .studio-pretitle{margin:0 0 8px;color:#e9d1d5;font:800 clamp(.9rem,1.65vw,1.25rem)/1.2 Inter,sans-serif;letter-spacing:.24em}
-    .home-cta.studio-promo .studio-headline{display:block;width:100%;max-width:none;margin:0!important;font-family:'Outfit',sans-serif!important;font-size:clamp(2rem,8vw,6.6rem)!important;font-weight:900!important;line-height:.98!important;letter-spacing:-.065em!important;text-wrap:balance;overflow-wrap:normal;color:#fff;background:linear-gradient(105deg,#eee5e7 17%,#fff 39%,#f8d6dc 48%,#fff 57%,#e9dce0 82%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 15px rgba(224,57,87,.16));animation:studioLightSweep 11s ease-in-out infinite}
+    .home-cta.studio-promo .studio-headline{display:block;width:100%;max-width:none;margin:0!important;font-family:'Outfit',sans-serif!important;font-size:clamp(2.25rem,7vw,5.8rem)!important;font-weight:800!important;line-height:1!important;letter-spacing:-.035em!important;word-spacing:.12em;text-wrap:balance;overflow-wrap:normal;color:#fff;background:linear-gradient(105deg,#eee5e7 17%,#fff 39%,#f8d6dc 48%,#fff 57%,#e9dce0 82%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 15px rgba(224,57,87,.16));animation:studioLightSweep 11s ease-in-out infinite}
     .home-cta.studio-promo .studio-statement{margin:clamp(18px,2.6vw,31px) 0 0;color:#f5e5e8;font:800 clamp(1.04rem,2.45vw,1.8rem)/1.18 'Outfit',sans-serif;letter-spacing:.065em}
-    .home-cta.studio-promo .studio-description{margin:clamp(13px,2vw,21px) 0 0;color:rgba(250,226,232,.69);font:600 clamp(.75rem,1.35vw,.94rem)/1.5 Inter,sans-serif;letter-spacing:.085em}
+    .home-cta.studio-promo .studio-description{margin:clamp(18px,2.2vw,24px) 0 0;color:rgba(248,224,230,.74);font:700 clamp(.72rem,1.15vw,.86rem)/1.35 'Outfit',sans-serif;letter-spacing:.22em}
     .home-cta.studio-promo .studio-assurance{margin:12px 0 0;color:#dc9da9;font:750 clamp(.65rem,1.15vw,.79rem)/1.45 Inter,sans-serif;letter-spacing:.11em}
-    .home-cta.studio-promo .studio-enter{position:relative;z-index:1;display:flex!important;text-transform:uppercase;align-items:center;justify-content:center;width:min(100%,370px)!important;min-width:0!important;min-height:62px!important;margin:clamp(29px,4vw,43px) auto 0!important;padding:16px 24px!important;border:0!important;border-radius:17px!important;color:#fff!important;background:linear-gradient(135deg,#b70e32,#79051f 58%,#4c0618)!important;box-shadow:0 15px 40px rgba(84,2,23,.34),0 0 28px rgba(213,18,58,.19)!important;font:850 .92rem/1 Inter,sans-serif!important;letter-spacing:.13em!important;text-decoration:none!important;transition:transform .25s ease,box-shadow .3s ease,filter .3s ease!important;animation:studioCtaBreath 7s ease-in-out infinite}
+    .home-cta.studio-promo .studio-enter{position:relative;z-index:1;display:flex!important;text-transform:uppercase;align-items:center;justify-content:center;width:min(100%,370px)!important;min-width:0!important;min-height:62px!important;margin:clamp(26px,3vw,35px) auto 0!important;padding:16px 24px!important;border:0!important;border-radius:17px!important;color:#fff!important;background:linear-gradient(135deg,#b70e32,#79051f 58%,#4c0618)!important;box-shadow:0 15px 40px rgba(84,2,23,.34),0 0 28px rgba(213,18,58,.19)!important;font:850 .92rem/1 Inter,sans-serif!important;letter-spacing:.13em!important;text-decoration:none!important;transition:transform .25s ease,box-shadow .3s ease,filter .3s ease!important;animation:studioCtaBreath 7s ease-in-out infinite}
     .home-cta.studio-promo .studio-enter:hover{transform:translateY(-3px);filter:brightness(1.12);box-shadow:0 19px 46px rgba(95,3,27,.44),0 0 38px rgba(213,18,58,.25)!important}
     .home-cta.studio-promo .studio-enter:active{transform:scale(.98)}
     .home-cta.studio-promo .studio-enter:focus-visible{outline:2px solid #fff;outline-offset:4px}
@@ -39,7 +39,7 @@
     @keyframes studioLightSweep{0%,18%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
     @keyframes studioCtaBreath{0%,100%{box-shadow:0 15px 40px rgba(84,2,23,.34),0 0 25px rgba(213,18,58,.15)}50%{box-shadow:0 17px 43px rgba(84,2,23,.38),0 0 39px rgba(213,18,58,.22)}}
     @media(max-width:900px){.home-cta.studio-promo{min-height:0;padding:clamp(52px,8vw,76px) clamp(20px,5vw,42px)!important}}
-    @media(max-width:560px){.home-cta.studio-promo{padding:58px 18px 55px!important;border-radius:26px!important}.home-cta.studio-promo .demo-kicker{font-size:.65rem;letter-spacing:.15em;margin-bottom:24px}.home-cta.studio-promo .studio-pretitle{font-size:.9rem;letter-spacing:.18em}.home-cta.studio-promo .studio-headline{font-size:clamp(2rem,10vw,3.55rem)!important;letter-spacing:-.07em!important;line-height:1.03!important}.home-cta.studio-promo .studio-statement{font-size:clamp(1.03rem,4.6vw,1.35rem);letter-spacing:.045em}.home-cta.studio-promo .studio-description{font-size:.76rem;max-width:27rem;margin-inline:auto}.home-cta.studio-promo .studio-assurance{font-size:.67rem;letter-spacing:.065em}.home-cta.studio-promo .studio-enter{width:100%!important;min-height:58px!important;font-size:.85rem!important;margin-top:29px!important}}
+    @media(max-width:560px){.home-cta.studio-promo{padding:46px 18px 44px!important;border-radius:26px!important}.home-cta.studio-promo .demo-kicker{font-size:.66rem;letter-spacing:.2em;margin-bottom:19px}.home-cta.studio-promo .studio-pretitle{font-size:.9rem;letter-spacing:.18em}.home-cta.studio-promo .studio-headline{font-size:clamp(2.1rem,9.6vw,3.35rem)!important;letter-spacing:-.035em!important;word-spacing:.09em;line-height:1.03!important}.home-cta.studio-promo .studio-statement{font-size:clamp(1.03rem,4.6vw,1.35rem);letter-spacing:.045em}.home-cta.studio-promo .studio-description{font-size:.7rem;letter-spacing:.17em;max-width:22rem;margin-inline:auto}.home-cta.studio-promo .studio-assurance{font-size:.67rem;letter-spacing:.065em}.home-cta.studio-promo .studio-enter{width:100%!important;min-height:58px!important;font-size:.85rem!important;margin-top:25px!important}}
     @media(prefers-reduced-motion:reduce){.studio-atmos,.home-cta.studio-promo .studio-headline,.home-cta.studio-promo .studio-enter{animation:none!important;transition:none!important}}
 
     /* HOME ONLY: stable proportions across phone, tablet and desktop. */
@@ -222,12 +222,9 @@
       <section class="home-cta studio-promo" aria-label="DEMO PUBLIK MII AI STUDIO" data-i18n-aria="homeDemoAria">
         <div class="studio-atmos" aria-hidden="true"></div>
         <div class="cta-copy">
-          <span class="demo-kicker" data-i18n="homeDemoKicker">DEMO PUBLIK MII AI STUDIO</span>
-          <p class="studio-pretitle" data-i18n="homeDemoPrelude">PRATINJAU ANTARMUKA</p>
+          <span class="demo-kicker" data-i18n="homeDemoPrelude">PRATINJAU PUBLIK</span>
           <h2 class="studio-headline">MII AI STUDIO</h2>
-          <p class="studio-statement" data-i18n="homeDemoStatement">DEMO TAMPILAN DAN KONTROL</p>
-          <p class="studio-description" data-i18n="homeDemoDescription">GENERASI DINONAKTIFKAN DI HALAMAN DEMO</p>
-          <p class="studio-assurance" data-i18n="homeDemoAssurance">TANPA API, POLLING, ATAU PEMAKAIAN KREDIT</p>
+          <p class="studio-description" data-i18n="homeDemoDescription">TANPA GENERASI</p>
         </div>
         <a class="premium-btn primary cta-button studio-enter" href="/mii-ai-video" data-i18n="homeEnterStudio">BUKA DEMO</a>
       </section>
@@ -303,7 +300,7 @@
   })();
   </script>
   <script src="{{ asset_url('js/config.js') }}"></script>
-  <script src="{{ asset_url('js/i18n.js') }}&amp;home=20260919-5"></script>
+  <script src="{{ asset_url('js/i18n.js') }}&amp;home=20260919-6"></script>
   <script src="{{ asset_url('js/ui.js') }}"></script>
   <script src="{{ asset_url('js/downloader.js') }}"></script>
   <script src="{{ asset_url('js/photo.js') }}"></script>
