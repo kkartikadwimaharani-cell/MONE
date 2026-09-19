@@ -13,12 +13,17 @@ from budgetpixel_provider import ProviderError
 
 
 RATIOS = ("16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3")
+SEEDANCE_MAX_DURATION = 15
 
 
 def _spec(slug, name, modes=("t2v",), durations=(), resolutions=(), ratios=(),
           audio=False, first=False, last=False, refs=(0, 0, 0), description=""):
+    duration_values = tuple(durations)
+    if str(slug).lower().startswith("seedance-"):
+        duration_values = tuple(value for value in duration_values
+                                if int(value) <= SEEDANCE_MAX_DURATION)
     return {"slug": slug, "name": name, "modes": tuple(modes),
-            "durations": tuple(durations), "resolutions": tuple(resolutions),
+            "durations": duration_values, "resolutions": tuple(resolutions),
             "aspect_ratios": tuple(ratios), "generate_audio": bool(audio),
             "first_frame": bool(first), "end_frame": bool(last),
             "reference_images": refs[0], "reference_videos": refs[1],
@@ -38,7 +43,7 @@ _ROWS = [
           range(2, 31), ("480p", "720p", "1080p"), ("adaptive",) + RATIOS,
           True, True, True, (10, 5, 5)),
     _spec("seedance-2.5", "SEEDANCE 2.5", ("t2v", "i2v", "reference"),
-          range(4, 31), ("480p", "720p", "1080p"), RATIOS, True, True, True, (15, 5, 5)),
+          range(4, 16), ("480p", "720p", "1080p"), RATIOS, True, True, True, (15, 5, 5)),
     _spec("minimax-h3", "MINIMAX H3", ("t2v", "i2v", "reference"),
           range(5, 16), ("2K",), ("adaptive",) + RATIOS, True, True, True, (9, 3, 3)),
     _spec("seedance-2.0-mini", "SEEDANCE 2.0 MINI", ("t2v", "i2v", "reference", "v2v"),
