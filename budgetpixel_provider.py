@@ -39,7 +39,7 @@ VIDEO_CAPABILITIES = {
     ("seedance25", "STANDARD"): {
         "aspect_ratios": ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9"),
         "resolutions": ("480p", "720p", "1080p"),
-        "duration": (4, 30),
+        "duration": (4, 15),
         "start_frame": True, "end_frame": True,
         "reference_images": 15, "reference_videos": 5, "reference_audios": 5,
         "generate_audio": True,
