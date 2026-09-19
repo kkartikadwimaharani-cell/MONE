@@ -60,7 +60,7 @@
   // Homepage copy is kept together so every visible homepage label switches as one.
   var homepageTranslations = {
     id: {
-      homePageTitle:'MII NETWORK — PRODUK DIGITAL DAN TEKNOLOGI KREATIF', homeDemoAria:'Demo publik MII AI STUDIO',
+      homePageTitle:'MII NETWORK — PRODUK DIGITAL DAN TEKNOLOGI KREATIF', homeDemoAria:'DEMO PUBLIK MII AI STUDIO',
       homeMainNavigation:'Navigasi utama', homeFooterNavigation:'Navigasi footer',
       homeHeroAria:'Beranda MII NETWORK', homeFoxAria:'Emblem rubah MII',
       navigation:'NAVIGASI', drawer_subtitle:'PRODUK DIGITAL DAN ALAT AI',
@@ -73,15 +73,15 @@
       open:'BUKA', openVault:'BUKA VAULT', viewProduct:'LIHAT PRODUK',
       joinEvent:'IKUTI UNDIAN', homeDigitalProducts:'PRODUK DIGITAL',
       homeCommunity:'KOMUNITAS', homeJoinCommunity:'GABUNG',
-      homeComingSoon:'SEGERA HADIR', homeEnterStudio:'MASUK STUDIO',
-      homeDemoKicker:'MII AI STUDIO DEMO PUBLIK', homeDemoPrelude:'MASUK KE',
-      homeDemoStatement:'SATU STUDIO TANPA BATAS KREATIVITAS',
-      homeDemoDescription:'JELAJAHI RUANG KERJA KREATIF LENGKAP',
-      homeDemoAssurance:'TANPA GENERASI TANPA KREDIT',
+      homeComingSoon:'SEGERA HADIR', homeEnterStudio:'BUKA DEMO',
+      homeDemoKicker:'DEMO PUBLIK MII AI STUDIO', homeDemoPrelude:'PRATINJAU ANTARMUKA',
+      homeDemoStatement:'DEMO TAMPILAN DAN KONTROL',
+      homeDemoDescription:'GENERASI DINONAKTIFKAN DI HALAMAN DEMO',
+      homeDemoAssurance:'TANPA API, POLLING, ATAU PEMAKAIAN KREDIT',
       home:'BERANDA', social:'SOSIAL', project:'PROYEK', contact:'KONTAK'
     },
     en: {
-      homePageTitle:'MII NETWORK — DIGITAL PRODUCTS AND CREATIVE TECH', homeDemoAria:'MII AI STUDIO public demo',
+      homePageTitle:'MII NETWORK — DIGITAL PRODUCTS AND CREATIVE TECH', homeDemoAria:'MII AI STUDIO PUBLIC DEMO',
       homeMainNavigation:'Main navigation', homeFooterNavigation:'Footer navigation',
       homeHeroAria:'MII NETWORK homepage', homeFoxAria:'MII fox emblem',
       navigation:'NAVIGATION', drawer_subtitle:'DIGITAL PRODUCTS AND AI TOOLS',
@@ -94,11 +94,11 @@
       open:'OPEN', openVault:'OPEN VAULT', viewProduct:'VIEW PRODUCT',
       joinEvent:'JOIN DRAW', homeDigitalProducts:'DIGITAL PRODUCTS',
       homeCommunity:'COMMUNITY', homeJoinCommunity:'JOIN',
-      homeComingSoon:'COMING SOON', homeEnterStudio:'ENTER STUDIO',
-      homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'ENTER THE',
-      homeDemoStatement:'ONE STUDIO ENDLESS POSSIBILITIES',
-      homeDemoDescription:'EXPLORE THE COMPLETE CREATIVE WORKSPACE',
-      homeDemoAssurance:'NO GENERATION NO CREDITS REQUIRED',
+      homeComingSoon:'COMING SOON', homeEnterStudio:'OPEN DEMO',
+      homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'INTERFACE PREVIEW',
+      homeDemoStatement:'INTERFACE AND CONTROLS DEMO',
+      homeDemoDescription:'GENERATION IS DISABLED ON THIS DEMO PAGE',
+      homeDemoAssurance:'NO API, POLLING, OR CREDIT USAGE',
       home:'HOME', social:'SOCIAL', project:'PROJECTS', contact:'CONTACT'
     },
     cn: {
@@ -116,11 +116,11 @@
       open:'打开', openVault:'打开 VAULT', viewProduct:'查看产品',
       joinEvent:'参加抽奖', homeDigitalProducts:'数字产品',
       homeCommunity:'社区', homeJoinCommunity:'加入',
-      homeComingSoon:'即将推出', homeEnterStudio:'进入 STUDIO',
-      homeDemoKicker:'MII AI STUDIO 公开演示', homeDemoPrelude:'走进',
-      homeDemoStatement:'一个工作室 无限创意可能',
-      homeDemoDescription:'探索完整创意工作空间',
-      homeDemoAssurance:'不生成内容 不消耗积分',
+      homeComingSoon:'即将推出', homeEnterStudio:'打开演示',
+      homeDemoKicker:'MII AI STUDIO 公开演示', homeDemoPrelude:'界面预览',
+      homeDemoStatement:'界面与控件演示',
+      homeDemoDescription:'此页面已禁用生成功能',
+      homeDemoAssurance:'不会调用 API 不会轮询 不会消耗积分',
       home:'首页', social:'社交', project:'项目', contact:'联系'
     }
   };

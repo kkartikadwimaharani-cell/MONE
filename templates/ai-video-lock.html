@@ -282,6 +282,8 @@ body::after{content:"";position:fixed;inset:-40%;pointer-events:none;background:
 .security-note{display:flex;align-items:center;justify-content:center;gap:7px;color:rgba(255,229,235,.38);font-size:.58rem;font-weight:700;letter-spacing:.055em;text-align:center}
 .security-note svg{width:14px;height:14px;color:rgba(73,245,165,.65)}
 .back-link{font-size:.62rem}
+.gateway-bar,.brand-block,.protocol-card,.visit-pill,.stats-row,.field-label,.err-msg,.locked-msg,.unlock-btn,.security-note,.back-link{text-transform:uppercase}
+.pw-input::placeholder{text-transform:uppercase}
 @media(max-width:420px){
   body{padding:16px 10px}.lockbox{width:min(100%,390px);padding:20px 17px;border-radius:24px;gap:12px}
   .gateway-kicker{letter-spacing:.12em}.brand-title{font-size:1.46rem}.protocol-card{grid-template-columns:34px minmax(0,1fr) auto;padding:10px;gap:9px}.protocol-icon{width:34px;height:34px}.protocol-copy strong{font-size:.62rem}.visit-lbl{font-size:.56rem}.stat-lbl{font-size:.52rem}.auth-panel{padding:12px}
@@ -296,50 +298,50 @@ body::after{content:"";position:fixed;inset:-40%;pointer-events:none;background:
 
 <main class="lockbox" id="lockbox">
   <div class="gateway-bar">
-    <span class="gateway-kicker">MII Secure Gateway</span>
-    <span class="gateway-status">Secured</span>
+    <span class="gateway-kicker">MII SECURE GATEWAY</span>
+    <span class="gateway-status">SECURED</span>
   </div>
 
   <header class="brand-block">
     <div class="logo-ring"><span class="logo-m">M</span></div>
     <div class="brand-title">MII AI STUDIO</div>
-    <div class="brand-sub" style="margin-top:6px">Private Workspace</div>
+    <div class="brand-sub" style="margin-top:6px">PRIVATE WORKSPACE</div>
   </header>
 
-  <section class="protocol-card" aria-label="Studio connectivity">
+  <section class="protocol-card" aria-label="STUDIO CONNECTIVITY">
     <div class="protocol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9 4 12l4 3"/><path d="m16 9 4 3-4 3"/><path d="m14 5-4 14"/></svg></div>
-    <div class="protocol-copy"><span>MCP and CLI Ready</span><strong>MII AI Studio now supports secure MCP and CLI access</strong></div>
+    <div class="protocol-copy"><span>MCP AND CLI READY</span><strong>MII AI STUDIO NOW SUPPORTS SECURE MCP AND CLI ACCESS</strong></div>
     <div class="protocol-badges" aria-hidden="true"><b>MCP</b><b>CLI</b></div>
   </section>
 
-  <div class="visit-pill" id="visitPill" title="Total unique devices that have visited this page">
+  <div class="visit-pill" id="visitPill" title="TOTAL UNIQUE DEVICES THAT HAVE VISITED THIS PAGE">
     <span class="visit-dot"></span>
     <span class="visit-num" id="visitNum">0</span>
-    <span class="visit-lbl">Unique Visitors</span>
+    <span class="visit-lbl">UNIQUE VISITORS</span>
   </div>
 
   <div class="stats-row" id="statsRow">
-    <div class="stat-box" title="Total workspace access attempts">
+    <div class="stat-box" title="TOTAL WORKSPACE ACCESS ATTEMPTS">
       <svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <span class="stat-num" id="statAttempts">0</span>
-      <span class="stat-lbl">Access Attempts</span>
+      <span class="stat-lbl">ACCESS ATTEMPTS</span>
     </div>
-    <div class="stat-box fail" title="Total denied workspace access attempts">
+    <div class="stat-box fail" title="TOTAL DENIED WORKSPACE ACCESS ATTEMPTS">
       <svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
       <span class="stat-num" id="statFailed">0</span>
-      <span class="stat-lbl">Denied Attempts</span>
+      <span class="stat-lbl">DENIED ATTEMPTS</span>
     </div>
   </div>
 
-  <section class="auth-panel" aria-label="Workspace authentication">
-    <div class="field-label"><span>Workspace Access Key</span><span>Encrypted</span></div>
+  <section class="auth-panel" aria-label="WORKSPACE AUTHENTICATION">
+    <div class="field-label"><span>WORKSPACE ACCESS KEY</span><span>ENCRYPTED</span></div>
     <div class="pw-field">
       <span class="pw-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-      <input type="password" id="pwInput" class="pw-input" placeholder="Enter workspace password" autocomplete="current-password" autocapitalize="none" spellcheck="false" maxlength="256" aria-label="MII AI Studio password" />
-      <button class="pw-toggle" id="pwToggle" type="button" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+      <input type="password" id="pwInput" class="pw-input" placeholder="ENTER WORKSPACE PASSWORD" autocomplete="current-password" autocapitalize="none" spellcheck="false" maxlength="256" aria-label="MII AI STUDIO PASSWORD" />
+      <button class="pw-toggle" id="pwToggle" type="button" aria-label="SHOW PASSWORD"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
     </div>
 
-    <div class="attempts-row" id="attemptsRow" aria-label="Remaining access attempts"></div>
+    <div class="attempts-row" id="attemptsRow" aria-label="REMAINING ACCESS ATTEMPTS"></div>
 
     <div class="err-msg" id="errMsg" role="alert" aria-live="polite">
       <span class="err-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
@@ -347,10 +349,10 @@ body::after{content:"";position:fixed;inset:-40%;pointer-events:none;background:
     </div>
     <div class="locked-msg" id="lockedMsg" role="status" aria-live="polite"></div>
 
-    <button class="unlock-btn" id="unlockBtn" type="button"><span>Unlock Studio <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span></button>
+    <button class="unlock-btn" id="unlockBtn" type="button"><span>UNLOCK STUDIO <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span></button>
   </section>
-  <div class="security-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Encrypted session. Workspace data stays private.</span></div>
-  <a href="/" class="back-link"><span class="back-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 17-5-5 5-5"/><path d="M5 12h14"/></svg></span><span>Back to Home</span></a>
+  <div class="security-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>ENCRYPTED SESSION. WORKSPACE DATA STAYS PRIVATE.</span></div>
+  <a href="/" class="back-link"><span class="back-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 17-5-5 5-5"/><path d="M5 12h14"/></svg></span><span>BACK TO HOME</span></a>
 </main>
 
 <script>
@@ -365,7 +367,7 @@ var attemptsRow = document.getElementById('attemptsRow');
 var pwToggle = document.getElementById('pwToggle');
 var countdownTimer = null;
 var TOTAL_ATTEMPTS = 3;
-var UNLOCK_BUTTON_HTML = '<span>Unlock Studio <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span>';
+var UNLOCK_BUTTON_HTML = '<span>UNLOCK STUDIO <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span>';
 
 function formatMMSS(sec) {
   var m = Math.floor(sec / 60), s = sec % 60;
@@ -418,7 +420,7 @@ function enterLockedState(retryAfter) {
       renderAttemptPips(TOTAL_ATTEMPTS); // server resets the fail count once the lock expires
       return;
     }
-    lockedMsg.innerHTML = 'This device is temporarily locked after three failed attempts.<br>Try again in <b>' + formatMMSS(remaining) + '</b>';
+    lockedMsg.innerHTML = 'THIS DEVICE IS TEMPORARILY LOCKED AFTER THREE FAILED ATTEMPTS.<br>TRY AGAIN IN <b>' + formatMMSS(remaining) + '</b>';
     remaining -= 1;
   }
   tick();
@@ -427,10 +429,10 @@ function enterLockedState(retryAfter) {
 
 function doUnlock() {
   var pw = input.value.trim();
-  if (!pw) { showError('Enter your workspace password.'); return; }
+  if (!pw) { showError('ENTER YOUR WORKSPACE PASSWORD.'); return; }
   input.value = '';
   btn.disabled = true;
-  btn.textContent = 'Authenticating...';
+  btn.textContent = 'AUTHENTICATING...';
   fetch('/ai-video/unlock', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -455,13 +457,13 @@ function doUnlock() {
       return;
     }
     if (typeof data.attempts_left === 'number') renderAttemptPips(data.attempts_left);
-    showError('Access denied. Check your password.');
+    showError('ACCESS DENIED. CHECK YOUR PASSWORD.');
     btn.disabled = false;
     btn.innerHTML = UNLOCK_BUTTON_HTML;
     input.focus();
   })
   .catch(function() {
-    showError('Connection failed. Please try again.');
+    showError('CONNECTION FAILED. PLEASE TRY AGAIN.');
     btn.disabled = false;
     btn.innerHTML = UNLOCK_BUTTON_HTML;
     input.focus();
@@ -481,7 +483,7 @@ btn.addEventListener('click', doUnlock);
 pwToggle.addEventListener('click', function() {
   var reveal = input.type === 'password';
   input.type = reveal ? 'text' : 'password';
-  pwToggle.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+  pwToggle.setAttribute('aria-label', reveal ? 'HIDE PASSWORD' : 'SHOW PASSWORD');
   input.focus();
 });
 
