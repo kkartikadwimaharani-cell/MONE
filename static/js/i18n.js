@@ -76,8 +76,8 @@
       homeComingSoon:'SEGERA HADIR', homeEnterStudio:'BUKA DEMO',
       homeDemoKicker:'DEMO PUBLIK MII AI STUDIO', homeDemoPrelude:'PRATINJAU ANTARMUKA',
       homeDemoStatement:'DEMO TAMPILAN DAN KONTROL',
-      homeDemoDescription:'FITUR GENERASI DINONAKTIFKAN DI HALAMAN INI',
-      homeDemoAssurance:'TIDAK ADA PANGGILAN API, POLLING, ATAU KREDIT YANG DIGUNAKAN',
+      homeDemoDescription:'GENERASI DINONAKTIFKAN DI HALAMAN DEMO',
+      homeDemoAssurance:'TANPA API, POLLING, ATAU PEMAKAIAN KREDIT',
       home:'BERANDA', social:'SOSIAL', project:'PROYEK', contact:'KONTAK'
     },
     en: {
@@ -97,8 +97,8 @@
       homeComingSoon:'COMING SOON', homeEnterStudio:'OPEN DEMO',
       homeDemoKicker:'MII AI STUDIO PUBLIC DEMO', homeDemoPrelude:'INTERFACE PREVIEW',
       homeDemoStatement:'INTERFACE AND CONTROLS DEMO',
-      homeDemoDescription:'GENERATION FEATURES ARE DISABLED ON THIS PAGE',
-      homeDemoAssurance:'NO API CALLS, POLLING, OR CREDITS ARE USED',
+      homeDemoDescription:'GENERATION IS DISABLED ON THIS DEMO PAGE',
+      homeDemoAssurance:'NO API, POLLING, OR CREDIT USAGE',
       home:'HOME', social:'SOCIAL', project:'PROJECTS', contact:'CONTACT'
     },
     cn: {
