@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
@@ -1865,19 +1865,19 @@ if (DEMO_MODE) {
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div>
           <div class="dash-card-main">
             <div class="dash-card-title">MII AI STUDIO</div>
-            <div class="dash-card-sub">Generate video &amp; image dengan AI</div>
+            <div class="dash-card-sub">Generate video &amp; images with AI</div>
           </div>
           <svg class="dash-card-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
         <a class="dash-card" href="#" onclick="navigateTo('history');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
           <div class="dash-card-title">History</div>
-          <div class="dash-card-sub">Hasil generate terakhir</div>
+          <div class="dash-card-sub">Latest generated result</div>
         </a>
         <a class="dash-card" href="#" onclick="navigateTo('archive');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg></div>
           <div class="dash-card-title">Archive History</div>
-          <div class="dash-card-sub">Hasil yang sudah diarsipkan</div>
+          <div class="dash-card-sub">Archived results</div>
         </a>
       </div>
       <div class="dash-section-lbl">System</div>
@@ -1885,7 +1885,7 @@ if (DEMO_MODE) {
         <a class="dash-card" href="#" onclick="navigateTo('settings');return false">
           <div class="dash-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
           <div class="dash-card-title">Settings</div>
-          <div class="dash-card-sub">Akun &amp; preferensi</div>
+          <div class="dash-card-sub">Account &amp; preferences</div>
         </a>
       </div>
     </div>
@@ -1921,8 +1921,8 @@ if (DEMO_MODE) {
         <audio id="canvasPreviewAudio" controls preload="metadata" style="display:none;width:100%;max-width:480px"></audio>
         <video class="canvas-preview-media" id="canvasPreviewVideo" style="display:none" controls playsinline preload="metadata" onerror="videoFailed('canvasPreviewVideo')" onloadeddata="videoRecovered('canvasPreviewVideo')"></video>
         <div class="video-fail-state" id="canvasPreviewVideoFail" style="display:none">
-          <div class="video-fail-msg">Video gagal dimuat</div>
-          <button type="button" class="video-fail-retry" onclick="retryVideoLoad('canvasPreviewVideo')">Coba lagi</button>
+          <div class="video-fail-msg">Video failed to load</div>
+          <button type="button" class="video-fail-retry" onclick="retryVideoLoad('canvasPreviewVideo')">Try again</button>
         </div>
       </div>
 
@@ -1943,7 +1943,7 @@ if (DEMO_MODE) {
       <div class="gen-queue" id="genQueueList"></div>
       <div class="canvas-recent" id="canvasRecent" style="display:none">
         <div class="canvas-recent-head">
-          <span class="canvas-recent-lbl">Hasil Terbaru</span>
+          <span class="canvas-recent-lbl">Latest Results</span>
           <button type="button" class="canvas-recent-link" onclick="navigateTo('history')">History</button>
         </div>
         <div class="canvas-recent-row" id="canvasRecentRow"></div>
@@ -2066,7 +2066,7 @@ if (DEMO_MODE) {
         <div class="mc-meta-chip"><span class="mc-meta-k">Aspect Ratio</span><span class="mc-meta-v" id="mcMetaRatio">-</span></div>
       </div>
       <div class="mc-duration-warn" id="mcDurationWarn" style="display:none">
-        \u26a0 Video referensi lebih dari 15 detik — Motion Control cuma mendukung maks 15 detik, jadi hasilnya akan dipotong ke 15 detik pertama.
+        \u26a0 Reference video longer than 15 seconds — Motion Control supports up to 15 seconds, so only the first 15 seconds will be used.
       </div>
 
       <div class="duration-card" id="durationChip">
@@ -2107,7 +2107,7 @@ if (DEMO_MODE) {
         <button type="button" class="chip" id="audioModeChip" onclick="openSheet('audiomode',this)" style="display:none"><span style="opacity:.6">Mode</span><span id="audioModeLabel">INSTRUMENTAL</span><span class="chip-car"></span></button>
         <button type="button" class="chip" id="audioLyricsChip" onclick="openSheet('lyrics',this)" style="display:none"><span id="audioLyricsLabel">LYRICS</span><span class="chip-car"></span></button>
         <button type="button" class="chip" id="vocalGenderChip" onclick="openSheet('vocalgender',this)" style="display:none"><span style="opacity:.6">Voice</span><span id="vocalGenderLabel">AUTO</span><span class="chip-car"></span></button>
-        <button type="button" class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Atur audio video hasil">
+        <button type="button" class="chip" id="muteAudioChip" onclick="openAudioSelector(this)" style="display:none" title="Configure generated video audio">
           <svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="muteAudioIcon"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           <span id="muteAudioLabel">Audio On</span>
           <span class="chip-car" id="muteAudioCaret" style="display:none"></span>
@@ -2276,22 +2276,22 @@ if (DEMO_MODE) {
       <audio id="resultAudioFull" controls preload="metadata" style="width:100%"></audio>
     </div>
     <div class="video-fail-state" id="resultVideoFullFail" style="display:none">
-      <div class="video-fail-msg">Video gagal dimuat — coba refresh koneksi lalu tekan tombol di bawah</div>
-      <button type="button" class="video-fail-retry" onclick="retryVideoLoad('resultVideoFull')">Coba lagi</button>
+      <div class="video-fail-msg">Video failed to load — refresh the connection and press the button below</div>
+      <button type="button" class="video-fail-retry" onclick="retryVideoLoad('resultVideoFull')">Try again</button>
     </div>
     <img class="result-video-full" id="resultImageFull" style="display:none;object-fit:contain" alt="Generated result" title="Tap to enlarge" onclick="openImagePreview(this.src)" onerror="imgFallback(this)" />
     <div class="result-meta-grid" id="resultMetaGrid"></div>
     <div class="result-compare-block" id="resultCompareBlock" style="display:none">
-      <div class="result-section-label"><span>Hasil &amp; Referensi</span></div>
+      <div class="result-section-label"><span>Results &amp; References</span></div>
       <div class="result-compare-row" id="resultCompareRow">
         <div class="result-compare-col">
           <video class="result-compare-video" id="resultCompareBefore" muted loop playsinline controls></video>
-          <span class="result-compare-badge after">HASIL</span>
+          <span class="result-compare-badge after">RESULTS</span>
         </div>
         <div class="result-compare-arrow">&#8594;</div>
         <div class="result-compare-col">
           <video class="result-compare-video" id="resultCompareAfter" muted loop playsinline controls></video>
-          <span class="result-compare-badge before">REFERENSI</span>
+          <span class="result-compare-badge before">REFERENCES</span>
         </div>
       </div>
     </div>
@@ -2334,15 +2334,15 @@ if (DEMO_MODE) {
 <div class="prompt-overlay" id="promptOverlay">
   <div class="pe-header">
     <div class="pe-attach-counts" id="peAttachCounts">
-      <div class="pe-attach-item" id="peImageItem" role="button" onclick="peAttachPick('image')" title="Tambah gambar referensi">
+      <div class="pe-attach-item" id="peImageItem" role="button" onclick="peAttachPick('image')" title="Add image reference">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
         <span id="peImageCount">0/9</span>
       </div>
-      <div class="pe-attach-item" id="peVideoItem" role="button" onclick="peAttachPick('video')" title="Tambah video referensi">
+      <div class="pe-attach-item" id="peVideoItem" role="button" onclick="peAttachPick('video')" title="Add video reference">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
         <span id="peVideoCount">0/3</span>
       </div>
-      <div class="pe-attach-item" id="peAudioItem" style="display:none" role="button" onclick="peAttachPick('audio')" title="Tambah audio referensi">
+      <div class="pe-attach-item" id="peAudioItem" style="display:none" role="button" onclick="peAttachPick('audio')" title="Add audio reference">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
         <span id="peAudioCount">0/3</span>
       </div>
@@ -2434,7 +2434,7 @@ var _videoAutoRetryCount = {}; // videoElId -> how many silent auto-retries alre
 // link to resolve to playable video at all. The old code did
 // `src.split('?')[0] + '?_autoretry=' + Date.now()`, which threw away
 // rlkey/raw=1 entirely — every "retry" (silent auto-retry AND the manual
-// "Coba lagi" button) was requesting a broken URL and was guaranteed to
+// "Try again" button) was requesting a broken URL and was guaranteed to
 // fail forever, even though the original link was perfectly fine. That's
 // why the inline preview looked permanently broken while Download (which
 // always used the untouched original URL) kept working.
@@ -2597,7 +2597,7 @@ var modelFamilies = {
   audio: [
     {
       key: 'seedaudio', brand: 'BYTEDANCE', name: 'SEED AUDIO 1.0', featured: true,
-      desc: 'Text-to-audio penuh: dialog, musik, ambience, dan SFX dalam satu generate — voice cloning via 3 referensi audio (@Audio1-3) atau 1 gambar pemandu mood.',
+      desc: 'Full text-to-audio: dialogue, music, ambience, and SFX in one generation — voice cloning via 3 audio references (@Audio1-3) or 1 mood reference image.',
       caps: { image: 1, video: 0, audio: 3, frames: false, elements: true, ratio: false, resolution: false, resolutionSet: 'audio', duration: false, motion: false },
       qualities: [
         { id: 'seed-audio-1.0', label: 'STANDARD' }
@@ -3057,7 +3057,7 @@ var sheetDefs = {
   audioformat: {
     title: 'Output Format',
     options: ['WAV','MP3','OGG_OPUS'],
-    desc: function(v){ return v==='WAV'?'Lossless · terbaik untuk editing':v==='MP3'?'Kecil · kompatibel di mana saja':'Streaming · sangat kecil'; },
+    desc: function(v){ return v==='WAV'?'Lossless · best for editing':v==='MP3'?'Kecil · kompatibel di mana saja':'Streaming · sangat kecil'; },
     get: function(){ return selectedAudioFormat; },
     set: function(v){ selectedAudioFormat = v; document.getElementById('audioFormatLabel').textContent = v; }
   },
@@ -3135,7 +3135,7 @@ function positionMiniSheet(anchor) {
 }
 function openSheet(key, anchorEl) {
   if ((key === 'ratio' || key === 'duration') && selectedFamily && selectedFamily.key === 'klingswap') {
-    showToast('Mengikuti video referensi (otomatis)');
+    showToast('Matches the reference video automatically');
     return;
   }
   closeModelDock();
@@ -3266,7 +3266,7 @@ function openImageAdvanced() {
   var list = document.getElementById('sheetList');
   list.innerHTML = '';
   if (caps.seed) list.innerHTML += '<label class="sheet-opt"><span>Seed</span><input id="advancedSeed" type="number" step="1" value="' + escapeHtml(String(selectedImageSeed)) + '"><span><button type="button" onclick="randomImageSeed()">Random</button><button type="button" onclick="clearImageSeed()">Clear</button></span></label>';
-  if (caps.negativePrompt) list.innerHTML += '<label class="sheet-opt"><span>Negative Prompt</span><textarea id="advancedNegativePrompt">' + escapeHtml(selectedNegativePrompt) + '</textarea>' + (caps.singularImage && media.image.length ? '<small>Opsi ini diabaikan saat gambar sumber digunakan.</small>' : '') + '</label>';
+  if (caps.negativePrompt) list.innerHTML += '<label class="sheet-opt"><span>Negative Prompt</span><textarea id="advancedNegativePrompt">' + escapeHtml(selectedNegativePrompt) + '</textarea>' + (caps.singularImage && media.image.length ? '<small>This option is ignored when a source image is used.</small>' : '') + '</label>';
   if (caps.sequentialModes && caps.sequentialModes.length) list.innerHTML += '<label class="sheet-opt"><span>Sequential Generation</span><select id="advancedSequential"><option value="disabled">Disabled</option><option value="auto">Auto</option></select></label><label class="sheet-opt" id="advancedMaxWrap"><span>Max Images</span><input id="advancedMaxImages" type="number" min="1" max="14" value="' + selectedMaxImages + '"></label>';
   list.innerHTML += '<button class="sheet-opt selected" type="button" onclick="saveImageAdvanced()">Save settings</button>';
   var seq = document.getElementById('advancedSequential'); if (seq) { seq.value=selectedSequentialMode; seq.onchange=function(){ document.getElementById('advancedMaxWrap').style.display=this.value==='auto'?'':'none'; }; seq.onchange(); }
@@ -3333,7 +3333,7 @@ function applySelectedFamily(family, qualityIdx, options) {
       var targetLimit = (targetCaps.singular_image || targetCaps.singularImage)
         ? 1 : (targetCaps.reference_images || targetCaps.image || 0);
       if (media.image.length > targetLimit) {
-        var message = targetLimit ? ('Tier ini hanya mendukung ' + targetLimit + ' reference. Remove extras?') : 'Tier ini tidak mendukung reference. Remove references?';
+        var message = targetLimit ? ('This tier supports only ' + targetLimit + ' reference. Remove extras?') : 'This tier does not support references. Remove them?';
         if (!window.confirm(message)) return false;
         media.image.splice(targetLimit);
         if (selectedRatio === 'match_input_image' && !media.image.length) {
@@ -3973,7 +3973,7 @@ function renderModelDock() {
 // ══════════ UPLOAD SHEET + MEDIA ══════════
 function openUploadSheet(type) {
   if (DEMO_MODE) { showDemoNotice('reference'); return; }
-  if (!isBackendConnected()) { showToast('UI PREVIEW · UPLOAD BELUM DIAKTIFKAN'); return; }
+  if (!isBackendConnected()) { showToast('UI PREVIEW · UPLOAD NOT ENABLED'); return; }
   closeModelDock();
   currentUploadType = type;
   document.getElementById('uploadSheetTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1);
@@ -4196,7 +4196,7 @@ function updateGenerateButtonState() {
   if (btn.hasAttribute('aria-disabled')) btn.removeAttribute('aria-disabled');
   if (DEMO_MODE) {
     btn.disabled = false;
-    btn.title = 'Lihat pengalaman generasi dalam demo';
+    btn.title = 'View the generation experience in the demo';
     if (txt) txt.textContent = 'GENERATE';
     return;
   }
@@ -4206,7 +4206,7 @@ function updateGenerateButtonState() {
   if (!isBackendConnected()) {
     btn.disabled = true;
     btn.setAttribute('aria-disabled', 'true');
-    btn.title = 'Backend model belum terhubung';
+    btn.title = 'The model backend is not connected';
     if (txt) txt.textContent = 'GENERATE';
     return;
   }
@@ -4264,7 +4264,7 @@ function clearPanelReferences() {
   // Dipanggil tepat setelah generate berhasil disubmit — ala web AI
   // profesional, lampiran direset per-job supaya generate berikutnya
   // mulai bersih. File storage-nya TIDAK dihapus di sini: job yang baru
-  // jalan (dan tombol Coba Lagi) masih memakai URL itu; sweeper server
+  // jalan (dan tombol Try Again) masih memakai URL itu; sweeper server
   // yang membereskannya nanti.
   ['image', 'video', 'audio'].forEach(function(type) {
     media[type].forEach(function(m) {
@@ -4489,7 +4489,7 @@ function _runUpload(file, type, entry) {
           analyzeMotionControlVideo(entry);
         }
       } else {
-        showError(data.error || 'Upload gagal');
+        showError(data.error || 'Upload failed');
         media[type].splice(i, 1);
       }
       renderUploadGrid();
@@ -4497,7 +4497,7 @@ function _runUpload(file, type, entry) {
     .catch(function() {
       var i = media[type].indexOf(entry);
       if (i === -1) return; // already removed by the user
-      showError('Upload gagal, cek koneksi');
+      showError('Upload failed. Check your connection.');
       media[type].splice(i, 1);
       renderUploadGrid();
     });
@@ -4525,7 +4525,7 @@ function uploadFile(file, type, previewUrl) {
 // returns both the original and the (possibly resized) processed video —
 // which is what actually gets sent on Generate.
 function analyzeMotionControlVideo(entry) {
-  showToast('Menganalisa video referensi…');
+  showToast('Analyzing reference video…');
   fetch('/api/aivideo/motion-control/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -4535,7 +4535,7 @@ function analyzeMotionControlVideo(entry) {
     .then(function(data) {
       if (media.video.indexOf(entry) === -1) return; // removed/replaced meanwhile — discard silently
       if (!data.ok) {
-        showError(data.error || 'Gagal membaca metadata video');
+        showError(data.error || 'Failed to read video metadata');
         motionControlMeta = null;
         applyMotionControlLock();
         renderMotionControlMeta();
@@ -4557,14 +4557,14 @@ function analyzeMotionControlVideo(entry) {
       renderMotionControlMeta();
       updateCreditEstimate();
       if (data.original.duration > 15) {
-        showToast('Video lebih dari 15 detik — akan dipotong ke 15 detik pertama');
+        showToast('Video longer than 15 seconds — only the first 15 seconds will be used');
       } else {
-        showToast(data.resized ? 'Video diproses ulang agar sesuai ketentuan model' : 'Video referensi terdeteksi otomatis');
+        showToast(data.resized ? 'Video reprocessed to meet model requirements' : 'Reference video detected automatically');
       }
     })
     .catch(function() {
       if (media.video.indexOf(entry) === -1) return;
-      showError('Gagal menganalisa video, cek koneksi');
+      showError('Failed to analyze the video. Check your connection.');
       motionControlMeta = null;
       applyMotionControlLock();
       renderMotionControlMeta();
@@ -4730,14 +4730,14 @@ function removeFrame(which, event) {
           entry.url = data.url;
           entry.uploading = false;
         } else {
-          showError((data && data.error) || 'Upload gagal');
+          showError((data && data.error) || 'Upload failed');
           resetFrameCard(which);
         }
         updateGenerateButtonState();
       })
       .catch(function() {
         if (frames[which] !== entry) return; // superseded or cleared — ignore this stale result
-        showError('Upload gagal, cek koneksi');
+        showError('Upload failed. Check your connection.');
         resetFrameCard(which);
         updateGenerateButtonState();
       });
@@ -4768,7 +4768,7 @@ function handlePromptEnhanceClick() {
   if (DEMO_MODE) { showDemoNotice('enhance'); return; }
   if (enhanceBusy) return;
   var raw = (promptInput.value || '').trim();
-  if (!raw) { showToast('Tulis prompt kasarnya dulu, baru Enhance'); return; }
+  if (!raw) { showToast('Write a rough prompt first, then use Enhance'); return; }
   var btn = document.querySelector('.pe-enhance-btn');
   enhanceBusy = true;
   if (btn) { btn.classList.add('busy'); btn.setAttribute('disabled', 'disabled'); }
@@ -4786,7 +4786,7 @@ function handlePromptEnhanceClick() {
     .then(function(res) {
       var d = res.data || {};
       if (res.status >= 400 || !d.ok || !d.prompt) {
-        showError(d.error || 'Enhance gagal (' + res.status + ')');
+        showError(d.error || 'Enhance failed (' + res.status + ')');
         return;
       }
       enhancePrevPrompt = promptInput.value;
@@ -4794,7 +4794,7 @@ function handlePromptEnhanceClick() {
       syncPromptHighlight();
       autosizePrompt();
       updateGenerateButtonState();
-      showToastAction('Prompt di-enhance', 'Kembalikan', function() {
+      showToastAction('Prompt enhanced', 'Undo', function() {
         if (enhancePrevPrompt !== null) {
           promptInput.value = enhancePrevPrompt;
           enhancePrevPrompt = null;
@@ -4804,7 +4804,7 @@ function handlePromptEnhanceClick() {
         }
       });
     })
-    .catch(function(err) { showError(classifyFetchError(err, 'Enhance gagal')); })
+    .catch(function(err) { showError(classifyFetchError(err, 'Enhance failed')); })
     .finally(function() {
       enhanceBusy = false;
       if (btn) { btn.classList.remove('busy'); btn.removeAttribute('disabled'); }
@@ -4826,7 +4826,7 @@ function peAttachPick(type) {
   // buka file picker sistem tanpa menutup editor; upload memakai pipeline
   // yang sama, dan counter/chip di editor ikut ter-update otomatis.
   if ((media[type] || []).length >= (maxCounts[type] || 0)) {
-    showError('Slot ' + type + ' sudah penuh untuk model ini.');
+    showError('The ' + type + ' slot is full for this model.');
     return;
   }
   var input = document.getElementById(type + 'FileInput');
@@ -5130,10 +5130,10 @@ function fetchWithTimeout(url, options, timeoutMs) {
 // instead of a bare "Unknown Error" / "Failed to fetch".
 function classifyFetchError(err, prefix) {
   prefix = prefix ? (prefix + ': ') : '';
-  if (err && err.name === 'AbortError') return prefix + 'Timeout — server tidak merespons, coba lagi.';
-  if (err && err.name === 'SyntaxError') return prefix + 'Invalid response — server mengembalikan data yang tidak bisa dibaca.';
-  if (!navigator.onLine) return prefix + 'Network Error — perangkat sedang offline.';
-  return prefix + 'Network Error — cek koneksi internet lalu coba lagi.';
+  if (err && err.name === 'AbortError') return prefix + 'Timeout — the server did not respond. Try again.';
+  if (err && err.name === 'SyntaxError') return prefix + 'Invalid response — the server returned unreadable data.';
+  if (!navigator.onLine) return prefix + 'Network error — the device is offline.';
+  return prefix + 'Network error — check your internet connection and try again.';
 }
 
 // ══════════ ERROR ══════════
@@ -5171,7 +5171,7 @@ function downloadResult(url, suggestedName) {
     .catch(function(err) {
       // Even the last-resort fallback stays same-origin/in-app — never
       // navigate the user away to a raw storage page again.
-      showError(classifyFetchError(err, 'Download gagal, coba lagi'));
+      showError(classifyFetchError(err, 'Download failed. Try again.'));
     });
 }
 
@@ -5217,7 +5217,7 @@ function notifyMiiPet(status, detail) {
 function refreshQueueBadge() {
   var n = Object.keys(activeGens).filter(function(id) { return !activeGens[id].completed && !activeGens[id].failed; }).length;
   var progressTxt = document.getElementById('collapsedProgressTxt');
-  if (progressTxt) progressTxt.textContent = n > 0 ? (n + ' diproses') : '';
+  if (progressTxt) progressTxt.textContent = n > 0 ? (n + ' processing') : '';
   var canvas = document.getElementById('canvas');
   if (canvas) canvas.classList.toggle('has-queue', Object.keys(activeGens).some(function(id) {
     return !!document.getElementById('genq_' + id);
@@ -5316,7 +5316,7 @@ function startGenerate() {
   var selectedFrames = usingFrames ? frames : {first:null, last:null};
 
   if (!isBackendConnected()) {
-    showError('Model ini belum terhubung ke API di server — yang sudah aktif: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Veo 3.1 (Lite/Fast/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, Flux (Schnell/Dev/Pro), Imagen 4, dan Qwen Image.');
+    showError('This model is not connected to the server API — currently active: Seedance 2.0 (Mini/Fast/Pro), Kling 3.0 (Standard/Pro), Veo 3.1 (Lite/Fast/Pro), Motion Control (Std/Pro), Nano Banana Pro (Fast/Standard/Ultra), GPT Image 2 (Low/Standard/High), Seedream 5.0 Pro, Flux (Schnell/Dev/Pro), Imagen 4, and Qwen Image.');
     return;
   }
   // Motion Control (klingswap): prompt opsional — konsisten dengan
@@ -5329,45 +5329,45 @@ function startGenerate() {
   var needsMedia = FAMILIES_REQUIRING_MEDIA.indexOf(selectedFamily && selectedFamily.key) !== -1;
   var needsVideo = FAMILIES_REQUIRING_VIDEO.indexOf(selectedFamily && selectedFamily.key) !== -1;
   if (needsMedia && selectedMedia.image.length === 0 && selectedMedia.video.length === 0 && !hasFirstFrame) {
-    showError('Minimal 1 gambar atau video referensi diperlukan');
+    showError('At least one image or video reference is required');
     return;
   }
   if (needsVideo && selectedMedia.video.length === 0) {
-    showError('Motion Control butuh 1 video sumber untuk diedit');
+    showError('Motion Control requires one source video to edit');
     return;
   }
   if (activeCaps.requiresImage && selectedMedia.image.length !== 1) {
-    showError('Motion Control membutuhkan tepat 1 gambar karakter'); return;
+    showError('Motion Control requires exactly one character image'); return;
   }
   if (activeCaps.requiresVideo && selectedMedia.video.length !== 1) {
-    showError('Motion Control membutuhkan tepat 1 video gerakan'); return;
+    showError('Motion Control requires exactly one motion video'); return;
   }
   if (selectedFamily && isSeedanceFamily(selectedFamily.key) && selectedMedia.audio.length > 0
       && selectedMedia.image.length === 0 && selectedMedia.video.length === 0 && !hasFirstFrame) {
-    showError('Reference audio butuh minimal 1 gambar atau video pendamping (audio saja tidak cukup)');
+    showError('Reference audio requires at least one supporting image or video');
     return;
   }
   if (selectedFrames.last && selectedFrames.last.url && !hasFirstFrame) {
-    showError('Last frame membutuhkan first frame'); return;
+    showError('Last frame requires a first frame'); return;
   }
   if (selectedFamily && selectedFamily.key === 'seedance') {
     var hasFrames = hasFirstFrame || !!(selectedFrames.last && selectedFrames.last.url);
     if (selectedFrames.last && selectedFrames.last.url && !hasFirstFrame) {
-      showError('Last frame membutuhkan first frame'); return;
+      showError('Last frame requires a first frame'); return;
     }
     if (hasFrames && (selectedMedia.image.length || selectedMedia.video.length)) {
-      showError('Elements dan Frames tidak dapat digunakan bersamaan'); return;
+      showError('Elements and Frames cannot be used together'); return;
     }
     if (media.image.length > 9 || media.video.length > 1 || media.audio.length > 1) {
-      showError('Jumlah reference melebihi batas model'); return;
+      showError('Reference count exceeds the model limit'); return;
     }
     if (media.video.length && media.image.length > 6) {
-      showError('Video edit mendukung maksimal 6 reference image'); return;
+      showError('Video editing supports up to 6 reference images'); return;
     }
   }
   var pendingUpload = selectedMedia.image.concat(selectedMedia.video, selectedMedia.audio).some(function(m) { return m.uploading; })
     || (selectedFrames.first && selectedFrames.first.uploading) || (selectedFrames.last && selectedFrames.last.uploading);
-  if (pendingUpload) { showError('Tunggu upload media selesai'); return; }
+  if (pendingUpload) { showError('Wait for the media upload to finish'); return; }
 
   var body = {
     model: selectedModelTier, // 'MINI' | 'FAST' | 'PRO' | etc — tier label only, NOT unique across families
@@ -5390,11 +5390,11 @@ function startGenerate() {
   if (selectedQuality && selectedQuality.outputKind) body.output_type = selectedQuality.outputKind;
   if (selectedQuality && selectedQuality.caps && selectedQuality.caps.requiresImage
       && selectedMedia.image.length === 0) {
-    showError('Model edit gambar ini membutuhkan 1 gambar sumber'); return;
+    showError('This image editing model requires one source image'); return;
   }
   if (selectedQuality && selectedQuality.caps && selectedQuality.caps.requiresVideo
       && selectedMedia.video.length === 0) {
-    showError('Model audio ini membutuhkan 1 video sumber'); return;
+    showError('This audio model requires one source video'); return;
   }
   if (activeMode === 'image') {
     var imageCaps = resolveEffectiveCapabilities(selectedFamily, selectedQualityIdx);
@@ -5486,7 +5486,7 @@ function startGenerate() {
     clearPanelReferences();
   })
   .catch(function(err) {
-    showError(classifyFetchError(err, 'Generate gagal'));
+    showError(classifyFetchError(err, 'Generation failed'));
     notifyMiiPet('failed', { taskId: 'submitting' });
   });
 }
@@ -5572,13 +5572,13 @@ function pollQueueTask(taskId, opts) {
     if (e.item) e.item.classList.add('failed');
     if (e.stage) {
       e.stage.textContent = '✕ Failed · ' + formatElapsedTime(Date.now() - state.startTs) + (msg ? ' · ' + msg : '');
-      e.stage.title = msg || 'Generate gagal';
+      e.stage.title = msg || 'Generation failed';
       e.stage.classList.add('err');
     }
     if (e.bar) e.bar.style.width = '0%';
     if (e.eta) e.eta.textContent = '';
     if (e.dismiss) e.dismiss.style.display = 'block';
-    if (e.actions) e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="retryQueueItem(\'' + taskId + '\')">Coba Lagi</button>';
+    if (e.actions) e.actions.innerHTML = '<button class="gen-q-btn primary" onclick="retryQueueItem(\'' + taskId + '\')">Try Again</button>';
   }
 
   function tick() {
@@ -5693,19 +5693,19 @@ function pollQueueTask(taskId, opts) {
             }
             var completionText = out.archive_available === false
               ? 'Result generated. Cloud save is temporarily unavailable.'
-              : (isAudioResult ? 'Audio selesai' : (isImageResult ? 'Gambar selesai' : 'Video selesai')) + ' — tersimpan di History';
+              : (isAudioResult ? 'Audio complete' : (isImageResult ? 'Image complete' : 'Video complete')) + ' — saved in History';
             if (rec) showToast(completionText);
-            else showToastAction(completionText, 'Lihat', function() { openQueueResult(taskId); });
+            else showToastAction(completionText, 'View', function() { openQueueResult(taskId); });
           } else {
             state.failed = true; refreshQueueBadge();
-            markFailed('Selesai tapi URL tidak ditemukan di response (Invalid response)');
+            markFailed('Completed, but no URL was found in the response (Invalid response)');
           }
         } else if (status === 'failed') {
           if (state.interval) clearInterval(state.interval);
           if (state.clockInterval) clearInterval(state.clockInterval);
           removeActiveTaskEntry(taskId);
           state.failed = true; refreshQueueBadge();
-          markFailed(data.error || 'generation service tidak mengembalikan detail error.');
+          markFailed(data.error || 'The generation service did not return error details.');
         }
       })
       .catch(function() {
@@ -5720,7 +5720,7 @@ function pollQueueTask(taskId, opts) {
         if (state.interval) clearInterval(state.interval);
           if (state.clockInterval) clearInterval(state.clockInterval);
         state.failed = true; refreshQueueBadge();
-        markFailed('Gagal mengambil status task dari server — cek koneksi lalu coba lagi. Jika berulang, lihat /ai-video/debug.');
+        markFailed('Failed to retrieve task status from the server. Check your connection and try again. If it continues, see /ai-video/debug.');
       });
   }
 
@@ -5764,7 +5764,7 @@ function retryQueueItem(taskId) {
   }, 30000)
     .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
     .then(function(res) {
-      if (res.status >= 400) { showError((res.data && res.data.error) || 'Retry gagal'); return; }
+      if (res.status >= 400) { showError((res.data && res.data.error) || 'Retry failed'); return; }
       var taskId2 = res.data.id;
       var list = document.getElementById('genQueueList');
       list.insertAdjacentHTML('afterbegin', genQueueItemHtml(taskId2, g.meta));
@@ -5773,7 +5773,7 @@ function retryQueueItem(taskId) {
       refreshQueueBadge();
       pollQueueTask(taskId2);
     })
-    .catch(function(err) { showError(classifyFetchError(err, 'Retry gagal')); });
+    .catch(function(err) { showError(classifyFetchError(err, 'Retry failed')); });
 }
 
 // If the phone locked, the tab got backgrounded, or the app was closed
@@ -6111,7 +6111,7 @@ function useResultAsReference() {
       var file = new File([blob], 'result-reuse-' + Date.now() + '.' + ext, { type: blob.type || (r.isImage ? 'image/png' : 'video/mp4') });
       uploadFile(file, type, r.url); // uploadFile() posts to /api/aivideo/upload and fills in the real storage url
     })
-    .catch(function() { showError('Gagal menyiapkan hasil ini sebagai reference'); });
+    .catch(function() { showError('Failed to prepare this result as a reference'); });
 }
 
 // ══════════ FAILURE RECOVERY (keeps prompt / media / settings intact) ══════════
@@ -6141,7 +6141,7 @@ function loadHistory() {
 }
 function saveHistoryList(list) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(_) {}
-  // Satu-satunya jalur tulis History — strip "Hasil terbaru" di canvas
+  // Satu-satunya jalur tulis History — strip "Latest results" di canvas
   // ikut segar setiap kali riwayat berubah (selesai generate, hapus, dsb).
   try { renderCanvasRecent(); } catch(_) {}
 }
@@ -6183,7 +6183,7 @@ function renderCanvasRecent() {
     card.className = 'cr-card';
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', 'Buka hasil ' + (r.model || r.mediaType || 'generate'));
+    card.setAttribute('aria-label', 'Open result ' + (r.model || r.mediaType || 'generate'));
     card.onclick = function() { openHistoryItem(r.id); };
     card.onkeydown = function(ev) {
       if (ev.target !== card || (ev.key !== 'Enter' && ev.key !== ' ')) return;
@@ -6228,11 +6228,11 @@ function renderCanvasRecent() {
     x.textContent = '\u00d7';
     x.tabIndex = 0;
     x.setAttribute('role', 'button');
-    x.setAttribute('aria-label', 'Sembunyikan dari halaman generate');
+    x.setAttribute('aria-label', 'Hide from the generation page');
     x.onclick = function(ev) {
       ev.stopPropagation();
       dismissFromCanvas(r.id);
-      showToast('Dihapus dari halaman \u2014 tetap ada di History');
+      showToast('Removed from this page \u2014 still available in History');
     };
     x.onkeydown = function(ev) {
       if (ev.key !== 'Enter' && ev.key !== ' ') return;
@@ -6284,7 +6284,7 @@ function syncArchiveToServer(rec) {
     .then(function(res) {
       var data = res.data;
       if (res.status >= 400 || !data || data.error) {
-        showError((data && data.error) || 'Gagal menyimpan ke Archive di server (' + res.status + ')');
+        showError((data && data.error) || 'Failed to save to Archive on the server (' + res.status + ')');
         return false;
       }
       // The server may have promoted a local /static/... output URL to a
@@ -6299,7 +6299,7 @@ function syncArchiveToServer(rec) {
       return true;
     })
     .catch(function(err) {
-      showError(classifyFetchError(err, 'Gagal menyimpan ke Archive'));
+      showError(classifyFetchError(err, 'Failed to save to Archive'));
       return false;
     });
 }
@@ -6308,7 +6308,7 @@ function removeArchiveFromServer(id) {
   return fetchWithTimeout('/api/aivideo/archive/' + encodeURIComponent(id), { method: 'DELETE' }, 15000)
     .then(function(r) { return r.json().catch(function() { return {}; }).then(function(data) { return r.ok && data && data.ok === true; }); })
     .catch(function(err) {
-      showError(classifyFetchError(err, 'Gagal menghapus dari Archive'));
+      showError(classifyFetchError(err, 'Failed to delete from Archive'));
       return false;
     });
 }
@@ -6346,7 +6346,7 @@ function refreshArchiveFromServer(onDone) {
       if (onDone) onDone(true);
     })
     .catch(function(err) {
-      showError(classifyFetchError(err, 'Gagal memuat Archive'));
+      showError(classifyFetchError(err, 'Failed to load Archive'));
       if (onDone) onDone(false);
     });
 }
@@ -6380,7 +6380,7 @@ function refreshHistoryFromServer(onDone) {
       if (onDone) onDone(true);
     })
     .catch(function(err) {
-      showError(classifyFetchError(err, 'Gagal memuat History'));
+      showError(classifyFetchError(err, 'Failed to load History'));
       if (onDone) onDone(false);
     });
 }
@@ -6682,7 +6682,7 @@ function openHistoryItem(id) {
   var r = findHistoryRecord(id);
   if (!r) return;
   if (r.family === 'storyboard') {
-    showToast('Storyboard sudah tidak tersedia');
+    showToast('Storyboard is no longer available');
     return;
   }
   // The result overlay is a fixed, full-screen layer (see .result-overlay)
@@ -6697,7 +6697,7 @@ function downloadHistoryItem(id) {
   if (!r) return;
   var a = document.createElement('a');
   a.href = r.videoUrl || r.imageUrl || r.audioUrl;
-  if (!a.href) { showError('File tidak tersedia untuk diunduh'); return; }
+  if (!a.href) { showError('The file is not available for download'); return; }
   a.download = 'mii-ai-' + Date.now() + (r.imageUrl ? imageDownloadExtension(r, r.imageUrl) : (r.audioUrl ? '.wav' : '.mp4')); document.body.appendChild(a); a.click(); a.remove();
 }
 function restoreFromRecord(r) {
@@ -6785,7 +6785,7 @@ function toggleArchiveItem(id) {
     noteHistoryMutation();
     updateHistoryRecord(id, { archived: nowArchived });
     renderHistoryArchiveCaches();
-    showToast(nowArchived ? 'Tersimpan di Archive' : 'Dikembalikan ke History');
+    showToast(nowArchived ? 'Saved to Archive' : 'Restored to History');
   });
 }
 var pendingDeleteId = null;
@@ -6796,7 +6796,7 @@ function confirmDeleteHistoryItem(id) {
   pendingDeleteId = id;
   var label = recordMediaType(rec) === 'video' ? 'Video' : (recordMediaType(rec) === 'audio' ? 'Audio' : 'Image');
   document.getElementById('confirmTitle').textContent = 'Delete this ' + label.toLowerCase() + '?';
-  document.getElementById('confirmSub').textContent = label + ' ini dihapus dari History/Archive beserta file hasilnya. Tidak bisa dikembalikan.';
+  document.getElementById('confirmSub').textContent = label + ' will be deleted from History/Archive along with its generated file. This cannot be undone.';
   var btn = document.getElementById('confirmActionBtn');
   btn.disabled = false; btn.textContent = 'Delete';
   btn.onclick = function() {
@@ -6806,7 +6806,7 @@ function confirmDeleteHistoryItem(id) {
     removeArchiveFromServer(deletingId).then(function(ok) {
       if (!ok) {
         deleteInFlight = false; btn.disabled = false; btn.textContent = 'Delete';
-        showError('Gagal menghapus ' + label.toLowerCase() + '. Item tetap tersimpan.');
+        showError('Failed to delete ' + label.toLowerCase() + '. The item remains saved.');
         return;
       }
       noteHistoryMutation(deletingId);
@@ -6817,7 +6817,7 @@ function confirmDeleteHistoryItem(id) {
       }
       deleteInFlight = false;
       closeConfirm(); renderHistoryArchiveCaches(); renderLastResultCard();
-      showToast(label + ' dihapus');
+      showToast(label + ' deleted');
     });
   };
   document.getElementById('confirmBackdrop').classList.add('show');
@@ -6842,7 +6842,7 @@ function resolveCurrentResultId() {
 function deleteCurrentResult() {
   // Tombol Delete di halaman generate (dan halaman detail hasil) sekarang
   // HANYA membersihkan tampilan: preview besar ditutup dan kartunya
-  // disembunyikan dari "Hasil Terbaru". Record History TIDAK dihapus —
+  // disembunyikan dari "Latest Results". Record History TIDAK dihapus —
   // hapus permanen tetap hanya lewat tombol delete di halaman History.
   var id = resolveCurrentResultId();
   if (id) canvasDismissed[id] = true;
@@ -6851,20 +6851,20 @@ function deleteCurrentResult() {
   window.__lastResultPayload = null;
   updateCanvasPreview();
   renderCanvasRecent();
-  showToast('Dihapus dari halaman \u2014 tetap tersimpan di History');
+  showToast('Removed from this page \u2014 still saved in History');
 }
 function archiveCurrentResult() {
   var id = resolveCurrentResultId();
-  if (!id) { showToast('Belum ada hasil untuk diarsipkan'); return; }
+  if (!id) { showToast('No results are available to archive yet'); return; }
   var r = findHistoryRecord(id);
-  if (!r) { showToast('Belum ada hasil untuk diarsipkan'); return; }
-  showToast('Menyimpan ke Archive…');
+  if (!r) { showToast('No results are available to archive yet'); return; }
+  showToast('Saving to Archive…');
   syncArchiveToServer(Object.assign({}, r, { archived: true })).then(function(ok) {
     if (!ok) return; // syncArchiveToServer already surfaced the specific error
     updateHistoryRecord(id, { archived: true });
     renderHistoryList();
     renderArchiveList();
-    showToast('Tersimpan di Archive');
+    showToast('Saved to Archive');
   });
 }
 function openImagePreview(url) {

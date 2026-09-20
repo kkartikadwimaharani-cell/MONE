@@ -23,19 +23,19 @@ button.secondary{border:0;background:rgba(255,255,255,.06)}
 </header>
 <section>
   <div class="panel-head"><h2>{{ client_name }}</h2><span class="index">01 / AUTHORIZE</span></div>
-  <p>Agent ini meminta izin memakai <strong>MII AI STUDIO</strong> atas namamu.</p>
+  <p>This agent is requesting permission to use <strong>MII AI STUDIO</strong> on your behalf.</p>
   <ul class="permission-list">
-    <li>Melihat daftar model aktif dan kemampuan tiap model.</li>
-    <li>Membuat video, gambar, musik, audio, dan motion control memakai kredit akunmu.</li>
-    <li>Membaca status tugas dan membuka hasil generasi.</li>
+    <li>View active models and each model’s capabilities.</li>
+    <li>Create video, images, music, audio, and motion control using your account credits.</li>
+    <li>Read task status and open generation results.</li>
   </ul>
-  <div class="safe"><b>✓</b><span>Agent tidak mendapat akses ke password, pengaturan admin, atau kunci layanan internal.</span></div>
+  <div class="safe"><b>✓</b><span>The agent cannot access your password, admin settings, or internal service keys.</span></div>
   <div class="route"><span>RETURN DOMAIN</span><strong>{{ redirect_host }}</strong></div>
-  <p class="muted">Nama agent diberikan oleh aplikasi peminta. Pastikan domain tujuan sesuai aplikasi yang sedang kamu hubungkan.</p>
+  <p class="muted">The requesting application provides the agent name. Make sure the destination domain matches the application you are connecting.</p>
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <div class="row"><button name="decision" value="approve">IZINKAN AKSES</button><button class="secondary" name="decision" value="deny">TOLAK</button></div>
+    <div class="row"><button name="decision" value="approve">AUTHORIZE ACCESS</button><button class="secondary" name="decision" value="deny">DENY</button></div>
   </form>
 </section>
-<p class="footer-note">AKSES DAPAT DICABUT KAPAN SAJA DARI HALAMAN MII AI STUDIO MCP.</p>
+<p class="footer-note">ACCESS CAN BE REVOKED AT ANY TIME FROM THE MII AI STUDIO MCP PAGE.</p>
 {% endblock %}

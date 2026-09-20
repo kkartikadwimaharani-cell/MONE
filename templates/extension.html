@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -131,9 +131,9 @@ nav{
 {% if ext_locked %}
 <div class="lock-ov">
   <div class="lk"><div class="lk-sh"></div><div class="lk-bd"><div class="lk-kh"></div></div></div>
-  <div class="lk-title">Halaman Terkunci</div>
-  <div class="lk-sub">Belum tersedia untuk publik. Tunggu pengumuman resmi.</div>
-  <a href="/" class="lk-back">Kembali</a>
+  <div class="lk-title">Page Locked</div>
+  <div class="lk-sub">Not available to the public yet. Wait for the official announcement.</div>
+  <a href="/" class="lk-back">Back</a>
 </div>
 {% endif %}
 
@@ -143,7 +143,7 @@ nav{
   <span class="n-brand">MII Store</span>
   <a href="/" class="n-back">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    Beranda
+    Home
   </a>
 </nav>
 
@@ -158,7 +158,7 @@ nav{
     {% if ext_zip %}
     <a href="{{ ext_zip }}" class="dl-btn" download><span class="ico-dl"></span>Download ZIP</a>
     {% else %}
-    <span class="dl-btn off"><span class="ico-lock"></span>Belum Tersedia</span>
+    <span class="dl-btn off"><span class="ico-lock"></span>Not Available Yet</span>
     {% endif %}
 
     <!-- Photos vertical -->
@@ -175,7 +175,7 @@ nav{
   <!-- Status -->
   <div class="card">
     <span class="lbl">Status</span>
-    <div class="status-title">Segera Hadir</div>
+    <div class="status-title">Coming Soon</div>
   </div>
 
   <!-- Features -->
@@ -188,18 +188,18 @@ nav{
 
   <!-- Tutorial -->
   <div class="card">
-    <div class="tut-title">Cara Pasang Extension</div>
+    <div class="tut-title">How to Install the Extension</div>
     <div class="steps">
       {% if ext_tutorial and ext_tutorial | length > 0 %}
         {% for step in ext_tutorial %}
         <div class="step"><div class="step-n">{{ loop.index }}</div><div class="step-t">{{ step }}</div></div>
         {% endfor %}
       {% else %}
-        <div class="step"><div class="step-n">1</div><div class="step-t">Download file ZIP dari tombol di atas.</div></div>
-        <div class="step"><div class="step-n">2</div><div class="step-t">Buka Kiwi Browser, ketuk menu titik tiga, pilih Extensions.</div></div>
-        <div class="step"><div class="step-n">3</div><div class="step-t">Aktifkan Developer mode di pojok kanan atas.</div></div>
-        <div class="step"><div class="step-n">4</div><div class="step-t">Ketuk <strong>+ (from .zip/.crx/.user.js)</strong> lalu pilih file ZIP.</div></div>
-        <div class="step"><div class="step-n">5</div><div class="step-t">Extension terpasang dan siap digunakan.</div></div>
+        <div class="step"><div class="step-n">1</div><div class="step-t">Download the ZIP file using the button above.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Open Kiwi Browser, tap the three-dot menu, then select Extensions.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Enable Developer mode in the upper-right corner.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Tap <strong>+ (from .zip/.crx/.user.js)</strong>, then select the ZIP file.</div></div>
+        <div class="step"><div class="step-n">5</div><div class="step-t">The extension is installed and ready to use.</div></div>
       {% endif %}
     </div>
   </div>

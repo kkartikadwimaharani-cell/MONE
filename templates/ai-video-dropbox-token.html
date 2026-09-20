@@ -250,7 +250,7 @@ input[type=text],input[type=password],.code-box{background:#110409;border-radius
 <div class="modal-overlay" id="disconnectOverlay">
   <div class="modal">
     <div class="modal-title">Disconnect Dropbox?</div>
-    <div class="modal-desc">File di Dropbox kamu tetap aman, nggak akan terhapus.</div>
+    <div class="modal-desc">Your Dropbox files remain safe and will not be deleted.</div>
     <button class="btn btn-danger" id="btnDisconnectAccount">Disconnect Account</button>
     <div class="btn-row"><button class="btn btn-ghost" id="btnRemoveConfig">Remove Configuration</button></div>
     <div class="btn-row"><button class="btn btn-secondary" id="btnCancelDisconnect">Cancel</button></div>
@@ -366,7 +366,7 @@ function notConnectedCardHTML() {
     '<div class="card">' +
       '<div class="card-icon-row"><div class="card-icon">' + ICONS.cloud + '</div>' +
       '<div><div class="card-title">Dropbox</div><div class="card-desc">Cloud Storage Integration</div></div></div>' +
-      '<div class="helper-text">Connect Dropbox tanpa copy-paste token manual, tanpa edit Railway.</div>' +
+      '<div class="helper-text">Connect Dropbox without manually copying tokens or editing Railway.</div>' +
       '<button class="btn btn-primary" id="btnConfigure">Configure Dropbox</button>' +
     '</div>'
   );
@@ -507,7 +507,7 @@ function wizardHTML() {
       '</div>' +
       '<div id="wizStep1">' +
         '<div class="card-title mt-6" style="margin-bottom:4px">Application Credentials</div>' +
-        '<div class="helper-text">Isi App Key &amp; Secret dari Dropbox App Console.</div>' +
+        '<div class="helper-text">Enter the App Key &amp; Secret from the Dropbox App Console.</div>' +
         '<div class="field"><label for="fAppKey">App Key</label>' +
           '<input type="text" class="plain" id="fAppKey" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 8vak3xy2z1a2b3c"></div>' +
         '<div class="field"><label for="fAppSecret">App Secret</label>' +
@@ -517,7 +517,7 @@ function wizardHTML() {
       '</div>' +
       '<div id="wizStep2" class="hidden">' +
         '<div class="card-title mt-6" style="margin-bottom:4px">Configure Redirect URI</div>' +
-        '<div class="helper-text">Tambahkan URL ini ke Dropbox App Console.</div>' +
+        '<div class="helper-text">Add this URL to the Dropbox App Console.</div>' +
         '<div class="code-box" id="redirectUriBox">…</div>' +
         '<div class="btn-row" style="margin-top:0;margin-bottom:18px"><button class="btn btn-secondary" id="btnCopyUri">' + ICONS.copy + ' Copy Redirect URI</button></div>' +
         '<div class="helper-text">App Console → Settings → OAuth 2 → Redirect URIs</div>' +
@@ -525,7 +525,7 @@ function wizardHTML() {
       '</div>' +
       '<div id="wizStep3" class="hidden">' +
         '<div class="card-title mt-6" style="margin-bottom:4px">Connect Your Dropbox</div>' +
-        '<div class="helper-text">Izinkan akses ke akun Dropbox kamu.</div>' +
+        '<div class="helper-text">Authorize access to your Dropbox account.</div>' +
         '<button class="btn btn-primary" id="btnConnectDropbox">Connect Dropbox</button>' +
       '</div>' +
       '<div id="wizStep4" class="hidden text-center">' +
@@ -534,7 +534,7 @@ function wizardHTML() {
           '<path class="check" d="M15 27l7 7 15-15" stroke="var(--ok)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
         '</svg></div>' +
         '<div class="card-title" style="margin-bottom:6px">Dropbox Connected</div>' +
-        '<div class="helper-text">Auto-refresh token aktif — nggak perlu setting lagi.</div>' +
+        '<div class="helper-text">Automatic token refresh is active — no further setup is required.</div>' +
         '<div class="info-list" id="step4Info" style="text-align:left"></div>' +
         '<button class="btn btn-primary" id="btnWizardDone">Done</button>' +
       '</div>' +

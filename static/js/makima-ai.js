@@ -317,7 +317,7 @@
           <header class="mkai-header makima-header">
             <div class="mkai-header-left">
               <button class="mkai-history-toggle" id="mkaiHistoryToggle" type="button" title="History">☰</button>
-              <button class="mkai-back-btn" id="mkaiBack" type="button" title="Kembali ke dashboard">← KEMBALI</button>
+              <button class="mkai-back-btn" id="mkaiBack" type="button" title="Back to dashboard">← BACK</button>
               <div class="mkai-avatar-wrap">
                 <img class="mkai-avatar makima-avatar" src="${assetPath('img/makima-ai-profile.png')}" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
                 <span class="mkai-online-dot"></span>
@@ -352,19 +352,19 @@
             <div class="mkai-image-preview" id="mkaiImagePreview" hidden></div>
             <div class="mkai-input-inner">
               <input id="mkaiImageInput" class="mkai-image-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-              <button class="mkai-image-btn" id="mkaiImageBtn" title="Upload gambar" type="button" aria-label="Upload gambar">
+              <button class="mkai-image-btn" id="mkaiImageBtn" title="Upload image" type="button" aria-label="Upload image">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
                   <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
                 </svg>
               </button>
-              <textarea id="mkaiInput" class="mkai-textarea" rows="1" placeholder="Ketik pesan..." maxlength="4000"></textarea>
-              <button class="mkai-send-btn" id="mkaiSend" title="Kirim" type="button">
+              <textarea id="mkaiInput" class="mkai-textarea" rows="1" placeholder="Type a message..." maxlength="4000"></textarea>
+              <button class="mkai-send-btn" id="mkaiSend" title="Send" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                   <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
               </button>
             </div>
-            <div class="mkai-input-hint">Enter kirim · Shift+Enter baris baru</div>
+            <div class="mkai-input-hint">Enter to send · Shift+Enter for a new line</div>
           </div>
         </main>
       </div>`;
@@ -436,7 +436,7 @@
       list.innerHTML = sortedChats().map(chat => `
         <button class="mkai-history-item${chat.id === activeChatId ? ' active' : ''}" type="button" data-chat-id="${escAttr(chat.id)}">
           <span class="mkai-history-item-title">${escHtml(chat.title || 'New Chat')}</span>
-          <span class="mkai-history-item-meta">${chat.messages.length ? chat.messages.length + ' pesan' : 'Kosong'}</span>
+          <span class="mkai-history-item-meta">${chat.messages.length ? chat.messages.length + ' messages' : 'Empty'}</span>
         </button>`).join('');
       list.querySelectorAll('.mkai-history-item').forEach(btn => {
         btn.addEventListener('click', function () { loadChat(this.dataset.chatId); });
@@ -460,7 +460,7 @@
       <div class="mkai-welcome">
         <img src="${assetPath('img/makima-ai-profile.png')}" alt="MAKIMA AI" draggable="false" oncontextmenu="return false">
         <div class="mkai-welcome-title">Tanyakan apapun.</div>
-        <div class="mkai-welcome-hint">Aku siap bantu coding, UI, bug fixing, dan ide.</div>
+        <div class="mkai-welcome-hint">I am ready to help with coding, UI, bug fixes, and ideas.</div>
       </div>`;
   }
 
@@ -513,7 +513,7 @@
     ta.style.height = 'auto';
     clearSelectedImage();
 
-    const displayText = text || 'Gambar dikirim';
+    const displayText = text || 'Image sent';
     const userMsg = {
       role: 'user',
       text: displayText,
@@ -551,7 +551,7 @@
         setTyping(false);
         isTyping = false;
         setSendDisabled(false);
-        const reply = data.reply || data.error || 'Terjadi kesalahan. Coba lagi.';
+        const reply = data.reply || data.error || 'Something went wrong. Try again.';
         const isErr = !data.reply;
         chatHistory.push({ role: 'assistant', text: reply, createdAt: nowIso(), ...(isErr ? { error: true } : {}) });
         persistActiveChat();
@@ -562,7 +562,7 @@
         setTyping(false);
         isTyping = false;
         setSendDisabled(false);
-        const reply = 'Koneksi bermasalah. Coba lagi.';
+        const reply = 'Connection problem. Try again.';
         chatHistory.push({ role: 'assistant', text: reply, createdAt: nowIso(), error: true });
         persistActiveChat();
         appendAI(reply, true);
@@ -579,11 +579,11 @@
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
     const extAllowed = /\.(jpe?g|png|webp)$/i.test(file.name || '');
     if (!allowed.includes(file.type) || !extAllowed) {
-      showImageError('Format gambar harus JPG, PNG, atau WEBP.');
+      showImageError('Image format must be JPG, PNG, or WEBP.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      showImageError('Ukuran gambar maksimal 5MB.');
+      showImageError('Maximum image size is 5 MB.');
       return;
     }
 
@@ -595,7 +595,7 @@
       renderImagePreview();
     } catch (err) {
       console.warn('[MAKIMA] image prepare failed:', err);
-      showImageError('Gambar gagal diproses. Coba upload ulang.');
+      showImageError('The image could not be processed. Upload it again.');
     }
   }
 
@@ -655,9 +655,9 @@
     wrap.hidden = false;
     wrap.innerHTML = `
       <div class="mkai-image-chip">
-        <img src="${escAttr(selectedImage.preview)}" alt="Preview gambar">
-        <span>${escHtml(selectedImage.name || 'Gambar')}</span>
-        <button type="button" id="mkaiRemoveImage" aria-label="Hapus gambar">×</button>
+        <img src="${escAttr(selectedImage.preview)}" alt="Image preview">
+        <span>${escHtml(selectedImage.name || 'Image')}</span>
+        <button type="button" id="mkaiRemoveImage" aria-label="Remove image">×</button>
       </div>`;
     document.getElementById('mkaiRemoveImage')?.addEventListener('click', clearSelectedImage);
   }
@@ -694,7 +694,7 @@
         <div class="mkai-ai-body">
           <div class="mkai-ai-sender">MAKIMA AI</div>
           <div class="thinking-bubble" aria-live="polite">
-            <span>Makima sedang berpikir</span>
+            <span>Makima is thinking</span>
             <i></i><i></i><i></i>
           </div>
         </div>
@@ -719,7 +719,7 @@
     const el = document.createElement('div');
     el.className = 'mkai-msg mkai-msg-user';
     el.innerHTML = `<div class="mkai-bubble-user">
-      ${imagePreview ? `<img class="mkai-user-image" src="${escAttr(imagePreview)}" alt="Gambar yang dikirim">` : ''}
+      ${imagePreview ? `<img class="mkai-user-image" src="${escAttr(imagePreview)}" alt="Sent image">` : ''}
       ${text ? `<span>${escHtml(text)}</span>` : ''}
     </div>`;
     container.appendChild(el);
@@ -743,7 +743,7 @@
         <div class="mkai-ai-body"><div class="mkai-ai-sender">MAKIMA AI</div>${bodyHTML}</div>
       </div>
       ${!isErr ? `<div class="mkai-msg-actions">
-        <button class="mkai-action-btn copy" data-msg="${encodeURIComponent(text)}" type="button"><span>Salin</span></button>
+        <button class="mkai-action-btn copy" data-msg="${encodeURIComponent(text)}" type="button"><span>Copy</span></button>
       </div>` : ''}`;
     container.appendChild(el);
     hydrateCodeBlocks(el, codeBlocks);
@@ -811,7 +811,7 @@
   function renderArtifactPanelHTML(artifacts) {
     if (!artifacts.length) return '';
     const allButton = artifacts.length > 1
-      ? `<button class="mkai-artifact-all" type="button" data-artifact-all>Unduh semua</button>`
+      ? `<button class="mkai-artifact-all" type="button" data-artifact-all>Download all</button>`
       : '';
     return `<section class="mkai-artifacts" aria-label="Artefak kode MAKIMA AI">
       <div class="mkai-artifacts-head">
@@ -850,7 +850,7 @@
         const item = byId.get(btn.dataset.artifactCopy);
         if (!item) return;
         copyText(item.code, () => {
-          btn.textContent = 'Disalin';
+          btn.textContent = 'Copied';
           setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
         });
       });
@@ -877,8 +877,8 @@
         <div class="mkai-artifact-viewer-actions">
           <button type="button" data-viewer-copy>Copy</button>
           <button type="button" data-viewer-download>Download</button>
-          ${artifacts.length > 1 ? '<button type="button" data-viewer-download-all>Unduh semua</button>' : ''}
-          <button class="mkai-artifact-viewer-close" type="button" data-viewer-close aria-label="Tutup viewer">×</button>
+          ${artifacts.length > 1 ? '<button type="button" data-viewer-download-all>Download all</button>' : ''}
+          <button class="mkai-artifact-viewer-close" type="button" data-viewer-close aria-label="Close viewer">×</button>
         </div>
       </header>
       <main class="mkai-artifact-code-wrap">
@@ -892,7 +892,7 @@
     overlay.querySelector('[data-viewer-copy]')?.addEventListener('click', e => {
       const btn = e.currentTarget;
       copyText(item.code, () => {
-        btn.textContent = 'Disalin';
+        btn.textContent = 'Copied';
         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       });
     });
@@ -942,8 +942,8 @@
     const btn = e.currentTarget;
     const text = decodeURIComponent(btn.dataset.msg || '');
     copyText(text, () => {
-      setButtonLabel(btn, 'Disalin!');
-      setTimeout(() => setButtonLabel(btn, 'Salin'), 1500);
+      setButtonLabel(btn, 'Copied!');
+      setTimeout(() => setButtonLabel(btn, 'Copy'), 1500);
     });
   }
 
@@ -952,8 +952,8 @@
     const block = btn.closest('.mkai-code-block');
     const code = block?.querySelector('code')?.textContent || '';
     copyText(code, () => {
-      btn.textContent = 'Disalin';
-      setTimeout(() => { btn.textContent = 'Salin'; }, 1500);
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
     });
   }
 
@@ -962,7 +962,7 @@
     const block = btn.closest('.mkai-code-block');
     if (!block) return;
     const expanded = block.classList.toggle('expanded');
-    btn.textContent = expanded ? 'Tutup' : 'Lihat penuh';
+    btn.textContent = expanded ? 'Close' : 'View full';
   }
 
   function copyText(text, done) {
@@ -1120,13 +1120,13 @@
       const expand = document.createElement('button');
       expand.className = 'mkai-code-expand';
       expand.type = 'button';
-      expand.textContent = 'Lihat penuh';
+      expand.textContent = 'View full';
       expand.addEventListener('click', handleCodeExpand);
 
       const copy = document.createElement('button');
       copy.className = 'mkai-code-copy';
       copy.type = 'button';
-      copy.textContent = 'Salin';
+      copy.textContent = 'Copy';
       copy.addEventListener('click', handleCodeCopy);
 
       controls.append(expand, copy);
