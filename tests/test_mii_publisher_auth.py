@@ -138,6 +138,22 @@ class MiiPublisherAuthIsolationTests(unittest.TestCase):
         self.assertEqual(allowed.status_code, 200)
         disconnect.assert_called_once()
 
+    def test_publish_status_transition_requires_csrf(self):
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+            session['mii_publisher_csrf'] = 'publisher-token'
+        blocked = self.client.post('/api/mii-publisher/publish/job-1/status', json={})
+        self.assertEqual(blocked.status_code, 403)
+        with patch.object(
+                app._mii_publisher_service, 'refresh_publish_status',
+                return_value={'id': 'job-1', 'status': 'PROCESSING'}) as refresh:
+            allowed = self.client.post(
+                '/api/mii-publisher/publish/job-1/status', json={},
+                headers={'X-CSRF-Token': 'publisher-token'},
+            )
+        self.assertEqual(allowed.status_code, 200)
+        refresh.assert_called_once_with('job-1')
+
 
 if __name__ == '__main__':
     unittest.main()

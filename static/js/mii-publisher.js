@@ -216,7 +216,9 @@
     window.clearTimeout(state.pollTimer);
     state.pollTimer = window.setTimeout(async () => {
       try {
-        const data = await api(`/api/mii-publisher/publish/${encodeURIComponent(jobId)}/status`);
+        const data = await api(`/api/mii-publisher/publish/${encodeURIComponent(jobId)}/status`, {
+          method: 'POST', body: '{}',
+        });
         await loadHistory(); await loadStatus();
         const status = data.job?.status;
         if (status === 'PUBLISHED') showNotice('Instagram confirmed that the Reel is published.', true);

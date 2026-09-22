@@ -4458,7 +4458,7 @@ def mii_publisher_publish():
         return _publisher_error_response(exc)
 
 
-@app.route('/api/mii-publisher/publish/<job_id>/status')
+@app.route('/api/mii-publisher/publish/<job_id>/status', methods=['POST'])
 def mii_publisher_publish_status(job_id):
     if not _publisher_browser_authed():
         return _publisher_auth_error()
