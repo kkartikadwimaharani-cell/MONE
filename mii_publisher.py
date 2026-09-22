@@ -285,7 +285,10 @@ class BufferPublisherService:
             if self._secret("BUFFER_API_KEY"):
                 self.secret_store.delete("BUFFER_CONNECTION_DISABLED")
                 return None
-            raise PublisherValidationError("Buffer OAuth is not configured on the server.")
+            raise PublisherValidationError(
+                "Buffer connection is not configured. Add BUFFER_API_KEY, or BUFFER_CLIENT_ID, "
+                "BUFFER_CLIENT_SECRET and BUFFER_REDIRECT_URI to the server variables."
+            )
         challenge = hashlib.sha256(verifier.encode("ascii")).digest()
         import base64
         challenge = base64.urlsafe_b64encode(challenge).decode("ascii").rstrip("=")
