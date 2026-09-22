@@ -23,6 +23,7 @@ import analytics
 import aivideo_archive
 import dropbox_oauth
 import secrets_store
+import mii_publisher
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260709-mii-network-v16"
+APP_VERSION = "20260922-mii-publisher-v1"
 
 
 @app.errorhandler(Exception)
@@ -255,6 +256,17 @@ def get_secret(*names, default=''):
         if v:
             return v
     return default
+
+
+# MII PUBLISHER is intentionally isolated from SOCIAL MEDIA and the AI
+# generation routes. It reuses only the existing encrypted secret store and
+# private workspace session gate.
+_mii_publisher_service = mii_publisher.BufferPublisherService(
+    data_dir=DATA_DIR,
+    secret_store=_app_secrets_store,
+    get_secret=get_secret,
+    logger=app.logger,
+)
 
 
 _BOT_SESSION_LOCK = threading.Lock()
@@ -3012,7 +3024,8 @@ def _aivideo_ensure_csrf_token():
 @app.before_request
 def _aivideo_csrf_guard():
     path = request.path or ''
-    if not (path.startswith('/api/aivideo/') or path.startswith('/ai-video/')):
+    if not (path.startswith('/api/aivideo/') or path.startswith('/ai-video/')
+            or path.startswith('/api/mii-publisher/') or path.startswith('/mii-publisher/')):
         return None
     if request.method in ('GET', 'HEAD', 'OPTIONS'):
         return None
@@ -3031,7 +3044,8 @@ def _aivideo_csrf_guard():
 
 @app.after_request
 def _aivideo_csrf_cookie(response):
-    if _aivideo_authed() and request.path.startswith('/ai-video'):
+    if (_aivideo_authed()
+            and (request.path.startswith('/ai-video') or request.path.startswith('/mii-publisher'))):
         tok = _aivideo_ensure_csrf_token()
         response.set_cookie(
             _AIVIDEO_CSRF_COOKIE, tok,
@@ -3047,6 +3061,8 @@ _AIVIDEO_SECURITY_WRITE_PATHS = {
     '/api/aivideo/dropbox/credentials', '/api/aivideo/dropbox/authorize',
     '/api/aivideo/dropbox/disconnect', '/api/aivideo/dropbox/import-legacy',
     '/ai-video/debug/clear',
+    '/api/mii-publisher/buffer/connect', '/api/mii-publisher/buffer/disconnect',
+    '/api/mii-publisher/media/validate', '/api/mii-publisher/publish',
 }
 
 
@@ -4176,6 +4192,137 @@ def ai_video_view():
         budgetpixel_audio_families=media_ui['audio_families'],
         budgetpixel_motion_families=motion_ui,
     )
+
+
+# ---------------------------------------------------------------------------
+# MII PUBLISHER — protected, isolated Buffer publishing dashboard
+# ---------------------------------------------------------------------------
+def _publisher_auth_error():
+    return jsonify({'ok': False, 'error': 'Workspace authentication required.'}), 401
+
+
+def _publisher_error_response(exc):
+    code = getattr(exc, 'status_code', 502)
+    body = {'ok': False, 'error': str(exc)}
+    if isinstance(exc, mii_publisher.PublisherRateLimitError):
+        body['retry_after'] = exc.retry_after
+    return jsonify(body), code
+
+
+@app.route('/mii-publisher')
+def mii_publisher_view():
+    if not _aivideo_browser_authed():
+        return _aivideo_lock_response(next_page='/mii-publisher')
+    response = Response(render_template('mii-publisher.html'))
+    response.headers['Cache-Control'] = 'no-store, private, max-age=0'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; script-src 'self'; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; connect-src 'self'; "
+        "img-src 'self' data: blob: https:; media-src 'self' blob: https:; "
+        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    )
+    return response
+
+
+@app.route('/api/mii-publisher/status')
+def mii_publisher_status():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    status = _mii_publisher_service.connection_status()
+    status.update({'organizations': [], 'channels': []})
+    if status['connected']:
+        try:
+            status.update(_mii_publisher_service.accounts_and_channels())
+        except mii_publisher.PublisherError as exc:
+            status['connection_error'] = str(exc)
+    return jsonify({'ok': True, **status})
+
+
+@app.route('/api/mii-publisher/buffer/connect', methods=['POST'])
+def mii_publisher_buffer_connect():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    try:
+        state = secrets.token_urlsafe(32)
+        verifier = secrets.token_urlsafe(64)
+        session['mii_publisher_oauth'] = {
+            'state': state, 'verifier': verifier, 'created_at': time.time(),
+        }
+        authorization_url = _mii_publisher_service.authorization_url(state, verifier)
+        if not authorization_url:
+            session.pop('mii_publisher_oauth', None)
+            return jsonify({'ok': True, 'connected': True})
+        return jsonify({'ok': True, 'authorization_url': authorization_url})
+    except mii_publisher.PublisherError as exc:
+        session.pop('mii_publisher_oauth', None)
+        return _publisher_error_response(exc)
+
+
+@app.route('/mii-publisher/buffer/callback')
+def mii_publisher_buffer_callback():
+    if not _aivideo_browser_authed():
+        return _aivideo_lock_response(next_page='/mii-publisher')
+    pending = session.pop('mii_publisher_oauth', None) or {}
+    supplied_state = str(request.args.get('state') or '')
+    expected_state = str(pending.get('state') or '')
+    created_at = float(pending.get('created_at') or 0)
+    if (not supplied_state or not expected_state
+            or not hmac.compare_digest(supplied_state, expected_state)
+            or time.time() - created_at > 600):
+        return redirect('/mii-publisher?buffer_error=invalid_oauth_state')
+    if request.args.get('error'):
+        return redirect('/mii-publisher?buffer_error=access_denied')
+    code = str(request.args.get('code') or '')
+    if not code:
+        return redirect('/mii-publisher?buffer_error=missing_code')
+    try:
+        _mii_publisher_service.exchange_code(code, str(pending.get('verifier') or ''))
+    except mii_publisher.PublisherError:
+        app.logger.warning('[mii-publisher] Buffer OAuth exchange failed')
+        return redirect('/mii-publisher?buffer_error=connection_failed')
+    return redirect('/mii-publisher?buffer=connected')
+
+
+@app.route('/api/mii-publisher/buffer/disconnect', methods=['POST'])
+def mii_publisher_buffer_disconnect():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    _mii_publisher_service.disconnect()
+    session.pop('mii_publisher_oauth', None)
+    return jsonify({'ok': True, 'connected': False})
+
+
+@app.route('/api/mii-publisher/media/validate', methods=['POST'])
+def mii_publisher_media_validate():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    try:
+        media = mii_publisher.validate_media_url((request.get_json(silent=True) or {}).get('url'))
+        return jsonify({'ok': True, 'media': media})
+    except mii_publisher.PublisherError as exc:
+        return _publisher_error_response(exc)
+
+
+@app.route('/api/mii-publisher/publish', methods=['POST'])
+def mii_publisher_publish():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    try:
+        result = _mii_publisher_service.publish(request.get_json(silent=True) or {})
+        return jsonify(result)
+    except mii_publisher.PublisherError as exc:
+        app.logger.warning('[mii-publisher] publish request failed (%s)', type(exc).__name__)
+        return _publisher_error_response(exc)
+
+
+@app.route('/api/mii-publisher/history')
+def mii_publisher_history():
+    if not _aivideo_browser_authed():
+        return _publisher_auth_error()
+    return jsonify({'ok': True, 'history': _mii_publisher_service.history.list()})
 
 
 @app.route('/mii-ai-video')
