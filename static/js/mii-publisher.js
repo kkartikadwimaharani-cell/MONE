@@ -13,10 +13,11 @@
     scheduleDate: $('scheduleDate'), scheduleTime: $('scheduleTime'), timezone: $('scheduleTimezone'),
     publish: $('publishBtn'), history: $('historyList'), refreshHistory: $('refreshHistoryBtn'),
     dialog: $('confirmDialog'), confirmSummary: $('confirmSummary'), confirmButton: $('confirmPublishBtn'),
+    logout: $('logoutPublisherBtn'),
   };
 
   function csrfToken() {
-    const item = document.cookie.split('; ').find((part) => part.startsWith('mii_csrf='));
+    const item = document.cookie.split('; ').find((part) => part.startsWith('mii_publisher_csrf='));
     return item ? decodeURIComponent(item.split('=').slice(1).join('=')) : '';
   }
 
@@ -59,7 +60,9 @@
     els.disconnect.hidden = !state.connected;
     clearNode(els.accounts);
     if (!state.channels.length) {
-      els.accounts.appendChild(empty(state.connected ? 'NO SUPPORTED BUFFER CHANNELS FOUND' : 'NO BUFFER CHANNELS CONNECTED'));
+      els.accounts.appendChild(empty(state.connected
+        ? 'NO SUPPORTED BUFFER CHANNELS FOUND'
+        : (data.connect_available ? 'NO BUFFER CHANNELS CONNECTED' : 'BUFFER SERVER CONNECTION NOT CONFIGURED')));
     } else {
       state.channels.forEach((channel) => {
         const card = document.createElement('article'); card.className = 'account-card';
@@ -124,6 +127,11 @@
       state.channels = []; state.connected = false; showNotice('Buffer disconnected.', true);
       renderConnection({ connected: false, channels: [], oauth_available: true });
     } catch (error) { showNotice(error.message); }
+  }
+
+  async function lockPublisher() {
+    try { await api('/mii-publisher/logout', { method: 'POST', body: '{}' }); }
+    finally { window.location.assign('/mii-publisher'); }
   }
 
   function clearMedia() {
@@ -239,6 +247,7 @@
 
   els.connect.addEventListener('click', connectBuffer); els.reconnect.addEventListener('click', connectBuffer);
   els.disconnect.addEventListener('click', disconnectBuffer); els.loadMedia.addEventListener('click', loadMedia);
+  els.logout.addEventListener('click', lockPublisher);
   els.clearMedia.addEventListener('click', clearMedia); els.refreshHistory.addEventListener('click', loadHistory);
   els.caption.addEventListener('input', () => { els.captionCount.textContent = `${els.caption.value.length} / 5000`; });
   els.mediaUrl.addEventListener('input', () => { if (state.media && els.mediaUrl.value.trim() !== state.media.url) { state.media = null; els.mediaPreview.hidden = true; updateSubmitState(); } });
