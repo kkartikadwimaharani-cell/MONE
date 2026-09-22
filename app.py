@@ -134,7 +134,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260922-mii-publisher-v1"
+APP_VERSION = "20260922-mii-publisher-v2"
 
 
 @app.errorhandler(Exception)
