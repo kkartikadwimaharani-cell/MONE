@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#070103">
+  <title>MII PUBLISHER | PRIVATE ACCESS</title>
+  <link rel="stylesheet" href="{{ asset_url('css/mii-publisher-lock.css') }}">
+</head>
+<body data-retry-after="{{ retry_after|default(0)|int }}">
+  <div class="lock-grid" aria-hidden="true"></div>
+  <main class="lock-shell">
+    <section class="lock-card" aria-labelledby="publisherLockTitle">
+      <div class="gateway-bar">
+        <span>MII SECURE GATEWAY</span>
+        <span class="secured"><i></i> PROTECTED</span>
+      </div>
+
+      <div class="brand-mark" aria-hidden="true">M</div>
+      <p class="eyebrow">INDEPENDENT ACCESS LAYER</p>
+      <h1 id="publisherLockTitle">MII PUBLISHER</h1>
+      <p class="subtitle">PRIVATE PUBLISHING WORKSPACE</p>
+
+      <div class="security-strip">
+        <span class="strip-icon" aria-hidden="true">↗</span>
+        <div><small>ISOLATED SECURITY</small><strong>SEPARATE FROM MII AI STUDIO</strong></div>
+      </div>
+
+      <form id="publisherLockForm" novalidate>
+        <label for="publisherPassword">PUBLISHER ACCESS KEY</label>
+        <div class="password-wrap">
+          <input id="publisherPassword" type="password" maxlength="256" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="ENTER PUBLISHER PASSWORD" required>
+          <button id="togglePassword" type="button" aria-label="Show password">VIEW</button>
+        </div>
+        <p id="lockMessage" class="lock-message" role="alert" aria-live="assertive" hidden></p>
+        <button id="unlockPublisher" class="unlock-button" type="submit">UNLOCK PUBLISHER <span aria-hidden="true">→</span></button>
+      </form>
+
+      <p class="privacy-note"><span aria-hidden="true">◇</span> ENCRYPTED SESSION • SERVER-SIDE CREDENTIALS</p>
+      <a class="back-link" href="/"><span aria-hidden="true">←</span> BACK TO HOME</a>
+    </section>
+  </main>
+  <script src="{{ asset_url('js/mii-publisher-lock.js') }}" defer></script>
+</body>
+</html>
