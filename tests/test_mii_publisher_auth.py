@@ -57,16 +57,86 @@ class MiiPublisherAuthIsolationTests(unittest.TestCase):
             session['mii_csrf'] = 'ai-token'
         wrong = self.client.post(
             '/api/mii-publisher/media/validate',
-            json={'url': 'https://cdn.example.com/image.jpg'},
+            json={'url': 'https://cdn.example.com/reel.mp4'},
             headers={'X-CSRF-Token': 'ai-token'},
         )
         self.assertEqual(wrong.status_code, 403)
         correct = self.client.post(
             '/api/mii-publisher/media/validate',
-            json={'url': 'https://cdn.example.com/image.jpg'},
+            json={'url': 'https://cdn.example.com/reel.mp4'},
             headers={'X-CSRF-Token': 'publisher-token'},
         )
         self.assertEqual(correct.status_code, 200)
+
+    def test_missing_instagram_env_does_not_crash_publisher_status(self):
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+        with patch.object(app._mii_publisher_service, '_secret', return_value=''):
+            response = self.client.get('/api/mii-publisher/status')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertFalse(data['configured'])
+        self.assertEqual(data['health']['status'], 'CONFIGURATION ERROR')
+
+    def test_instagram_connect_uses_separate_oauth_state(self):
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+            session['mii_publisher_csrf'] = 'publisher-token'
+        with patch.object(
+                app._mii_publisher_service, 'authorization_url',
+                return_value='https://www.instagram.com/oauth/authorize?state=safe') as authorize:
+            response = self.client.post(
+                '/api/mii-publisher/instagram/connect',
+                json={'reconnect': True},
+                headers={'X-CSRF-Token': 'publisher-token'},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('instagram.com', response.get_json()['authorization_url'])
+        with self.client.session_transaction() as session:
+            self.assertIn('mii_publisher_instagram_oauth', session)
+            self.assertNotIn('mii_dropbox_oauth_state', session)
+        self.assertTrue(authorize.call_args.kwargs['reconnect'])
+
+    def test_instagram_callback_rejects_wrong_state(self):
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+            session['mii_publisher_instagram_oauth'] = {
+                'state': 'expected', 'created_at': __import__('time').time(),
+            }
+        with patch.object(app._mii_publisher_service, 'exchange_code') as exchange:
+            response = self.client.get(
+                '/mii-publisher/instagram/callback?state=wrong&code=secret-code')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('instagram_error=invalid_oauth_state', response.location)
+        exchange.assert_not_called()
+
+    def test_instagram_callback_exchanges_code_after_valid_state(self):
+        now = __import__('time').time()
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+            session['mii_publisher_instagram_oauth'] = {
+                'state': 'expected', 'created_at': now,
+            }
+        with patch.object(app._mii_publisher_service, 'exchange_code', return_value={'username': 'mii'}) as exchange:
+            response = self.client.get(
+                '/mii-publisher/instagram/callback?state=expected&code=single-use-code')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('instagram=connected', response.location)
+        exchange.assert_called_once_with('single-use-code')
+
+    def test_instagram_disconnect_is_csrf_protected(self):
+        with self.client.session_transaction() as session:
+            session['mii_publisher_auth'] = True
+            session['mii_publisher_csrf'] = 'publisher-token'
+        blocked = self.client.post('/api/mii-publisher/instagram/disconnect', json={})
+        self.assertEqual(blocked.status_code, 403)
+        with patch.object(app._mii_publisher_service, 'disconnect') as disconnect:
+            allowed = self.client.post(
+                '/api/mii-publisher/instagram/disconnect', json={},
+                headers={'X-CSRF-Token': 'publisher-token'},
+            )
+        self.assertEqual(allowed.status_code, 200)
+        disconnect.assert_called_once()
 
 
 if __name__ == '__main__':

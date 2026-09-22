@@ -1,20 +1,26 @@
 (() => {
   'use strict';
 
-  const state = { connected: false, channels: [], media: null, submitting: false };
+  const state = { connected: false, configured: false, account: null, media: null, submitting: false, pollTimer: null };
   const $ = (id) => document.getElementById(id);
   const els = {
-    notice: $('globalNotice'), badge: $('connectionBadge'), connect: $('connectBufferBtn'),
-    reconnect: $('reconnectBufferBtn'), disconnect: $('disconnectBufferBtn'), accounts: $('accountGrid'),
+    notice: $('globalNotice'), connectionBadge: $('connectionBadge'), connect: $('connectInstagramBtn'),
+    reconnect: $('reconnectInstagramBtn'), disconnect: $('disconnectInstagramBtn'), accounts: $('accountGrid'),
+    healthBadge: $('healthBadge'), healthDot: $('healthDot'), healthStatus: $('healthStatus'),
+    healthSummary: $('healthSummary'), healthChecked: $('healthChecked'), warning: $('warningPanel'),
+    warningTitle: $('warningTitle'), warningMessage: $('warningMessage'), warningDetails: $('warningDetails'),
+    warningReconnect: $('warningReconnectBtn'), warningDetail: $('warningDetailBtn'),
     form: $('publisherForm'), mediaUrl: $('mediaUrl'), loadMedia: $('loadMediaBtn'), clearMedia: $('clearMediaBtn'),
     mediaPreview: $('mediaPreview'), previewSurface: $('previewSurface'), mediaType: $('mediaType'),
     mediaName: $('mediaName'), mediaHost: $('mediaHost'), caption: $('caption'), captionCount: $('captionCount'),
-    channels: $('channelSelector'), channelCount: $('channelCount'), scheduleFields: $('scheduleFields'),
-    scheduleDate: $('scheduleDate'), scheduleTime: $('scheduleTime'), timezone: $('scheduleTimezone'),
-    publish: $('publishBtn'), history: $('historyList'), refreshHistory: $('refreshHistoryBtn'),
+    publish: $('publishBtn'), history: $('historyList'), activities: $('activityList'), refreshHistory: $('refreshHistoryBtn'),
     dialog: $('confirmDialog'), confirmSummary: $('confirmSummary'), confirmButton: $('confirmPublishBtn'),
     logout: $('logoutPublisherBtn'),
   };
+
+  class ApiError extends Error {
+    constructor(message, body, status) { super(message); this.body = body || {}; this.status = status; }
+  }
 
   function csrfToken() {
     const item = document.cookie.split('; ').find((part) => part.startsWith('mii_publisher_csrf='));
@@ -33,100 +39,124 @@
     try { body = await response.json(); } catch (_) { body = {}; }
     if (response.status === 401) {
       window.location.assign('/mii-publisher');
-      throw new Error('Workspace session expired.');
+      throw new ApiError('Workspace session expired.', body, response.status);
     }
-    if (!response.ok || body.ok === false) throw new Error(body.error || `Request failed (${response.status}).`);
+    if (!response.ok || body.ok === false) throw new ApiError(body.error || `Request failed (${response.status}).`, body, response.status);
     return body;
   }
+
+  function clearNode(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function empty(text) { const el = document.createElement('div'); el.className = 'empty-state'; el.textContent = text; return el; }
 
   function showNotice(message, success = false) {
     els.notice.textContent = String(message || '');
     els.notice.classList.toggle('success', success);
     els.notice.hidden = !message;
-    if (message) els.notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  function clearNode(node) { while (node.firstChild) node.removeChild(node.firstChild); }
-  function empty(text) { const el = document.createElement('div'); el.className = 'empty-state'; el.textContent = text; return el; }
-  function platformInitial(platform) { return String(platform || '?').slice(0, 2).toUpperCase(); }
+  function detailRows(detail) {
+    const fields = [
+      ['SUBSYSTEM', detail?.subsystem], ['TIME', detail?.time], ['HTTP STATUS', detail?.http_status],
+      ['CODE', detail?.code], ['REQUEST ID', detail?.correlation_id], ['RECOMMENDED ACTION', detail?.recommended_action],
+    ];
+    const fragment = document.createDocumentFragment();
+    fields.filter(([, value]) => value !== null && value !== undefined && value !== '').forEach(([label, value]) => {
+      const row = document.createElement('div');
+      const key = document.createElement('span'); key.textContent = label;
+      const copy = document.createElement('strong'); copy.textContent = String(value);
+      row.append(key, copy); fragment.appendChild(row);
+    });
+    return fragment;
+  }
+
+  function showIssue(title, message, detail = null, reconnect = true) {
+    els.warning.hidden = false;
+    els.warningTitle.textContent = title || 'ACTION REQUIRED';
+    els.warningMessage.textContent = message || 'Instagram integration requires attention.';
+    clearNode(els.warningDetails);
+    if (detail) els.warningDetails.appendChild(detailRows(detail));
+    els.warningDetails.hidden = true;
+    els.warningDetail.hidden = !detail;
+    els.warningReconnect.hidden = !reconnect;
+  }
+
+  function clearIssue() { els.warning.hidden = true; clearNode(els.warningDetails); }
+
+  function renderHealth(health) {
+    const status = String(health?.status || 'UNKNOWN').toUpperCase();
+    const className = status.toLowerCase().replaceAll(' ', '-');
+    els.healthBadge.textContent = status;
+    els.healthBadge.className = `status-badge ${className}`;
+    els.healthDot.className = `health-dot ${className}`;
+    els.healthStatus.textContent = status;
+    els.healthSummary.textContent = health?.summary || 'Health has not been checked yet.';
+    els.healthChecked.textContent = health?.checked_at ? `LAST CHECK ${health.checked_at}` : '';
+    if (status === 'OPERATIONAL') {
+      clearIssue();
+    } else {
+      const title = status === 'AUTHORIZATION REQUIRED' ? 'INSTAGRAM AUTHORIZATION REQUIRED'
+        : status === 'CONFIGURATION ERROR' ? 'INSTAGRAM CONFIGURATION REQUIRED'
+          : 'INSTAGRAM INTEGRATION ISSUE';
+      showIssue(title, health?.summary, health?.detail, state.configured && status !== 'CONFIGURATION ERROR');
+    }
+  }
 
   function renderConnection(data) {
     state.connected = Boolean(data.connected);
-    state.channels = Array.isArray(data.channels) ? data.channels : [];
-    els.badge.textContent = state.connected ? 'CONNECTED' : 'NOT CONNECTED';
-    els.badge.className = `status-badge ${state.connected ? 'online' : 'offline'}`;
+    state.configured = Boolean(data.configured);
+    state.account = data.account || null;
+    els.connectionBadge.textContent = state.connected ? 'CONNECTED' : 'NOT CONNECTED';
+    els.connectionBadge.className = `status-badge ${state.connected ? 'online' : 'offline'}`;
     els.connect.hidden = state.connected;
+    els.connect.disabled = !state.configured;
     els.reconnect.hidden = !state.connected;
     els.disconnect.hidden = !state.connected;
     clearNode(els.accounts);
-    if (!state.channels.length) {
-      els.accounts.appendChild(empty(state.connected
-        ? 'NO SUPPORTED BUFFER CHANNELS FOUND'
-        : (data.connect_available ? 'NO BUFFER CHANNELS CONNECTED' : 'BUFFER SERVER CONNECTION NOT CONFIGURED')));
+    if (state.connected && state.account) {
+      const card = document.createElement('article'); card.className = 'account-card instagram-account';
+      const mark = document.createElement('span'); mark.className = 'account-avatar'; mark.textContent = 'IG';
+      const copy = document.createElement('div');
+      const name = document.createElement('strong'); name.textContent = `@${state.account.username || 'instagram'}`;
+      const meta = document.createElement('span'); meta.textContent = `${state.account.account_type || 'PROFESSIONAL'} • CONNECTED`;
+      copy.append(name, meta); card.append(mark, copy); els.accounts.appendChild(card);
     } else {
-      state.channels.forEach((channel) => {
-        const card = document.createElement('article'); card.className = 'account-card';
-        const mark = document.createElement('span'); mark.className = 'account-avatar'; mark.textContent = platformInitial(channel.platform);
-        const copy = document.createElement('div');
-        const name = document.createElement('strong'); name.textContent = channel.name;
-        const meta = document.createElement('span'); meta.textContent = `${channel.platform} • CONNECTED`;
-        copy.append(name, meta); card.append(mark, copy); els.accounts.appendChild(card);
-      });
+      const message = state.configured ? 'INSTAGRAM IS NOT CONNECTED' : 'INSTAGRAM SERVER CONFIGURATION REQUIRED';
+      els.accounts.appendChild(empty(message));
     }
-    renderChannels();
-    if (data.connection_error) showNotice(data.connection_error);
+    renderHealth(data.health || {});
     updateSubmitState();
-  }
-
-  function renderChannels() {
-    const selected = new Set([...els.channels.querySelectorAll('input:checked')].map((item) => item.value));
-    clearNode(els.channels);
-    if (!state.channels.length) {
-      els.channels.appendChild(empty(state.connected ? 'NO SUPPORTED CHANNELS AVAILABLE' : 'CONNECT BUFFER TO SELECT CHANNELS'));
-      updateChannelCount();
-      return;
-    }
-    state.channels.forEach((channel) => {
-      const label = document.createElement('label'); label.className = 'channel-option';
-      const input = document.createElement('input'); input.type = 'checkbox'; input.name = 'channel'; input.value = channel.id;
-      input.checked = selected.has(channel.id); input.addEventListener('change', () => { updateChannelCount(); updateSubmitState(); });
-      const mark = document.createElement('span'); mark.className = 'platform-mark'; mark.textContent = platformInitial(channel.platform);
-      const copy = document.createElement('span'); copy.className = 'channel-copy';
-      const name = document.createElement('strong'); name.textContent = channel.name;
-      const meta = document.createElement('span'); meta.textContent = channel.platform;
-      copy.append(name, meta); label.append(input, mark, copy); els.channels.appendChild(label);
-    });
-    updateChannelCount();
-  }
-
-  function updateChannelCount() {
-    const count = els.channels.querySelectorAll('input:checked').length;
-    els.channelCount.textContent = `${count} SELECTED`;
   }
 
   async function loadStatus() {
     try { renderConnection(await api('/api/mii-publisher/status')); }
-    catch (error) { showNotice(error.message); }
+    catch (error) {
+      showIssue('INSTAGRAM INTEGRATION ISSUE', error.message, error.body?.detail, true);
+      showNotice(error.message);
+    }
   }
 
-  async function connectBuffer() {
-    showNotice('');
-    els.connect.disabled = true; els.reconnect.disabled = true;
+  async function connectInstagram(reconnect = false) {
+    showNotice(''); els.connect.disabled = true; els.reconnect.disabled = true;
     try {
-      const data = await api('/api/mii-publisher/buffer/connect', { method: 'POST', body: '{}' });
-      if (data.authorization_url) window.location.assign(data.authorization_url);
-      else { showNotice('Buffer connected.', true); await loadStatus(); }
-    } catch (error) { showNotice(error.message); }
-    finally { els.connect.disabled = false; els.reconnect.disabled = false; }
+      const data = await api('/api/mii-publisher/instagram/connect', {
+        method: 'POST', body: JSON.stringify({ reconnect }),
+      });
+      if (!data.authorization_url) throw new Error('Instagram authorization URL was not returned.');
+      window.location.assign(data.authorization_url);
+    } catch (error) {
+      showIssue('INSTAGRAM CONNECTION FAILED', error.message, error.body?.detail, false);
+      showNotice(error.message);
+    } finally { els.connect.disabled = !state.configured; els.reconnect.disabled = false; }
   }
 
-  async function disconnectBuffer() {
-    if (!window.confirm('Disconnect Buffer from MII PUBLISHER?')) return;
+  async function disconnectInstagram() {
+    if (!window.confirm('Disconnect Instagram from MII PUBLISHER?')) return;
     try {
-      await api('/api/mii-publisher/buffer/disconnect', { method: 'POST', body: '{}' });
-      state.channels = []; state.connected = false; showNotice('Buffer disconnected.', true);
-      renderConnection({ connected: false, channels: [], oauth_available: true });
-    } catch (error) { showNotice(error.message); }
+      await api('/api/mii-publisher/instagram/disconnect', { method: 'POST', body: '{}' });
+      state.connected = false; state.account = null; state.media = null;
+      showNotice('Instagram disconnected. Stored authorization was removed.', true);
+      await loadStatus(); await loadHistory();
+    } catch (error) { showNotice(error.message); showIssue('DISCONNECT FAILED', error.message, error.body?.detail, false); }
   }
 
   async function lockPublisher() {
@@ -146,21 +176,19 @@
         method: 'POST', body: JSON.stringify({ url: els.mediaUrl.value.trim() }),
       });
       state.media = data.media; clearNode(els.previewSurface);
-      const preview = document.createElement(state.media.type === 'video' ? 'video' : 'img');
-      preview.src = state.media.url;
-      if (state.media.type === 'video') { preview.controls = true; preview.preload = 'metadata'; }
-      else preview.alt = 'Remote media preview';
-      preview.referrerPolicy = 'no-referrer';
-      preview.addEventListener('error', () => showNotice('The remote file could not be previewed. Confirm that it is public and directly accessible.'));
-      els.previewSurface.appendChild(preview); els.mediaType.textContent = state.media.type.toUpperCase();
+      const preview = document.createElement('video');
+      preview.src = state.media.url; preview.controls = true; preview.preload = 'metadata'; preview.referrerPolicy = 'no-referrer';
+      preview.addEventListener('error', () => showNotice('The video could not be previewed. Confirm that the direct URL is public.'));
+      els.previewSurface.appendChild(preview); els.mediaType.textContent = 'INSTAGRAM REEL';
       els.mediaName.textContent = state.media.filename; els.mediaHost.textContent = state.media.host;
-      els.mediaPreview.hidden = false; showNotice('Media URL validated. No file was stored on the MII server.', true);
-    } catch (error) { state.media = null; els.mediaPreview.hidden = true; showNotice(error.message); }
-    finally { els.loadMedia.disabled = false; updateSubmitState(); }
+      els.mediaPreview.hidden = false;
+      showNotice('Video URL validated. No video file was stored on the MII server.', true);
+    } catch (error) {
+      state.media = null; els.mediaPreview.hidden = true; showNotice(error.message);
+      if (error.body?.detail) showIssue('MEDIA VALIDATION FAILED', error.message, error.body.detail, state.connected);
+    } finally { els.loadMedia.disabled = false; updateSubmitState(); }
   }
 
-  function selectedMode() { return els.form.querySelector('input[name="mode"]:checked').value; }
-  function selectedChannels() { return [...els.channels.querySelectorAll('input:checked')].map((item) => item.value); }
   function newSubmissionKey() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     const bytes = new Uint8Array(16); window.crypto.getRandomValues(bytes);
@@ -168,96 +196,147 @@
     const hex = [...bytes].map((value) => value.toString(16).padStart(2, '0')).join('');
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   }
-  function updateSubmitState() {
-    const ready = state.connected && state.media && selectedChannels().length > 0 && !state.submitting;
-    els.publish.disabled = !ready;
-    els.publish.firstChild.textContent = selectedMode() === 'schedule' ? 'SCHEDULE POST ' : 'PUBLISH NOW ';
-  }
 
-  function populateTimezones() {
-    let zones = ['UTC', 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura', 'Asia/Singapore', 'America/New_York', 'Europe/London'];
-    const local = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    try { if (Intl.supportedValuesOf) zones = Intl.supportedValuesOf('timeZone'); } catch (_) { /* fallback */ }
-    if (!zones.includes(local)) zones.unshift(local);
-    zones.forEach((zone) => { const option = document.createElement('option'); option.value = zone; option.textContent = zone.replaceAll('_', ' '); els.timezone.appendChild(option); });
-    els.timezone.value = local;
-    const later = new Date(Date.now() + 60 * 60 * 1000);
-    els.scheduleDate.value = `${later.getFullYear()}-${String(later.getMonth() + 1).padStart(2, '0')}-${String(later.getDate()).padStart(2, '0')}`;
-    els.scheduleTime.value = `${String(later.getHours()).padStart(2, '0')}:${String(later.getMinutes()).padStart(2, '0')}`;
-  }
+  function updateSubmitState() { els.publish.disabled = !(state.connected && state.media && !state.submitting); }
 
-  function confirmAction(summary) {
-    els.confirmSummary.textContent = summary;
-    els.confirmButton.value = 'confirm';
-    els.dialog.showModal();
+  function confirmAction() {
+    const username = state.account?.username ? `@${state.account.username}` : 'the connected Instagram account';
+    els.confirmSummary.textContent = `PUBLISH THIS VIDEO AS AN INSTAGRAM REEL TO ${username.toUpperCase()}?`;
+    els.confirmButton.value = 'confirm'; els.dialog.showModal();
     return new Promise((resolve) => {
       els.dialog.addEventListener('close', () => resolve(els.dialog.returnValue === 'confirm'), { once: true });
     });
   }
 
-  async function submitPublisher(event) {
-    event.preventDefault();
-    if (state.submitting || !state.media) return;
-    const channelIds = selectedChannels(); const mode = selectedMode();
-    if (!channelIds.length) { showNotice('Select at least one connected channel.'); return; }
-    if (mode === 'schedule' && (!els.scheduleDate.value || !els.scheduleTime.value || !els.timezone.value)) {
-      showNotice('Complete the date, time, and timezone.'); return;
+  async function pollJob(jobId, attempt = 0) {
+    if (!jobId || attempt >= 60) {
+      showNotice('Instagram is still processing the Reel. Use REFRESH to check again.');
+      return;
     }
-    const action = mode === 'schedule' ? `schedule this post for ${els.scheduleDate.value} at ${els.scheduleTime.value} ${els.timezone.value}` : 'publish this post now';
-    if (!(await confirmAction(`You are about to ${action} on ${channelIds.length} channel${channelIds.length > 1 ? 's' : ''}.`))) return;
-    state.submitting = true; updateSubmitState(); els.publish.textContent = 'SUBMITTING…'; showNotice('');
-    try {
-      const payload = {
-        media_url: state.media.url, caption: els.caption.value, channel_ids: channelIds, mode,
-        date: els.scheduleDate.value, time: els.scheduleTime.value, timezone: els.timezone.value,
-        confirmed: true, idempotency_key: newSubmissionKey(),
-      };
-      const data = await api('/api/mii-publisher/publish', { method: 'POST', body: JSON.stringify(payload) });
-      showNotice(data.duplicate_prevented ? 'Duplicate submission prevented.' : (mode === 'schedule' ? 'Post scheduled through Buffer.' : 'Publishing request sent to Buffer.'), true);
-      await loadHistory();
-    } catch (error) { showNotice(error.message); await loadHistory(); }
-    finally { state.submitting = false; els.publish.innerHTML = `${mode === 'schedule' ? 'SCHEDULE POST' : 'PUBLISH NOW'} <span aria-hidden="true">→</span>`; updateSubmitState(); }
+    window.clearTimeout(state.pollTimer);
+    state.pollTimer = window.setTimeout(async () => {
+      try {
+        const data = await api(`/api/mii-publisher/publish/${encodeURIComponent(jobId)}/status`);
+        await loadHistory(); await loadStatus();
+        const status = data.job?.status;
+        if (status === 'PUBLISHED') showNotice('Instagram confirmed that the Reel is published.', true);
+        else if (status === 'FAILED') showIssue('PUBLISHING FAILED', data.job?.error || 'Instagram rejected the publishing request.', data.job?.detail, state.connected);
+        else pollJob(jobId, attempt + 1);
+      } catch (error) {
+        showIssue('PUBLISHING STATUS ERROR', error.message, error.body?.detail, state.connected);
+      }
+    }, 5000);
   }
 
-  function renderHistory(items) {
+  async function submitPublisher(event) {
+    event.preventDefault();
+    if (state.submitting || !state.media || !state.connected) return;
+    if (!(await confirmAction())) return;
+    state.submitting = true; updateSubmitState(); els.publish.textContent = 'VALIDATING…'; showNotice('VALIDATING INSTAGRAM REEL…');
+    try {
+      const payload = {
+        media_url: state.media.url,
+        caption: els.caption.value,
+        confirmed: true,
+        idempotency_key: newSubmissionKey(),
+      };
+      const data = await api('/api/mii-publisher/publish', { method: 'POST', body: JSON.stringify(payload) });
+      const job = data.job || {};
+      if (job.status === 'PUBLISHED') showNotice('Instagram confirmed that the Reel is published.', true);
+      else {
+        showNotice(data.duplicate_prevented ? 'Duplicate submission prevented.' : 'Instagram is processing the Reel.', true);
+        pollJob(job.id);
+      }
+      await loadHistory(); await loadStatus();
+    } catch (error) {
+      showNotice(error.message);
+      showIssue('PUBLISHING FAILED', error.message, error.body?.detail, state.connected);
+      await loadHistory();
+    } finally {
+      state.submitting = false; els.publish.innerHTML = 'PUBLISH NOW <span aria-hidden="true">→</span>'; updateSubmitState();
+    }
+  }
+
+  function statusClass(value) { return String(value || 'UNKNOWN').toLowerCase().replaceAll(' ', '-'); }
+
+  function renderJobs(items) {
     clearNode(els.history);
-    if (!items.length) { els.history.appendChild(empty('NO PUBLISHING ACTIVITY YET')); return; }
+    if (!items.length) { els.history.appendChild(empty('NO INSTAGRAM PUBLISHING ACTIVITY YET')); return; }
     items.forEach((item) => {
       const card = document.createElement('article'); card.className = 'history-item';
       const main = document.createElement('div'); main.className = 'history-main';
       const top = document.createElement('div'); top.className = 'history-top';
-      const name = document.createElement('strong'); name.textContent = item.channel_name || 'BUFFER CHANNEL';
-      const platform = document.createElement('span'); platform.className = 'history-chip'; platform.textContent = String(item.platform || '').toUpperCase();
-      const status = document.createElement('span'); status.className = `history-chip ${String(item.status || '').toLowerCase()}`; status.textContent = item.status || 'PUBLISHING';
+      const name = document.createElement('strong'); name.textContent = item.account_username ? `@${item.account_username}` : 'INSTAGRAM REELS';
+      const platform = document.createElement('span'); platform.className = 'history-chip'; platform.textContent = 'INSTAGRAM';
+      const status = document.createElement('span'); status.className = `history-chip ${statusClass(item.status)}`; status.textContent = item.status || 'UNKNOWN';
       top.append(name, platform, status);
       const meta = document.createElement('p'); meta.className = 'history-meta';
-      meta.textContent = `${String(item.media_type || 'media').toUpperCase()} • ${item.scheduled_at ? `SCHEDULED ${item.scheduled_at}` : `SUBMITTED ${item.created_at || ''}`}`;
+      meta.textContent = `VIDEO • ${item.created_at || ''}`;
       main.append(top, meta);
       if (item.error) { const error = document.createElement('p'); error.className = 'history-error'; error.textContent = item.error; main.appendChild(error); }
-      card.appendChild(main); els.history.appendChild(card);
+      const actions = document.createElement('div'); actions.className = 'history-actions';
+      if (item.detail) {
+        const details = document.createElement('div'); details.className = 'safe-details'; details.hidden = true; details.appendChild(detailRows(item.detail));
+        const detailButton = document.createElement('button'); detailButton.className = 'button quiet'; detailButton.type = 'button'; detailButton.textContent = 'DETAIL';
+        detailButton.addEventListener('click', () => { details.hidden = !details.hidden; });
+        actions.appendChild(detailButton); main.appendChild(details);
+      }
+      if (item.status === 'FAILED') {
+        const retry = document.createElement('button'); retry.className = 'button secondary'; retry.type = 'button'; retry.textContent = 'RETRY';
+        retry.addEventListener('click', async () => {
+          els.mediaUrl.value = item.media_url || ''; els.caption.value = item.caption || '';
+          els.caption.dispatchEvent(new Event('input')); await loadMedia();
+          els.form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        actions.appendChild(retry);
+      } else if (item.status === 'PROCESSING' || item.status === 'PUBLISHING') {
+        const check = document.createElement('button'); check.className = 'button secondary'; check.type = 'button'; check.textContent = 'CHECK STATUS';
+        check.addEventListener('click', () => pollJob(item.id)); actions.appendChild(check);
+      }
+      card.append(main, actions); els.history.appendChild(card);
+    });
+  }
+
+  function renderActivities(items) {
+    clearNode(els.activities);
+    if (!items.length) { els.activities.appendChild(empty('NO INTEGRATION EVENTS YET')); return; }
+    items.forEach((item) => {
+      const card = document.createElement('article'); card.className = 'activity-item';
+      const dot = document.createElement('span'); dot.className = `activity-dot ${statusClass(item.status)}`;
+      const copy = document.createElement('div');
+      const title = document.createElement('strong'); title.textContent = item.event || 'INSTAGRAM EVENT';
+      const message = document.createElement('p'); message.textContent = item.message || '';
+      const time = document.createElement('small'); time.textContent = item.created_at || '';
+      copy.append(title, message, time); card.append(dot, copy); els.activities.appendChild(card);
     });
   }
 
   async function loadHistory() {
     els.refreshHistory.disabled = true;
-    try { const data = await api('/api/mii-publisher/history'); renderHistory(Array.isArray(data.history) ? data.history : []); }
-    catch (error) { showNotice(error.message); }
+    try {
+      const data = await api('/api/mii-publisher/history');
+      renderJobs(Array.isArray(data.jobs) ? data.jobs : []);
+      renderActivities(Array.isArray(data.activities) ? data.activities : []);
+    } catch (error) { showNotice(error.message); }
     finally { els.refreshHistory.disabled = false; }
   }
 
-  els.connect.addEventListener('click', connectBuffer); els.reconnect.addEventListener('click', connectBuffer);
-  els.disconnect.addEventListener('click', disconnectBuffer); els.loadMedia.addEventListener('click', loadMedia);
-  els.logout.addEventListener('click', lockPublisher);
-  els.clearMedia.addEventListener('click', clearMedia); els.refreshHistory.addEventListener('click', loadHistory);
-  els.caption.addEventListener('input', () => { els.captionCount.textContent = `${els.caption.value.length} / 5000`; });
-  els.mediaUrl.addEventListener('input', () => { if (state.media && els.mediaUrl.value.trim() !== state.media.url) { state.media = null; els.mediaPreview.hidden = true; updateSubmitState(); } });
-  els.form.querySelectorAll('input[name="mode"]').forEach((input) => input.addEventListener('change', () => {
-    const schedule = selectedMode() === 'schedule'; els.scheduleFields.hidden = !schedule; updateSubmitState();
-  }));
+  els.connect.addEventListener('click', () => connectInstagram(false));
+  els.reconnect.addEventListener('click', () => connectInstagram(true));
+  els.warningReconnect.addEventListener('click', () => connectInstagram(true));
+  els.disconnect.addEventListener('click', disconnectInstagram);
+  els.loadMedia.addEventListener('click', loadMedia); els.clearMedia.addEventListener('click', clearMedia);
+  els.logout.addEventListener('click', lockPublisher); els.refreshHistory.addEventListener('click', async () => { await loadHistory(); await loadStatus(); });
+  els.warningDetail.addEventListener('click', () => { els.warningDetails.hidden = !els.warningDetails.hidden; });
+  els.caption.addEventListener('input', () => { els.captionCount.textContent = `${els.caption.value.length} / 2200`; });
+  els.mediaUrl.addEventListener('input', () => {
+    if (state.media && els.mediaUrl.value.trim() !== state.media.url) { state.media = null; els.mediaPreview.hidden = true; updateSubmitState(); }
+  });
   els.form.addEventListener('submit', submitPublisher);
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get('buffer') === 'connected') showNotice('Buffer connected securely.', true);
-  else if (params.get('buffer_error')) showNotice('Buffer connection failed. Please try again.');
-  populateTimezones(); loadStatus(); loadHistory();
+  if (params.get('instagram') === 'connected') showNotice('Instagram connected securely.', true);
+  else if (params.get('instagram_error')) showIssue('INSTAGRAM CONNECTION FAILED', 'Instagram authorization was not completed.', null, true);
+  if (params.has('instagram') || params.has('instagram_error')) window.history.replaceState({}, '', '/mii-publisher');
+  loadStatus(); loadHistory();
 })();
