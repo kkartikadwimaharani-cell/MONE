@@ -134,7 +134,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260922-mii-publisher-v2"
+APP_VERSION = "20260922-mii-publisher-v3"
 
 
 @app.errorhandler(Exception)
@@ -259,8 +259,8 @@ def get_secret(*names, default=''):
 
 
 # MII PUBLISHER is intentionally isolated from SOCIAL MEDIA and the AI
-# generation routes. It reuses only the existing encrypted secret store and
-# private workspace session gate.
+# generation routes. It reuses the encrypted secret store but owns a separate
+# password, session flag and CSRF boundary.
 _mii_publisher_service = mii_publisher.BufferPublisherService(
     data_dir=DATA_DIR,
     secret_store=_app_secrets_store,
@@ -2998,6 +2998,14 @@ def _aivideo_authed():
     return _aivideo_browser_authed() or bool(getattr(g, 'mii_mcp_internal', False)) or _aivideo_bearer_authed()
 
 
+def _mii_publisher_password():
+    return get_secret('MII_PUBLISHER_PASSWORD')
+
+
+def _publisher_browser_authed():
+    return bool(session.get('mii_publisher_auth'))
+
+
 # ---------------------------------------------------------------------------
 # CSRF protection (double-submit token) for the ai-video tool
 # ---------------------------------------------------------------------------
@@ -3024,8 +3032,7 @@ def _aivideo_ensure_csrf_token():
 @app.before_request
 def _aivideo_csrf_guard():
     path = request.path or ''
-    if not (path.startswith('/api/aivideo/') or path.startswith('/ai-video/')
-            or path.startswith('/api/mii-publisher/') or path.startswith('/mii-publisher/')):
+    if not (path.startswith('/api/aivideo/') or path.startswith('/ai-video/')):
         return None
     if request.method in ('GET', 'HEAD', 'OPTIONS'):
         return None
@@ -3044,8 +3051,7 @@ def _aivideo_csrf_guard():
 
 @app.after_request
 def _aivideo_csrf_cookie(response):
-    if (_aivideo_authed()
-            and (request.path.startswith('/ai-video') or request.path.startswith('/mii-publisher'))):
+    if _aivideo_authed() and request.path.startswith('/ai-video'):
         tok = _aivideo_ensure_csrf_token()
         response.set_cookie(
             _AIVIDEO_CSRF_COOKIE, tok,
@@ -3061,8 +3067,6 @@ _AIVIDEO_SECURITY_WRITE_PATHS = {
     '/api/aivideo/dropbox/credentials', '/api/aivideo/dropbox/authorize',
     '/api/aivideo/dropbox/disconnect', '/api/aivideo/dropbox/import-legacy',
     '/ai-video/debug/clear',
-    '/api/mii-publisher/buffer/connect', '/api/mii-publisher/buffer/disconnect',
-    '/api/mii-publisher/media/validate', '/api/mii-publisher/publish',
 }
 
 
@@ -3078,6 +3082,54 @@ def _aivideo_record_denied_write(response):
                 else 'WORKSPACE OR ADMIN ACCESS REJECTED' if response.status_code == 403
                 else 'UNAUTHORIZED WRITE REJECTED')
         _aivideo_record_suspicious(kind, response.status_code)
+    return response
+
+
+# MII PUBLISHER has an independent CSRF token. Unlocking either private module
+# never grants access to the other and their readable CSRF cookies cannot be
+# substituted for one another.
+_PUBLISHER_CSRF_COOKIE = 'mii_publisher_csrf'
+_PUBLISHER_CSRF_SESSION = 'mii_publisher_csrf'
+_PUBLISHER_CSRF_HEADER = 'X-CSRF-Token'
+
+
+def _publisher_ensure_csrf_token():
+    token = session.get(_PUBLISHER_CSRF_SESSION)
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session[_PUBLISHER_CSRF_SESSION] = token
+    return token
+
+
+@app.before_request
+def _publisher_csrf_guard():
+    path = request.path or ''
+    if not (path.startswith('/api/mii-publisher/') or path == '/mii-publisher/logout'):
+        return None
+    if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        return None
+    if request.endpoint == 'mii_publisher_unlock':
+        return None
+    if not _publisher_browser_authed():
+        return None
+    expected = session.get(_PUBLISHER_CSRF_SESSION, '')
+    supplied = request.headers.get(_PUBLISHER_CSRF_HEADER, '')
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify({'ok': False, 'error': 'Publisher security token is missing or invalid.'}), 403
+    return None
+
+
+@app.after_request
+def _publisher_csrf_cookie(response):
+    if _publisher_browser_authed() and request.path.startswith('/mii-publisher'):
+        response.set_cookie(
+            _PUBLISHER_CSRF_COOKIE,
+            _publisher_ensure_csrf_token(),
+            secure=not _IS_DEV,
+            httponly=False,
+            samesite='Lax',
+            max_age=60 * 60 * 12,
+        )
     return response
 
 
@@ -4197,8 +4249,31 @@ def ai_video_view():
 # ---------------------------------------------------------------------------
 # MII PUBLISHER — protected, isolated Buffer publishing dashboard
 # ---------------------------------------------------------------------------
+_PUBLISHER_UNLOCK_LOCK = threading.Lock()
+_PUBLISHER_UNLOCK_ATTEMPTS = {}
+_PUBLISHER_LOCKOUT_THRESHOLD = 3
+_PUBLISHER_LOCKOUT_SECONDS = 15 * 60
+
+
+def _publisher_lock_response(retry_after=0):
+    response = Response(render_template(
+        'mii-publisher-lock.html',
+        retry_after=max(0, int(retry_after or 0)),
+    ))
+    response.headers['Cache-Control'] = 'no-store, private, max-age=0'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; script-src 'self'; style-src 'self'; "
+        "font-src 'self'; connect-src 'self'; img-src 'self' data:; "
+        "media-src 'none'; object-src 'none'; base-uri 'none'; "
+        "form-action 'self'; frame-ancestors 'none'; worker-src 'none';"
+    )
+    return response
+
+
 def _publisher_auth_error():
-    return jsonify({'ok': False, 'error': 'Workspace authentication required.'}), 401
+    return jsonify({'ok': False, 'error': 'MII PUBLISHER authentication required.'}), 401
 
 
 def _publisher_error_response(exc):
@@ -4209,10 +4284,70 @@ def _publisher_error_response(exc):
     return jsonify(body), code
 
 
+@app.route('/mii-publisher/unlock', methods=['POST'])
+def mii_publisher_unlock():
+    configured_password = _mii_publisher_password()
+    if not configured_password:
+        return jsonify({
+            'ok': False,
+            'error': 'MII_PUBLISHER_PASSWORD is not configured on the server.',
+        }), 503
+    ip = _aivideo_client_ip()
+    now = time.time()
+    with _PUBLISHER_UNLOCK_LOCK:
+        failures, locked_until = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
+    if locked_until > now:
+        return jsonify({
+            'ok': False,
+            'locked': True,
+            'retry_after': max(1, int(locked_until - now)),
+            'error': 'Too many failed attempts. Publisher access is temporarily locked.',
+        }), 423
+    body = request.get_json(silent=True) or {}
+    supplied_password = str(body.get('password') or '')
+    if len(supplied_password) > 256:
+        return jsonify({'ok': False, 'error': 'Invalid password.'}), 400
+    if supplied_password and hmac.compare_digest(supplied_password, configured_password):
+        session['mii_publisher_auth'] = True
+        session.pop(_PUBLISHER_CSRF_SESSION, None)
+        with _PUBLISHER_UNLOCK_LOCK:
+            _PUBLISHER_UNLOCK_ATTEMPTS.pop(ip, None)
+        return jsonify({'ok': True})
+    with _PUBLISHER_UNLOCK_LOCK:
+        failures, _ = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
+        failures += 1
+        if failures >= _PUBLISHER_LOCKOUT_THRESHOLD:
+            _PUBLISHER_UNLOCK_ATTEMPTS[ip] = (0, now + _PUBLISHER_LOCKOUT_SECONDS)
+            return jsonify({
+                'ok': False,
+                'locked': True,
+                'retry_after': _PUBLISHER_LOCKOUT_SECONDS,
+                'error': 'Incorrect password. Publisher access is temporarily locked.',
+            }), 423
+        _PUBLISHER_UNLOCK_ATTEMPTS[ip] = (failures, 0)
+    return jsonify({
+        'ok': False,
+        'attempts_left': _PUBLISHER_LOCKOUT_THRESHOLD - failures,
+        'error': 'Incorrect MII PUBLISHER password.',
+    }), 401
+
+
+@app.route('/mii-publisher/logout', methods=['POST'])
+def mii_publisher_logout():
+    session.pop('mii_publisher_auth', None)
+    session.pop(_PUBLISHER_CSRF_SESSION, None)
+    response = jsonify({'ok': True})
+    response.delete_cookie(_PUBLISHER_CSRF_COOKIE, secure=not _IS_DEV, samesite='Lax')
+    return response
+
+
 @app.route('/mii-publisher')
 def mii_publisher_view():
-    if not _aivideo_browser_authed():
-        return _aivideo_lock_response(next_page='/mii-publisher')
+    if not _publisher_browser_authed():
+        ip = _aivideo_client_ip()
+        with _PUBLISHER_UNLOCK_LOCK:
+            _, locked_until = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
+        return _publisher_lock_response(max(0, int(locked_until - time.time())))
     response = Response(render_template('mii-publisher.html'))
     response.headers['Cache-Control'] = 'no-store, private, max-age=0'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
@@ -4229,7 +4364,7 @@ def mii_publisher_view():
 
 @app.route('/api/mii-publisher/status')
 def mii_publisher_status():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     status = _mii_publisher_service.connection_status()
     status.update({'organizations': [], 'channels': []})
@@ -4243,7 +4378,7 @@ def mii_publisher_status():
 
 @app.route('/api/mii-publisher/buffer/connect', methods=['POST'])
 def mii_publisher_buffer_connect():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
         state = secrets.token_urlsafe(32)
@@ -4263,8 +4398,8 @@ def mii_publisher_buffer_connect():
 
 @app.route('/mii-publisher/buffer/callback')
 def mii_publisher_buffer_callback():
-    if not _aivideo_browser_authed():
-        return _aivideo_lock_response(next_page='/mii-publisher')
+    if not _publisher_browser_authed():
+        return _publisher_lock_response()
     pending = session.pop('mii_publisher_oauth', None) or {}
     supplied_state = str(request.args.get('state') or '')
     expected_state = str(pending.get('state') or '')
@@ -4288,7 +4423,7 @@ def mii_publisher_buffer_callback():
 
 @app.route('/api/mii-publisher/buffer/disconnect', methods=['POST'])
 def mii_publisher_buffer_disconnect():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     _mii_publisher_service.disconnect()
     session.pop('mii_publisher_oauth', None)
@@ -4297,7 +4432,7 @@ def mii_publisher_buffer_disconnect():
 
 @app.route('/api/mii-publisher/media/validate', methods=['POST'])
 def mii_publisher_media_validate():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
         media = mii_publisher.validate_media_url((request.get_json(silent=True) or {}).get('url'))
@@ -4308,7 +4443,7 @@ def mii_publisher_media_validate():
 
 @app.route('/api/mii-publisher/publish', methods=['POST'])
 def mii_publisher_publish():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
         result = _mii_publisher_service.publish(request.get_json(silent=True) or {})
@@ -4320,7 +4455,7 @@ def mii_publisher_publish():
 
 @app.route('/api/mii-publisher/history')
 def mii_publisher_history():
-    if not _aivideo_browser_authed():
+    if not _publisher_browser_authed():
         return _publisher_auth_error()
     return jsonify({'ok': True, 'history': _mii_publisher_service.history.list()})
 
