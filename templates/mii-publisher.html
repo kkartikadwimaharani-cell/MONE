@@ -27,12 +27,26 @@
 
   <main class="publisher-shell">
     <section class="publisher-hero">
-      <span class="eyebrow">PRIVATE PUBLISHING CONTROL</span>
+      <span class="eyebrow">OFFICIAL INSTAGRAM PUBLISHING</span>
       <h1>MII PUBLISHER</h1>
-      <p>PUBLISH <b>•</b> SCHEDULE <b>•</b> MANAGE</p>
+      <p>CONNECT <b>•</b> PUBLISH <b>•</b> MONITOR</p>
     </section>
 
     <div id="globalNotice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <section id="warningPanel" class="warning-panel" role="alert" hidden>
+      <div class="warning-symbol" aria-hidden="true">!</div>
+      <div class="warning-copy">
+        <span>INSTAGRAM INTEGRATION ISSUE</span>
+        <h2 id="warningTitle">ACTION REQUIRED</h2>
+        <p id="warningMessage"></p>
+        <div id="warningDetails" class="safe-details" hidden></div>
+        <div class="connection-actions">
+          <button id="warningReconnectBtn" class="button primary" type="button">RECONNECT INSTAGRAM</button>
+          <button id="warningDetailBtn" class="button quiet" type="button">DETAIL</button>
+        </div>
+      </div>
+    </section>
 
     <section class="panel connection-panel" aria-labelledby="connectionTitle">
       <div class="panel-head">
@@ -42,29 +56,47 @@
         </div>
         <span id="connectionBadge" class="status-badge offline">NOT CONNECTED</span>
       </div>
-      <p class="panel-copy">Connect Buffer to securely load publishing channels. Credentials remain on the server.</p>
+      <p class="panel-copy">Connect an Instagram professional account through the official Meta authorization flow. Credentials remain server-side.</p>
       <div class="connection-actions">
-        <button id="connectBufferBtn" class="button primary" type="button">CONNECT BUFFER</button>
-        <button id="reconnectBufferBtn" class="button secondary" type="button" hidden>RECONNECT</button>
-        <button id="disconnectBufferBtn" class="button danger" type="button" hidden>DISCONNECT</button>
+        <button id="connectInstagramBtn" class="button primary" type="button">CONNECT INSTAGRAM</button>
+        <button id="reconnectInstagramBtn" class="button secondary" type="button" hidden>RECONNECT</button>
+        <button id="disconnectInstagramBtn" class="button danger" type="button" hidden>DISCONNECT</button>
       </div>
       <div id="accountGrid" class="account-grid" aria-live="polite">
-        <div class="empty-state">NO BUFFER CHANNELS CONNECTED</div>
+        <div class="empty-state">INSTAGRAM IS NOT CONNECTED</div>
+      </div>
+    </section>
+
+    <section class="panel health-panel" aria-labelledby="healthTitle">
+      <div class="panel-head">
+        <div>
+          <span class="section-index">02 / LIVE STATUS</span>
+          <h2 id="healthTitle">INTEGRATION HEALTH</h2>
+        </div>
+        <span id="healthBadge" class="status-badge unknown">UNKNOWN</span>
+      </div>
+      <div class="health-readout">
+        <span id="healthDot" class="health-dot unknown" aria-hidden="true"></span>
+        <div>
+          <strong id="healthStatus">UNKNOWN</strong>
+          <p id="healthSummary">Health has not been checked yet.</p>
+          <small id="healthChecked"></small>
+        </div>
       </div>
     </section>
 
     <form id="publisherForm" novalidate>
       <section class="panel composer-panel" aria-labelledby="mediaTitle">
         <div class="panel-head compact">
-          <div><span class="section-index">02 / COMPOSER</span><h2 id="mediaTitle">MEDIA</h2></div>
+          <div><span class="section-index">03 / PUBLISHER</span><h2 id="mediaTitle">MEDIA</h2></div>
         </div>
-        <label class="field-label" for="mediaUrl">MEDIA URL</label>
+        <label class="field-label" for="mediaUrl">REEL VIDEO URL</label>
         <div class="url-row">
-          <input id="mediaUrl" name="media_url" type="url" inputmode="url" autocomplete="off" maxlength="2048" placeholder="HTTPS DIRECT IMAGE OR VIDEO URL" required>
+          <input id="mediaUrl" name="media_url" type="url" inputmode="url" autocomplete="off" maxlength="2048" placeholder="HTTPS DIRECT MP4 OR MOV URL" required>
           <button id="loadMediaBtn" class="button secondary" type="button">LOAD MEDIA</button>
           <button id="clearMediaBtn" class="button quiet" type="button">CLEAR</button>
         </div>
-        <p class="field-note">USE A STABLE PUBLIC DIRECT FILE URL. DROPBOX PREVIEW LINKS AND EXPIRING LINKS ARE NOT SUPPORTED.</p>
+        <p class="field-note">THE VIDEO IS FETCHED DIRECTLY BY INSTAGRAM. MII DOES NOT STORE OR PROXY THE FILE.</p>
         <div id="mediaPreview" class="media-preview" hidden>
           <div id="previewSurface" class="preview-surface"></div>
           <dl class="media-meta">
@@ -78,32 +110,18 @@
       <section class="panel composer-panel" aria-labelledby="captionTitle">
         <div class="panel-head compact">
           <h2 id="captionTitle">CAPTION</h2>
-          <span id="captionCount" class="counter">0 / 5000</span>
+          <span id="captionCount" class="counter">0 / 2200</span>
         </div>
-        <label class="sr-only" for="caption">Post caption</label>
-        <textarea id="caption" name="caption" maxlength="5000" rows="8" placeholder="WRITE YOUR CAPTION"></textarea>
+        <label class="sr-only" for="caption">Instagram caption</label>
+        <textarea id="caption" name="caption" maxlength="2200" rows="8" placeholder="WRITE YOUR INSTAGRAM CAPTION"></textarea>
       </section>
 
-      <section class="panel composer-panel" aria-labelledby="channelsTitle">
-        <div class="panel-head compact">
-          <h2 id="channelsTitle">CHANNELS</h2>
-          <span id="channelCount" class="counter">0 SELECTED</span>
-        </div>
-        <div id="channelSelector" class="channel-selector">
-          <div class="empty-state">CONNECT BUFFER TO SELECT CHANNELS</div>
-        </div>
-      </section>
-
-      <section class="panel composer-panel" aria-labelledby="publishingTitle">
-        <div class="panel-head compact"><h2 id="publishingTitle">PUBLISHING</h2></div>
-        <div class="mode-switch" role="radiogroup" aria-label="Publishing mode">
-          <label><input type="radio" name="mode" value="now" checked><span>PUBLISH NOW</span></label>
-          <label><input type="radio" name="mode" value="schedule"><span>SCHEDULE</span></label>
-        </div>
-        <div id="scheduleFields" class="schedule-fields" hidden>
-          <label><span>DATE</span><input id="scheduleDate" type="date"></label>
-          <label><span>TIME</span><input id="scheduleTime" type="time" step="60"></label>
-          <label><span>TIMEZONE</span><select id="scheduleTimezone" aria-label="Timezone"></select></label>
+      <section class="panel destination-panel" aria-labelledby="destinationTitle">
+        <div class="panel-head compact"><h2 id="destinationTitle">DESTINATION</h2></div>
+        <div class="destination-card">
+          <span class="instagram-mark" aria-hidden="true">IG</span>
+          <div><strong>INSTAGRAM REELS</strong><span>OFFICIAL INSTAGRAM API</span></div>
+          <span class="destination-lock">FIXED</span>
         </div>
         <button id="publishBtn" class="publish-cta" type="submit" disabled>PUBLISH NOW <span aria-hidden="true">→</span></button>
       </section>
@@ -111,21 +129,23 @@
 
     <section class="panel history-panel" aria-labelledby="historyTitle">
       <div class="panel-head">
-        <div><span class="section-index">03 / ACTIVITY</span><h2 id="historyTitle">STATUS &amp; HISTORY</h2></div>
+        <div><span class="section-index">04 / ACTIVITY</span><h2 id="historyTitle">STATUS &amp; HISTORY</h2></div>
         <button id="refreshHistoryBtn" class="button quiet" type="button">REFRESH</button>
       </div>
-      <div id="historyList" class="history-list"><div class="empty-state">NO PUBLISHING ACTIVITY YET</div></div>
+      <div id="historyList" class="history-list"><div class="empty-state">NO INSTAGRAM PUBLISHING ACTIVITY YET</div></div>
+      <h3 class="activity-heading">INTEGRATION HISTORY</h3>
+      <div id="activityList" class="activity-list"><div class="empty-state">NO INTEGRATION EVENTS YET</div></div>
     </section>
   </main>
 
   <dialog id="confirmDialog" class="confirm-dialog">
     <form method="dialog">
       <span class="dialog-mark">M</span>
-      <h2>CONFIRM PUBLISHING</h2>
-      <p id="confirmSummary">REVIEW THE PUBLISHING ACTION BEFORE CONTINUING.</p>
+      <h2>CONFIRM INSTAGRAM PUBLISHING</h2>
+      <p id="confirmSummary">THIS REEL WILL BE SENT TO THE CONNECTED INSTAGRAM ACCOUNT.</p>
       <div class="dialog-actions">
         <button class="button quiet" value="cancel">CANCEL</button>
-        <button id="confirmPublishBtn" class="button primary" value="confirm">CONFIRM</button>
+        <button id="confirmPublishBtn" class="button primary" value="confirm">PUBLISH REEL</button>
       </div>
     </form>
   </dialog>

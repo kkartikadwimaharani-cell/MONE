@@ -24,6 +24,7 @@ import aivideo_archive
 import dropbox_oauth
 import secrets_store
 import mii_publisher
+import mii_publisher_instagram
 import google.generativeai as genai
 
 # ---------------------------------------------------------------------------
@@ -134,7 +135,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260922-mii-publisher-v3"
+APP_VERSION = "20260922-mii-publisher-instagram-v1"
 
 
 @app.errorhandler(Exception)
@@ -260,8 +261,8 @@ def get_secret(*names, default=''):
 
 # MII PUBLISHER is intentionally isolated from SOCIAL MEDIA and the AI
 # generation routes. It reuses the encrypted secret store but owns a separate
-# password, session flag and CSRF boundary.
-_mii_publisher_service = mii_publisher.BufferPublisherService(
+# password, session flag, CSRF boundary and official Instagram provider.
+_mii_publisher_service = mii_publisher_instagram.InstagramPublisherService(
     data_dir=DATA_DIR,
     secret_store=_app_secrets_store,
     get_secret=get_secret,
@@ -4247,7 +4248,7 @@ def ai_video_view():
 
 
 # ---------------------------------------------------------------------------
-# MII PUBLISHER — protected, isolated Buffer publishing dashboard
+# MII PUBLISHER — protected, isolated official Instagram publishing dashboard
 # ---------------------------------------------------------------------------
 _PUBLISHER_UNLOCK_LOCK = threading.Lock()
 _PUBLISHER_UNLOCK_ATTEMPTS = {}
@@ -4278,7 +4279,11 @@ def _publisher_auth_error():
 
 def _publisher_error_response(exc):
     code = getattr(exc, 'status_code', 502)
-    body = {'ok': False, 'error': str(exc)}
+    body = {
+        'ok': False,
+        'error': str(exc),
+        'detail': exc.public_detail() if isinstance(exc, mii_publisher.PublisherError) else None,
+    }
     if isinstance(exc, mii_publisher.PublisherRateLimitError):
         body['retry_after'] = exc.retry_after
     return jsonify(body), code
@@ -4366,67 +4371,64 @@ def mii_publisher_view():
 def mii_publisher_status():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
-    status = _mii_publisher_service.connection_status()
-    status.update({'organizations': [], 'channels': []})
-    if status['connected']:
-        try:
-            status.update(_mii_publisher_service.accounts_and_channels())
-        except mii_publisher.PublisherError as exc:
-            status['connection_error'] = str(exc)
-    return jsonify({'ok': True, **status})
+    try:
+        return jsonify({'ok': True, **_mii_publisher_service.connection_status()})
+    except mii_publisher.PublisherError as exc:
+        return _publisher_error_response(exc)
 
 
-@app.route('/api/mii-publisher/buffer/connect', methods=['POST'])
-def mii_publisher_buffer_connect():
+@app.route('/api/mii-publisher/instagram/connect', methods=['POST'])
+def mii_publisher_instagram_connect():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
         state = secrets.token_urlsafe(32)
-        verifier = secrets.token_urlsafe(64)
-        session['mii_publisher_oauth'] = {
-            'state': state, 'verifier': verifier, 'created_at': time.time(),
+        session['mii_publisher_instagram_oauth'] = {
+            'state': state,
+            'created_at': time.time(),
         }
-        authorization_url = _mii_publisher_service.authorization_url(state, verifier)
-        if not authorization_url:
-            session.pop('mii_publisher_oauth', None)
-            return jsonify({'ok': True, 'connected': True})
+        reconnect = bool((request.get_json(silent=True) or {}).get('reconnect'))
+        authorization_url = _mii_publisher_service.authorization_url(state, reconnect=reconnect)
         return jsonify({'ok': True, 'authorization_url': authorization_url})
     except mii_publisher.PublisherError as exc:
-        session.pop('mii_publisher_oauth', None)
+        session.pop('mii_publisher_instagram_oauth', None)
         return _publisher_error_response(exc)
 
 
-@app.route('/mii-publisher/buffer/callback')
-def mii_publisher_buffer_callback():
+@app.route('/mii-publisher/instagram/callback')
+def mii_publisher_instagram_callback():
     if not _publisher_browser_authed():
         return _publisher_lock_response()
-    pending = session.pop('mii_publisher_oauth', None) or {}
+    pending = session.pop('mii_publisher_instagram_oauth', None) or {}
     supplied_state = str(request.args.get('state') or '')
     expected_state = str(pending.get('state') or '')
     created_at = float(pending.get('created_at') or 0)
     if (not supplied_state or not expected_state
             or not hmac.compare_digest(supplied_state, expected_state)
             or time.time() - created_at > 600):
-        return redirect('/mii-publisher?buffer_error=invalid_oauth_state')
+        return redirect('/mii-publisher?instagram_error=invalid_oauth_state')
     if request.args.get('error'):
-        return redirect('/mii-publisher?buffer_error=access_denied')
+        return redirect('/mii-publisher?instagram_error=access_denied')
     code = str(request.args.get('code') or '')
     if not code:
-        return redirect('/mii-publisher?buffer_error=missing_code')
+        return redirect('/mii-publisher?instagram_error=missing_code')
     try:
-        _mii_publisher_service.exchange_code(code, str(pending.get('verifier') or ''))
-    except mii_publisher.PublisherError:
-        app.logger.warning('[mii-publisher] Buffer OAuth exchange failed')
-        return redirect('/mii-publisher?buffer_error=connection_failed')
-    return redirect('/mii-publisher?buffer=connected')
+        _mii_publisher_service.exchange_code(code)
+    except mii_publisher.PublisherError as exc:
+        app.logger.warning(
+            '[mii-publisher][instagram] OAuth exchange failed type=%s correlation_id=%s',
+            type(exc).__name__, exc.correlation_id,
+        )
+        return redirect('/mii-publisher?instagram_error=connection_failed')
+    return redirect('/mii-publisher?instagram=connected')
 
 
-@app.route('/api/mii-publisher/buffer/disconnect', methods=['POST'])
-def mii_publisher_buffer_disconnect():
+@app.route('/api/mii-publisher/instagram/disconnect', methods=['POST'])
+def mii_publisher_instagram_disconnect():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
     _mii_publisher_service.disconnect()
-    session.pop('mii_publisher_oauth', None)
+    session.pop('mii_publisher_instagram_oauth', None)
     return jsonify({'ok': True, 'connected': False})
 
 
@@ -4435,7 +4437,7 @@ def mii_publisher_media_validate():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
-        media = mii_publisher.validate_media_url((request.get_json(silent=True) or {}).get('url'))
+        media = _mii_publisher_service.validate_media((request.get_json(silent=True) or {}).get('url'))
         return jsonify({'ok': True, 'media': media})
     except mii_publisher.PublisherError as exc:
         return _publisher_error_response(exc)
@@ -4446,10 +4448,24 @@ def mii_publisher_publish():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
     try:
-        result = _mii_publisher_service.publish(request.get_json(silent=True) or {})
+        result = _mii_publisher_service.create_reel(request.get_json(silent=True) or {})
         return jsonify(result)
     except mii_publisher.PublisherError as exc:
-        app.logger.warning('[mii-publisher] publish request failed (%s)', type(exc).__name__)
+        app.logger.warning(
+            '[mii-publisher][instagram] publish request failed type=%s correlation_id=%s',
+            type(exc).__name__, exc.correlation_id,
+        )
+        return _publisher_error_response(exc)
+
+
+@app.route('/api/mii-publisher/publish/<job_id>/status', methods=['POST'])
+def mii_publisher_publish_status(job_id):
+    if not _publisher_browser_authed():
+        return _publisher_auth_error()
+    try:
+        job = _mii_publisher_service.refresh_publish_status(job_id)
+        return jsonify({'ok': True, 'job': job})
+    except mii_publisher.PublisherError as exc:
         return _publisher_error_response(exc)
 
 
@@ -4457,7 +4473,7 @@ def mii_publisher_publish():
 def mii_publisher_history():
     if not _publisher_browser_authed():
         return _publisher_auth_error()
-    return jsonify({'ok': True, 'history': _mii_publisher_service.history.list()})
+    return jsonify({'ok': True, **_mii_publisher_service.history()})
 
 
 @app.route('/mii-ai-video')
