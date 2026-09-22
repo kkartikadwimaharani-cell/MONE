@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#080103">
+  <title>MII PUBLISHER — MII NETWORK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ asset_url('css/mii-publisher.css') }}">
+</head>
+<body>
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <header class="publisher-nav">
+    <a class="brand-link" href="/" aria-label="MII Network home">
+      <span class="brand-mark">M</span>
+      <span><strong>MII NETWORK</strong><small>PRIVATE WORKSPACE</small></span>
+    </a>
+    <div class="nav-actions">
+      <span class="secure-state"><i></i> SECURE</span>
+      <a class="home-link" href="/"><span aria-hidden="true">←</span> HOME</a>
+    </div>
+  </header>
+
+  <main class="publisher-shell">
+    <section class="publisher-hero">
+      <span class="eyebrow">PRIVATE PUBLISHING CONTROL</span>
+      <h1>MII PUBLISHER</h1>
+      <p>PUBLISH <b>•</b> SCHEDULE <b>•</b> MANAGE</p>
+    </section>
+
+    <div id="globalNotice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <section class="panel connection-panel" aria-labelledby="connectionTitle">
+      <div class="panel-head">
+        <div>
+          <span class="section-index">01 / CONNECTION</span>
+          <h2 id="connectionTitle">CONNECTED ACCOUNTS</h2>
+        </div>
+        <span id="connectionBadge" class="status-badge offline">NOT CONNECTED</span>
+      </div>
+      <p class="panel-copy">Connect Buffer to securely load publishing channels. Credentials remain on the server.</p>
+      <div class="connection-actions">
+        <button id="connectBufferBtn" class="button primary" type="button">CONNECT BUFFER</button>
+        <button id="reconnectBufferBtn" class="button secondary" type="button" hidden>RECONNECT</button>
+        <button id="disconnectBufferBtn" class="button danger" type="button" hidden>DISCONNECT</button>
+      </div>
+      <div id="accountGrid" class="account-grid" aria-live="polite">
+        <div class="empty-state">NO BUFFER CHANNELS CONNECTED</div>
+      </div>
+    </section>
+
+    <form id="publisherForm" novalidate>
+      <section class="panel composer-panel" aria-labelledby="mediaTitle">
+        <div class="panel-head compact">
+          <div><span class="section-index">02 / COMPOSER</span><h2 id="mediaTitle">MEDIA</h2></div>
+        </div>
+        <label class="field-label" for="mediaUrl">MEDIA URL</label>
+        <div class="url-row">
+          <input id="mediaUrl" name="media_url" type="url" inputmode="url" autocomplete="off" maxlength="2048" placeholder="HTTPS DIRECT IMAGE OR VIDEO URL" required>
+          <button id="loadMediaBtn" class="button secondary" type="button">LOAD MEDIA</button>
+          <button id="clearMediaBtn" class="button quiet" type="button">CLEAR</button>
+        </div>
+        <p class="field-note">USE A STABLE PUBLIC DIRECT FILE URL. DROPBOX PREVIEW LINKS AND EXPIRING LINKS ARE NOT SUPPORTED.</p>
+        <div id="mediaPreview" class="media-preview" hidden>
+          <div id="previewSurface" class="preview-surface"></div>
+          <dl class="media-meta">
+            <div><dt>TYPE</dt><dd id="mediaType">—</dd></div>
+            <div><dt>FILE</dt><dd id="mediaName">—</dd></div>
+            <div><dt>SOURCE</dt><dd id="mediaHost">—</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="panel composer-panel" aria-labelledby="captionTitle">
+        <div class="panel-head compact">
+          <h2 id="captionTitle">CAPTION</h2>
+          <span id="captionCount" class="counter">0 / 5000</span>
+        </div>
+        <label class="sr-only" for="caption">Post caption</label>
+        <textarea id="caption" name="caption" maxlength="5000" rows="8" placeholder="WRITE YOUR CAPTION"></textarea>
+      </section>
+
+      <section class="panel composer-panel" aria-labelledby="channelsTitle">
+        <div class="panel-head compact">
+          <h2 id="channelsTitle">CHANNELS</h2>
+          <span id="channelCount" class="counter">0 SELECTED</span>
+        </div>
+        <div id="channelSelector" class="channel-selector">
+          <div class="empty-state">CONNECT BUFFER TO SELECT CHANNELS</div>
+        </div>
+      </section>
+
+      <section class="panel composer-panel" aria-labelledby="publishingTitle">
+        <div class="panel-head compact"><h2 id="publishingTitle">PUBLISHING</h2></div>
+        <div class="mode-switch" role="radiogroup" aria-label="Publishing mode">
+          <label><input type="radio" name="mode" value="now" checked><span>PUBLISH NOW</span></label>
+          <label><input type="radio" name="mode" value="schedule"><span>SCHEDULE</span></label>
+        </div>
+        <div id="scheduleFields" class="schedule-fields" hidden>
+          <label><span>DATE</span><input id="scheduleDate" type="date"></label>
+          <label><span>TIME</span><input id="scheduleTime" type="time" step="60"></label>
+          <label><span>TIMEZONE</span><select id="scheduleTimezone" aria-label="Timezone"></select></label>
+        </div>
+        <button id="publishBtn" class="publish-cta" type="submit" disabled>PUBLISH NOW <span aria-hidden="true">→</span></button>
+      </section>
+    </form>
+
+    <section class="panel history-panel" aria-labelledby="historyTitle">
+      <div class="panel-head">
+        <div><span class="section-index">03 / ACTIVITY</span><h2 id="historyTitle">STATUS &amp; HISTORY</h2></div>
+        <button id="refreshHistoryBtn" class="button quiet" type="button">REFRESH</button>
+      </div>
+      <div id="historyList" class="history-list"><div class="empty-state">NO PUBLISHING ACTIVITY YET</div></div>
+    </section>
+  </main>
+
+  <dialog id="confirmDialog" class="confirm-dialog">
+    <form method="dialog">
+      <span class="dialog-mark">M</span>
+      <h2>CONFIRM PUBLISHING</h2>
+      <p id="confirmSummary">REVIEW THE PUBLISHING ACTION BEFORE CONTINUING.</p>
+      <div class="dialog-actions">
+        <button class="button quiet" value="cancel">CANCEL</button>
+        <button id="confirmPublishBtn" class="button primary" value="confirm">CONFIRM</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="{{ asset_url('js/mii-publisher.js') }}" defer></script>
+</body>
+</html>
