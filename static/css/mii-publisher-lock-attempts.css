@@ -1,0 +1,92 @@
+.attempts-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 13px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 64, 92, .19);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 28, 64, .065), rgba(255, 255, 255, .018));
+}
+
+.attempts-label {
+  color: #b99aa0;
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+
+.attempts-row {
+  display: flex;
+  grid-column: 1;
+  gap: 8px;
+}
+
+.attempt-pip {
+  display: block;
+  width: 24px;
+  height: 28px;
+  filter: drop-shadow(0 0 6px rgba(255, 58, 88, .28));
+  transition: opacity .25s, filter .25s, transform .25s;
+}
+
+.attempt-pip svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pip-fill {
+  fill: rgba(255, 49, 82, .14);
+  stroke: #ff526d;
+  stroke-width: 1.4;
+}
+
+.pip-crack {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.attempt-pip.lost {
+  opacity: .32;
+  filter: none;
+  transform: scale(.92);
+}
+
+.attempt-pip.lost .pip-fill {
+  fill: rgba(255, 24, 58, .38);
+  stroke: #ff294d;
+}
+
+.attempt-pip.lost .pip-crack {
+  opacity: 1;
+}
+
+.attempts-count {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: .08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.password-wrap input:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .attempts-panel {
+    padding: 11px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attempt-pip {
+    transition: none;
+  }
+}
