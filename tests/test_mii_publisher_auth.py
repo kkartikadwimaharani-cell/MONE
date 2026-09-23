@@ -10,6 +10,8 @@ class MiiPublisherAuthIsolationTests(unittest.TestCase):
         self.client = app.app.test_client()
         with app._PUBLISHER_UNLOCK_LOCK:
             app._PUBLISHER_UNLOCK_ATTEMPTS.clear()
+            app._PUBLISHER_GLOBAL_FAILS.clear()
+            app._PUBLISHER_GLOBAL_LOCK_UNTIL = 0
 
     def test_publisher_unlock_does_not_unlock_ai_studio(self):
         with patch.object(app, '_mii_publisher_password', return_value='publisher-only'):
@@ -38,6 +40,49 @@ class MiiPublisherAuthIsolationTests(unittest.TestCase):
         with patch.object(app, '_mii_publisher_password', return_value=marker):
             lock_page = self.client.get('/mii-publisher')
         self.assertNotIn(marker, lock_page.get_data(as_text=True))
+
+    def test_publisher_lock_shows_three_isolated_attempts(self):
+        response = self.client.get('/mii-publisher')
+        html = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data-attempts-left="3"', html)
+        self.assertEqual(html.count('class="attempt-pip"'), 3)
+
+    def test_publisher_locks_ip_for_five_minutes_after_three_failures(self):
+        headers = {'CF-Connecting-IP': '203.0.113.25'}
+        with patch.object(app, '_mii_publisher_password', return_value='publisher-only'):
+            first = self.client.post('/mii-publisher/unlock', json={'password': 'wrong'}, headers=headers)
+            second = self.client.post('/mii-publisher/unlock', json={'password': 'wrong'}, headers=headers)
+            third = self.client.post('/mii-publisher/unlock', json={'password': 'wrong'}, headers=headers)
+            blocked = self.client.post('/mii-publisher/unlock', json={'password': 'publisher-only'}, headers=headers)
+        self.assertEqual(first.status_code, 401)
+        self.assertEqual(first.get_json()['attempts_left'], 2)
+        self.assertEqual(second.get_json()['attempts_left'], 1)
+        self.assertEqual(third.status_code, 423)
+        self.assertEqual(third.get_json()['attempts_left'], 0)
+        self.assertEqual(third.get_json()['retry_after'], 300)
+        self.assertEqual(blocked.status_code, 423)
+
+    def test_publisher_failures_do_not_change_ai_studio_lock_state(self):
+        publisher_ip = '203.0.113.26'
+        before = dict(app._AIVIDEO_UNLOCK_ATTEMPTS)
+        with patch.object(app, '_mii_publisher_password', return_value='publisher-only'):
+            self.client.post(
+                '/mii-publisher/unlock', json={'password': 'wrong'},
+                headers={'CF-Connecting-IP': publisher_ip},
+            )
+        self.assertEqual(app._AIVIDEO_UNLOCK_ATTEMPTS, before)
+        self.assertIn(publisher_ip, app._PUBLISHER_UNLOCK_ATTEMPTS)
+
+    def test_publisher_global_limit_is_independent_and_fail_closed(self):
+        ai_global_before = app._AIVIDEO_GLOBAL_LOCK_UNTIL
+        with patch.object(app, '_PUBLISHER_GLOBAL_LOCKOUT_THRESHOLD', 2), \
+                patch.object(app, '_PUBLISHER_GLOBAL_LOCKOUT_SECONDS', 900), \
+                patch.object(app.time, 'time', return_value=1000):
+            self.assertEqual(app._publisher_register_global_fail(), 0)
+            self.assertEqual(app._publisher_register_global_fail(), 900)
+            self.assertEqual(app._publisher_global_lock_remaining(), 900)
+        self.assertEqual(app._AIVIDEO_GLOBAL_LOCK_UNTIL, ai_global_before)
         with patch.object(app, '_mii_publisher_password', return_value=''):
             response = self.client.post('/mii-publisher/unlock', json={'password': ''})
         self.assertEqual(response.status_code, 503)

@@ -5,8 +5,19 @@
   const button = document.getElementById('unlockPublisher');
   const toggle = document.getElementById('togglePassword');
   const message = document.getElementById('lockMessage');
+  const attempts = Array.from(document.querySelectorAll('.attempt-pip'));
+  const attemptsCount = document.getElementById('attemptsCount');
   let busy = false;
   let remaining = Number.parseInt(document.body.dataset.retryAfter || '0', 10) || 0;
+  const attemptLimit = Number.parseInt(document.body.dataset.attemptLimit || '3', 10) || 3;
+  let attemptsLeft = Number.parseInt(document.body.dataset.attemptsLeft || String(attemptLimit), 10);
+
+  function renderAttempts(value) {
+    attemptsLeft = Math.max(0, Math.min(attemptLimit, Number.parseInt(value, 10) || 0));
+    const lost = attemptLimit - attemptsLeft;
+    attempts.forEach((pip, index) => pip.classList.toggle('lost', index < lost));
+    attemptsCount.textContent = `${attemptsLeft} OF ${attemptLimit}`;
+  }
 
   function showMessage(text) {
     message.textContent = text || '';
@@ -16,12 +27,17 @@
   function updateLockout() {
     if (remaining <= 0) {
       button.disabled = false;
+      input.disabled = false;
       button.innerHTML = 'UNLOCK PUBLISHER <span aria-hidden="true">→</span>';
+      if (attemptsLeft === 0) renderAttempts(attemptLimit);
       return;
     }
     button.disabled = true;
-    button.textContent = `LOCKED • ${remaining}s`;
-    showMessage('TOO MANY FAILED ATTEMPTS. WAIT BEFORE TRYING AGAIN.');
+    input.disabled = true;
+    const minutes = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const seconds = String(remaining % 60).padStart(2, '0');
+    button.textContent = `LOCKED • ${minutes}:${seconds}`;
+    showMessage(`THREE FAILED ATTEMPTS. TRY AGAIN IN ${minutes}:${seconds}.`);
     remaining -= 1;
     window.setTimeout(updateLockout, 1000);
   }
@@ -49,8 +65,16 @@
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.ok) { window.location.replace('/mii-publisher'); return; }
       input.value = '';
-      if (data.locked) { remaining = Number.parseInt(data.retry_after || '900', 10) || 900; updateLockout(); }
-      else showMessage(data.error || 'ACCESS DENIED.');
+      if (typeof data.attempts_left === 'number') renderAttempts(data.attempts_left);
+      if (data.locked) {
+        remaining = Number.parseInt(data.retry_after || '300', 10) || 300;
+        renderAttempts(0);
+        updateLockout();
+      } else {
+        showMessage(data.attempts_left > 0
+          ? `INCORRECT PASSWORD • ${data.attempts_left} ATTEMPT${data.attempts_left === 1 ? '' : 'S'} LEFT.`
+          : (data.error || 'ACCESS DENIED.'));
+      }
     } catch (_) {
       showMessage('SECURE GATEWAY IS TEMPORARILY UNAVAILABLE.');
     } finally {
@@ -62,5 +86,6 @@
     }
   });
 
+  renderAttempts(attemptsLeft);
   updateLockout();
 })();

@@ -135,7 +135,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260922-mii-publisher-instagram-v1"
+APP_VERSION = "20260923-mii-publisher-lock-v2"
 
 
 @app.errorhandler(Exception)
@@ -4253,13 +4253,45 @@ def ai_video_view():
 _PUBLISHER_UNLOCK_LOCK = threading.Lock()
 _PUBLISHER_UNLOCK_ATTEMPTS = {}
 _PUBLISHER_LOCKOUT_THRESHOLD = 3
-_PUBLISHER_LOCKOUT_SECONDS = 15 * 60
+_PUBLISHER_LOCKOUT_SECONDS = 5 * 60
+_PUBLISHER_GLOBAL_FAILS = []
+_PUBLISHER_GLOBAL_LOCK_UNTIL = 0
+_PUBLISHER_GLOBAL_LOCKOUT_THRESHOLD = 20
+_PUBLISHER_GLOBAL_LOCKOUT_WINDOW_SECONDS = 5 * 60
+_PUBLISHER_GLOBAL_LOCKOUT_SECONDS = 15 * 60
 
 
-def _publisher_lock_response(retry_after=0):
+def _publisher_register_global_fail():
+    """Record one Publisher failure independently from every other lock."""
+    global _PUBLISHER_GLOBAL_LOCK_UNTIL
+    now = time.time()
+    with _PUBLISHER_UNLOCK_LOCK:
+        if _PUBLISHER_GLOBAL_LOCK_UNTIL > now:
+            return max(1, int(_PUBLISHER_GLOBAL_LOCK_UNTIL - now))
+        _PUBLISHER_GLOBAL_FAILS.append(now)
+        cutoff = now - _PUBLISHER_GLOBAL_LOCKOUT_WINDOW_SECONDS
+        while _PUBLISHER_GLOBAL_FAILS and _PUBLISHER_GLOBAL_FAILS[0] < cutoff:
+            _PUBLISHER_GLOBAL_FAILS.pop(0)
+        if len(_PUBLISHER_GLOBAL_FAILS) >= _PUBLISHER_GLOBAL_LOCKOUT_THRESHOLD:
+            _PUBLISHER_GLOBAL_LOCK_UNTIL = now + _PUBLISHER_GLOBAL_LOCKOUT_SECONDS
+            _PUBLISHER_GLOBAL_FAILS.clear()
+            return _PUBLISHER_GLOBAL_LOCKOUT_SECONDS
+    return 0
+
+
+def _publisher_global_lock_remaining():
+    with _PUBLISHER_UNLOCK_LOCK:
+        return max(0, int(_PUBLISHER_GLOBAL_LOCK_UNTIL - time.time()))
+
+
+def _publisher_lock_response(retry_after=0, attempts_left=None):
+    if attempts_left is None:
+        attempts_left = _PUBLISHER_LOCKOUT_THRESHOLD
     response = Response(render_template(
         'mii-publisher-lock.html',
         retry_after=max(0, int(retry_after or 0)),
+        attempts_left=max(0, min(int(attempts_left), _PUBLISHER_LOCKOUT_THRESHOLD)),
+        attempt_limit=_PUBLISHER_LOCKOUT_THRESHOLD,
     ))
     response.headers['Cache-Control'] = 'no-store, private, max-age=0'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
@@ -4299,12 +4331,22 @@ def mii_publisher_unlock():
         }), 503
     ip = _aivideo_client_ip()
     now = time.time()
+    global_remaining = _publisher_global_lock_remaining()
+    if global_remaining:
+        return jsonify({
+            'ok': False,
+            'locked': True,
+            'attempts_left': 0,
+            'retry_after': global_remaining,
+            'error': 'Too many failed attempts. Publisher access is temporarily locked.',
+        }), 423
     with _PUBLISHER_UNLOCK_LOCK:
         failures, locked_until = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
     if locked_until > now:
         return jsonify({
             'ok': False,
             'locked': True,
+            'attempts_left': 0,
             'retry_after': max(1, int(locked_until - now)),
             'error': 'Too many failed attempts. Publisher access is temporarily locked.',
         }), 423
@@ -4321,15 +4363,24 @@ def mii_publisher_unlock():
     with _PUBLISHER_UNLOCK_LOCK:
         failures, _ = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
         failures += 1
-        if failures >= _PUBLISHER_LOCKOUT_THRESHOLD:
+        ip_just_locked = failures >= _PUBLISHER_LOCKOUT_THRESHOLD
+        if ip_just_locked:
             _PUBLISHER_UNLOCK_ATTEMPTS[ip] = (0, now + _PUBLISHER_LOCKOUT_SECONDS)
-            return jsonify({
-                'ok': False,
-                'locked': True,
-                'retry_after': _PUBLISHER_LOCKOUT_SECONDS,
-                'error': 'Incorrect password. Publisher access is temporarily locked.',
-            }), 423
-        _PUBLISHER_UNLOCK_ATTEMPTS[ip] = (failures, 0)
+        else:
+            _PUBLISHER_UNLOCK_ATTEMPTS[ip] = (failures, 0)
+    global_just_locked = _publisher_register_global_fail()
+    if ip_just_locked or global_just_locked:
+        retry_after = max(
+            _PUBLISHER_LOCKOUT_SECONDS if ip_just_locked else 0,
+            global_just_locked,
+        )
+        return jsonify({
+            'ok': False,
+            'locked': True,
+            'attempts_left': 0,
+            'retry_after': retry_after,
+            'error': 'Incorrect password. Publisher access is temporarily locked.',
+        }), 423
     return jsonify({
         'ok': False,
         'attempts_left': _PUBLISHER_LOCKOUT_THRESHOLD - failures,
@@ -4351,8 +4402,13 @@ def mii_publisher_view():
     if not _publisher_browser_authed():
         ip = _aivideo_client_ip()
         with _PUBLISHER_UNLOCK_LOCK:
-            _, locked_until = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
-        return _publisher_lock_response(max(0, int(locked_until - time.time())))
+            failures, locked_until = _PUBLISHER_UNLOCK_ATTEMPTS.get(ip, (0, 0))
+        retry_after = max(
+            max(0, int(locked_until - time.time())),
+            _publisher_global_lock_remaining(),
+        )
+        attempts_left = 0 if retry_after else _PUBLISHER_LOCKOUT_THRESHOLD - failures
+        return _publisher_lock_response(retry_after, attempts_left)
     response = Response(render_template('mii-publisher.html'))
     response.headers['Cache-Control'] = 'no-store, private, max-age=0'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
