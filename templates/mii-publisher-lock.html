@@ -28,6 +28,12 @@
         <div><small>ISOLATED SECURITY</small><strong>SEPARATE FROM MII AI STUDIO</strong></div>
       </div>
 
+      <div class="publisher-visit-pill" title="TOTAL UNIQUE DEVICES THAT HAVE VIEWED THIS PAGE">
+        <span class="publisher-visit-dot" aria-hidden="true"></span>
+        <strong id="publisherVisitTotal">{{ visit_total|default(0)|int }}</strong>
+        <span>UNIQUE DEVICES</span>
+      </div>
+
       <form id="publisherLockForm" novalidate>
         <label for="publisherPassword">PUBLISHER ACCESS KEY</label>
         <div class="password-wrap">

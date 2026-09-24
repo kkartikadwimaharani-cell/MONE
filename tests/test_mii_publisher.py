@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import uuid
+import json
 from urllib.parse import parse_qs, urlparse
 
 import mii_publisher
@@ -94,6 +95,21 @@ class OAuthHttp:
 
 
 class MiiPublisherInstagramTests(unittest.TestCase):
+    def test_publisher_device_views_are_deduplicated_and_raw_id_is_not_stored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = mii_publisher.PublisherStore(directory)
+            first = str(uuid.uuid4())
+            second = str(uuid.uuid4())
+            self.assertEqual(store.record_lock_visit(first), 1)
+            self.assertEqual(store.record_lock_visit(first), 1)
+            self.assertEqual(store.record_lock_visit(second), 2)
+            self.assertEqual(store.record_lock_visit('invalid-device-id'), 2)
+            with open(store.path, 'r', encoding='utf-8') as handle:
+                saved = json.load(handle)
+            self.assertNotIn(first, repr(saved))
+            self.assertNotIn(second, repr(saved))
+            self.assertEqual(len(saved['lock_visits']), 2)
+
     def test_direct_reel_url_validation_without_vps_download(self):
         video = mii_publisher.validate_instagram_video_url('https://cdn.example.com/media/reel.mp4?signature=temporary')
         self.assertEqual(video['type'], 'video')

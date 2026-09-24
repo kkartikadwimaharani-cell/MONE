@@ -42,11 +42,32 @@ class MiiPublisherAuthIsolationTests(unittest.TestCase):
         self.assertNotIn(marker, lock_page.get_data(as_text=True))
 
     def test_publisher_lock_shows_three_isolated_attempts(self):
-        response = self.client.get('/mii-publisher')
+        with patch.object(app._mii_publisher_service.store, 'get_lock_visit_total', return_value=7):
+            response = self.client.get('/mii-publisher')
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn('data-attempts-left="3"', html)
         self.assertEqual(html.count('class="attempt-pip"'), 3)
+        self.assertIn('id="publisherVisitTotal">7</strong>', html)
+
+    def test_both_lock_device_view_routes_are_active_and_isolated(self):
+        publisher_device = '9d9f802c-a5ea-49ce-b20a-20afaf0c8bc0'
+        studio_device = 'dev-studio-test'
+        with patch.object(
+                app._mii_publisher_service.store, 'record_lock_visit',
+                return_value=8) as publisher_record, patch.object(
+                app.aivideo_archive, 'record_lock_visit',
+                return_value=21) as studio_record:
+            publisher = self.client.post(
+                '/mii-publisher/lock-visit', json={'device_id': publisher_device})
+            studio = self.client.post(
+                '/ai-video/lock-visit', json={'device_id': studio_device})
+        self.assertEqual(publisher.status_code, 200)
+        self.assertEqual(publisher.get_json()['total'], 8)
+        self.assertEqual(studio.status_code, 200)
+        self.assertEqual(studio.get_json()['total'], 21)
+        publisher_record.assert_called_once_with(publisher_device)
+        studio_record.assert_called_once_with(studio_device)
 
     def test_publisher_locks_ip_for_five_minutes_after_three_failures(self):
         headers = {'CF-Connecting-IP': '203.0.113.25'}
