@@ -9,6 +9,7 @@ and publish-job state.
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import ipaddress
 import json
 import os
@@ -164,7 +165,10 @@ class PublisherStore:
 
     @staticmethod
     def _empty():
-        return {"activities": [], "jobs": {}, "submissions": {}, "health": {}}
+        return {
+            "activities": [], "jobs": {}, "submissions": {}, "health": {},
+            "lock_visits": {},
+        }
 
     def _locked(self):
         handle = open(self.lock_path, "a+")
@@ -182,6 +186,7 @@ class PublisherStore:
                 "jobs": dict(raw.get("jobs") or {}),
                 "submissions": dict(raw.get("submissions") or {}),
                 "health": dict(raw.get("health") or {}),
+                "lock_visits": dict(raw.get("lock_visits") or {}),
             }
         except (OSError, ValueError, TypeError):
             return self._empty()
@@ -231,6 +236,34 @@ class PublisherStore:
 
     def activities(self, limit=60):
         return self.read()["activities"][:max(1, min(int(limit), 100))]
+
+    def get_lock_visit_total(self):
+        return len(self.read()["lock_visits"])
+
+    def record_lock_visit(self, device_id):
+        """Count one browser installation once without storing its raw ID."""
+        try:
+            normalized = str(uuid.UUID(str(device_id or "")))
+        except (ValueError, TypeError, AttributeError):
+            return self.get_lock_visit_total()
+        fingerprint = hashlib.sha256(
+            f"mii-publisher:{normalized}".encode("utf-8")
+        ).hexdigest()
+        now = int(time.time())
+
+        def update(data):
+            visits = data["lock_visits"]
+            current = dict(visits.get(fingerprint) or {})
+            if not current and len(visits) >= 100000:
+                return len(visits)
+            visits[fingerprint] = {
+                "first_seen": int(current.get("first_seen") or now),
+                "last_seen": now,
+                "view_count": int(current.get("view_count") or 0) + 1,
+            }
+            return len(visits)
+
+        return self._mutate(update)
 
     def get_health(self):
         return self.read()["health"]

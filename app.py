@@ -135,7 +135,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-APP_VERSION = "20260923-mii-publisher-lock-v2"
+APP_VERSION = "20260924-mii-publisher-device-views-v1"
 
 
 @app.errorhandler(Exception)
@@ -4284,7 +4284,14 @@ def _publisher_global_lock_remaining():
         return max(0, int(_PUBLISHER_GLOBAL_LOCK_UNTIL - time.time()))
 
 
-def _publisher_lock_response(retry_after=0, attempts_left=None):
+def _publisher_lock_visit_total():
+    try:
+        return _mii_publisher_service.store.get_lock_visit_total()
+    except Exception:
+        return 0
+
+
+def _publisher_lock_response(retry_after=0, attempts_left=None, visit_total=0):
     if attempts_left is None:
         attempts_left = _PUBLISHER_LOCKOUT_THRESHOLD
     response = Response(render_template(
@@ -4292,6 +4299,7 @@ def _publisher_lock_response(retry_after=0, attempts_left=None):
         retry_after=max(0, int(retry_after or 0)),
         attempts_left=max(0, min(int(attempts_left), _PUBLISHER_LOCKOUT_THRESHOLD)),
         attempt_limit=_PUBLISHER_LOCKOUT_THRESHOLD,
+        visit_total=max(0, int(visit_total or 0)),
     ))
     response.headers['Cache-Control'] = 'no-store, private, max-age=0'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
@@ -4397,6 +4405,17 @@ def mii_publisher_logout():
     return response
 
 
+@app.route('/mii-publisher/lock-visit', methods=['POST'])
+def mii_publisher_lock_visit():
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get('device_id') or '')[:128]
+    try:
+        total = _mii_publisher_service.store.record_lock_visit(device_id)
+    except Exception:
+        total = _publisher_lock_visit_total()
+    return jsonify({'ok': True, 'total': total})
+
+
 @app.route('/mii-publisher')
 def mii_publisher_view():
     if not _publisher_browser_authed():
@@ -4408,7 +4427,9 @@ def mii_publisher_view():
             _publisher_global_lock_remaining(),
         )
         attempts_left = 0 if retry_after else _PUBLISHER_LOCKOUT_THRESHOLD - failures
-        return _publisher_lock_response(retry_after, attempts_left)
+        return _publisher_lock_response(
+            retry_after, attempts_left, _publisher_lock_visit_total(),
+        )
     response = Response(render_template('mii-publisher.html'))
     response.headers['Cache-Control'] = 'no-store, private, max-age=0'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'

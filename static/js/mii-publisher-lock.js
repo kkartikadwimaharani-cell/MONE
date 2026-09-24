@@ -7,6 +7,7 @@
   const message = document.getElementById('lockMessage');
   const attempts = Array.from(document.querySelectorAll('.attempt-pip'));
   const attemptsCount = document.getElementById('attemptsCount');
+  const visitTotal = document.getElementById('publisherVisitTotal');
   let busy = false;
   let remaining = Number.parseInt(document.body.dataset.retryAfter || '0', 10) || 0;
   const attemptLimit = Number.parseInt(document.body.dataset.attemptLimit || '3', 10) || 3;
@@ -22,6 +23,48 @@
   function showMessage(text) {
     message.textContent = text || '';
     message.hidden = !text;
+  }
+
+  function newDeviceId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+      const random = Math.floor(Math.random() * 16);
+      const value = character === 'x' ? random : ((random & 3) | 8);
+      return value.toString(16);
+    });
+  }
+
+  function getPublisherDeviceId() {
+    const key = 'mii_publisher_device_id_v1';
+    try {
+      const existing = window.localStorage.getItem(key);
+      if (existing) return existing;
+      const created = newDeviceId();
+      window.localStorage.setItem(key, created);
+      return created;
+    } catch (_) {
+      return newDeviceId();
+    }
+  }
+
+  async function trackPublisherView() {
+    if (!visitTotal) return;
+    try {
+      const response = await fetch('/mii-publisher/lock-visit', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ device_id: getPublisherDeviceId() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && Number.isInteger(data.total) && data.total >= 0) {
+        visitTotal.textContent = data.total.toLocaleString('en-US');
+      }
+    } catch (_) {
+      // Device-view tracking is non-critical and must never block login.
+    }
   }
 
   function updateLockout() {
@@ -88,4 +131,5 @@
 
   renderAttempts(attemptsLeft);
   updateLockout();
+  trackPublisherView();
 })();
